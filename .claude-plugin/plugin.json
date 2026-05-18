@@ -1,0 +1,9 @@
+{
+  "name": "nerd4rent",
+  "version": "0.2.0",
+  "description": "Daily developer workflow automation — bootstrap new projects with git init, README scaffold, GitHub remote via gh, matching Linear project, and routing to a spec-creating skill of choice.",
+  "author": {
+    "name": "Paweł Wlazło",
+    "email": "pawel@nerd4rent.io"
+  }
+}

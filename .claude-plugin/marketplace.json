@@ -1,0 +1,22 @@
+{
+  "name": "nerd4rent-claude-plugin",
+  "owner": {
+    "name": "Paweł Wlazło",
+    "email": "pawel@nerd4rent.io"
+  },
+  "metadata": {
+    "description": "Nerd4Rent open-source Claude Code skills for daily developer workflows.",
+    "version": "0.2.0"
+  },
+  "plugins": [
+    {
+      "name": "nerd4rent",
+      "description": "Daily developer workflow automation — bootstrap new projects with git, GitHub, Linear, and spec-creating skills.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/new-project-workflow"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "skill_name": "new-project-workflow",
+  "evals": [
+    {
+      "id": "fresh-dir",
+      "prompt": "I want to bootstrap /tmp/n4r-test-fresh-<ID> as a new dev project — git init, scaffold README.md, set up a GitHub remote with `gh`, create a matching Linear project, then route me to a spec-creating skill. Produce a clear plan I can approve in one shot, but DO NOT execute any of the steps yet (no real git init, no gh, no linear API calls). Just show me what you intend to do.",
+      "expected_output": "A single-approval dry-run plan covering all five workflow stages (git init, README, gh repo create with --public, Linear in 'nerd4rent', spec-skill menu). Ends with a single 'Proceed? [Y/n]' gate.",
+      "files": [],
+      "assertions": [
+        "Plan output starts with a clear header that names the project (basename of the target directory)",
+        "Plan shows the absolute target directory path",
+        "Plan declares repo visibility as 'public' (the default)",
+        "Plan declares the Linear team as 'nerd4rent'",
+        "Plan covers all five workflow stages: git init, README creation, gh repo create, Linear project creation, spec-skill selection",
+        "Plan uses a single approval gate at the end ('Proceed? [Y/n]') rather than asking per-step confirmation",
+        "Plan's gh step explicitly uses --public flag (matching the visibility decision)",
+        "Plan's spec-skill step describes dynamic discovery (scanning available skills) rather than hardcoding a fixed list",
+        "No destructive commands were executed: the target directory is still empty (no .git, no README) after the subagent run"
+      ]
+    },
+    {
+      "id": "existing-repo",
+      "prompt": "I want to bootstrap /tmp/n4r-test-existing-<ID> as a new dev project — git init if needed, scaffold README.md if missing, set up a GitHub remote with `gh`, create a matching Linear project, then route me to a spec-creating skill. Produce a clear plan I can approve in one shot, but DO NOT execute any of the steps yet. Just show me what you intend to do. Note the directory may already have some setup — your plan should account for that.",
+      "expected_output": "Plan that detects the existing git repo and existing README.md, marks steps 1 and 2 as skipped, and still presents the gh + Linear + spec steps. No destructive overwrites.",
+      "files": [],
+      "assertions": [
+        "Plan correctly detects the existing git repository and marks the 'git init' step as skipped",
+        "Plan correctly detects the existing README.md and marks the 'README scaffold' step as skipped (no overwrite)",
+        "Plan still presents the gh repo create, Linear project, and spec-skill selection steps",
+        "Plan uses a single approval gate ('Proceed? [Y/n]') at the end",
+        "Plan does not propose --force or destructive overwrites of the existing repo or README",
+        "No destructive commands were executed: the existing repo still has its original README content and the same single commit after the subagent run"
+      ]
+    }
+  ]
+}

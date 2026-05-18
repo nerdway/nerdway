@@ -1,0 +1,9 @@
+{
+  "name": "nerdway",
+  "version": "0.2.0",
+  "description": "Daily developer workflow automation — bootstrap new projects with git init, README scaffold, GitHub remote via gh, matching Linear project, and routing to a spec-creating skill of choice.",
+  "author": {
+    "name": "Paweł Wlazło",
+    "email": "75803724+pawelwlazlo@users.noreply.github.com"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "nerdway",
+  "owner": {
+    "name": "Paweł Wlazło",
+    "email": "75803724+pawelwlazlo@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "Nerdway open-source Claude Code skills for daily developer workflows.",
+    "version": "0.2.0"
+  },
+  "plugins": [
+    {
+      "name": "nerdway",
+      "description": "Daily developer workflow automation — bootstrap new projects with git, GitHub, Linear, and spec-creating skills.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/new-project-workflow"
+      ]
+    }
+  ]
+}

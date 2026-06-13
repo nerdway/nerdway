@@ -6,12 +6,12 @@
   },
   "metadata": {
     "description": "Nerd4Rent open-source Claude Code skills for daily developer workflows.",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "nerd4rent",
-      "description": "Daily developer workflow automation — bootstrap new projects with git, GitHub, Linear, and spec-creating skills; drive Linear issues through a plan-gate-implement workflow.",
+      "description": "Daily developer workflow automation — bootstrap new projects with git, GitHub, Linear, and spec-creating skills; write well-specified Linear issues; and drive Linear issues through a plan-gate-implement workflow.",
       "source": "./",
       "strict": false
     }

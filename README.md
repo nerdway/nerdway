@@ -17,6 +17,18 @@ Bootstraps a new project end-to-end in a single approval:
 
 Trigger phrases: *"new project workflow"*, *"bootstrap project"*, *"start a new project the nerd4rent way"*, or `/nerd4rent:new-project-workflow`.
 
+### `nerd4rent:linear-issue-writer`
+
+Creates a **new** Linear issue for the current repo with goals specified clearly enough that the planning agent can build an implementation plan straight from it. Upstream of `linear-issue-workflow`:
+
+1. Resolves the target team/project (nerdbrain entity-page → git remote → ask), and confirms.
+2. Adaptively interviews for missing goals — straight to a draft for small clear tasks, a short one-question-at-a-time interview for vague or multi-part work.
+3. Drafts the issue from an adaptive template (full vs minimal) and gates the Linear write on your approval.
+4. Decomposes the work: a checklist in the body by default, or **real Linear sub-issues** (parent + children via `--parent`) when the topic plainly splits into stages — and you can force or decline the split.
+5. Prints the new issue ID/URL and offers to hand off to `linear-issue-workflow` to plan it.
+
+Pairs with the `linear-cli` skill. Trigger: intent to create a new issue/task with no existing ID — *"utwórz/stwórz/dodaj/zgłoś issue"*, *"create issue"*, *"new task"*.
+
 ### `nerd4rent:linear-issue-workflow`
 
 A mandatory workflow for working a Linear issue by ID (e.g. `KAM-145`). It enforces a plan-before-code discipline:

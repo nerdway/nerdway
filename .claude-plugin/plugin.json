@@ -1,7 +1,7 @@
 {
   "name": "nerd4rent",
-  "version": "0.3.0",
-  "description": "Daily developer workflow automation — bootstrap new projects with git init, README scaffold, GitHub remote via gh, matching Linear project, and routing to a spec-creating skill of choice; plus a Linear issue workflow that gates implementation behind an approved plan comment.",
+  "version": "0.4.0",
+  "description": "Daily developer workflow automation — bootstrap new projects with git init, README scaffold, GitHub remote via gh, matching Linear project, and routing to a spec-creating skill of choice; write well-specified Linear issues (with checklist or sub-issue decomposition); and drive a Linear issue through a plan-gate-implement workflow.",
   "author": {
     "name": "Paweł Wlazło",
     "email": "pawel@nerd4rent.io"

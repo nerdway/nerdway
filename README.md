@@ -17,6 +17,18 @@ Bootstraps a new project end-to-end in a single approval:
 
 Trigger phrases: *"new project workflow"*, *"bootstrap project"*, *"start a new project the nerd4rent way"*, or `/nerd4rent:new-project-workflow`.
 
+### `nerd4rent:linear-issue-workflow`
+
+A mandatory workflow for working a Linear issue by ID (e.g. `KAM-145`). It enforces a plan-before-code discipline:
+
+1. Fetches the issue and reads every comment.
+2. Drafts an implementation plan and posts it to Linear as a `## Implementation plan` comment.
+3. Gates all repo changes until the plan is approved (`Status: approved`).
+4. Applies a branch policy before the first commit.
+5. Posts a `## Session summary` comment after every working session.
+
+Pairs with the `linear-cli` skill for CLI syntax. Trigger: any Linear issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
+
 ## Installation
 
 Add this marketplace to Claude Code:

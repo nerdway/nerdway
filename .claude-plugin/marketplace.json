@@ -11,11 +11,12 @@
   "plugins": [
     {
       "name": "nerd4rent",
-      "description": "Daily developer workflow automation — bootstrap new projects with git, GitHub, Linear, and spec-creating skills.",
+      "description": "Daily developer workflow automation — bootstrap new projects with git, GitHub, Linear, and spec-creating skills; drive Linear issues through a plan-gate-implement workflow.",
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/new-project-workflow"
+        "./skills/new-project-workflow",
+        "./skills/linear-issue-workflow"
       ]
     }
   ]

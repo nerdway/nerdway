@@ -29,6 +29,17 @@ A mandatory workflow for working a Linear issue by ID (e.g. `KAM-145`). It enfor
 
 Pairs with the `linear-cli` skill for CLI syntax. Trigger: any Linear issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
 
+### `nerd4rent:nerdbrain-wiki`
+
+The HOW for maintaining a personal Obsidian "second brain" — one entity page per project at `5-wiki/entities/projects/<slug>.md`. It carries:
+
+- Section update modes (Edit/rewrite vs Append/chronological vs flag-staleness).
+- The `obsidian` CLI command patterns and when to drop to filesystem writes.
+- Index (`index.md`) and log (`log.md`) maintenance steps.
+- A bundled `entity-page-template.md` to scaffold a brand-new page.
+
+The *when to write* triggers and hard safety rules stay in the user's global `~/.claude/CLAUDE.md`; this skill is invoked once a write is warranted. Trigger: about to create or update a nerdbrain wiki entity page.
+
 ## Installation
 
 Add this marketplace to Claude Code:

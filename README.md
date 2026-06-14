@@ -54,12 +54,31 @@ The *when to write* triggers and hard safety rules stay in the user's global `~/
 
 ## Installation
 
-Add this marketplace to Claude Code:
+### Claude Code
+
+Add this marketplace and install the plugin:
 
 ```bash
 /plugin marketplace add https://github.com/nerd4rent/nerd4rent-claude-plugin
 /plugin install nerd4rent@nerd4rent-claude-plugin
 ```
+
+### Other agents (Cursor, Copilot, Windsurf, Cline, …)
+
+The skills follow the shared [Agent Skills specification](https://github.com/vercel-labs/skills), so the [`skills` CLI](https://github.com/vercel-labs/skills) can install them into 70+ coding agents:
+
+```bash
+# Install all skills globally into your detected agent(s)
+npx skills add nerd4rent/nerd4rent-claude-plugin -g
+
+# Or target a specific agent and/or skill
+npx skills add nerd4rent/nerd4rent-claude-plugin -g -a cursor -s '*'
+
+# Keep them current
+npx skills update
+```
+
+Cursor reads global skills from `~/.agents/skills/` (and `~/.cursor/skills/`); the CLI installs there automatically. Restart the agent after installing.
 
 ## Requirements
 

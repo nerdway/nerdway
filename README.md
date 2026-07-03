@@ -52,6 +52,17 @@ The HOW for maintaining a personal Obsidian "second brain" — one entity page p
 
 The *when to write* triggers and hard safety rules stay in the user's global `~/.claude/CLAUDE.md`; this skill is invoked once a write is warranted. Trigger: about to create or update a nerdbrain wiki entity page.
 
+### Agent-skills manifest management
+
+Four skills for maintaining a personal `~/.config/agent-skills/manifest.json` — the whitelist that `agent-skills-sync.sh`/`.ps1` install across Claude Code, Cursor, and any other detected coding agent. Only `apply-manifest-changes` touches the live system; the other three just edit the JSON and then hand off to it.
+
+- **`nerd4rent:add-skill-to-manifest`** — register a new skill (and its source repo, as a plain `npx skills` source or a full Claude plugin marketplace) in the manifest.
+- **`nerd4rent:remove-skill-from-manifest`** — drop a skill, or an entire source, from the manifest.
+- **`nerd4rent:add-agent-to-manifest`** — add a new coding agent, either always-installed or auto-detected via a PATH/app-bundle probe.
+- **`nerd4rent:apply-manifest-changes`** — reconcile the live system to match the manifest: installs what's missing, removes only what a tracked source no longer lists. Always dry-runs and asks for confirmation before mutating anything.
+
+These assume the manifest and sync scripts are already provisioned on the machine (they're chezmoi-managed dotfiles, not something these skills bootstrap from scratch).
+
 ## Installation
 
 ### Claude Code

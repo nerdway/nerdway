@@ -1,7 +1,5 @@
 ## Implementation plan
 
-Status: pending approval
-
 ### Objective
 
 <!-- One paragraph: what problem we solve and for whom -->

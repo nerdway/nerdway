@@ -25,19 +25,21 @@ Creates a **new** Linear issue for the current repo with goals specified clearly
 2. Adaptively interviews for missing goals — straight to a draft for small clear tasks, a short one-question-at-a-time interview for vague or multi-part work.
 3. Drafts the issue from an adaptive template (full vs minimal) and gates the Linear write on your approval.
 4. Decomposes the work: a checklist in the body by default, or **real Linear sub-issues** (parent + children via `--parent`) when the topic plainly splits into stages — and you can force or decline the split.
-5. Prints the new issue ID/URL and offers to hand off to `linear-issue-workflow` to plan it.
+5. Creates the issue **in Backlog** (explicit `-s backlog`), then offers an optional grilling session (`grill-with-docs`, if available in the session) that can sharpen the description or split the topic into sub-issues.
+6. Prints the new issue ID/URL and hands off to the status-driven flow: type the issue ID in a new session/message to start planning with `linear-issue-workflow`.
 
 Pairs with the `linear-cli` skill. Trigger: intent to create a new issue/task with no existing ID — *"utwórz/stwórz/dodaj/zgłoś issue"*, *"create issue"*, *"new task"*.
 
 ### `nerd4rent:linear-issue-workflow`
 
-A mandatory workflow for working a Linear issue by ID (e.g. `KAM-145`). It enforces a plan-before-code discipline:
+A mandatory **status-driven** workflow for working a Linear issue by ID (e.g. `KAM-145`). The issue's Linear status is the single source of truth — you steer by changing the status, the agent never asks you to "confirm the plan" in chat:
 
-1. Fetches the issue and reads every comment.
-2. Drafts an implementation plan and posts it to Linear as a `## Implementation plan` comment.
-3. Gates all repo changes until the plan is approved (`Status: approved`).
-4. Applies a branch policy before the first commit.
-5. Posts a `## Session summary` comment after every working session.
+1. Fetches the issue (`linear issue view -j`) at the start of every turn and dispatches on status — also when a bare issue ID is typed into a fresh session.
+2. **Backlog/Todo** → drafts an implementation plan, posts it as a `## Implementation plan` comment, sets the status to Todo, and ends the turn with no instructions.
+3. **In Progress** (set manually by you = plan approved) → starts implementation: branch from the Linear `branchName`, empty commit, push, **draft PR with magic words** (`Fixes TEAM-123`) so the Linear↔GitHub integration closes the issue on merge; then offers an implementation mode (superpowers / Matt Pocock skills / plain agent — whichever is available).
+4. After implementation or on **In Review** → offers a code-review menu (superpowers / Matt Pocock / review it yourself); never offers to merge or close on its own.
+5. Close-out on request: push, merge the PR, ask about switching back to main/master — Linear status closes itself via the magic words.
+6. Posts a `## Session summary` comment after every working session.
 
 Pairs with the `linear-cli` skill for CLI syntax. Trigger: any Linear issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
 

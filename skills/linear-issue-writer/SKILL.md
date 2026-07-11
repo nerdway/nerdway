@@ -6,8 +6,9 @@ description: >-
   the user wants to file/create/open a new issue or task ("utwórz/stwórz/dodaj/zgłoś
   issue/zadanie", "create issue", "new task") and does NOT yet have an issue ID.
   Adaptively interviews for missing goals, drafts the issue, gates the Linear write
-  on approval, and can propose breaking the work into a checklist or real sub-issues.
-  Distinct from linear-issue-workflow (which plans/implements an EXISTING issue ID).
+  on approval, creates the issue in Backlog, and offers an optional grilling
+  session (grill-with-docs) that can split the topic into sub-issues. Distinct
+  from linear-issue-workflow (which plans/implements an EXISTING issue ID).
   Use linear-cli for CLI syntax.
 ---
 
@@ -26,14 +27,15 @@ task* and English *create / open / file / new issue / task*.
 
 **Disambiguation:** if the user gives an existing `TEAM-123` and asks to plan or
 implement it → that is `nerd4rent:linear-issue-workflow`, not this skill. This skill
-*ends* by optionally handing off to that one.
+*ends* by pointing at that one's status-driven flow.
 
 ## Hard gate (do not skip)
 
 **No write to Linear** (`issue create`, sub-issues, labels) until the user has seen
 the drafted issue body and approved it. Allowed before approval: `linear` read
 commands, reading the repo/entity-page for context, asking clarifying questions,
-drafting the issue text.
+drafting the issue text. The same gate applies to sub-issues proposed by a
+grilling session (step 6).
 
 ## Workflow
 
@@ -90,13 +92,14 @@ repo (PL or EN).
 
 Write the body to a temp file and **show it to the user**. Wait for approval.
 
-### 5. Create in Linear
+### 5. Create in Linear (always in Backlog)
 
-For a single issue:
+New issues start in **Backlog** — pass the state explicitly so the team's
+default state cannot override it:
 
 ```bash
 linear issue create --team <key> --project <name> \
-  -t "<title>" --description-file <path> --no-interactive
+  -t "<title>" --description-file <path> -s backlog --no-interactive
 ```
 
 For a parent + sub-issues, create the parent first, capture its `TEAM-123` ID from
@@ -104,31 +107,50 @@ the output, then create each child with `--parent`:
 
 ```bash
 linear issue create --team <key> --project <name> \
-  -t "<parent title>" --description-file <parent.md> --no-interactive
+  -t "<parent title>" --description-file <parent.md> -s backlog --no-interactive
 # → note the new ID, e.g. DEMO-123
 linear issue create --team <key> --project <name> \
-  -t "<child title>" --description-file <child-1.md> --parent DEMO-123 --no-interactive
+  -t "<child title>" --description-file <child-1.md> --parent DEMO-123 -s backlog --no-interactive
 ```
 
 Add `-l/--label`, `-p/--priority`, `--estimate`, etc. only when the user specified
 them — don't invent metadata. (`linear` CLI supports `--parent`; no need for
 `issue relation` for parent/child.)
 
-### 6. Output + handoff
+### 6. Grilling session (optional)
 
-Print the created issue ID(s) and URL(s) (`linear issue url <ID>`). Then ask whether
-to plan now:
+Check whether the `grill-with-docs` skill is **available in this session** (it is
+installed via `npx skills` into `~/.agents/skills`, not the Claude plugin
+marketplace — presence varies per machine/session):
 
-> *Issue utworzone (DEMO-123). Zaplanować je od razu?*
+- **Available** → ask the user: *Odpalić sesję grillowania (`grill-with-docs`)
+  dla tego issue?* If yes, delegate to that skill with the created issue's body
+  as input. Handle the outcome:
+  - sharpened requirements → update the issue description
+    (`linear issue update <ID> --description-file <path>`) after showing the diff;
+  - the topic splits into stages → propose sub-issues (step 3 rules apply) and
+    create them with `--parent <ID> -s backlog` **only after the user approves
+    the drafts** (hard gate above).
+- **Not available** → say so in one sentence and continue. No error, no lecture.
 
-If yes, hand off to **`nerd4rent:linear-issue-workflow`** with that ID. Do **not**
-start planning or editing the repo on your own — keep creation and planning as
-separate, deliberate steps.
+### 7. Output + handoff
+
+Print the created issue ID(s) and URL(s) (`linear issue url <ID>`). Then point at
+the status-driven flow — do **not** offer to plan it yourself in this session:
+
+> *Issue utworzone (DEMO-123) — w Backlogu. Wpisz ID issue w nowej sesji lub
+> wiadomości, aby rozpocząć planowanie.*
+
+Planning, implementation, and review are driven by the issue's Linear status in
+`nerd4rent:linear-issue-workflow` — keep creation and planning as separate,
+deliberate steps.
 
 ## Related skills
 
 - `linear-cli` — CLI reference (always before `linear` commands).
-- `nerd4rent:linear-issue-workflow` — downstream: plans/implements an issue ID
-  produced here.
+- `nerd4rent:linear-issue-workflow` — downstream: status-driven planning and
+  implementation of an issue ID produced here.
+- `grill-with-docs` (optional, `npx skills` / `~/.agents/skills`) — grilling
+  session after creation; detect per session, degrade gracefully when absent.
 - `nerd4rent:new-project-workflow` — bootstraps a whole project; routes to
   spec-creating skills. This skill is the issue-level counterpart.

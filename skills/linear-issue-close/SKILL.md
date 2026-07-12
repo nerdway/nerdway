@@ -1,14 +1,15 @@
 ---
 name: linear-issue-close
+model: haiku
 description: >-
   Mechanically close out a Linear issue once the work is done: commit any
   leftover changes, push, merge the PR (GitHub) or MR (GitLab), switch the local
   checkout to the PR/MR base branch, and set the Linear issue to Done. Purely
-  procedural with explicit commands and no multi-step reasoning — cheap enough to
-  run on a fast model (Haiku). Invoked by linear-issue-workflow's close-out, or
-  directly when the user asks to close/merge/finish an issue ("domknij",
-  "zamknij", "zmerguj i zamknij", "close out", "merge and close"). Use linear-cli
-  for the Linear command.
+  procedural with explicit commands and no multi-step reasoning — pinned to Haiku
+  (the `model` frontmatter above) to keep it cheap. Invoked by
+  linear-issue-workflow's close-out, or directly when the user asks to
+  close/merge/finish an issue ("domknij", "zamknij", "zmerguj i zamknij", "close
+  out", "merge and close"). Use linear-cli for the Linear command.
 ---
 
 # Linear issue close-out

@@ -74,6 +74,15 @@ injected (stub / `tier=none`) or the section is missing/empty.
 Treat any decisions found as constraints while drafting the plan: the
 Technical Approach must not contradict one without flagging it.
 
+### 0b. Graph recall (optional)
+
+If the issue **explicitly** touches another project/concept already present
+in the graph (in the current entity page's `related:`, or named directly by
+the user or the issue), follow `nerdbrain-wiki`'s **Graph recall (on-demand)**
+patterns before drafting the Technical Approach — same triggers and limits,
+not duplicated here. Skip silently otherwise; don't read the graph
+speculatively.
+
 ### 1. Draft plan
 
 Use the bundled `plan-template.md` sections (Polish or English — match the

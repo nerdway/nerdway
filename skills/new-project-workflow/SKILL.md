@@ -175,16 +175,21 @@ Never use `--force` or `--confirm`-bypassing flags.
 
 ### 4.5 — Linear project
 
-Invoke the `linear-cli` skill: create a project named `<name>` in team `<team>`. Capture the project URL. If existence check in Step 2 already found a matching project, skip and reuse that URL.
+Invoke the `linear-cli` skill: create a project named `<name>` in team `<team>` with `-j` and capture the project URL **and the project UUID** (`id`) from the JSON output — step 4.6 needs the UUID for the entity-page frontmatter. If existence check in Step 2 already found a matching project, skip creation and resolve the existing project's URL + UUID via `linear project list --team <team> -j`.
 
 ### 4.6 — Nerdbrain entity page (conditional)
 
-Only run if inspection confirmed nerdbrain is reachable. Create `~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md` using the template in the user's global `CLAUDE.md`, prefilled with:
+Only run if inspection confirmed nerdbrain is reachable. Create `~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md` using the `nerdbrain-wiki` skill's `entity-page-template.md`, prefilled with:
 
 - `slug: <name>`
 - `remote: <github-url>`
 - `local-paths: [{host: <hostname>, path: <absolute-path>}]`
-- `linear: { team: <team>, project: <linear-uuid> }`
+- `linear: { team: <team>, project: <uuid-from-step-4.5> }` — both fields are
+  REQUIRED; prefill directly from step 4.5 (the project was just created or
+  found there, so the UUID is known). If step 4.5 was skipped (no `linear-cli`
+  in session), omit the `linear:` block — Linear was not checked, and
+  `linear: none` means a confirmed "no Linear counterpart exists"; backfill
+  in a later session with `linear-cli` available.
 - `created` / `updated`: today
 
 Then append a one-liner to `5-wiki/index.md` under `## Projekty` and a log entry to `5-wiki/log.md`. Use the `obsidian-cli` skill for all vault writes.

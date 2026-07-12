@@ -61,6 +61,7 @@ The HOW for maintaining a personal Obsidian "second brain" — one entity page p
 
 - Section update modes (Edit/rewrite vs Append/chronological vs flag-staleness).
 - The `obsidian` CLI command patterns and when to drop to filesystem writes.
+- Graph recall on-demand: following `related:`/`[[links]]` and `obsidian search`, with hard context limits — no speculative reading of the graph.
 - Index (`index.md`) and log (`log.md`) maintenance steps.
 - A bundled `entity-page-template.md` to scaffold a brand-new page.
 

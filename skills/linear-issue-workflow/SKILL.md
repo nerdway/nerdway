@@ -63,6 +63,17 @@ already In Progress.
 
 ## Planning phase (status Backlog / Todo)
 
+### 0. Read `## Decisions` from the entity page
+
+If the SessionStart inject for this project contains an `[omitted: ...
+Decisions ...]` marker, `Read` the full entity page at the path given in that
+marker and extract `## Decisions` (per `nerdbrain-wiki`'s lazy-section
+contract). Skip this step silently — no error — if no entity page was
+injected (stub / `tier=none`) or the section is missing/empty.
+
+Treat any decisions found as constraints while drafting the plan: the
+Technical Approach must not contradict one without flagging it.
+
 ### 1. Draft plan
 
 Use the bundled `plan-template.md` sections (Polish or English — match the
@@ -86,6 +97,8 @@ linear issue update <ID> -s Todo
 ```
 
 The posted body **must** start with `## Implementation plan` (no status line).
+If step 0 found relevant decisions, note which ones the plan is consistent
+with, and mark any deviation as `Odstępstwo od decyzji YYYY-MM-DD — powód`.
 
 ### 3. End the turn
 
@@ -96,6 +109,11 @@ issue to **In Progress** in Linear (or by asking you to implement in chat).
 ## Implementation phase (status In Progress)
 
 ### 4. Start (once per issue — skip if branch and PR already exist)
+
+If the accepted plan flagged an `Odstępstwo od decyzji` (a deviation from a
+recorded decision), that acceptance is itself a nerdbrain write-trigger:
+invoke `nerdbrain-wiki` to append/update the superseding decision under
+`## Decisions` on the entity page before continuing.
 
 1. **Branch** — existing policy unchanged:
    - On `main`/`master`: `git checkout -b <branchName from issue view -j>`.

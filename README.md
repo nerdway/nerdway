@@ -38,10 +38,22 @@ A mandatory **status-driven** workflow for working a Linear issue by ID (e.g. `K
 2. **Backlog/Todo** → drafts an implementation plan, posts it as a `## Implementation plan` comment, sets the status to Todo, and ends the turn with no instructions.
 3. **In Progress** (set manually by you = plan approved) → starts implementation: branch from the Linear `branchName`, empty commit, push, **draft PR with magic words** (`Fixes TEAM-123`) so the Linear↔GitHub integration closes the issue on merge; then offers an implementation mode (superpowers / Matt Pocock skills / plain agent — whichever is available).
 4. After implementation or on **In Review** → offers a code-review menu (superpowers / Matt Pocock / review it yourself); never offers to merge or close on its own.
-5. Close-out on request: push, merge the PR, ask about switching back to main/master — Linear status closes itself via the magic words.
+5. Close-out on request: delegates to **`nerd4rent:linear-issue-close`** (below) to merge and finish the issue.
 6. Posts a `## Session summary` comment after every working session.
 
 Pairs with the `linear-cli` skill for CLI syntax. Trigger: any Linear issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
+
+### `nerd4rent:linear-issue-close`
+
+A deliberately **mechanical, lightweight** close-out for a finished issue — purely procedural with explicit commands and no multi-step reasoning, so it's cheap enough to run on a fast model (Haiku). Invoked by `linear-issue-workflow`'s close-out phase, or directly:
+
+1. Commits any leftover changes (repo convention: Polish, noun-form message, no co-author) — or skips if the tree is clean.
+2. Pushes the branch (sets upstream if needed).
+3. Detects GitHub vs GitLab from the origin remote and merges the PR/MR with the repo's default method (`gh pr merge` / `glab mr merge`; marks a draft PR ready first).
+4. Switches the local checkout to the PR/MR's **base** branch (read from the PR/MR, not assumed to be `main`) and pulls.
+5. Sets the Linear issue to **Done** (`linear issue update <ID> -s Done`) — deterministic and covering GitLab, where there's no Linear↔GitHub auto-close.
+
+On any error (e.g. merge conflict, missing `gh`/`glab`) it stops and reports rather than improvising. Pairs with the `linear-cli` skill. Trigger: intent to close/merge/finish an issue — *"domknij"*, *"zamknij"*, *"zmerguj i zamknij"*, *"close out"*, *"merge and close"*.
 
 ### `nerd4rent:nerdbrain-wiki`
 

@@ -159,15 +159,13 @@ Run the chosen review, address findings, push fixes to the PR branch.
 ## Close-out (on user request, or status Done set manually)
 
 Only when the user asks to close/merge (or set Done manually with the PR still
-open):
+open): invoke **`nerd4rent:linear-issue-close`** with the issue ID. That skill
+mechanically commits any leftover changes, pushes, merges the PR/MR (GitHub or
+GitLab), switches the local checkout to the PR/MR base branch, and sets the
+issue to Done in Linear. It is deliberately lightweight (Haiku-friendly).
 
-1. Push any remaining commits.
-2. `gh pr merge` (pick the repo's usual merge method; mark PR ready first with
-   `gh pr ready` if still draft).
-3. Ask whether to switch the local checkout back to `main`/`master`.
-
-Do **not** change the Linear status manually — the magic words close the issue
-when the PR merges.
+If the merge fails (e.g. conflicts), it stops and reports — resolve, then
+re-run.
 
 ## Session summary (mandatory)
 

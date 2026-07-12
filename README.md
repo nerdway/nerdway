@@ -45,7 +45,7 @@ Pairs with the `linear-cli` skill for CLI syntax. Trigger: any Linear issue ID w
 
 ### `nerd4rent:linear-issue-close`
 
-A deliberately **mechanical, lightweight** close-out for a finished issue — purely procedural with explicit commands and no multi-step reasoning, so it's cheap enough to run on a fast model (Haiku). Invoked by `linear-issue-workflow`'s close-out phase, or directly:
+A deliberately **mechanical, lightweight** close-out for a finished issue — purely procedural with explicit commands and no multi-step reasoning. It pins itself to **Haiku** via a `model: haiku` frontmatter field (a Claude Code skill extension; other agents ignore the field), so the close-out runs cheap regardless of the session model. Invoked by `linear-issue-workflow`'s close-out phase, or directly:
 
 1. Commits any leftover changes (repo convention: Polish, noun-form message, no co-author) — or skips if the tree is clean.
 2. Pushes the branch (sets upstream if needed).

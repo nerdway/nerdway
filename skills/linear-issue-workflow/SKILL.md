@@ -187,6 +187,14 @@ Body **must** start with `## Session summary` and include:
 
 The summary must be enough to resume from Linear alone.
 
+## Nerdbrain entity-page integration
+
+- When the injected entity page's frontmatter has `linear.team` or
+  `linear.project`, query Linear for active work (`linear issue query
+  --team <key>` / `--project <name>`) instead of re-asking the user.
+- When recording a decision on the entity page (nerdbrain write trigger),
+  link it to the issue ID, e.g. `2026-05-05 — chose JWT (LIN-123)`.
+
 ## Related skills
 
 - `linear-cli` — CLI reference (always before `linear` commands).

@@ -29,13 +29,38 @@ Entity pages live at `5-wiki/entities/projects/<slug>.md` and are **English-only
 
 Always bump frontmatter `updated: YYYY-MM-DD` on every write.
 
+## Inject budget: always vs lazy sections
+
+The SessionStart hook (`nerdbrain-load.sh`) does NOT inject the whole entity
+page. It injects a fixed whitelist and drops the rest (DEMO-204):
+
+- **Always in inject:** frontmatter + H1, Purpose, Stack, Commands,
+  Conventions, Active context.
+- **Lazy (not injected):** Gotchas, Decisions, References, and every section
+  outside the whitelist (custom sections like Skills). Append-only sections
+  grow without bound, so they can never live in the inject.
+
+When sections are dropped, the inject ends with a marker listing them and the
+full page path, e.g.
+`[omitted: Gotchas, Decisions — read <path> before debugging or when a
+decision's rationale matters]`. The whole inject also has a hard byte budget
+(default 8192, env `NERDBRAIN_INJECT_BUDGET`); overflow is cut with
+`[truncated — read full page: <path>]`.
+
+**Reading lazy sections:** `Read` the absolute path from the marker
+(filesystem-first, per the vault hard rules); `obsidian read` is the
+alternative. Any skill that relies on a lazy section — Decisions when
+planning, Gotchas before debugging — must read the page itself; the inject
+alone is not enough.
+
 ## Commands
 
 The patterns below are the canonical shape for wiki entity-page writes.
 For the broader CLI surface, see the `obsidian-cli` skill.
 
 ```
-# Read (rare; the hook usually pre-loads the page)
+# Read (the hook pre-loads only the always-in-inject sections; read the
+# full page before editing lazy sections)
 obsidian read vault=nerdbrain path=5-wiki/entities/projects/<slug>.md
 
 # Append (chronological, end-of-file)

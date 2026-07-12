@@ -53,6 +53,64 @@ alternative. Any skill that relies on a lazy section — Decisions when
 planning, Gotchas before debugging — must read the page itself; the inject
 alone is not enough.
 
+## Graph recall (on-demand)
+
+Beyond the current entity page, the vault is a graph: `related:` links to
+other entity pages, and any page may already document a problem you're about
+to solve again. Follow the graph **on demand**, not speculatively.
+
+**When to reach into the graph:**
+1. The task **explicitly** touches another project/concept already present
+   in the graph — listed in the current page's `related:`, or named directly
+   by the user or the issue.
+2. You're debugging or planning something that might have a precedent
+   elsewhere — a non-trivial bug or a recurring gotcha. Search on the
+   problem's specific keywords, not the whole task description.
+
+Do not read related pages or run vault searches outside these two triggers.
+
+**`related:`/`[[link]]` follow:** an entity page's `related:` frontmatter
+holds `"[[slug]]"` entries; `slug` → path
+`5-wiki/entities/projects/<slug>.md` (same convention as the rest of this
+skill).
+
+```
+obsidian read vault=nerdbrain path=5-wiki/entities/projects/<slug>.md
+```
+
+Read only the section(s) relevant to the task — same always/lazy contract as
+the current page, not the whole file.
+
+**Vault search:** two-step — a cheap, capped search first, then read only
+what looks relevant.
+
+```
+# 1. Cast a narrow net — small limit, scan snippets before opening anything
+obsidian search:context query="<specific keywords>" limit=5
+
+# 2. Only then, read the specific file(s) that looked relevant
+obsidian read vault=nerdbrain path=<hit-path>
+```
+
+`obsidian search` (without `:context`) returns bare filenames if you don't
+need surrounding lines.
+
+**Hard limits (textual, not code-enforced — treat as a hard gate, not a
+suggestion):**
+- Max **3** related pages read in full per session (the page already
+  injected by SessionStart doesn't count against this).
+- From each related page, take only the sections relevant to the task.
+- `search`/`search:context` always with `limit=5` unless the user asks for
+  more — review the list/snippets before any `obsidian read`.
+
+**Fallback without the `obsidian` CLI** (`tier=none` or CLI unavailable):
+`Grep`/`Read` over `~/obsidian/nerdbrain/5-wiki/` directly, same limits (3
+pages read in full, 5 grep hits reviewed before opening any file).
+
+**Debugging flows:** a debugging session (e.g. `superpowers:systematic-debugging`)
+should consult this same pattern before reaching for a vault search — this
+skill doesn't modify third-party skills to wire that in automatically.
+
 ## Commands
 
 The patterns below are the canonical shape for wiki entity-page writes.

@@ -1,6 +1,6 @@
 {
   "name": "nerd4rent",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "Daily developer workflow automation — bootstrap new projects with git init, README scaffold, GitHub remote via gh, matching Linear project, and routing to a spec-creating skill of choice; write well-specified Linear issues (with checklist or sub-issue decomposition); drive a Linear issue through a status-driven plan-implement-review workflow; mechanically close out an issue (commit, push, merge PR/MR on GitHub or GitLab, set Done); and manage a personal agent-skills manifest across Claude Code, Cursor, and other coding agents.",
   "author": {
     "name": "Paweł Wlazło",

@@ -13,7 +13,7 @@ Bootstraps a new project end-to-end in a single approval:
 3. Scaffolds `README.md` if absent.
 4. Creates a GitHub repo with `gh` (public by default, confirm to flip).
 5. Creates a matching Linear project via the `linear-cli` skill (team picked at runtime).
-6. Lets you pick a spec-creating skill from the currently-available set (e.g. `/grill-me`, `/to-prd`, `/office-hours`).
+6. Lets you pick a spec-creating skill: an always-available **inline grilling** interview run by the agent itself, plus whatever external spec skills are installed (e.g. `/to-prd`, `/office-hours`; wrappers like `/grill-me` are marked manual-only).
 
 Trigger phrases: *"new project workflow"*, *"bootstrap project"*, *"start a new project the nerd4rent way"*, or `/nerd4rent:new-project-workflow`.
 
@@ -25,7 +25,7 @@ Creates a **new** Linear issue for the current repo with goals specified clearly
 2. Adaptively interviews for missing goals — straight to a draft for small clear tasks, a short one-question-at-a-time interview for vague or multi-part work.
 3. Drafts the issue from an adaptive template (full vs minimal) and gates the Linear write on your approval.
 4. Decomposes the work: a checklist in the body by default, or **real Linear sub-issues** (parent + children via `--parent`) when the topic plainly splits into stages — and you can force or decline the split.
-5. Creates the issue **in Backlog** (explicit `-s backlog`), then offers an optional grilling session (`grill-with-docs`, if available in the session) that can sharpen the description or split the topic into sub-issues.
+5. Creates the issue **in Backlog** (explicit `-s backlog`), then offers an optional **inline grilling session** (one question at a time, a recommended answer with each, facts checked by the agent, only decisions asked) that can sharpen the description or split the topic into sub-issues.
 6. Prints the new issue ID/URL and hands off to the status-driven flow: type the issue ID in a new session/message to start planning with `linear-issue-workflow`.
 
 Pairs with the `linear-cli` skill. Trigger: intent to create a new issue/task with no existing ID — *"utwórz/stwórz/dodaj/zgłoś issue"*, *"create issue"*, *"new task"*.
@@ -35,7 +35,7 @@ Pairs with the `linear-cli` skill. Trigger: intent to create a new issue/task wi
 A mandatory **status-driven** workflow for working a Linear issue by ID (e.g. `KAM-145`). The issue's Linear status is the single source of truth — you steer by changing the status, the agent never asks you to "confirm the plan" in chat:
 
 1. Fetches the issue (`linear issue view -j`) at the start of every turn and dispatches on status — also when a bare issue ID is typed into a fresh session.
-2. **Backlog/Todo** → drafts an implementation plan, posts it as a `## Implementation plan` comment, sets the status to Todo, and ends the turn with no instructions.
+2. **Backlog/Todo** → drafts an implementation plan (for ambiguous requirements, first offers an inline grilling session with an ADR/glossary docs discipline), posts it as a `## Implementation plan` comment, sets the status to Todo, and ends the turn with no instructions.
 3. **In Progress** (set manually by you = plan approved) → starts implementation: branch from the Linear `branchName`, empty commit, push, **draft PR with magic words** (`Fixes TEAM-123`) so the Linear↔GitHub integration closes the issue on merge; then offers an implementation mode (superpowers / Matt Pocock skills / plain agent — whichever is available).
 4. After implementation or on **In Review** → offers a code-review menu (superpowers / Matt Pocock / review it yourself); never offers to merge or close on its own.
 5. Close-out on request: delegates to **`nerd4rent:linear-issue-close`** (below) to merge and finish the issue.

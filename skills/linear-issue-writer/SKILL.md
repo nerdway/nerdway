@@ -6,8 +6,8 @@ description: >-
   the user wants to file/create/open a new issue or task ("utwórz/stwórz/dodaj/zgłoś
   issue/zadanie", "create issue", "new task") and does NOT yet have an issue ID.
   Adaptively interviews for missing goals, drafts the issue, gates the Linear write
-  on approval, creates the issue in Backlog, and offers an optional grilling
-  session (grill-with-docs) that can split the topic into sub-issues. Distinct
+  on approval, creates the issue in Backlog, and offers an optional inline
+  grilling session that can split the topic into sub-issues. Distinct
   from linear-issue-workflow (which plans/implements an EXISTING issue ID).
   Use linear-cli for CLI syntax.
 ---
@@ -37,6 +37,26 @@ commands, reading the repo/entity-page for context, asking clarifying questions,
 drafting the issue text. The same gate applies to sub-issues proposed by a
 grilling session (step 6).
 
+## Grilling protocol (inline)
+
+A grilling session interrogates the topic until shared understanding. Rules:
+
+1. Interrogate every aspect of the topic until shared understanding is reached.
+2. Walk down the decision tree, resolving dependencies between decisions one
+   branch at a time.
+3. Ask **one question at a time** and wait for the answer.
+4. Give a **recommended answer** with every question.
+5. Verify facts yourself in the environment (code, repo, CLI) — ask the user
+   only about **decisions**.
+6. Do not act on the outcome until the user confirms shared understanding.
+
+If `mattpocock-skills:grilling` is available in the session, you may use it for
+question formats — the inline rules above always work without it (same graceful
+degradation as external skill families elsewhere). Never delegate to the
+`grill-me` / `grill-with-docs` wrappers: they carry
+`disable-model-invocation: true` and only the user can run them, manually, as
+slash commands.
+
 ## Workflow
 
 ### 1. Resolve target team & project
@@ -63,10 +83,12 @@ Pick the path the same way every later adaptive choice is made:
 | Single, clear, small task; user already stated the outcome | **Draft straight away**, minimal template (Objective + Acceptance criteria) |
 | Vague, broad, or multi-part; outcome/criteria unclear | **Short interview first**, full template |
 
-In the interview, ask **one question at a time**. Cover only what is missing:
-objective, problem/context, acceptance criteria, scope (in/out), constraints,
-dependencies, open questions. Stop as soon as the goals are unambiguous — do not
-interrogate a task that is already clear.
+Run the interview per the **grilling protocol** above (no docs part at this
+stage): one question at a time, a recommended answer with each, facts verified
+yourself, only decisions asked. Cover only what is missing: objective,
+problem/context, acceptance criteria, scope (in/out), constraints,
+dependencies, open questions. Stop as soon as the goals are unambiguous — do
+not interrogate a task that is already clear.
 
 ### 3. Decide decomposition
 
@@ -119,19 +141,18 @@ them — don't invent metadata. (`linear` CLI supports `--parent`; no need for
 
 ### 6. Grilling session (optional)
 
-Check whether the `grill-with-docs` skill is **available in this session** (it is
-installed via `npx skills` into `~/.agents/skills`, not the Claude plugin
-marketplace — presence varies per machine/session):
+For a complex or still-fuzzy topic, ask the user: *Odpalić sesję grillowania
+dla tego issue?* If yes, run it **inline** per the grilling protocol above
+(no docs part in this skill), taking the created issue's body as the input.
+Handle the outcome:
 
-- **Available** → ask the user: *Odpalić sesję grillowania (`grill-with-docs`)
-  dla tego issue?* If yes, delegate to that skill with the created issue's body
-  as input. Handle the outcome:
-  - sharpened requirements → update the issue description
-    (`linear issue update <ID> --description-file <path>`) after showing the diff;
-  - the topic splits into stages → propose sub-issues (step 3 rules apply) and
-    create them with `--parent <ID> -s backlog` **only after the user approves
-    the drafts** (hard gate above).
-- **Not available** → say so in one sentence and continue. No error, no lecture.
+- sharpened requirements → update the issue description
+  (`linear issue update <ID> --description-file <path>`) after showing the diff;
+- the topic splits into stages → propose sub-issues (step 3 rules apply) and
+  create them with `--parent <ID> -s backlog` **only after the user approves
+  the drafts** (hard gate above).
+
+Skip the offer for a small, clear task — same adaptive threshold as step 2.
 
 ### 7. Output + handoff
 
@@ -150,7 +171,8 @@ deliberate steps.
 - `linear-cli` — CLI reference (always before `linear` commands).
 - `nerd4rent:linear-issue-workflow` — downstream: status-driven planning and
   implementation of an issue ID produced here.
-- `grill-with-docs` (optional, `npx skills` / `~/.agents/skills`) — grilling
-  session after creation; detect per session, degrade gracefully when absent.
+- `mattpocock-skills:grilling` (optional, `npx skills` / `~/.agents/skills`) —
+  question formats for the inline grilling protocol; degrade gracefully when
+  absent.
 - `nerd4rent:new-project-workflow` — bootstraps a whole project; routes to
   spec-creating skills. This skill is the issue-level counterpart.

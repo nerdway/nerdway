@@ -222,18 +222,19 @@ Do **not** hardcode the menu. The set of installed skills varies per user and gr
 
    Exclude: review skills (CEO/eng/design review), execution skills (implement-task, ship), debugging, and skills that operate on existing artifacts only.
 
-3. **Rank and present.** Show **3–9 skills** as a numbered list. Put the most general-purpose ones first (e.g. brainstorming, grilling), domain-specific ones lower. Format:
+3. **Rank and present.** Item 1 is always **inline grilling** — an interview the agent runs itself, no external skill needed: interrogate every aspect until shared understanding; walk the decision tree one branch at a time; one question at a time; a recommended answer with every question; verify facts yourself, ask only about decisions; don't act until shared understanding is confirmed. Below it, show the filtered external skills (**3–9 total**), most general-purpose first, domain-specific lower. Skills whose frontmatter carries `disable-model-invocation: true` (e.g. `/grill-me`, `/grill-with-docs`) may be listed for reference but mark them **(manual — user runs the slash command)**; the agent cannot invoke them. Format:
 
    ```
    Pick a spec skill to drive the next step:
-     1. /grill-me — interview until shared understanding
+     1. inline grilling — agent-led interview until shared understanding
      2. /to-prd — turn current context into a PRD
      3. /office-hours — YC forcing questions + design brainstorm
+     4. /grill-me — interview until shared understanding (manual — user runs the slash command)
      ...
    Pick [1-N] or 'skip':
    ```
 
-4. **Invoke the chosen skill.** When the user picks a number, invoke that skill via the Skill tool. Do not summarize what it will do — just hand off cleanly. If they pick `skip`, exit with the summary from Step 4.7.
+4. **Invoke the chosen skill.** Inline grilling → run the interview yourself per the rules in item 3. An agent-invocable skill → invoke it via the Skill tool; do not summarize what it will do — just hand off cleanly. A manual-only wrapper → tell the user to type the slash command themselves; no handoff via the Skill tool. `skip` → exit with the summary from Step 4.7.
 
 ### Why dynamic discovery
 
@@ -253,7 +254,7 @@ A hardcoded list rots within weeks: skills get renamed, new ones appear, the use
 | Linear project with same name already exists in team | Surface existing URL; do not create duplicate. |
 | Nerdbrain vault not reachable | Silently skip step 4.6. This is normal for users without nerdbrain. |
 | User aborts at approval gate | Print "Cancelled. No changes made." Step 1 is read-only. |
-| No spec-creating skills found in session | Print: "No spec skills detected. Try `/grill-me`, `/to-prd`, or `/office-hours` manually." Exit cleanly. |
+| No external spec-creating skills found in session | The menu still offers **inline grilling** (always available); external wrappers like `/grill-me` can only be run manually by the user. |
 
 ## Examples
 
@@ -271,7 +272,7 @@ Claude: [inspects: empty dir, gh authed, nerdbrain reachable]
         [executes: git init, README "My Side Project", commit, gh, linear, wiki]
         [shows spec skill menu]
         Pick [1-N]: 1
-        [hands off to /grill-me]
+        [runs the inline grilling interview itself]
 ```
 
 **Example 2 — existing repo with README, GitHub repo also already created:**

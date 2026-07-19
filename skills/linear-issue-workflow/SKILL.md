@@ -91,10 +91,43 @@ issue language):
 - **Objective**, **Scope** (in/out), **Technical Approach**,
   **Implementation Steps**, **Acceptance Criteria**, **Risks**, **Dependencies**
 
-For ambiguous requirements, ask the user **before** posting the plan (short QA).
+For ambiguous requirements, offer a **grilling session** before posting the
+plan (see below). A small, clear task gets no grilling — go straight to the
+plan.
 
 If a plan comment already exists, refine it (post a follow-up or update) rather
 than duplicating it.
+
+### 1a. Grilling session (adaptive, before the plan is posted)
+
+Run the session **inline** per this protocol:
+
+1. Interrogate every aspect of the topic until shared understanding is reached.
+2. Walk down the decision tree, resolving dependencies between decisions one
+   branch at a time.
+3. Ask **one question at a time** and wait for the answer.
+4. Give a **recommended answer** with every question.
+5. Verify facts yourself in the environment (code, repo, CLI) — ask the user
+   only about **decisions**.
+6. Do not post the plan until the user confirms shared understanding.
+
+**Docs discipline** — apply to what the session produces:
+
+- A decision that is **hard to reverse** AND **surprising without context**
+  AND carries a **real trade-off** (all three) → record an ADR in the repo's
+  `docs/adr/` (follow the repo's existing ADR pattern if one exists).
+- Terms sharpened during the session → glossary entries in the repo's
+  `CONTEXT.md`.
+- Project-level decisions → the existing `## Decisions` write-trigger on the
+  nerdbrain entity page (see the integration section below) — do not duplicate
+  the `nerdbrain-wiki` procedure here.
+
+If `mattpocock-skills:grilling` / `domain-modeling` are available in the
+session, you may use them for question and CONTEXT/ADR formats — the inline
+rules above always work without them (same graceful degradation as the
+implementation modes). Never delegate to the `grill-me` / `grill-with-docs`
+wrappers: they carry `disable-model-invocation: true` and only the user can
+run them, manually, as slash commands.
 
 ### 2. Post plan to Linear and set Todo
 

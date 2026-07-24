@@ -4,7 +4,7 @@ description: >-
   HOW to create or update a nerdbrain second-brain entity page at
   5-wiki/entities/projects/<slug>.md in the user's Obsidian vault. Invoke when
   about to write such a wiki page — a write trigger fired, you need section
-  update modes (Edit/Append), the filesystem+git write pattern, the frontmatter
+  update modes (Edit/Append), the filesystem write pattern, the frontmatter
   `updated:` bump, the entity-page template for a new page, or steps to append to
   the wiki index.md / log.md. Also covers advisory boundary cases. The WHEN-to-write
   triggers and hard safety rules live in the global ~/.claude/CLAUDE.md.
@@ -13,9 +13,9 @@ description: >-
 # nerdbrain-wiki: writing entity pages
 
 This skill is the **HOW**. The global `~/.claude/CLAUDE.md` decides **WHEN** to
-write and holds the hard safety rules (no MCP, vault root, sync-conflict checks).
-Use the `obsidian-cli` skill for the broader CLI surface and `obsidian-markdown`
-for note syntax.
+write and holds the hard safety rules (no MCP, vault root). Use the
+`obsidian-cli` skill for the broader CLI surface and `obsidian-markdown` for
+note syntax.
 
 Entity pages live at `5-wiki/entities/projects/<slug>.md` and are **English-only**
 (tokenization efficiency). Index and log entries follow the vault language
@@ -100,8 +100,8 @@ skill doesn't modify third-party skills to wire that in automatically.
 
 The patterns below are the canonical shape for wiki entity-page writes: plain
 filesystem (`Read`/`Edit`/`Write`) on the absolute vault path, identically on
-desktop and headless server (ADR-0001). Every write closes out with the Git
-protocol below.
+desktop and headless server (ADR-0001). The filesystem write is the whole
+recipe — propagation is Obsidian Sync, not this skill's concern.
 
 ```
 PAGE=~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md
@@ -124,30 +124,6 @@ Write $PAGE  # content = filled entity-page-template.md
 unreachable this session. Do not attempt writes. Mention briefly if the
 user asks something the wiki would have answered.
 
-## Git protocol (every wiki write)
-
-Per ADR-0002, wrap every logical wiki write (page + index/log together) in
-git, identically on every tier:
-
-1. **Before the first wiki edit of the session:** `git -C
-   ~/obsidian/nerdbrain pull --rebase`. Run this before touching any file —
-   on a clean tree — not right before the commit; `git pull --rebase`
-   refuses when the tree is dirty. If it fails, either from a dirty tree
-   (unrelated uncommitted changes) or a real rebase conflict: STOP, do not
-   write, and report to the user — alongside the existing syncthing
-   sync-conflict guard.
-2. **After the edit** (page + index/log as one logical write):
-   ```
-   git -C ~/obsidian/nerdbrain commit -m "<message per vault convention>"
-   git -C ~/obsidian/nerdbrain pull --rebase
-   git -C ~/obsidian/nerdbrain push
-   ```
-   The second `pull --rebase` catches anything pushed remotely between step 1
-   and now. Same STOP-and-report rule if it conflicts.
-
-There is exactly one write recipe now — no CLI-preferred/filesystem-fallback
-split.
-
 ## Index and log maintenance
 
 **New entity page created:**
@@ -156,13 +132,13 @@ split.
 2. Append to `~/obsidian/nerdbrain/5-wiki/log.md`:
    `## [YYYY-MM-DD] entity | <slug> (new project page)`
 
-Commit page + index + log together as one logical write (Git protocol above).
+Write page + index + log together as one logical filesystem write.
 
 **Entity page updated:**
 Append to log only:
 `## [YYYY-MM-DD] entity | <slug> (<short note>)`
 
-Commit page + log together as one logical write (Git protocol above).
+Write page + log together as one logical filesystem write.
 
 ## Creating a new page
 
@@ -179,12 +155,9 @@ writing the page — never save a page with empty or placeholder values:
 - If the project has no Linear counterpart, set the scalar `linear: none`
   (explicit "checked, none exists" — not an omission).
 
-Then run the index + log maintenance steps above, closing out with the Git
-protocol.
+Then run the index + log maintenance steps above.
 
 ## Advisory boundary cases
 - Two repos map to the same slug → use `.nerdbrain-slug` in one to differentiate.
 - Active context > 14 days old → treat as possibly stale; verify with the user
   before relying on it, and re-flag staleness on edit.
-- Hook flagged sync conflicts → do NOT write to the affected page; tell the user
-  (enforced in CLAUDE.md; repeated here as a write-time reminder).

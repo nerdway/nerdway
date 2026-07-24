@@ -60,7 +60,7 @@ On any error (e.g. merge conflict, missing `gh`/`glab`) it stops and reports rat
 The HOW for maintaining a personal Obsidian "second brain" — one entity page per project at `5-wiki/entities/projects/<slug>.md`. It carries:
 
 - Section update modes (Edit/rewrite vs Append/chronological vs flag-staleness).
-- The filesystem+git write pattern (`Read`/`Edit`/`Write` on the vault path, closed out by pull-rebase/commit/push per ADR-0002).
+- The filesystem write pattern (`Read`/`Edit`/`Write` on the vault path; propagation is Obsidian Sync, not this skill's concern).
 - Graph recall on-demand: following `related:`/`[[links]]` (direct `Read`) and vault search via `nerd4rent:nerdbrain-search`, with hard context limits — no speculative reading of the graph.
 - Index (`index.md`) and log (`log.md`) maintenance steps.
 - A bundled `entity-page-template.md` to scaffold a brand-new page.

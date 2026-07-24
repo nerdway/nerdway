@@ -70,40 +70,27 @@ Do not read related pages or run vault searches outside these two triggers.
 **`related:`/`[[link]]` follow:** an entity page's `related:` frontmatter
 holds `"[[slug]]"` entries; `slug` → path
 `5-wiki/entities/projects/<slug>.md` (same convention as the rest of this
-skill).
+skill). The path is already known, so just `Read` it directly:
 
 ```
-obsidian read vault=nerdbrain path=5-wiki/entities/projects/<slug>.md
+Read ~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md
 ```
 
 Read only the section(s) relevant to the task — same always/lazy contract as
 the current page, not the whole file.
 
-**Vault search:** two-step — a cheap, capped search first, then read only
-what looks relevant.
-
-```
-# 1. Cast a narrow net — small limit, scan snippets before opening anything
-obsidian search:context query="<specific keywords>" limit=5
-
-# 2. Only then, read the specific file(s) that looked relevant
-obsidian read vault=nerdbrain path=<hit-path>
-```
-
-`obsidian search` (without `:context`) returns bare filenames if you don't
-need surrounding lines.
+**Vault search:** when you don't yet know which file(s) you need, use the
+`nerdbrain-search` skill's recipes — phrase search, outgoing `[[links]]`,
+backlinks, or 1-hop graph — cast a narrow net first, review filenames/snippets,
+then `Read` only what looked relevant.
 
 **Hard limits (textual, not code-enforced — treat as a hard gate, not a
 suggestion):**
 - Max **3** related pages read in full per session (the page already
   injected by SessionStart doesn't count against this).
 - From each related page, take only the sections relevant to the task.
-- `search`/`search:context` always with `limit=5` unless the user asks for
-  more — review the list/snippets before any `obsidian read`.
-
-**Fallback without the `obsidian` CLI** (`tier=none` or CLI unavailable):
-`Grep`/`Read` over `~/obsidian/nerdbrain/5-wiki/` directly, same limits (3
-pages read in full, 5 grep hits reviewed before opening any file).
+- Cap search results at **5** and review the list/snippets before reading
+  any file in full.
 
 **Debugging flows:** a debugging session (e.g. `superpowers:systematic-debugging`)
 should consult this same pattern before reaching for a vault search — this

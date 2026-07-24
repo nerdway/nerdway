@@ -258,6 +258,8 @@ The summary must be enough to resume from Linear alone.
 - `linear-cli` — CLI reference (always before `linear` commands).
 - `nerd4rent:linear-issue-writer` — upstream: creates the issue (in Backlog)
   that this skill plans and implements.
+- `nerd4rent:nerdbrain-search` — rg recipes underlying `nerdbrain-wiki`'s
+  Graph recall step (used by 0b above).
 - Superpowers / Matt Pocock skills — optional implementation and review modes;
   detect availability per session, degrade gracefully when absent.
 - `gitlab-to-linear` / `simgit` — GitLab → Linear import (separate flow).

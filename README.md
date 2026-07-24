@@ -61,11 +61,22 @@ The HOW for maintaining a personal Obsidian "second brain" — one entity page p
 
 - Section update modes (Edit/rewrite vs Append/chronological vs flag-staleness).
 - The filesystem+git write pattern (`Read`/`Edit`/`Write` on the vault path, closed out by pull-rebase/commit/push per ADR-0002).
-- Graph recall on-demand: following `related:`/`[[links]]` and `obsidian search`, with hard context limits — no speculative reading of the graph.
+- Graph recall on-demand: following `related:`/`[[links]]` (direct `Read`) and vault search via `nerd4rent:nerdbrain-search`, with hard context limits — no speculative reading of the graph.
 - Index (`index.md`) and log (`log.md`) maintenance steps.
 - A bundled `entity-page-template.md` to scaffold a brand-new page.
 
 The *when to write* triggers and hard safety rules stay in the user's global `~/.claude/CLAUDE.md`; this skill is invoked once a write is warranted. Trigger: about to create or update a nerdbrain wiki entity page.
+
+### `nerd4rent:nerdbrain-search`
+
+`rg`-based recipes for searching the nerdbrain vault (`~/obsidian/nerdbrain/5-wiki/`) — the read path behind `nerdbrain-wiki`'s Graph recall step (ADR-0001: filesystem+`rg`, no CLI abstraction):
+
+1. **Phrase in vault** — `rg -il` for filenames, `rg -i -n -C2` for context snippets.
+2. **Outgoing `[[links]]`** — extract link/embed targets from a page.
+3. **Backlinks** — find every page linking to a given slug (handles `[[slug|alias]]` and `![[slug]]`).
+4. **1-hop graph** — outgoing links plus backlinks for an entity page, composed from recipes 2 and 3.
+
+Limits on how much to read (max related pages, snippet caps) stay with the calling skill. Trigger: another skill's recall step needs to search the vault or follow links.
 
 ### Agent-skills manifest management
 

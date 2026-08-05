@@ -90,20 +90,26 @@ Without it the compile fails with 74 `TS7006` errors.
 
 ### Install strategies are data, not shell strings
 
-An `install` entry is one of three shapes. Where a command appears it is an
-`argv` array, never a shell string: `curl … | sh` cannot run on `cmd.exe`,
-which is the shell Node uses on Windows when `shell: true`, and depending on
-Git Bash being present would be an unstated dependency.
+An `install` entry declares a `download`: an archive URL plus the binary path
+inside it. The script fetches, verifies, extracts and places the binary.
 
-- `run` — an argv command (package manager one-liner)
-- `download` — archive URL plus the binary path inside it; the script fetches,
-  extracts and places the binary
-- `build` — source repo, ref, and an argv build command
+It verifies the archive against the entry's `checksums` URL before extracting,
+matching by filename. When `checksums` is absent the download proceeds and the
+report states that it was unverified — silence would misrepresent an unverified
+binary as a checked one.
 
-A `download` entry verifies the archive against the entry's `checksums` URL
-before extracting, matching by filename. When `checksums` is absent the
-download proceeds and the report states that it was unverified — silence would
-misrepresent an unverified binary as a checked one.
+An earlier draft of this design also defined `run` (an argv package-manager
+command) and `build` (source repo, ref, argv build command). Both were dropped
+before implementation: the initial contract uses neither, and `build` existed
+only to compile Deno for Windows ARM64 — the path abandoned when the `linear`
+CLI changed to joa23. Shipping two unused strategies to keep the format
+"complete" is speculative surface; re-adding one when an entry needs it is a
+small change.
+
+Where a command does appear — the `tar` invocation — it is an `argv` array,
+never a shell string. `curl … | sh` cannot run on `cmd.exe`, which is the shell
+Node uses on Windows when `shell: true`, and depending on Git Bash being
+present would be an unstated dependency.
 
 ### The script never crosses the human boundary
 
@@ -215,10 +221,14 @@ Derived by searching `skills/` for actual command invocations, not from memory:
 | `gh` | yes | linear-issue-workflow, linear-issue-close, new-project-workflow |
 | `rg` | yes | nerdbrain-search, linear-issue-workflow |
 | `git` | verify-only | linear-issue-workflow, linear-issue-close, new-project-workflow |
-| `node` | verify-only | (runs this script; `agent-skills-sync` uses `npx`) |
 
-Five entries. Anything proposed later must name a skill under `skills/` or the
+Four entries. Anything proposed later must name a skill under `skills/` or the
 validator rejects it.
+
+`node` is deliberately absent. It cannot be missing at the moment the report is
+produced — the script runs on it — and the Node 24 floor enforces itself, since
+an older Node cannot parse the `.ts` files at all. An entry whose `requiredBy`
+had to be invented to pass validation would be data bent to fit the schema.
 
 ## Behaviour
 

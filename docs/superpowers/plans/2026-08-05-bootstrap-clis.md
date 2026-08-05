@@ -88,7 +88,7 @@ test("rejects a minVersion that is not three numeric segments", () => {
 });
 
 test("rejects an unknown platform key", () => {
-  const install = { "win32-riscv": { run: ["true"] } };
+  const install = { "win32-riscv": { download: "https://example.test/a.tar.gz", binary: "a" } };
   const errors = validateContract({ clis: [entry({ install })] }, skillDirs);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /win32-riscv/);
@@ -138,10 +138,11 @@ export const PLATFORM_KEYS = [
 
 export type PlatformKey = (typeof PLATFORM_KEYS)[number];
 
-export type InstallStrategy =
-  | { download: string; binary: string; _comment?: string }
-  | { run: string[]; _comment?: string }
-  | { build: { repo: string; ref: string; run: string[] }; requires?: string[]; _comment?: string };
+export interface InstallStrategy {
+  download: string;
+  binary: string;
+  _comment?: string;
+}
 
 export interface CliEntry {
   id: string;
@@ -172,27 +173,11 @@ function validateStrategy(id: string, key: string, strategy: unknown, errors: st
     return;
   }
   const s = strategy as Record<string, unknown>;
-  if ("download" in s) {
-    if (typeof s.download !== "string") errors.push(`${id}: install.${key}.download must be a string`);
-    if (typeof s.binary !== "string") errors.push(`${id}: install.${key} needs a binary path inside the archive`);
+  if (typeof s.download !== "string") {
+    errors.push(`${id}: install.${key} must declare a download url`);
     return;
   }
-  if ("run" in s) {
-    if (!isStringArray(s.run)) errors.push(`${id}: install.${key}.run must be an argv array`);
-    return;
-  }
-  if ("build" in s) {
-    const build = s.build as Record<string, unknown> | null;
-    if (typeof build !== "object" || build === null) {
-      errors.push(`${id}: install.${key}.build must be an object`);
-      return;
-    }
-    if (typeof build.repo !== "string") errors.push(`${id}: install.${key}.build.repo must be a string`);
-    if (typeof build.ref !== "string") errors.push(`${id}: install.${key}.build.ref must be a string`);
-    if (!isStringArray(build.run)) errors.push(`${id}: install.${key}.build.run must be an argv array`);
-    return;
-  }
-  errors.push(`${id}: install.${key} must declare download, run, or build`);
+  if (typeof s.binary !== "string") errors.push(`${id}: install.${key} needs a binary path inside the archive`);
 }
 
 function validateEntry(raw: unknown, skillDirs: string[], seen: Set<string>, errors: string[]): void {
@@ -324,14 +309,6 @@ Create `cli-dependencies.json` at the repo root. Versions and asset names are ta
       "versionRegex": "git version (\\d+\\.\\d+\\.\\d+)",
       "requiredBy": ["linear-issue-workflow", "linear-issue-close", "new-project-workflow"],
       "manualInstall": "Install git before running this script; it is a prerequisite, not a target."
-    },
-    {
-      "id": "node",
-      "minVersion": "24.0.0",
-      "versionCommand": ["node", "--version"],
-      "versionRegex": "v(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["linear-issue-workflow"],
-      "manualInstall": "This script runs on Node; if you are reading this, it is already installed. Node 24+ is required for native TypeScript execution."
     }
   ]
 }
@@ -370,7 +347,7 @@ console.log(`OK: ${(raw as { clis: unknown[] }).clis.length} CLI entries validat
 - [ ] **Step 8: Run the validator against the real contract**
 
 Run: `node scripts/validate-cli-dependencies.ts`
-Expected: `OK: 5 CLI entries validated`
+Expected: `OK: 4 CLI entries validated`
 
 - [ ] **Step 9: Commit**
 
@@ -537,7 +514,7 @@ git commit -m "Dodanie porownywania wersji i rozpoznawania platformy"
 
 **Interfaces:**
 - Consumes: `CliEntry` from `scripts/types/cli-dependencies.ts`; `extractVersion`, `satisfiesMinimum` from `scripts/lib/version.ts`
-- Produces: `type ProbeResult = { status: "ok" | "outdated"; version: string } | { status: "missing" } | { status: "unknown"; output: string }`, `runCommand(argv: string[], cwd?: string): Promise<{ code: number | null; stdout: string; stderr: string }>` (Task 4 passes `cwd` when building from a clone), `probe(entry: CliEntry): Promise<ProbeResult>`
+- Produces: `type ProbeResult = { status: "ok" | "outdated"; version: string } | { status: "missing" } | { status: "unknown"; output: string }`, `runCommand(argv: string[]): Promise<{ code: number | null; stdout: string; stderr: string }>`, `probe(entry: CliEntry): Promise<ProbeResult>`
 
 - [ ] **Step 1: Write the failing probe tests**
 
@@ -621,9 +598,9 @@ export type ProbeResult =
   | { status: "missing" }
   | { status: "unknown"; output: string };
 
-export function runCommand(argv: string[], cwd?: string): Promise<CommandResult> {
+export function runCommand(argv: string[]): Promise<CommandResult> {
   return new Promise((resolve) => {
-    const child = spawn(argv[0], argv.slice(1), { cwd, shell: false, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(argv[0], argv.slice(1), { shell: false, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk) => { stdout += String(chunk); });
@@ -775,7 +752,7 @@ async function verifyChecksum(entry: CliEntry, vars: Record<string, string>, arc
   return "checksum verified";
 }
 
-async function installDownload(entry: CliEntry, strategy: Extract<InstallStrategy, { download: string }>): Promise<InstallOutcome> {
+async function installDownload(entry: CliEntry, strategy: InstallStrategy): Promise<InstallOutcome> {
   const vars = templateVars(entry);
   const url = interpolate(strategy.download, vars);
   const name = basename(new URL(url).pathname);
@@ -808,36 +785,9 @@ async function installDownload(entry: CliEntry, strategy: Extract<InstallStrateg
   }
 }
 
-async function installRun(strategy: Extract<InstallStrategy, { run: string[] }>): Promise<InstallOutcome> {
-  const result = await runCommand(strategy.run);
-  return result.code === 0
-    ? { ok: true, detail: `ran ${strategy.run.join(" ")}` }
-    : { ok: false, detail: `${strategy.run.join(" ")} exited ${result.code}: ${result.stderr.trim()}` };
-}
-
-async function installBuild(entry: CliEntry, strategy: Extract<InstallStrategy, { build: unknown }>): Promise<InstallOutcome> {
-  const vars = templateVars(entry);
-  const build = strategy.build as { repo: string; ref: string; run: string[] };
-  const ref = interpolate(build.ref, vars);
-  const work = mkdtempSync(join(tmpdir(), "bootstrap-clis-build-"));
-  try {
-    const clone = await runCommand(["git", "clone", "--depth", "1", "--branch", ref, build.repo, work]);
-    if (clone.code !== 0) return { ok: false, detail: `clone of ${build.repo}@${ref} failed: ${clone.stderr.trim()}` };
-
-    const built = await runCommand(build.run, work);
-    if (built.code !== 0) return { ok: false, detail: `build failed: ${built.stderr.trim()}` };
-
-    return { ok: true, detail: `built ${build.repo}@${ref}` };
-  } finally {
-    rmSync(work, { recursive: true, force: true });
-  }
-}
-
 export async function applyInstall(entry: CliEntry, strategy: InstallStrategy): Promise<InstallOutcome> {
   try {
-    if ("download" in strategy) return await installDownload(entry, strategy);
-    if ("run" in strategy) return await installRun(strategy);
-    return await installBuild(entry, strategy);
+    return await installDownload(entry, strategy);
   } catch (error) {
     return { ok: false, detail: error instanceof Error ? error.message : String(error) };
   }
@@ -1139,7 +1089,7 @@ after editing the contract.
 - [ ] **Step 2: Verify the skill file is well-formed**
 
 Run: `node scripts/validate-cli-dependencies.ts`
-Expected: `OK: 5 CLI entries validated` — confirming `bootstrap-clis` did not break the contract's `requiredBy` checks.
+Expected: `OK: 4 CLI entries validated` — confirming `bootstrap-clis` did not break the contract's `requiredBy` checks.
 
 - [ ] **Step 3: Run the real acceptance test**
 

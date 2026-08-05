@@ -22,6 +22,7 @@ export const SATISFIED: readonly Status[] = ["OK", "INSTALLED", "UPDATED"];
 
 export function decideAfterInstall(before: "missing" | "outdated", after: ProbeResult, placed: boolean): Status {
   if (after.status === "ok") return before === "missing" ? "INSTALLED" : "UPDATED";
+  if (after.status === "unknown") return "UNKNOWN";
   if (placed) return after.status === "missing" ? "NEEDS_PATH" : "FAILED";
   return "FAILED";
 }

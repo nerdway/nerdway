@@ -275,6 +275,12 @@ checking required fields, platform keys against a known set, semver-shaped
 `minVersion`, and that every `requiredBy` names a real directory under
 `skills/`.
 
+The validator also compiles every `versionRegex`, and the orchestrator runs it
+before probing anything. A malformed pattern is a contract defect: caught at
+validation it names the broken entry, while an unvalidated one throws out of
+`new RegExp` inside the probe and would otherwise surface as `UNKNOWN` for a CLI
+that is installed and working.
+
 The acceptance test is `--check` on this machine, followed by a second run
 proving idempotence.
 

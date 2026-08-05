@@ -936,11 +936,11 @@ Expected: PASS, 7 tests
 Create `scripts/bootstrap-clis.ts`:
 
 ```typescript
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { CliContract, CliEntry } from "./types/cli-dependencies.ts";
+import { validateContract, type CliContract, type CliEntry } from "./types/cli-dependencies.ts";
 import { applyInstall, installDir } from "./lib/install.ts";
 import { platformKey } from "./lib/platform.ts";
 import { probe, runCommand } from "./lib/probe.ts";
@@ -948,7 +948,21 @@ import { SATISFIED, decideAfterInstall, formatReport, type Outcome, type Status 
 
 const checkOnly = process.argv.includes("--check");
 const here = dirname(fileURLToPath(import.meta.url));
-const contract = JSON.parse(readFileSync(join(here, "..", "cli-dependencies.json"), "utf8")) as CliContract;
+const repoRoot = join(here, "..");
+
+const raw: unknown = JSON.parse(readFileSync(join(repoRoot, "cli-dependencies.json"), "utf8"));
+const skillDirs = readdirSync(join(repoRoot, "skills"), { withFileTypes: true })
+  .filter((item) => item.isDirectory())
+  .map((item) => item.name);
+
+const contractErrors = validateContract(raw, skillDirs);
+if (contractErrors.length > 0) {
+  console.error("cli-dependencies.json is invalid:");
+  for (const error of contractErrors) console.error(`  - ${error}`);
+  process.exit(1);
+}
+
+const contract = raw as CliContract;
 const key = platformKey(process.platform, process.arch);
 
 async function withAuth(entry: CliEntry, status: Status, detail: string): Promise<Outcome> {
@@ -998,6 +1012,8 @@ process.exit(outcomes.every((outcome) => SATISFIED.includes(outcome.status)) ? 0
 ```
 
 Entries are processed sequentially so the report reads top to bottom in contract order and two installers never write to `~/.local/bin` at once.
+
+The orchestrator validates the contract before touching anything. Without it, a hand-edited `cli-dependencies.json` reaches `probe()` unchecked, and a malformed `versionRegex` throws out of `new RegExp` rather than producing a status. Failing at the contract names the actual problem; failing at the probe would report `UNKNOWN` for a CLI that is installed and fine.
 
 - [ ] **Step 6: Run the full test suite**
 

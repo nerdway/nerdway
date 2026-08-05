@@ -31,6 +31,8 @@ require. `scripts/bootstrap-clis.ts` reconciles this machine against it.
    | `OK` / `INSTALLED` / `UPDATED` | Satisfied | Nothing |
    | `NEEDS_AUTH` | Installed, not authenticated | Give the user the printed command; do not run it for them |
    | `NEEDS_PATH` | Binary placed, not resolvable | Tell the user to add `~/.local/bin` to PATH, then re-run |
+   | `MISSING` | Absent, no install ran (no `install` strategy for this entry, or the run was `--check`) | If the detail says the install was skipped for `--check`, re-run without `--check`; otherwise give the user the `manualInstall` hint |
+   | `OUTDATED` | Present but below `minVersion`, no install ran (same two causes as `MISSING`) | Same as `MISSING` |
    | `UNSUPPORTED` | No install path for this platform | Give the `manualInstall` hint |
    | `FAILED` | Install ran and did not work | Report the detail verbatim; do not substitute another architecture |
    | `UNKNOWN` | Version output did not match the pattern | The contract's `versionRegex` is wrong; fix the contract |

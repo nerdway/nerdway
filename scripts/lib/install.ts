@@ -20,7 +20,7 @@ export function parseChecksums(text: string): Map<string, string> {
   const sums = new Map<string, string>();
   for (const line of text.split("\n")) {
     const match = /^(\S+)\s+\*?(\S+)$/.exec(line.trim());
-    if (match) sums.set(match[2], match[1]);
+    if (match) sums.set(match[2], match[1].toLowerCase());
   }
   return sums;
 }

@@ -32,3 +32,8 @@ test("tolerates the binary marker prefix on filenames", () => {
   const sums = parseChecksums("abc123 *linear-cli_Windows_x86_64.tar.gz");
   assert.equal(sums.get("linear-cli_Windows_x86_64.tar.gz"), "abc123");
 });
+
+test("normalizes uppercase hex hashes to lowercase", () => {
+  const sums = parseChecksums("ABC123DEF456  linear-cli_Windows_x86_64.tar.gz");
+  assert.equal(sums.get("linear-cli_Windows_x86_64.tar.gz"), "abc123def456");
+});

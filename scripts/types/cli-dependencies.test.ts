@@ -66,3 +66,9 @@ test("reports every problem rather than stopping at the first", () => {
 test("rejects a non-object payload", () => {
   assert.equal(validateContract(null, skillDirs).length, 1);
 });
+
+test("rejects a malformed versionRegex", () => {
+  const errors = validateContract({ clis: [entry({ versionRegex: "linear version (" })] }, skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /versionRegex/);
+});

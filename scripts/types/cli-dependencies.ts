@@ -71,6 +71,12 @@ function validateEntry(raw: unknown, skillDirs: string[], seen: Set<string>, err
   }
   if (typeof e.versionRegex !== "string") {
     errors.push(`${id}: versionRegex must be a string`);
+  } else {
+    try {
+      new RegExp(e.versionRegex);
+    } catch {
+      errors.push(`${id}: versionRegex is not a valid regular expression`);
+    }
   }
   if (!isStringArray(e.requiredBy) || e.requiredBy.length === 0) {
     errors.push(`${id}: requiredBy must name at least one skill`);

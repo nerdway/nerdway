@@ -207,8 +207,8 @@ hand everywhere" are different facts.
 
 An entry may omit `install`. It is then verify-only: the script reports whether
 it is present and at what version, and prints `manualInstall` guidance if not.
-This covers prerequisites the script cannot install because it depends on them
-(`node`, `git`) without introducing a second concept.
+This covers everything the script does not install itself — `gh`, `rg`, and
+`git` today — without introducing a second concept.
 
 `{version}` interpolates `minVersion`, so a `build` strategy compiles the
 matching tag rather than `main`. A build from `HEAD` is not reproducible and

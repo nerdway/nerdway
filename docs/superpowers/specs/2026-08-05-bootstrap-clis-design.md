@@ -1,6 +1,6 @@
 # Bootstrap CLIs — design
 
-Status: draft — pending user review
+Status: implemented
 Date: 2026-08-05
 
 ## Problem
@@ -177,13 +177,18 @@ lockfile, `node_modules`, and a CI question.
         }
       },
       "auth": {
-        "check": ["linear", "auth", "status"],
+        "check": ["linear", "whoami"],
         "instructions": "Run `linear auth login` and paste a Linear API key from Settings -> API."
       }
     }
   ]
 }
 ```
+
+`auth.check` is `["linear", "whoami"]`, not `["linear", "auth", "status"]` as an
+earlier draft had it: `auth status` was found to exit 0 even when logged out,
+so its exit code cannot signal failure and it is the wrong command to use as
+a gate.
 
 Four properties of this shape are load-bearing:
 
@@ -218,9 +223,9 @@ Derived by searching `skills/` for actual command invocations, not from memory:
 | id | Installable | `requiredBy` |
 |---|---|---|
 | `linear` | yes | linear-issue-workflow, linear-issue-writer, linear-issue-close, new-project-workflow |
-| `gh` | yes | linear-issue-workflow, linear-issue-close, new-project-workflow |
-| `rg` | yes | nerdbrain-search, linear-issue-workflow |
-| `git` | verify-only | linear-issue-workflow, linear-issue-close, new-project-workflow |
+| `gh` | verify-only (`manualInstall`) | linear-issue-workflow, linear-issue-close, new-project-workflow |
+| `rg` | verify-only (`manualInstall`) | nerdbrain-search, linear-issue-workflow |
+| `git` | verify-only (`manualInstall`) | linear-issue-workflow, linear-issue-close, new-project-workflow |
 
 Four entries. Anything proposed later must name a skill under `skills/` or the
 validator rejects it.
@@ -284,8 +289,15 @@ that is installed and working.
 The acceptance test is `--check` on this machine, followed by a second run
 proving idempotence.
 
-There is no test framework here and none is proposed for roughly 200 lines of
-script. The validator and `--check` are the verification.
+Unit tests were added after all, using Node's built-in `node:test` runner:
+one file per pure module (`version`, `platform`, `probe`, `install`,
+`status`, plus the contract validator itself), 39 tests in total. The
+no-npm constraint made this cheap rather than a reason to skip it — `node
+--test` needs no dependency, so TDD cost nothing against it. Tests cover the
+pure decision functions (version comparison, platform key resolution,
+checksum parsing, status transitions); the parts that need a live network or
+filesystem (`applyInstall`'s download path) stay covered by the validator and
+`--check` against this machine, not by unit tests.
 
 ## Consequences and follow-up work
 
@@ -321,5 +333,6 @@ requires Claude Code, this plugin, and git already present. The order is:
 git + node + claude  ->  agent-skills-sync  ->  /bootstrap-clis
 ```
 
-`node` and `git` appear in the contract as verify-only entries so that
-`--check` reports them, but the script cannot install what it runs on.
+`git` appears in the contract as a verify-only entry so that `--check`
+reports it. `node` does not appear at all — see "Initial entries" above —
+but the script cannot install what it runs on either way.

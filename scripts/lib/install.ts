@@ -39,10 +39,10 @@ async function verifyChecksum(entry: CliEntry, vars: Record<string, string>, arc
   if (!entry.checksums) return "checksum not declared, archive unverified";
 
   const response = await fetch(interpolate(entry.checksums, vars));
-  if (!response.ok) return `checksums unreachable (HTTP ${response.status}), archive unverified`;
+  if (!response.ok) throw new Error(`checksums URL unreachable (HTTP ${response.status})`);
 
   const expected = parseChecksums(await response.text()).get(name);
-  if (!expected) return `no checksum listed for ${name}, archive unverified`;
+  if (!expected) throw new Error(`no checksum listed for ${name} in checksums file`);
 
   const actual = createHash("sha256").update(archive).digest("hex");
   if (actual !== expected) throw new Error(`checksum mismatch for ${name}: expected ${expected}, got ${actual}`);

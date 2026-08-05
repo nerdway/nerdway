@@ -28,6 +28,11 @@ test("reports failed when the reinstall still does not satisfy the minimum", () 
   assert.equal(status, "FAILED");
 });
 
+test("reports unknown when the post-install probe does not match versionRegex", () => {
+  const status = decideAfterInstall("missing", { status: "unknown", output: "garbled" }, true);
+  assert.equal(status, "UNKNOWN");
+});
+
 test("formatReport lists one line per entry and flags the not-ok ones", () => {
   const outcomes: Outcome[] = [
     { id: "linear", status: "INSTALLED", detail: "checksum verified" },

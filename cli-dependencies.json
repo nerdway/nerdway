@@ -1,0 +1,58 @@
+{
+  "_comment": "CLIs required by skills in this repo. Every entry must name a skill under skills/ in requiredBy; scripts/validate-cli-dependencies.ts enforces it.",
+  "clis": [
+    {
+      "id": "linear",
+      "minVersion": "1.10.0",
+      "versionCommand": ["linear", "--version"],
+      "versionRegex": "linear version (\\d+\\.\\d+\\.\\d+)",
+      "requiredBy": ["linear-issue-workflow", "linear-issue-writer", "linear-issue-close", "new-project-workflow"],
+      "releaseBase": "https://github.com/joa23/linear-cli/releases/download/v{version}",
+      "checksums": "{releaseBase}/checksums.txt",
+      "install": {
+        "darwin-arm64": { "download": "{releaseBase}/linear-cli_Darwin_arm64.tar.gz", "binary": "linear" },
+        "darwin-x64": { "download": "{releaseBase}/linear-cli_Darwin_x86_64.tar.gz", "binary": "linear" },
+        "linux-arm64": { "download": "{releaseBase}/linear-cli_Linux_arm64.tar.gz", "binary": "linear" },
+        "linux-x64": { "download": "{releaseBase}/linear-cli_Linux_x86_64.tar.gz", "binary": "linear" },
+        "win32-x64": { "download": "{releaseBase}/linear-cli_Windows_x86_64.tar.gz", "binary": "linear.exe" },
+        "win32-arm64": {
+          "_comment": "upstream ships no windows/arm64; the x64 build under emulation costs ~0.14s per call",
+          "download": "{releaseBase}/linear-cli_Windows_x86_64.tar.gz",
+          "binary": "linear.exe"
+        }
+      },
+      "auth": {
+        "check": ["linear", "auth", "status"],
+        "instructions": "Run `linear auth login` and paste an API key from Linear Settings -> API."
+      }
+    },
+    {
+      "id": "gh",
+      "minVersion": "2.97.0",
+      "versionCommand": ["gh", "--version"],
+      "versionRegex": "gh version (\\d+\\.\\d+\\.\\d+)",
+      "requiredBy": ["linear-issue-workflow", "linear-issue-close", "new-project-workflow"],
+      "manualInstall": "winget install GitHub.cli | brew install gh | see https://github.com/cli/cli#installation",
+      "auth": {
+        "check": ["gh", "auth", "status"],
+        "instructions": "Run `gh auth login` and complete the browser flow."
+      }
+    },
+    {
+      "id": "rg",
+      "minVersion": "14.0.0",
+      "versionCommand": ["rg", "--version"],
+      "versionRegex": "ripgrep (\\d+\\.\\d+\\.\\d+)",
+      "requiredBy": ["nerdbrain-search", "linear-issue-workflow"],
+      "manualInstall": "winget install BurntSushi.ripgrep.MSVC | brew install ripgrep | apt install ripgrep"
+    },
+    {
+      "id": "git",
+      "minVersion": "2.40.0",
+      "versionCommand": ["git", "--version"],
+      "versionRegex": "git version (\\d+\\.\\d+\\.\\d+)",
+      "requiredBy": ["linear-issue-workflow", "linear-issue-close", "new-project-workflow"],
+      "manualInstall": "Install git before running this script; it is a prerequisite, not a target."
+    }
+  ]
+}

@@ -10,10 +10,20 @@ require. `scripts/bootstrap-clis.ts` reconciles this machine against it.
 
 ## Steps
 
+This skill is typically invoked from a project that is not this repo, so the
+script cannot be found relative to the current working directory. Instead,
+resolve it relative to this skill's own base directory, which you are told
+when this skill is invoked. This file lives at
+`<skill base directory>/SKILL.md`, i.e. `<plugin root>/skills/bootstrap-clis/`;
+go two directories up from the skill base directory to reach the plugin
+root, then into `scripts/`, to get the absolute path
+`<plugin root>/scripts/bootstrap-clis.ts`. Use that absolute path — not the
+bare relative one — in every command below.
+
 1. Report the current state before changing anything:
 
    ```
-   node scripts/bootstrap-clis.ts --check
+   node <resolved-path-to>/scripts/bootstrap-clis.ts --check
    ```
 
    Exit code 0 means the machine is ready; stop and say so.
@@ -21,7 +31,7 @@ require. `scripts/bootstrap-clis.ts` reconciles this machine against it.
 2. Reconcile:
 
    ```
-   node scripts/bootstrap-clis.ts
+   node <resolved-path-to>/scripts/bootstrap-clis.ts
    ```
 
 3. Read the report and act on each status:
@@ -49,5 +59,6 @@ Never edit `cli-dependencies.json` to make a run pass. A failing entry is a
 finding, not an obstacle.
 
 Adding an entry requires naming a skill under `skills/` in `requiredBy`; the
-validator rejects anything else. Run `node scripts/validate-cli-dependencies.ts`
-after editing the contract.
+validator rejects anything else. Run
+`node <resolved-path-to>/scripts/validate-cli-dependencies.ts` (same
+resolution as above) after editing the contract.

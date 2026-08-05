@@ -292,8 +292,9 @@ Upstream `joa23/linear-cli` builds via goreleaser and ships no `windows/arm64`
 target; adding one is a single line in `.goreleaser.yaml`. A PR would remove
 the emulation dependency for this machine.
 
-`~/.local/bin/linear.exe` currently holds schpet's v2.3.1 binary, installed
-during this investigation. It must be removed when joa23's CLI takes over.
+schpet's v2.3.1 binary was installed to `~/.local/bin/linear.exe` during this
+investigation and has since been removed, so no `linear` is on `PATH`. The
+first `--check` run is therefore expected to report `MISSING` for it.
 
 ## Prerequisites this design cannot cover
 

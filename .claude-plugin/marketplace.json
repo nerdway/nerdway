@@ -6,12 +6,12 @@
   },
   "metadata": {
     "description": "Nerd4Rent open-source Claude Code skills for daily developer workflows.",
-    "version": "0.8.2"
+    "version": "0.9.0"
   },
   "plugins": [
     {
       "name": "nerd4rent",
-      "description": "Daily developer workflow automation — bootstrap new projects with git, GitHub, Linear, and spec-creating skills; write well-specified Linear issues; drive Linear issues through a status-driven plan-implement-review workflow; mechanically close out an issue (commit, push, merge PR/MR on GitHub or GitLab, set Done); and manage a personal agent-skills manifest across Claude Code, Cursor, and other coding agents.",
+      "description": "Daily developer workflow automation — bootstrap new projects with git, GitHub, Linear, and spec-creating skills; write well-specified Linear issues; drive Linear issues through a status-driven plan-implement-review workflow; mechanically close out an issue (commit, push, merge PR/MR on GitHub or GitLab, set Done); bootstrap the CLIs those skills require; and manage a personal agent-skills manifest across Claude Code, Cursor, and other coding agents.",
       "source": "./",
       "strict": false
     }

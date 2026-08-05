@@ -78,6 +78,16 @@ The *when to write* triggers and hard safety rules stay in the user's global `~/
 
 Limits on how much to read (max related pages, snippet caps) stay with the calling skill. Trigger: another skill's recall step needs to search the vault or follow links.
 
+### `nerd4rent:bootstrap-clis`
+
+Brings this machine to the CLI state the skills in this repo require:
+
+1. Probes every entry declared in `cli-dependencies.json` (currently `linear`, `gh`, `rg`, `git`).
+2. Installs or updates whatever is missing or outdated, verifying checksums where applicable.
+3. Hands back the authentication steps only a human can complete — it never runs `auth login` flows itself.
+
+Trigger: `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a skill fails because a command like `linear`, `gh`, or `rg` is missing or too old.
+
 ### Agent-skills manifest management
 
 Four skills for maintaining a personal `~/.config/agent-skills/manifest.json` — the whitelist that `agent-skills-sync.sh`/`.ps1` install across Claude Code, Cursor, and any other detected coding agent. Only `apply-manifest-changes` touches the live system; the other three just edit the JSON and then hand off to it.

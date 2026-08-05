@@ -22,8 +22,8 @@
         }
       },
       "auth": {
-        "check": ["linear", "auth", "status"],
-        "instructions": "Run `linear auth login` and paste an API key from Linear Settings -> API."
+        "check": ["linear", "whoami"],
+        "instructions": "Run `linear auth login`, or set LINEAR_API_KEY, using a key from Linear Settings -> API."
       }
     },
     {

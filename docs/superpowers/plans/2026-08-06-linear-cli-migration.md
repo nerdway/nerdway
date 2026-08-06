@@ -1173,12 +1173,15 @@ echo "piped create invocations: $n / with sentinel: $m"
 Expected: the first command prints nothing, and `n` equals `m` at **4**. The `cat ` in the pattern restricts the count to piped invocations, excluding the prose mention in `issue-template.md:90` that passes no description. Before the fix the repo reported eight offending pipe lines and `4 / 0`. The alternation deliberately requires a space after `issue`/`team`/`project`, so the new plural forms (`linear issues get`, `linear teams list`) do not match.
 
 ```bash
-grep -rn 'linear-cli' skills/
+grep -rn 'linear-cli' skills/ | grep -v 'joa23/linear-cli'
 ```
 
-Expected: no output, exit 1.
+Expected: no output.
 
-Note this second grep is scoped to `skills/` only — `cli-dependencies.json` legitimately contains `linear-cli` inside the `releaseBase` GitHub URL `https://github.com/joa23/linear-cli/releases/download/v{version}`, which must stay.
+Two things this grep must not flag, which is why it is scoped and filtered:
+
+- It is scoped to `skills/` only, because `cli-dependencies.json` legitimately contains `linear-cli` inside the `releaseBase` GitHub URL `https://github.com/joa23/linear-cli/releases/download/v{version}`, which must stay.
+- It filters `joa23/linear-cli`, because each of the three rewritten skills opens its CLI reference with `` `linear` is `joa23/linear-cli` (Go). `` — the very sentence this migration added. Without the filter this gate reports three hits on correct text and blocks the task. What it is actually looking for is a leftover reference to the retired *skill* named `linear-cli`.
 
 - [ ] **Step 2: Re-run the contract validator and the test suite**
 

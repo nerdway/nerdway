@@ -335,10 +335,11 @@ Leave the remaining bullets untouched.
 - [ ] **Step 13: Verify the file is clean**
 
 ```bash
-grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' skills/linear-issue-workflow/SKILL.md
+grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' skills/linear-issue-workflow/SKILL.md \
+  | grep -vE 'joa23/linear-cli|is no `--(body-file|description-file|no-interactive)`'
 ```
 
-Expected: no output, exit 1.
+Expected: no output. The filter is required: the CLI reference you added in step 4 legitimately contains `joa23/linear-cli` and the sentence ``there is no `--body-file` ``, both of which match the raw pattern.
 
 - [ ] **Step 14: Commit**
 

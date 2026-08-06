@@ -1,6 +1,6 @@
 # Migracja skilli na joa23/linear-cli — design
 
-Status: draft
+Status: implemented
 Date: 2026-08-05
 
 ## Problem

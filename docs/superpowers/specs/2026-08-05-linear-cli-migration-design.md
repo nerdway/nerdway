@@ -51,10 +51,10 @@ o starym CLI.
 |---|---|
 | `linear issue view <ID> -j` | `linear issues get <ID> -f minimal -o json` |
 | `linear issue view <ID> -j` (pełny kontekst) | `linear issues export <ID> <folder>` |
-| `linear issue comment add <ID> --body-file f` | `cat f \| linear issues comment <ID>` |
+| `linear issue comment add <ID> --body-file f` | `cat f \| linear issues comment <ID> -b -` |
 | `linear issue update <ID> -s Todo` | `linear issues update <ID> --state Todo` |
-| `linear issue update <ID> --description-file f` | `cat f \| linear issues update <ID>` |
-| `linear issue create -t "T" --description-file f -s backlog --no-interactive` | `cat f \| linear issues create "T" --team K --state Backlog -o json` |
+| `linear issue update <ID> --description-file f` | `cat f \| linear issues update <ID> -d -` |
+| `linear issue create -t "T" --description-file f -s backlog --no-interactive` | `cat f \| linear issues create "T" --team K --state Backlog -o json -d -` |
 | `linear issue query --team K --project P` | `linear issues list --team K --project P --state 'Todo,In Progress,In Review'` |
 | `linear issue id` | brak — parsowanie z nazwy brancha |
 | `linear issue url <ID>` | brak — pole `url` w JSON z `get` / `create -o json` |
@@ -74,8 +74,31 @@ o starym CLI.
 - **Priorytety zmieniły skalę.** Stare `-p 1..4` (1 = urgent). Nowe `-p 0..4`
   **albo** `none|urgent|high|normal|low`. Skille używają nazw — odporne na
   pomyłkę przy zmianie skali.
-- **Treści wieloliniowe idą przez stdin.** `--body-file` i `--description-file`
-  nie istnieją; `comment`, `create` i `update` czytają opis/treść z pipe'a.
+- **Treści wieloliniowe idą przez stdin, ale wymagają jawnego sentinela `-`.**
+  `--body-file` i `--description-file` nie istnieją. `comment`, `create` i
+  `update` czytają treść z pipe'a **tylko** wtedy, gdy wartością flagi jest
+  `-`: `-b -` dla komentarza, `-d -` dla opisu. Samo przekierowanie nie
+  wystarcza.
+
+  To pułapka, bo `--help` samego CLI wprowadza w błąd: linia flagi mówi
+  „(or pipe to stdin)", a przykład przy `issues comment` pokazuje wręcz
+  `cat notes.md | linear issues comment CEN-123` — bez `-`. Zweryfikowane
+  empirycznie na v1.10.0:
+
+  | wywołanie | wynik |
+  |---|---|
+  | `printf x \| linear issues comment <ID>` | `Error: comment body is required` |
+  | `printf x \| linear issues comment <ID> -b -` | treść przyjęta, błąd dopiero na nieistniejącym issue |
+  | `printf x \| linear issues update <ID>` | `Error: no updates specified` |
+  | `printf x \| linear issues update <ID> -d -` | treść przyjęta, błąd dopiero na nieistniejącym issue |
+  | `printf x \| linear issues create "t" --team <bogus> -d -` | treść przyjęta, błąd dopiero na nieistniejącym zespole |
+
+  Przy `update` ma to dodatkowy skutek: `-d -` liczy się jako flaga, więc bez
+  niego komenda odbija się o walidację „no updates specified" i nigdy nie
+  dochodzi do czytania stdin.
+
+  `projects create` przyjmuje `-d "<tekst>"` z wartością dosłowną i tej
+  pułapki nie dotyka.
 - **`--no-interactive` znika.** Nowe CLI nie ma trybu interaktywnego, więc flaga
   jest zbędna, a jej podanie wywoła błąd nieznanej flagi.
 
@@ -209,12 +232,12 @@ sprawdza to, co faktycznie musi działać.
   **CLI reference**;
 - bramka statusu (hard gate 2) → `linear issues get <ID> -f minimal -o json`;
 - „Fetch first" w dyspozycji → `linear issues export` + `Read`;
-- krok 2 → `cat plan.md | linear issues comment <ID>` oraz
+- krok 2 → `cat plan.md | linear issues comment <ID> -b -` oraz
   `linear issues update <ID> --state Todo`;
 - krok 4.1 → `linear issues slug <ID>` w miejsce `branchName`;
 - krok 4.3 → usunięcie odsyłacza do `linear issue pr`; nowe CLI nie ma żadnej
   komendy otwierającej PR, więc zastrzeżenie „nie używaj jej" wskazuje na nic;
-- session summary → `cat summary.md | linear issues comment <ID>`;
+- session summary → `cat summary.md | linear issues comment <ID> -b -`;
 - integracja z nerdbrain → `linear issues list --team K --project P --state …`;
 - `Related skills` → usunięcie `linear-cli`.
 
@@ -231,10 +254,10 @@ sprawdza to, co faktycznie musi działać.
 - krok 1 → `linear teams list`, `linear projects list --team K`,
   `linear issues list --team K --limit 1` jako sanity-check klucza zespołu;
 - krok 5 → `cat body.md | linear issues create "<tytuł>" --team K
-  --project "<nazwa>" --state Backlog -o json`, identyfikator z JSON-a;
+  --project "<nazwa>" --state Backlog -o json -d -`, identyfikator z JSON-a;
   sub-issues przez `--parent <ID>`; usunięcie `--no-interactive`;
 - priorytety opisane nazwami (`urgent|high|normal|low`);
-- krok 6 → `cat body.md | linear issues update <ID>`;
+- krok 6 → `cat body.md | linear issues update <ID> -d -`;
 - krok 7 → URL z JSON-a utworzenia w miejsce `linear issue url`;
 - `Related skills` → usunięcie `linear-cli`.
 

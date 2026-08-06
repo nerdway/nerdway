@@ -168,7 +168,7 @@ Handle the outcome:
 - sharpened requirements → update the issue description
   (`cat <path> | linear issues update <ID>`) after showing the diff;
 - the topic splits into stages → propose sub-issues (step 3 rules apply) and
-  create them with `--parent <ID> -s backlog` **only after the user approves
+  create them with `--parent <ID> --state Backlog` **only after the user approves
   the drafts** (hard gate above).
 
 Skip the offer for a small, clear task — same adaptive threshold as step 2.

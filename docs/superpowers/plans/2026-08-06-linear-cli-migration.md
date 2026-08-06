@@ -23,9 +23,11 @@
 - **The gate has two legitimate exceptions**, discovered while executing Task 2. The migrated text deliberately contains `joa23/linear-cli` (the CLI's identity line) and sentences of the form ``there is no `--body-file` `` — both match the raw pattern while being exactly the text we want. Every gate in this plan therefore filters them out:
 
   ```bash
-  grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' <files> \
+  grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName|-s [a-z]' <files> \
     | grep -vE 'joa23/linear-cli|is no `--(body-file|description-file|no-interactive)`'
   ```
+
+  The `-s [a-z]` alternative was added while executing Task 4, which surfaced a line carrying the old CLI's lowercase state *type* (`-s backlog`) that every other pattern missed because it names no command. Verified across all of `skills/`: it matches nothing else.
 
   Verified: this drops zero real hits — all eight old forms (`linear issue view`, `linear team list`, `linear project list`, `--body-file`, `--description-file`, `--no-interactive`, `branchName`, a bare `linear-cli` skill reference) are still caught. The filter is line-based, so a single line carrying both the identity string and genuine old syntax would slip through; that shape does not occur, since the identity line is fixed boilerplate.
 - Work on branch `spec/linear-cli-migration` (already created, spec already committed there).
@@ -687,7 +689,23 @@ with:
   (`cat <path> | linear issues update <ID>`) after showing the diff;
 ```
 
-- [ ] **Step 10: Update the output/handoff step**
+- [ ] **Step 10: Fix the leftover lowercase state type in the grilling-outcome bullet**
+
+This line survives the other steps because it names no command — only a flag pair. It still uses the old CLI's lowercase state *type*. Replace:
+
+```
+  create them with `--parent <ID> -s backlog` **only after the user approves
+```
+
+with:
+
+```
+  create them with `--parent <ID> --state Backlog` **only after the user approves
+```
+
+Leave the rest of that bullet, including the bolded clause that follows, exactly as it is.
+
+- [ ] **Step 11: Update the output/handoff step**
 
 Replace:
 
@@ -702,7 +720,7 @@ Print the created issue ID(s) and URL(s) — both come from step 5's `-o json`
 output (`.identifier` and `.url`); there is no URL command. Then point at
 ```
 
-- [ ] **Step 11: Drop `linear-cli` from Related skills**
+- [ ] **Step 12: Drop `linear-cli` from Related skills**
 
 Delete this whole line:
 
@@ -710,7 +728,7 @@ Delete this whole line:
 - `linear-cli` — CLI reference (always before `linear` commands).
 ```
 
-- [ ] **Step 12: Fix the command name in the template**
+- [ ] **Step 13: Fix the command name in the template**
 
 In `skills/linear-issue-writer/issue-template.md`, replace:
 
@@ -726,16 +744,19 @@ with:
 
 This corrects an existing comment in place. Do not remove it and do not add any other comment.
 
-- [ ] **Step 13: Verify both files are clean**
+- [ ] **Step 14: Verify both files are clean**
 
 ```bash
-grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' skills/linear-issue-writer/SKILL.md skills/linear-issue-writer/issue-template.md \
+grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName|-s [a-z]' skills/linear-issue-writer/SKILL.md skills/linear-issue-writer/issue-template.md \
   | grep -vE 'joa23/linear-cli|is no `--(body-file|description-file|no-interactive)`'
 ```
 
-Expected: no output. The filter is required here for three legitimate mentions the CLI reference in step 4 introduces: `joa23/linear-cli`, ``there is no `--description-file` ``, and ``there is no `--no-interactive` flag``.
+Expected: no output. Two notes on this pattern:
 
-- [ ] **Step 14: Commit**
+- The filter is required for three legitimate mentions the CLI reference in step 4 introduces: `joa23/linear-cli`, ``there is no `--description-file` ``, and ``there is no `--no-interactive` flag``.
+- `-s [a-z]` catches lowercase state *types*, the old CLI's convention. It is what step 10 exists to satisfy; without it that line passes every other check because it names no command. Verified across all of `skills/`: this pattern's only hit is the line step 10 fixes.
+
+- [ ] **Step 15: Commit**
 
 ```bash
 git add skills/linear-issue-writer/SKILL.md skills/linear-issue-writer/issue-template.md
@@ -1086,7 +1107,7 @@ git commit -m "Przepisanie komend linear w nerdbrain-wiki na nowe CLI"
 - [ ] **Step 1: Run the repo-wide grep gate**
 
 ```bash
-grep -rnE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|whoami|branchName' skills/ cli-dependencies.json \
+grep -rnE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|whoami|branchName|-s [a-z]' skills/ cli-dependencies.json \
   | grep -vE 'joa23/linear-cli|is no `--(body-file|description-file|no-interactive)`'
 ```
 

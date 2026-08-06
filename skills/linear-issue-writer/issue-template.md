@@ -87,4 +87,4 @@
 - [ ]
 - [ ]
 
-<!-- Parent is linked via `linear issue create --parent <PARENT-ID>`, not in the body. -->
+<!-- Parent is linked via `linear issues create --parent <PARENT-ID>`, not in the body. -->

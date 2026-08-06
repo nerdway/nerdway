@@ -9,7 +9,7 @@ description: >-
   on approval, creates the issue in Backlog, and offers an optional inline
   grilling session that can split the topic into sub-issues. Distinct
   from linear-issue-workflow (which plans/implements an EXISTING issue ID).
-  Use linear-cli for CLI syntax.
+  The CLI reference lives in the skill body.
 ---
 
 # Linear issue writer
@@ -17,7 +17,24 @@ description: >-
 Create well-formed Linear issues whose goals are specified clearly enough that
 `nerd4rent:linear-issue-workflow` can plan implementation directly from them.
 
-Use with the `linear-cli` skill for every `linear` command (flags, subcommands).
+## CLI reference
+
+`linear` is `joa23/linear-cli` (Go). Commands this skill uses:
+
+| Purpose | Command |
+|---------|---------|
+| List teams | `linear teams list` |
+| List a team's projects | `linear projects list --team <KEY>` |
+| Sanity-check a team key | `linear issues list --team <KEY> --limit 1` |
+| Create an issue | `cat body.md \| linear issues create "<title>" --team <KEY> --project "<name>" --state Backlog -o json` |
+| Create a sub-issue | the same, plus `--parent <PARENT-ID>` |
+| Replace a description | `cat body.md \| linear issues update <ID>` |
+
+The description always arrives on **stdin** — there is no `--description-file`.
+`-o json` returns the created issue including `.identifier` and `.url`, which is
+the only way to get an issue URL; there is no separate URL command. The CLI is
+never interactive, so there is no `--no-interactive` flag. States are the team's
+own **names** (`linear teams states <KEY>`) — `Backlog`, not `backlog`.
 
 ## When this skill applies
 
@@ -67,9 +84,9 @@ before writing**:
 1. **nerdbrain entity-page** — if the injected project page has `linear.team`
    and/or `linear.project`, use them.
 2. **Git remote inference** — map the repo to a Linear team/project (e.g. via
-   `linear issue query --team <key>` to sanity-check the key exists).
-3. **Ask** — if still unknown, list options (`linear team list`,
-   `linear project list`) and ask which team/project.
+   `linear issues list --team <key> --limit 1` to sanity-check the key exists).
+3. **Ask** — if still unknown, list options (`linear teams list`,
+   `linear projects list --team <key>`) and ask which team/project.
 
 Show the resolved `team` + `project` and get a quick confirmation. This works in
 repos without a wiki page (fall back to inference/ask).
@@ -120,24 +137,26 @@ New issues start in **Backlog** — pass the state explicitly so the team's
 default state cannot override it:
 
 ```bash
-linear issue create --team <key> --project <name> \
-  -t "<title>" --description-file <path> -s backlog --no-interactive
+cat <path> | linear issues create "<title>" \
+  --team <key> --project "<name>" --state Backlog -o json
 ```
 
 For a parent + sub-issues, create the parent first, capture its `TEAM-123` ID from
 the output, then create each child with `--parent`:
 
 ```bash
-linear issue create --team <key> --project <name> \
-  -t "<parent title>" --description-file <parent.md> -s backlog --no-interactive
-# → note the new ID, e.g. DEMO-123
-linear issue create --team <key> --project <name> \
-  -t "<child title>" --description-file <child-1.md> --parent DEMO-123 -s backlog --no-interactive
+cat <parent.md> | linear issues create "<parent title>" \
+  --team <key> --project "<name>" --state Backlog -o json
+# → read .identifier from the JSON, e.g. DEMO-123
+cat <child-1.md> | linear issues create "<child title>" \
+  --team <key> --project "<name>" --parent DEMO-123 --state Backlog -o json
 ```
 
-Add `-l/--label`, `-p/--priority`, `--estimate`, etc. only when the user specified
-them — don't invent metadata. (`linear` CLI supports `--parent`; no need for
-`issue relation` for parent/child.)
+Add `-l/--labels`, `-p/--priority`, `-e/--estimate`, etc. only when the user
+specified them — don't invent metadata. Priority takes a **name**
+(`urgent|high|normal|low`, or `none`); prefer the name over the numeric 0–4
+scale, whose meaning differs from the CLI this skill used previously.
+`--parent` handles parent/child directly.
 
 ### 6. Grilling session (optional)
 
@@ -147,7 +166,7 @@ dla tego issue?* If yes, run it **inline** per the grilling protocol above
 Handle the outcome:
 
 - sharpened requirements → update the issue description
-  (`linear issue update <ID> --description-file <path>`) after showing the diff;
+  (`cat <path> | linear issues update <ID>`) after showing the diff;
 - the topic splits into stages → propose sub-issues (step 3 rules apply) and
   create them with `--parent <ID> -s backlog` **only after the user approves
   the drafts** (hard gate above).
@@ -156,7 +175,8 @@ Skip the offer for a small, clear task — same adaptive threshold as step 2.
 
 ### 7. Output + handoff
 
-Print the created issue ID(s) and URL(s) (`linear issue url <ID>`). Then point at
+Print the created issue ID(s) and URL(s) — both come from step 5's `-o json`
+output (`.identifier` and `.url`); there is no URL command. Then point at
 the status-driven flow — do **not** offer to plan it yourself in this session:
 
 > *Issue utworzone (DEMO-123) — w Backlogu. Wpisz ID issue w nowej sesji lub
@@ -168,7 +188,6 @@ deliberate steps.
 
 ## Related skills
 
-- `linear-cli` — CLI reference (always before `linear` commands).
 - `nerd4rent:linear-issue-workflow` — downstream: status-driven planning and
   implementation of an issue ID produced here.
 - `mattpocock-skills:grilling` (optional, `npx skills` / `~/.agents/skills`) —

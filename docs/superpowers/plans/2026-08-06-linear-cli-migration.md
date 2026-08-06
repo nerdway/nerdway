@@ -1043,9 +1043,11 @@ Then confirm the GitHub URLs survived and only the Linear ones went:
 grep -nE 'exists: <url>|existing URL' skills/new-project-workflow/SKILL.md
 ```
 
-Expected: exactly two hits — line 108 (`--push … [skip — exists: <url>]`) and
-line 172 (`Surface the existing URL.`), both about the GitHub repo. Any hit on
-the Linear plan line, the summary, or the failure table means a step was missed.
+Expected: exactly three hits — line 108 (`--push … [skip — exists: <url>]`) and
+line 172 (`Surface the existing URL.`), both about the GitHub repo, plus line
+117, which is step 6's own rewritten caption (`its existing URL/path/UUID`) and
+matches `existing URL` as a substring. Any hit on the Linear plan line, the
+summary, or the failure table means a step was missed.
 
 - [ ] **Step 13: Commit**
 

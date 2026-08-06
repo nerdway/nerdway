@@ -212,6 +212,8 @@ sprawdza to, co faktycznie musi działać.
 - krok 2 → `cat plan.md | linear issues comment <ID>` oraz
   `linear issues update <ID> --state Todo`;
 - krok 4.1 → `linear issues slug <ID>` w miejsce `branchName`;
+- krok 4.3 → usunięcie odsyłacza do `linear issue pr`; nowe CLI nie ma żadnej
+  komendy otwierającej PR, więc zastrzeżenie „nie używaj jej" wskazuje na nic;
 - session summary → `cat summary.md | linear issues comment <ID>`;
 - integracja z nerdbrain → `linear issues list --team K --project P --state …`;
 - `Related skills` → usunięcie `linear-cli`.
@@ -266,10 +268,13 @@ sprawdza to, co faktycznie musi działać.
    (Node 24 zdejmuje typy natywnie, bez kroku budowania).
 2. `node --test scripts/**/*.test.ts` — zielone przed i po; zmiana nie dotyka
    kodu TypeScript.
-3. Bramka grep na `skills/` i `cli-dependencies.json`: zero trafień na
-   `linear issue ` (liczba pojedyncza), `--body-file`, `--description-file`,
-   `--no-interactive`, `linear team list`, `linear project list`, `whoami`,
-   `linear-cli`.
+3. Bramka grep na `skills/` i `cli-dependencies.json`, wzorzec
+   `linear (issue|team|project) |--body-file|--description-file|--no-interactive|whoami|branchName`
+   — zero trafień. Spacja po `issue`/`team`/`project` jest istotna: przepuszcza
+   nowe formy mnogie (`linear issues get`, `linear teams list`), a łapie stare
+   pojedyncze. Osobno `linear-cli` w samym `skills/` — w
+   `cli-dependencies.json` ten ciąg występuje legalnie w URL-u wydania
+   `https://github.com/joa23/linear-cli/…` i musi zostać.
 4. Smoke na żywym CLI: `linear auth status`,
    `linear issues get <ID> -f minimal -o json`, `linear issues slug <ID>`,
    `linear issues export <ID> <tmp>`, `linear teams list`,

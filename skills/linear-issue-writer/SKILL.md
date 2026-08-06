@@ -26,15 +26,19 @@ Create well-formed Linear issues whose goals are specified clearly enough that
 | List teams | `linear teams list` |
 | List a team's projects | `linear projects list --team <KEY>` |
 | Sanity-check a team key | `linear issues list --team <KEY> --limit 1` |
-| Create an issue | `cat body.md \| linear issues create "<title>" --team <KEY> --project "<name>" --state Backlog -o json` |
+| Create an issue | `cat body.md \| linear issues create "<title>" --team <KEY> --project "<name>" --state Backlog -o json -d -` |
 | Create a sub-issue | the same, plus `--parent <PARENT-ID>` |
-| Replace a description | `cat body.md \| linear issues update <ID>` |
+| Replace a description | `cat body.md \| linear issues update <ID> -d -` |
 
-The description always arrives on **stdin** — there is no `--description-file`.
-`-o json` returns the created issue including `.identifier` and `.url`, which is
-the only way to get an issue URL; there is no separate URL command. The CLI is
-never interactive, so there is no `--no-interactive` flag. States are the team's
-own **names** (`linear teams states <KEY>`) — `Backlog`, not `backlog`.
+The description arrives on **stdin**, and `-d -` is what makes the CLI read it —
+a bare pipe leaves the description empty on `create` and dies on
+`no updates specified` on `update`. There is no `--description-file`.
+
+`-o json` returns the created issue including `.identifier` and `.url`; there is
+no separate URL command (`linear issues get <ID> -o json` also carries `.url`
+for an issue that already exists). The CLI is never interactive, so there
+is no `--no-interactive` flag. States are the team's own **names**
+(`linear teams states <KEY>`) — `Backlog`, not `backlog`.
 
 ## When this skill applies
 
@@ -138,7 +142,7 @@ default state cannot override it:
 
 ```bash
 cat <path> | linear issues create "<title>" \
-  --team <key> --project "<name>" --state Backlog -o json
+  --team <key> --project "<name>" --state Backlog -o json -d -
 ```
 
 For a parent + sub-issues, create the parent first, capture its `TEAM-123` ID from
@@ -146,10 +150,10 @@ the output, then create each child with `--parent`:
 
 ```bash
 cat <parent.md> | linear issues create "<parent title>" \
-  --team <key> --project "<name>" --state Backlog -o json
+  --team <key> --project "<name>" --state Backlog -o json -d -
 # → read .identifier from the JSON, e.g. DEMO-123
 cat <child-1.md> | linear issues create "<child title>" \
-  --team <key> --project "<name>" --parent DEMO-123 --state Backlog -o json
+  --team <key> --project "<name>" --parent DEMO-123 --state Backlog -o json -d -
 ```
 
 Add `-l/--labels`, `-p/--priority`, `-e/--estimate`, etc. only when the user
@@ -166,7 +170,7 @@ dla tego issue?* If yes, run it **inline** per the grilling protocol above
 Handle the outcome:
 
 - sharpened requirements → update the issue description
-  (`cat <path> | linear issues update <ID>`) after showing the diff;
+  (`cat <path> | linear issues update <ID> -d -`) after showing the diff;
 - the topic splits into stages → propose sub-issues (step 3 rules apply) and
   create them with `--parent <ID> --state Backlog` **only after the user approves
   the drafts** (hard gate above).
@@ -176,7 +180,9 @@ Skip the offer for a small, clear task — same adaptive threshold as step 2.
 ### 7. Output + handoff
 
 Print the created issue ID(s) and URL(s) — both come from step 5's `-o json`
-output (`.identifier` and `.url`); there is no URL command. Then point at
+output (`.identifier` and `.url`); there is no URL command, though
+`linear issues get <ID> -o json` also carries `.url` for an existing issue.
+Then point at
 the status-driven flow — do **not** offer to plan it yourself in this session:
 
 > *Issue utworzone (DEMO-123) — w Backlogu. Wpisz ID issue w nowej sesji lub

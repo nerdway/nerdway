@@ -373,14 +373,22 @@ Expected: hits on lines **12, 22, 30, 131, 146**.
 
 ```bash
 linear issues update --help | grep -- '--state'
-echo 'demo-237_dodac_skrypt_wspierajacy_deployment' | grep -oiE '[a-z]+-[0-9]+' | head -1 | tr '[:lower:]' '[:upper:]'
+linear issues get SPRINT-24 -f minimal -o json >/dev/null 2>&1; echo "bogus exit=$?"
+for b in demo-237_dodac_skrypt pawel/demo-237-tytul sprint-24-demo-237-fix main; do
+  r=""
+  for c in $(printf '%s' "$b" | grep -oiE '[a-z]+-[0-9]+' | tr '[:lower:]' '[:upper:]'); do
+    linear issues get "$c" -f minimal -o json >/dev/null 2>&1 && { r="$c"; break; }
+  done
+  printf '%-24s -> %s\n' "$b" "${r:-<none>}"
+done
 ```
 
 Expected:
 - the `--state` flag exists on `issues update` with description `Update workflow state name (e.g., 'In Progress', 'Backlog')`;
-- the pipeline prints exactly `DEMO-237`.
+- `bogus exit=1` — a non-existent ID makes `issues get` fail, which is what makes candidate validation work;
+- the first three branch shapes all resolve to `DEMO-237`, including `sprint-24-demo-237-fix` where the leftmost fragment is the decoy `SPRINT-24`; `main` resolves to `<none>`.
 
-Do not run `linear issues update` against a real issue — it would mutate the workspace.
+Substitute an issue ID that exists in your workspace for `DEMO-237` if that one does not. Do not run `linear issues update` against a real issue — it would mutate the workspace.
 
 - [ ] **Step 3: Update the frontmatter**
 
@@ -416,8 +424,17 @@ linear issues update <ID> --state Done
 ```
 
 `Done` is the team's own state **name**, not a state type — list a team's names
-with `linear teams states <KEY>`. There is no command mapping a branch back to
-an issue, so the ID is resolved locally, below.
+with `linear teams states <KEY>`.
+
+There is no command mapping a branch back to an issue, so the ID is parsed from
+the branch name and every candidate is confirmed with a read before use:
+
+```bash
+linear issues get <ID> -f minimal -o json
+```
+
+It exits non-zero for an ID that does not exist, which is what makes the
+resolution below safe.
 ````
 
 - [ ] **Step 5: Replace the issue-ID resolution**
@@ -431,15 +448,26 @@ linear issue id
 with:
 
 ```bash
-git branch --show-current | grep -oiE '[a-z]+-[0-9]+' | head -1 | tr '[:lower:]' '[:upper:]'
+for candidate in $(git branch --show-current | grep -oiE '[a-z]+-[0-9]+' | tr '[:lower:]' '[:upper:]'); do
+  linear issues get "$candidate" -f minimal -o json >/dev/null 2>&1 && { echo "$candidate"; break; }
+done
 ```
 
 and immediately after the code block, before the `Call it `<ID>` below.` line, insert:
 
 ```
 Matching is case-insensitive because `linear issues slug` produces lowercase
-branch names; the result is upper-cased because Linear expects `DEMO-123`. **If
-nothing matches, stop and ask the user for the ID** — never guess it.
+branch names; the result is upper-cased because Linear expects `DEMO-123`.
+
+Every `letters-digits` fragment is a *candidate*, and the first one that
+actually resolves in Linear wins. Taking the leftmost match alone is not safe:
+a branch named `sprint-24-demo-456-fix` yields `SPRINT-24` before `DEMO-456`, and
+that wrong-but-plausible ID would flow into the Done write below and close
+somebody else's issue. Resolving each candidate also keeps older branches
+working — a `pawel/demo-123-tytul` branch from the previous CLI still lands on
+`DEMO-123`.
+
+**If no candidate resolves, stop and ask the user for the ID** — never guess it.
 ```
 
 - [ ] **Step 6: Update the set-Done command**

@@ -7,12 +7,32 @@ description: >-
   user) → implement (branch, empty commit, draft PR with magic words); In
   Review → code-review menu; Done → close-out. Never prints "confirm the plan"
   instructions — the user steers by changing the issue status in Linear.
-  Invoke this skill FIRST; use linear-cli for CLI syntax.
+  Invoke this skill FIRST; the linear commands it needs are in its CLI reference.
 ---
 
 # Linear issue workflow
 
-Use with the `linear-cli` skill for every `linear` command (flags, subcommands).
+## CLI reference
+
+`linear` is `joa23/linear-cli` (Go). These are the only commands this skill needs:
+
+| Purpose | Command |
+|---------|---------|
+| Status gate (every turn) | `linear issues get <ID> -f minimal -o json` |
+| Full context (entering a phase) | `linear issues export <ID> "${TMPDIR:-/tmp}/linear-<ID>"` |
+| Post a comment | `cat body.md \| linear issues comment <ID>` |
+| Set status | `linear issues update <ID> --state 'In Progress'` |
+| Branch name | `linear issues slug <ID>` |
+| Active work in a team/project | `linear issues list --team <KEY> --project <name> --state 'Todo,In Progress,In Review'` |
+
+`get -f minimal -o json` returns exactly `identifier`, `title`, `state` — cheap
+enough to run every turn. `export` writes `<ID>.md` (state table, full
+description, every comment, a `References` section with linked PRs) plus an
+`assets/` folder holding inline images as local files ready to `Read`.
+
+States are the team's own **names** — `Backlog`, not `backlog`; list them with
+`linear teams states <KEY>`. Multi-line bodies always arrive on **stdin**; there
+is no `--body-file`.
 
 ## When this skill applies
 
@@ -33,8 +53,8 @@ typing approvals in chat.
    instruction in chat to implement counts as approval (then set In Progress
    to reflect it).
 2. **Status check every turn**: at the start of every turn that touches the
-   issue, run `linear issue view <ID> -j` and dispatch on the current status.
-   The status may have changed since the last message.
+   issue, run `linear issues get <ID> -f minimal -o json` and dispatch on the
+   current status. The status may have changed since the last message.
 3. **After every working session** on the issue: post a `## Session summary`
    comment (see below).
 
@@ -47,8 +67,11 @@ workflow). Never post that marker on new work.
 
 ## Dispatch by status
 
-Fetch first — `linear issue view <ID> -j` — read title, description, state,
-`branchName`, and **all comments**. Then:
+Fetch first — `linear issues export <ID> "${TMPDIR:-/tmp}/linear-<ID>"` — then
+`Read` the produced `<ID>.md`. That one file carries the state table, the full
+description, every comment, and a `References` section listing linked PRs;
+inline images land in `assets/` as local files. Export into the temp directory,
+never into the repo. Then:
 
 | Issue status | Phase |
 |--------------|-------|
@@ -134,8 +157,8 @@ run them, manually, as slash commands.
 Save the plan to a temp file, then:
 
 ```bash
-linear issue comment add <ID> --body-file <path-to-plan.md>
-linear issue update <ID> -s Todo
+cat <path-to-plan.md> | linear issues comment <ID>
+linear issues update <ID> --state Todo
 ```
 
 The posted body **must** start with `## Implementation plan` (no status line).
@@ -158,7 +181,7 @@ invoke `nerdbrain-wiki` to append/update the superseding decision under
 `## Decisions` on the entity page before continuing.
 
 1. **Branch** — existing policy unchanged:
-   - On `main`/`master`: `git checkout -b <branchName from issue view -j>`.
+   - On `main`/`master`: `git checkout -b "$(linear issues slug <ID>)"`.
    - On another issue branch: ask the user — (a) branch from current,
      (b) branch from main/master, (c) stay.
 2. **Empty commit + push** (GitHub needs ≥1 commit to open a PR):
@@ -168,8 +191,8 @@ invoke `nerdbrain-wiki` to append/update the superseding decision under
    git push -u origin <branch>
    ```
 
-3. **Draft PR with Linear magic words** — use `gh` (not `linear issue pr`,
-   which does not put magic words in the body):
+3. **Draft PR with Linear magic words** — use `gh`; the Linear CLI has no
+   PR-opening command:
 
    ```bash
    gh pr create --draft --title "<ID>: <title>" \
@@ -232,7 +255,7 @@ re-run.
 After each session (including partial work), post:
 
 ```bash
-linear issue comment add <ID> --body-file <summary.md>
+cat <summary.md> | linear issues comment <ID>
 ```
 
 Body **must** start with `## Session summary` and include:
@@ -248,14 +271,14 @@ The summary must be enough to resume from Linear alone.
 ## Nerdbrain entity-page integration
 
 - When the injected entity page's frontmatter has `linear.team` or
-  `linear.project`, query Linear for active work (`linear issue query
-  --team <key>` / `--project <name>`) instead of re-asking the user.
+  `linear.project`, query Linear for active work (`linear issues list
+  --team <key> --project <name> --state 'Todo,In Progress,In Review'`)
+  instead of re-asking the user.
 - When recording a decision on the entity page (nerdbrain write trigger),
   link it to the issue ID, e.g. `2026-05-05 — chose JWT (LIN-123)`.
 
 ## Related skills
 
-- `linear-cli` — CLI reference (always before `linear` commands).
 - `nerd4rent:linear-issue-writer` — upstream: creates the issue (in Backlog)
   that this skill plans and implements.
 - `nerd4rent:nerdbrain-search` — rg recipes underlying `nerdbrain-wiki`'s

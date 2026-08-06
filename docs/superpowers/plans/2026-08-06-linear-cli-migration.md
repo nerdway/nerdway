@@ -15,7 +15,17 @@
 - `linear` means `joa23/linear-cli`, minimum version `1.10.0`. Verify with `linear --version` → `linear version 1.10.0` (or higher) before starting.
 - **Never write a command into a skill without proving it first.** Each task has a verification step that runs the new commands against the live CLI. A plausible-looking flag that does not exist is the single most likely failure mode of this migration.
 - State names are the team's own **names**, not Linear state types: `Backlog`, `Todo`, `In Progress`, `In Review`, `Done`. Not `backlog`. Confirm with `linear teams states DEMO`.
-- Multi-line bodies (descriptions, comments) go through **stdin**. `--body-file` and `--description-file` do not exist.
+- Multi-line bodies (descriptions, comments) go through **stdin, and stdin is read only when the flag's value is the `-` sentinel**: `-b -` for a comment body, `-d -` for a description. `--body-file` and `--description-file` do not exist. **A bare pipe does not work** — verified live on v1.10.0:
+
+  | invocation | result |
+  |---|---|
+  | `printf x \| linear issues comment <ID>` | `Error: comment body is required` |
+  | `printf x \| linear issues comment <ID> -b -` | body accepted; fails only on the bogus issue |
+  | `printf x \| linear issues update <ID>` | `Error: no updates specified` |
+  | `printf x \| linear issues update <ID> -d -` | body accepted; fails only on the bogus issue |
+  | `printf x \| linear issues create "t" --team <bogus> -d -` | body accepted; fails only on the bogus team |
+
+  This was discovered during Task 4's review, after Task 2 had already shipped bare pipes. **The CLI's own `--help` is misleading here** — the flag line reads "(or pipe to stdin)" and `issues comment`'s example literally shows `cat notes.md | linear issues comment CEN-123` with no `-`. Trust the table above, not the help text. On `update` the sentinel matters twice over: `-d -` also counts as a flag, so without it the command dies on the "no updates specified" guard before stdin is ever read. `projects create -d "<literal text>"` passes a value directly and is unaffected.
 - Skill files are **English-only**. Commit messages are **Polish, declarative noun form, ASCII without diacritics** (matching existing history: `Dodanie…`, `Poprawa…`, `Przepisanie…`). Never add a co-author trailer or self-attribution.
 - **No code comments** (global CLAUDE.md §5). The one pre-existing HTML comment in `issue-template.md` is corrected in place, not removed and not added to.
 - **Surgical changes only.** Every changed line must trace to this migration. Do not reformat, reword, or improve adjacent prose.
@@ -190,7 +200,7 @@ with:
 |---------|---------|
 | Status gate (every turn) | `linear issues get <ID> -f minimal -o json` |
 | Full context (entering a phase) | `linear issues export <ID> "${TMPDIR:-/tmp}/linear-<ID>"` |
-| Post a comment | `cat body.md \| linear issues comment <ID>` |
+| Post a comment | `cat body.md \| linear issues comment <ID> -b -` |
 | Set status | `linear issues update <ID> --state 'In Progress'` |
 | Branch name | `linear issues slug <ID>` |
 | Active work in a team/project | `linear issues list --team <KEY> --project <name> --state 'Todo,In Progress,In Review'` |
@@ -201,8 +211,12 @@ description, every comment, a `References` section with linked PRs) plus an
 `assets/` folder holding inline images as local files ready to `Read`.
 
 States are the team's own **names** — `Backlog`, not `backlog`; list them with
-`linear teams states <KEY>`. Multi-line bodies always arrive on **stdin**; there
-is no `--body-file`.
+`linear teams states <KEY>`.
+
+Multi-line bodies arrive on **stdin**, but only when the flag's value is the `-`
+sentinel — `-b -` for a comment. There is no `--body-file`, and a bare pipe is
+silently insufficient: without `-b -` the CLI answers `comment body is required`
+even though content was piped in.
 ````
 
 - [ ] **Step 5: Update the per-turn status gate**
@@ -254,7 +268,7 @@ linear issue update <ID> -s Todo
 with:
 
 ```bash
-cat <path-to-plan.md> | linear issues comment <ID>
+cat <path-to-plan.md> | linear issues comment <ID> -b -
 linear issues update <ID> --state Todo
 ```
 
@@ -302,7 +316,7 @@ linear issue comment add <ID> --body-file <summary.md>
 with:
 
 ```bash
-cat <summary.md> | linear issues comment <ID>
+cat <summary.md> | linear issues comment <ID> -b -
 ```
 
 - [ ] **Step 11: Update the nerdbrain integration query**
@@ -342,6 +356,14 @@ grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-inter
 ```
 
 Expected: no output. The filter is required: the CLI reference you added in step 4 legitimately contains `joa23/linear-cli` and the sentence ``there is no `--body-file` ``, both of which match the raw pattern.
+
+Then the stdin-sentinel gate — every pipe into `issues comment` must carry `-b -`:
+
+```bash
+grep -rnE '\| *linear issues (comment|update)' skills/linear-issue-workflow/SKILL.md | grep -vE '\-(b|d) -'
+```
+
+Expected: no output. Before the fix this file had three offending lines (23, 160, 258).
 
 - [ ] **Step 14: Commit**
 
@@ -584,15 +606,19 @@ with:
 | List teams | `linear teams list` |
 | List a team's projects | `linear projects list --team <KEY>` |
 | Sanity-check a team key | `linear issues list --team <KEY> --limit 1` |
-| Create an issue | `cat body.md \| linear issues create "<title>" --team <KEY> --project "<name>" --state Backlog -o json` |
+| Create an issue | `cat body.md \| linear issues create "<title>" --team <KEY> --project "<name>" --state Backlog -o json -d -` |
 | Create a sub-issue | the same, plus `--parent <PARENT-ID>` |
-| Replace a description | `cat body.md \| linear issues update <ID>` |
+| Replace a description | `cat body.md \| linear issues update <ID> -d -` |
 
-The description always arrives on **stdin** — there is no `--description-file`.
-`-o json` returns the created issue including `.identifier` and `.url`, which is
-the only way to get an issue URL; there is no separate URL command. The CLI is
-never interactive, so there is no `--no-interactive` flag. States are the team's
-own **names** (`linear teams states <KEY>`) — `Backlog`, not `backlog`.
+The description arrives on **stdin**, and `-d -` is what makes the CLI read it —
+a bare pipe leaves the description empty on `create` and dies on
+`no updates specified` on `update`. There is no `--description-file`.
+
+`-o json` returns the created issue including `.identifier` and `.url`; there is
+no separate URL command (`linear issues get <ID> -o json` also carries `.url`
+for an issue that already exists). The CLI is never interactive, so there is no
+`--no-interactive` flag. States are the team's own **names**
+(`linear teams states <KEY>`) — `Backlog`, not `backlog`.
 ````
 
 - [ ] **Step 5: Update team/project discovery**
@@ -628,7 +654,7 @@ with:
 
 ```bash
 cat <path> | linear issues create "<title>" \
-  --team <key> --project "<name>" --state Backlog -o json
+  --team <key> --project "<name>" --state Backlog -o json -d -
 ```
 
 - [ ] **Step 7: Update the parent + sub-issue create commands**
@@ -647,10 +673,10 @@ with:
 
 ```bash
 cat <parent.md> | linear issues create "<parent title>" \
-  --team <key> --project "<name>" --state Backlog -o json
+  --team <key> --project "<name>" --state Backlog -o json -d -
 # → read .identifier from the JSON, e.g. DEMO-123
 cat <child-1.md> | linear issues create "<child title>" \
-  --team <key> --project "<name>" --parent DEMO-123 --state Backlog -o json
+  --team <key> --project "<name>" --parent DEMO-123 --state Backlog -o json -d -
 ```
 
 - [ ] **Step 8: Update the metadata paragraph**
@@ -686,7 +712,7 @@ with:
 
 ```
 - sharpened requirements → update the issue description
-  (`cat <path> | linear issues update <ID>`) after showing the diff;
+  (`cat <path> | linear issues update <ID> -d -`) after showing the diff;
 ```
 
 - [ ] **Step 10: Fix the leftover lowercase state type in the grilling-outcome bullet**
@@ -717,7 +743,9 @@ with:
 
 ```
 Print the created issue ID(s) and URL(s) — both come from step 5's `-o json`
-output (`.identifier` and `.url`); there is no URL command. Then point at
+output (`.identifier` and `.url`); there is no URL command, though
+`linear issues get <ID> -o json` also carries `.url` for an existing issue.
+Then point at
 ```
 
 - [ ] **Step 12: Drop `linear-cli` from Related skills**
@@ -755,6 +783,17 @@ Expected: no output. Two notes on this pattern:
 
 - The filter is required for three legitimate mentions the CLI reference in step 4 introduces: `joa23/linear-cli`, ``there is no `--description-file` ``, and ``there is no `--no-interactive` flag``.
 - `-s [a-z]` catches lowercase state *types*, the old CLI's convention. It is what step 10 exists to satisfy; without it that line passes every other check because it names no command. Verified across all of `skills/`: this pattern's only hit is the line step 10 fixes.
+
+Then the stdin-sentinel gate, in two parts:
+
+```bash
+grep -rnE '\| *linear issues (comment|update)' skills/linear-issue-writer/ | grep -vE '\-(b|d) -'
+n=$(grep -rc 'linear issues create ' skills/linear-issue-writer/ | awk -F: '{s+=$2} END{print s}')
+m=$(grep -rn -A1 'linear issues create ' skills/linear-issue-writer/ | grep -c -- '-d -')
+echo "create invocations: $n / with sentinel: $m"
+```
+
+Expected: the first command prints nothing, and `n` equals `m`. A `create` command wraps onto a continuation line, so the sentinel is looked for one line below the invocation. Before the fix this file reported `5 / 0`.
 
 - [ ] **Step 15: Commit**
 
@@ -1113,7 +1152,18 @@ grep -rnE 'linear (issue|team|project) |--body-file|--description-file|--no-inte
 
 Expected: no output.
 
-This is the same pattern each task verified against its own files, plus `whoami` for the contract, and the same two-exception filter (see Global Constraints). The alternation deliberately requires a space after `issue`/`team`/`project`, so the new plural forms (`linear issues get`, `linear teams list`) do not match.
+This is the same pattern each task verified against its own files, plus `whoami` for the contract, and the same two-exception filter (see Global Constraints).
+
+Then the repo-wide stdin-sentinel gate — the defect that reopened Task 2:
+
+```bash
+grep -rnE '\| *linear issues (comment|update)' skills/ | grep -vE '\-(b|d) -'
+n=$(grep -rc 'linear issues create ' skills/ | awk -F: '{s+=$2} END{print s}')
+m=$(grep -rn -A1 'linear issues create ' skills/ | grep -c -- '-d -')
+echo "create invocations: $n / with sentinel: $m"
+```
+
+Expected: the first command prints nothing, and `n` equals `m`. Before the fix the repo reported five offending pipe lines and `5 / 0`. The alternation deliberately requires a space after `issue`/`team`/`project`, so the new plural forms (`linear issues get`, `linear teams list`) do not match.
 
 ```bash
 grep -rn 'linear-cli' skills/

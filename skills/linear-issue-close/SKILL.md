@@ -9,7 +9,7 @@ description: >-
   (the `model` frontmatter above) to keep it cheap. Invoked by
   linear-issue-workflow's close-out, or directly when the user asks to
   close/merge/finish an issue ("domknij", "zamknij", "zmerguj i zamknij", "close
-  out", "merge and close"). Use linear-cli for the Linear command.
+  out", "merge and close"). The Linear command is in the CLI reference.
 ---
 
 # Linear issue close-out
@@ -19,7 +19,17 @@ them in order, stop and report on the first error. **Do not resolve merge
 conflicts, pick non-default merge strategies, or improvise** — those are out of
 scope; report and stop instead.
 
-Use the `linear-cli` skill for the `linear` command syntax.
+## CLI reference
+
+`linear` is `joa23/linear-cli` (Go). This skill issues exactly one write:
+
+```bash
+linear issues update <ID> --state Done
+```
+
+`Done` is the team's own state **name**, not a state type — list a team's names
+with `linear teams states <KEY>`. There is no command mapping a branch back to
+an issue, so the ID is resolved locally, below.
 
 ## Resolve the issue ID
 
@@ -27,8 +37,12 @@ Use the ID passed by the caller. If none was passed, read it from the current
 branch:
 
 ```bash
-linear issue id
+git branch --show-current | grep -oiE '[a-z]+-[0-9]+' | head -1 | tr '[:lower:]' '[:upper:]'
 ```
+
+Matching is case-insensitive because `linear issues slug` produces lowercase
+branch names; the result is upper-cased because Linear expects `DEMO-123`. **If
+nothing matches, stop and ask the user for the ID** — never guess it.
 
 Call it `<ID>` below.
 
@@ -128,7 +142,7 @@ git checkout <base> && git pull
 ## Step 5 — Set the Linear issue to Done
 
 ```bash
-linear issue update <ID> -s Done
+linear issues update <ID> --state Done
 ```
 
 This is idempotent and deterministic: it closes the issue on GitHub (independent
@@ -143,6 +157,5 @@ which one and why.
 
 ## Related skills
 
-- `linear-cli` — CLI reference for the `linear` command.
 - `nerd4rent:linear-issue-workflow` — the status-driven workflow whose close-out
   phase delegates here.

@@ -788,12 +788,17 @@ Then the stdin-sentinel gate, in two parts:
 
 ```bash
 grep -rnE '\| *linear issues (comment|update)' skills/linear-issue-writer/ | grep -vE '\-(b|d) -'
-n=$(grep -rc 'linear issues create ' skills/linear-issue-writer/ | awk -F: '{s+=$2} END{print s}')
-m=$(grep -rn -A1 'linear issues create ' skills/linear-issue-writer/ | grep -c -- '-d -')
-echo "create invocations: $n / with sentinel: $m"
+n=$(grep -rn 'cat .*linear issues create ' skills/linear-issue-writer/ | wc -l)
+m=$(grep -rn -A1 'cat .*linear issues create ' skills/linear-issue-writer/ | grep -c -- '-d -')
+echo "piped create invocations: $n / with sentinel: $m"
 ```
 
-Expected: the first command prints nothing, and `n` equals `m`. A `create` command wraps onto a continuation line, so the sentinel is looked for one line below the invocation. Before the fix this file reported `5 / 0`.
+Expected: the first command prints nothing, and `n` equals `m` at **4**. Two subtleties in the second check:
+
+- A `create` command wraps onto a continuation line, so the sentinel is looked for one line below the invocation (`-A1`, which also covers the single-line table row).
+- The match requires `cat ` on the line, which restricts it to *piped* invocations. That deliberately excludes `issue-template.md:90`, where `linear issues create --parent <PARENT-ID>` appears inside prose explaining how a parent is linked — it passes no description and needs no sentinel. Counting it made the check unsatisfiable.
+
+Before the fix this file reported four offending pipe lines and `4 / 0`.
 
 - [ ] **Step 15: Commit**
 
@@ -1158,12 +1163,12 @@ Then the repo-wide stdin-sentinel gate — the defect that reopened Task 2:
 
 ```bash
 grep -rnE '\| *linear issues (comment|update)' skills/ | grep -vE '\-(b|d) -'
-n=$(grep -rc 'linear issues create ' skills/ | awk -F: '{s+=$2} END{print s}')
-m=$(grep -rn -A1 'linear issues create ' skills/ | grep -c -- '-d -')
-echo "create invocations: $n / with sentinel: $m"
+n=$(grep -rn 'cat .*linear issues create ' skills/ | wc -l)
+m=$(grep -rn -A1 'cat .*linear issues create ' skills/ | grep -c -- '-d -')
+echo "piped create invocations: $n / with sentinel: $m"
 ```
 
-Expected: the first command prints nothing, and `n` equals `m`. Before the fix the repo reported five offending pipe lines and `5 / 0`. The alternation deliberately requires a space after `issue`/`team`/`project`, so the new plural forms (`linear issues get`, `linear teams list`) do not match.
+Expected: the first command prints nothing, and `n` equals `m` at **4**. The `cat ` in the pattern restricts the count to piped invocations, excluding the prose mention in `issue-template.md:90` that passes no description. Before the fix the repo reported eight offending pipe lines and `4 / 0`. The alternation deliberately requires a space after `issue`/`team`/`project`, so the new plural forms (`linear issues get`, `linear teams list`) do not match.
 
 ```bash
 grep -rn 'linear-cli' skills/

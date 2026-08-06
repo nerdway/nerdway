@@ -22,7 +22,7 @@
         }
       },
       "auth": {
-        "check": ["linear", "whoami"],
+        "check": ["linear", "auth", "status"],
         "instructions": "Run `linear auth login`, or set LINEAR_API_KEY, using a key from Linear Settings -> API."
       }
     },

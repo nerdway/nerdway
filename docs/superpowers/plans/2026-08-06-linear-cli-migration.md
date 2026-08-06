@@ -20,6 +20,14 @@
 - **No code comments** (global CLAUDE.md §5). The one pre-existing HTML comment in `issue-template.md` is corrected in place, not removed and not added to.
 - **Surgical changes only.** Every changed line must trace to this migration. Do not reformat, reword, or improve adjacent prose.
 - Baseline before any change: `node --test scripts/lib/*.test.ts scripts/types/*.test.ts` → **39 pass, 0 fail**; `node scripts/validate-cli-dependencies.ts` → `OK: 4 CLI entries validated`. Both must still hold at the end.
+- **The gate has two legitimate exceptions**, discovered while executing Task 2. The migrated text deliberately contains `joa23/linear-cli` (the CLI's identity line) and sentences of the form ``there is no `--body-file` `` — both match the raw pattern while being exactly the text we want. Every gate in this plan therefore filters them out:
+
+  ```bash
+  grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' <files> \
+    | grep -vE 'joa23/linear-cli|is no `--(body-file|description-file|no-interactive)`'
+  ```
+
+  Verified: this drops zero real hits — all eight old forms (`linear issue view`, `linear team list`, `linear project list`, `--body-file`, `--description-file`, `--no-interactive`, `branchName`, a bare `linear-cli` skill reference) are still caught. The filter is line-based, so a single line carrying both the identity string and genuine old syntax would slip through; that shape does not occur, since the identity line is fixed boilerplate.
 - Work on branch `spec/linear-cli-migration` (already created, spec already committed there).
 
 ## File Structure
@@ -458,10 +466,11 @@ Delete this whole line:
 - [ ] **Step 8: Verify the file is clean**
 
 ```bash
-grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' skills/linear-issue-close/SKILL.md
+grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' skills/linear-issue-close/SKILL.md \
+  | grep -vE 'joa23/linear-cli|is no `--(body-file|description-file|no-interactive)`'
 ```
 
-Expected: no output, exit 1.
+Expected: no output. The filter is required: the CLI reference you added in step 4 names `joa23/linear-cli`, which matches the raw pattern legitimately.
 
 - [ ] **Step 9: Commit**
 
@@ -691,10 +700,11 @@ This corrects an existing comment in place. Do not remove it and do not add any 
 - [ ] **Step 13: Verify both files are clean**
 
 ```bash
-grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' skills/linear-issue-writer/SKILL.md skills/linear-issue-writer/issue-template.md
+grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' skills/linear-issue-writer/SKILL.md skills/linear-issue-writer/issue-template.md \
+  | grep -vE 'joa23/linear-cli|is no `--(body-file|description-file|no-interactive)`'
 ```
 
-Expected: no output, exit 1.
+Expected: no output. The filter is required here for three legitimate mentions the CLI reference in step 4 introduces: `joa23/linear-cli`, ``there is no `--description-file` ``, and ``there is no `--no-interactive` flag``.
 
 - [ ] **Step 14: Commit**
 
@@ -927,10 +937,11 @@ with:
 - [ ] **Step 12: Verify the file is clean**
 
 ```bash
-grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' skills/new-project-workflow/SKILL.md
+grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' skills/new-project-workflow/SKILL.md \
+  | grep -vE 'joa23/linear-cli|is no `--(body-file|description-file|no-interactive)`'
 ```
 
-Expected: no output, exit 1.
+Expected: no output.
 
 Then confirm the GitHub URLs survived and only the Linear ones went:
 
@@ -1019,10 +1030,11 @@ These are pre-existing YAML comments carrying the template's field hints — cor
 - [ ] **Step 5: Verify both files are clean**
 
 ```bash
-grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' skills/nerdbrain-wiki/SKILL.md skills/nerdbrain-wiki/entity-page-template.md
+grep -nE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|linear-cli|branchName' skills/nerdbrain-wiki/SKILL.md skills/nerdbrain-wiki/entity-page-template.md \
+  | grep -vE 'joa23/linear-cli|is no `--(body-file|description-file|no-interactive)`'
 ```
 
-Expected: no output, exit 1.
+Expected: no output. These two files gain no CLI reference block, so the filter should have nothing to drop here — it is applied only to keep every gate in this plan identical.
 
 - [ ] **Step 6: Commit**
 
@@ -1045,12 +1057,13 @@ git commit -m "Przepisanie komend linear w nerdbrain-wiki na nowe CLI"
 - [ ] **Step 1: Run the repo-wide grep gate**
 
 ```bash
-grep -rnE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|whoami|branchName' skills/ cli-dependencies.json
+grep -rnE 'linear (issue|team|project) |--body-file|--description-file|--no-interactive|whoami|branchName' skills/ cli-dependencies.json \
+  | grep -vE 'joa23/linear-cli|is no `--(body-file|description-file|no-interactive)`'
 ```
 
-Expected: no output, exit 1.
+Expected: no output.
 
-This is the same pattern each task verified against its own files, plus `whoami` for the contract. The alternation deliberately requires a space after `issue`/`team`/`project`, so the new plural forms (`linear issues get`, `linear teams list`) do not match.
+This is the same pattern each task verified against its own files, plus `whoami` for the contract, and the same two-exception filter (see Global Constraints). The alternation deliberately requires a space after `issue`/`team`/`project`, so the new plural forms (`linear issues get`, `linear teams list`) do not match.
 
 ```bash
 grep -rn 'linear-cli' skills/

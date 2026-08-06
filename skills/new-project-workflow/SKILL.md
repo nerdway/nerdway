@@ -82,11 +82,11 @@ If they pick option 2, take the new name and use it everywhere downstream. Do **
 Ask for whatever is still undecided after parsing flags:
 
 1. **Repo visibility** — only if neither `--public` nor `--private` was supplied. Default: `public`.
-2. **Linear team** — always ask. Run the `linear-cli` skill to list teams; user picks one. Why ask: teams vary across users; silent defaults land projects in the wrong workspace.
+2. **Linear team** — always ask. Run `linear teams list`; user picks one. Why ask: teams vary across users; silent defaults land projects in the wrong workspace.
 
-After the team is chosen, run the **Linear project existence check**: ask `linear-cli` whether a project named `<name>` already exists in `<team>`. If yes, capture its URL — this turns Linear's plan-step into a skip.
+After the team is chosen, run the **Linear project existence check**: `linear projects list --team <team> -o json`, and look for an entry whose `name` equals `<name>`. If found, capture its `id` (UUID) — this turns Linear's plan-step into a skip. The CLI exposes no project URL, so the UUID is what gets surfaced.
 
-If `linear-cli` is not available in the session, skip Linear creation entirely and note in the plan: `Linear step skipped — linear-cli skill not detected`.
+If `linear` is missing from PATH or `linear auth status` exits non-zero, skip Linear creation entirely and note in the plan: `Linear step skipped — linear CLI unavailable or not authenticated`.
 
 ## Step 3 — Present the plan, get single approval
 
@@ -107,14 +107,14 @@ Plan for new project: <name>
        --source=. --remote=origin \
        --push                         [run] | [skip — exists: <url>]
   5. Linear project '<name>' in <team>
-                                      [run] | [skip — exists: <url>]
+                                      [run] | [skip — exists: <uuid>]
   6. Nerdbrain wiki entity page      [run] | [skip — disabled]
   7. Pick spec skill from menu
 
 Proceed? [Y/n]
 ```
 
-If a step is a `[skip]`, also include its existing URL/path on the same line so the user can sanity-check. Anything other than `y`/`Y`/`yes`/empty (default Y) → abort cleanly with "Cancelled. No changes made."
+If a step is a `[skip]`, also include its existing URL/path/UUID on the same line so the user can sanity-check. Anything other than `y`/`Y`/`yes`/empty (default Y) → abort cleanly with "Cancelled. No changes made."
 
 ## Step 4 — Execute
 
@@ -175,7 +175,21 @@ Never use `--force` or `--confirm`-bypassing flags.
 
 ### 4.5 — Linear project
 
-Invoke the `linear-cli` skill: create a project named `<name>` in team `<team>` with `-j` and capture the project URL **and the project UUID** (`id`) from the JSON output — step 4.6 needs the UUID for the entity-page frontmatter. If existence check in Step 2 already found a matching project, skip creation and resolve the existing project's URL + UUID via `linear project list --team <team> -j`.
+Create the project, then read its UUID back — `projects create` takes no
+`--output` flag and prints nothing parseable, so the UUID needs a second call:
+
+```bash
+linear projects create "<name>" --team <team> -d "<one-line description>"
+linear projects list --team <team> -o json
+```
+
+From the second command's output, take the `.id` of the entry whose `name`
+equals `<name>`. Step 4.6 needs that UUID for the entity-page frontmatter. If
+the existence check in Step 2 already found a matching project, skip creation
+and reuse the UUID it captured.
+
+The CLI exposes no project URL in any command or output format — do not attempt
+to construct one.
 
 ### 4.6 — Nerdbrain entity page (conditional)
 
@@ -186,10 +200,10 @@ Only run if inspection confirmed nerdbrain is reachable. Create `~/obsidian/nerd
 - `local-paths: [{host: <hostname>, path: <absolute-path>}]`
 - `linear: { team: <team>, project: <uuid-from-step-4.5> }` — both fields are
   REQUIRED; prefill directly from step 4.5 (the project was just created or
-  found there, so the UUID is known). If step 4.5 was skipped (no `linear-cli`
-  in session), omit the `linear:` block — Linear was not checked, and
+  found there, so the UUID is known). If step 4.5 was skipped (no working
+  `linear` CLI), omit the `linear:` block — Linear was not checked, and
   `linear: none` means a confirmed "no Linear counterpart exists"; backfill
-  in a later session with `linear-cli` available.
+  in a later session with the CLI available.
 - `created` / `updated`: today
 
 Then append a one-liner to `5-wiki/index.md` under `## Projekty` and a log entry to `5-wiki/log.md`. Use the `obsidian-cli` skill for all vault writes.
@@ -204,7 +218,7 @@ After execution, print a compact summary:
 Created:
   Directory: <path>
   GitHub:    <url>
-  Linear:    <url>
+  Linear:    <team>/<name> (<uuid>)
   Wiki:      <vault-path> (or 'disabled')
 Now picking spec skill...
 ```
@@ -250,8 +264,8 @@ A hardcoded list rots within weeks: skills get renamed, new ones appear, the use
 | `gh` not authenticated | Stop before step 4.4 with: "Run `gh auth login` and re-run." |
 | Repo already has remote `origin` | Skip `gh repo create`; use existing remote. |
 | GitHub repo with same name exists, no local remote | Wire the existing remote with `git remote add origin <url>` and push. No duplicate created. |
-| `linear-cli` skill not in session | Skip Linear creation; continue. |
-| Linear project with same name already exists in team | Surface existing URL; do not create duplicate. |
+| `linear` CLI missing or not authenticated | Skip Linear creation; continue. |
+| Linear project with same name already exists in team | Surface existing UUID; do not create duplicate. |
 | Nerdbrain vault not reachable | Silently skip step 4.6. This is normal for users without nerdbrain. |
 | User aborts at approval gate | Print "Cancelled. No changes made." Step 1 is read-only. |
 | No external spec-creating skills found in session | The menu still offers **inline grilling** (always available); external wrappers like `/grill-me` can only be run manually by the user. |
@@ -283,13 +297,13 @@ Claude: [inspects: git repo on main with commits, README exists,
          GitHub repo 'mything' exists under user, no local origin]
         Visibility (public/private) [public]: <enter>
         Linear team: nerd4rent
-        [Linear existence: project 'mything' already exists → url X]
+        [Linear existence: project 'mything' already exists → uuid X]
         Plan:
           1. git init   [skip — already a repo on main]
           2. README     [skip — exists, keeping]
           3. commit     [skip — repo has commits]
           4. gh repo    [skip — exists: github.com/user/mything; will wire remote + push]
-          5. linear     [skip — exists: linear.app/.../project/X]
+          5. linear     [skip — exists: uuid b705df47-ca9b-…]
           6. nerdbrain  [run]
           7. spec menu
         Proceed? [Y/n]: y

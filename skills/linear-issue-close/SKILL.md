@@ -28,8 +28,17 @@ linear issues update <ID> --state Done
 ```
 
 `Done` is the team's own state **name**, not a state type — list a team's names
-with `linear teams states <KEY>`. There is no command mapping a branch back to
-an issue, so the ID is resolved locally, below.
+with `linear teams states <KEY>`.
+
+There is no command mapping a branch back to an issue, so the ID is parsed from
+the branch name and every candidate is confirmed with a read before use:
+
+```bash
+linear issues get <ID> -f minimal -o json
+```
+
+It exits non-zero for an ID that does not exist, which is what makes the
+resolution below safe.
 
 ## Resolve the issue ID
 
@@ -37,12 +46,23 @@ Use the ID passed by the caller. If none was passed, read it from the current
 branch:
 
 ```bash
-git branch --show-current | grep -oiE '[a-z]+-[0-9]+' | head -1 | tr '[:lower:]' '[:upper:]'
+for candidate in $(git branch --show-current | grep -oiE '[a-z]+-[0-9]+' | tr '[:lower:]' '[:upper:]'); do
+  linear issues get "$candidate" -f minimal -o json >/dev/null 2>&1 && { echo "$candidate"; break; }
+done
 ```
 
 Matching is case-insensitive because `linear issues slug` produces lowercase
-branch names; the result is upper-cased because Linear expects `DEMO-123`. **If
-nothing matches, stop and ask the user for the ID** — never guess it.
+branch names; the result is upper-cased because Linear expects `DEMO-123`.
+
+Every `letters-digits` fragment is a *candidate*, and the first one that
+actually resolves in Linear wins. Taking the leftmost match alone is not safe:
+a branch named `sprint-24-demo-456-fix` yields `SPRINT-24` before `DEMO-456`, and
+that wrong-but-plausible ID would flow into the Done write below and close
+somebody else's issue. Resolving each candidate also keeps older branches
+working — a `pawel/demo-123-tytul` branch from the previous CLI still lands on
+`DEMO-123`.
+
+**If no candidate resolves, stop and ask the user for the ID** — never guess it.
 
 Call it `<ID>` below.
 

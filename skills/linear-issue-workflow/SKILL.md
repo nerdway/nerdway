@@ -20,7 +20,7 @@ description: >-
 |---------|---------|
 | Status gate (every turn) | `linear issues get <ID> -f minimal -o json` |
 | Full context (entering a phase) | `linear issues export <ID> "${TMPDIR:-/tmp}/linear-<ID>"` |
-| Post a comment | `cat body.md \| linear issues comment <ID>` |
+| Post a comment | `cat body.md \| linear issues comment <ID> -b -` |
 | Set status | `linear issues update <ID> --state 'In Progress'` |
 | Branch name | `linear issues slug <ID>` |
 | Active work in a team/project | `linear issues list --team <KEY> --project <name> --state 'Todo,In Progress,In Review'` |
@@ -31,8 +31,12 @@ description, every comment, a `References` section with linked PRs) plus an
 `assets/` folder holding inline images as local files ready to `Read`.
 
 States are the team's own **names** — `Backlog`, not `backlog`; list them with
-`linear teams states <KEY>`. Multi-line bodies always arrive on **stdin**; there
-is no `--body-file`.
+`linear teams states <KEY>`.
+
+Multi-line bodies arrive on **stdin**, but only when the flag's value is the `-`
+sentinel — `-b -` for a comment. There is no `--body-file`, and a bare pipe is
+silently insufficient: without `-b -` the CLI answers `comment body is required`
+even though content was piped in.
 
 ## When this skill applies
 
@@ -157,7 +161,7 @@ run them, manually, as slash commands.
 Save the plan to a temp file, then:
 
 ```bash
-cat <path-to-plan.md> | linear issues comment <ID>
+cat <path-to-plan.md> | linear issues comment <ID> -b -
 linear issues update <ID> --state Todo
 ```
 
@@ -255,7 +259,7 @@ re-run.
 After each session (including partial work), post:
 
 ```bash
-cat <summary.md> | linear issues comment <ID>
+cat <summary.md> | linear issues comment <ID> -b -
 ```
 
 Body **must** start with `## Session summary` and include:

@@ -1,5 +1,6 @@
 <!-- GENERATED from the schema registry in workflow-graph.json.
-     Run `node scripts/render-templates.ts` to rebuild; editing this file directly reddens the drift test. -->
+     Run `node scripts/render-templates.ts` to rebuild; editing this file directly reddens the drift test.
+     Delete this banner before posting — the body must start with the heading below. -->
 
 ## Session summary
 

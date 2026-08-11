@@ -116,10 +116,11 @@ the runtime are two different artifacts.
 
 Every registry entry carries its **schema body** — the JSON Schema the payload on
 that edge is checked against — and the body has two consumers, which is what keeps
-the shape defined once instead of twice. Inside a workflow island `agent({schema})`
-enforces it at runtime; outside one, `node scripts/render-templates.ts` renders it
-into the templates the skills ship (`plan-template.md`, `issue-template.md`,
-`session-summary-template.md`). Those three files are generated artifacts: change a
+the shape defined once instead of twice. Today `node scripts/render-templates.ts`
+renders it into the templates the skills ship (`plan-template.md`,
+`issue-template.md`, `session-summary-template.md`); once the first island under
+`workflows/` lands, the same body is what its `agent({schema})` call will enforce
+at runtime, inlined verbatim. Those three files are generated artifacts: change a
 section by editing the schema, and a hand edit reddens the drift test. A body is
 also self-contained — a `$ref` may only point into the entry's own `$defs` — because
 a workflow script has to inline it verbatim. None of this ever becomes a

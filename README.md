@@ -190,7 +190,7 @@ Two manifests carry a version, and they move together:
 - `.claude-plugin/plugin.json` → `version`
 - `.claude-plugin/marketplace.json` → `metadata.version`
 
-The installed plugin version comes from `plugin.json`. Bumping it is what forces Claude Code to refresh its `cache/<marketplace>/<plugin>/<version>/` copy — an unchanged number makes `/plugin update` a no-op even when `main` has moved on. `marketplace.json` versions the marketplace itself and does not drive that cache, but the two numbers have matched for every release; a mismatch publishes an inconsistent manifest. Keep them equal.
+The installed plugin version comes from `plugin.json`. Bumping it is what forces Claude Code to refresh its `cache/<marketplace>/<plugin>/<version>/` copy — an unchanged number makes `/plugin update` a no-op even when `main` has moved on. `marketplace.json` versions the marketplace itself and does not drive that cache, but the two numbers have matched for every release; a mismatch publishes an inconsistent manifest. Keep them equal — `node scripts/validate-manifests.ts` checks it and exits non-zero when they drift.
 
 Merging to `main` does not update anyone's install on its own: the local marketplace clone is only refreshed by `/plugin marketplace update <marketplace>`, followed by `/plugin update <plugin>@<marketplace>`.
 

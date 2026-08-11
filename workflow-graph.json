@@ -1,0 +1,193 @@
+{
+  "_comment": "Topology of the issue lifecycle axis: every node, the schema each edge carries, gates, failure policy and width budget. scripts/validate-workflow-graph.ts enforces it; see docs/adr/0003-workflow-graph-contract.md. runtime: conversational = needs mid-run human interaction, stays in the main agent; workflow = graphable island runnable as a Workflow script; chain = sequential and deliberately not a graph. Schema bodies land in DEMO-246; workflow scripts must inline them as `const SCHEMA_<Name> = {...}`, which is what the drift check reads.",
+  "schemas": [
+    { "id": "IssueSpec", "description": "The filed issue: objective, scope, acceptance criteria, constraints." },
+    { "id": "ProjectContext", "description": "Vault recall for the project: entity page sections, decisions, 1-hop graph." },
+    { "id": "PlanContext", "description": "Everything the plan draft reads, gathered in parallel: repo layout, prior plans, related issues, ADRs." },
+    { "id": "ImplementationPlan", "description": "The plan posted to Linear as a `## Implementation plan` comment." },
+    { "id": "ChangeSet", "description": "Commits pushed to the issue branch plus the draft PR that tracks them." },
+    { "id": "ReviewRequest", "description": "The review the user picked: dimensions to cover and the change range to read." },
+    { "id": "ReviewFindings", "description": "Verified findings (a list of the ReviewFinding shape from DEMO-246) with their verdicts." },
+    { "id": "SessionSummary", "description": "The `## Session summary` comment: what changed, what remains, validation, next steps." },
+    { "id": "MergedBranch", "description": "The merged PR/MR, the checkout switched to the base branch, the issue set to Done." },
+    { "id": "EntityPageUpdate", "description": "The entity page edit plus the index/log upkeep that goes with it." }
+  ],
+  "nodes": [
+    {
+      "id": "issue-write",
+      "skill": "linear-issue-writer",
+      "runtime": "conversational",
+      "phase": "write",
+      "entry": true,
+      "in": [],
+      "out": ["IssueSpec"],
+      "dependsOn": [],
+      "failure": { "retries": 0, "fallback": "stop and ask the user", "killsRun": true, "reporting": "chat" },
+      "budget": { "maxWidth": 1 },
+      "gates": [
+        {
+          "kind": "decision",
+          "mechanism": "chat-approval",
+          "description": "The user approves the drafted issue before anything is written to Linear."
+        }
+      ]
+    },
+    {
+      "id": "wiki-recall",
+      "skill": "nerdbrain-search",
+      "runtime": "conversational",
+      "phase": "plan",
+      "in": ["IssueSpec"],
+      "out": ["ProjectContext"],
+      "dependsOn": ["issue-write"],
+      "failure": {
+        "retries": 0,
+        "fallback": "continue without vault context and flag the gap in the plan",
+        "killsRun": false,
+        "reporting": "chat"
+      },
+      "budget": { "maxWidth": 1 },
+      "gates": []
+    },
+    {
+      "id": "plan-context-fanout",
+      "skill": "linear-issue-workflow",
+      "runtime": "workflow",
+      "phase": "plan",
+      "in": ["IssueSpec", "ProjectContext"],
+      "out": ["PlanContext"],
+      "dependsOn": ["issue-write", "wiki-recall"],
+      "failure": {
+        "retries": 1,
+        "fallback": "degrade to the sequential context read in the main agent",
+        "killsRun": false,
+        "reporting": "workflow log and session summary"
+      },
+      "budget": { "maxWidth": 6 },
+      "gates": []
+    },
+    {
+      "id": "plan-draft",
+      "skill": "linear-issue-workflow",
+      "runtime": "conversational",
+      "phase": "plan",
+      "in": ["PlanContext"],
+      "out": ["ImplementationPlan"],
+      "dependsOn": ["plan-context-fanout"],
+      "failure": { "retries": 0, "fallback": "stop and ask the user", "killsRun": true, "reporting": "chat" },
+      "budget": { "maxWidth": 1 },
+      "gates": []
+    },
+    {
+      "id": "implement",
+      "skill": "linear-issue-workflow",
+      "runtime": "conversational",
+      "phase": "implement",
+      "in": ["ImplementationPlan"],
+      "out": ["ChangeSet"],
+      "dependsOn": ["plan-draft"],
+      "failure": { "retries": 0, "fallback": "stop and report", "killsRun": true, "reporting": "linear-comment" },
+      "budget": { "maxWidth": 1 },
+      "gates": [
+        {
+          "kind": "decision",
+          "mechanism": "linear-status",
+          "description": "The human sets the issue to In Progress in Linear; no repo change happens before that."
+        }
+      ]
+    },
+    {
+      "id": "session-summary",
+      "skill": "linear-issue-workflow",
+      "runtime": "conversational",
+      "phase": "implement",
+      "in": ["ChangeSet"],
+      "out": ["SessionSummary"],
+      "dependsOn": ["implement"],
+      "failure": { "retries": 1, "fallback": "print the summary in chat", "killsRun": false, "reporting": "chat" },
+      "budget": { "maxWidth": 1 },
+      "gates": []
+    },
+    {
+      "id": "review-menu",
+      "skill": "linear-issue-workflow",
+      "runtime": "conversational",
+      "phase": "review",
+      "in": ["ChangeSet"],
+      "out": ["ReviewRequest"],
+      "dependsOn": ["implement"],
+      "failure": {
+        "retries": 0,
+        "fallback": "fall back to the user reviewing the PR manually",
+        "killsRun": false,
+        "reporting": "chat"
+      },
+      "budget": { "maxWidth": 1 },
+      "gates": [
+        {
+          "kind": "decision",
+          "mechanism": "chat-approval",
+          "description": "The user picks the reviewer; the runtime takes no mid-run input, so this cannot move inside review-verify."
+        }
+      ]
+    },
+    {
+      "id": "review-verify",
+      "skill": "linear-issue-workflow",
+      "runtime": "workflow",
+      "phase": "review",
+      "in": ["ReviewRequest"],
+      "out": ["ReviewFindings"],
+      "dependsOn": ["review-menu"],
+      "failure": {
+        "retries": 1,
+        "fallback": "report partial findings and mark the run incomplete",
+        "killsRun": false,
+        "reporting": "linear-comment"
+      },
+      "budget": { "maxWidth": 8 },
+      "gates": []
+    },
+    {
+      "id": "close",
+      "skill": "linear-issue-close",
+      "runtime": "chain",
+      "phase": "close",
+      "irreversible": true,
+      "in": ["ReviewFindings"],
+      "out": ["MergedBranch"],
+      "dependsOn": ["review-verify"],
+      "failure": {
+        "retries": 0,
+        "fallback": "stop and report (merge conflict, missing gh/glab)",
+        "killsRun": true,
+        "reporting": "chat"
+      },
+      "budget": { "maxWidth": 1 },
+      "gates": [
+        {
+          "kind": "decision",
+          "mechanism": "linear-status",
+          "description": "The human asks to close, or sets the issue to Done with the PR still open; the merge is irreversible."
+        }
+      ]
+    },
+    {
+      "id": "wiki-write",
+      "skill": "nerdbrain-wiki",
+      "runtime": "chain",
+      "phase": "wiki",
+      "in": ["SessionSummary"],
+      "out": ["EntityPageUpdate"],
+      "dependsOn": ["session-summary"],
+      "failure": {
+        "retries": 0,
+        "fallback": "skip the wiki write and report it to the user",
+        "killsRun": false,
+        "reporting": "chat"
+      },
+      "budget": { "maxWidth": 1 },
+      "gates": []
+    }
+  ]
+}

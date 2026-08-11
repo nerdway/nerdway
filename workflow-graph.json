@@ -1,5 +1,5 @@
 {
-  "_comment": "Topology of the issue lifecycle axis: every node, the schema each edge carries, gates, failure policy and width budget. scripts/validate-workflow-graph.ts enforces it; see docs/adr/0003-workflow-graph-contract.md. runtime: conversational = needs mid-run human interaction, stays in the main agent; workflow = graphable island runnable as a Workflow script; chain = sequential and deliberately not a graph. Every registry entry carries its JSON Schema body: it is what `agent({schema})` enforces at runtime, what the markdown renderer builds the skill templates from, and it is self-contained (a $ref may only point into the entry's own $defs) because workflow scripts must inline it verbatim as `const SCHEMA_<Name> = {...}`, which is what the drift check reads.",
+  "_comment": "Topology of the issue lifecycle axis: every node, the schema each edge carries, gates, failure policy and width budget. scripts/validate-workflow-graph.ts enforces it; see docs/adr/0003-workflow-graph-contract.md. runtime: conversational = needs mid-run human interaction, stays in the main agent; workflow = graphable island runnable as a Workflow script; chain = sequential and deliberately not a graph. Every registry entry carries its JSON Schema body: it is what `agent({schema})` enforces at runtime, what the markdown renderer builds the skill templates from, and it is self-contained (a $ref may only point into the entry's own $defs) because workflow scripts must inline it verbatim as `const SCHEMA_<Name> = {...}`, which is what the drift check reads. A workflow node whose island is built carries `script`: the repo-relative workflows/*.js file realising it (two sibling nodes may share one script — one island runs both). The binding arms the drift check in the omission direction: every schema in the node's `out` must be inlined in that script (rule 17) and each inline body must be a strict-JSON literal deep-equal to the registry body (rule 18). Inputs are deliberately exempt — they arrive through `args`, validated by their producer. A workflow node without `script` is an island not yet built.",
   "schemas": [
     {
       "id": "IssueSpec",
@@ -108,7 +108,7 @@
     },
     {
       "id": "PlanContext",
-      "description": "The in-repo half of the plan context, gathered in parallel: repo layout, prior plans, related issues, ADRs. The vault half travels separately as ProjectContext, because a node belongs to exactly one skill. Preliminary shape: the producing island is built in DEMO-247, which may correct it.",
+      "description": "The in-repo half of the plan context, gathered in parallel: repo layout, prior plans, related issues, ADRs. The vault half travels separately as ProjectContext, because a node belongs to exactly one skill.",
       "schema": {
         "type": "object",
         "title": "Plan context",
@@ -481,6 +481,7 @@
       "skill": "nerdbrain-search",
       "runtime": "workflow",
       "phase": "plan",
+      "script": "workflows/plan-context-fanout.js",
       "in": ["IssueSpec"],
       "out": ["ProjectContext"],
       "dependsOn": ["issue-write"],
@@ -498,6 +499,7 @@
       "skill": "linear-issue-workflow",
       "runtime": "workflow",
       "phase": "plan",
+      "script": "workflows/plan-context-fanout.js",
       "in": ["IssueSpec"],
       "out": ["PlanContext"],
       "dependsOn": ["issue-write"],

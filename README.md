@@ -114,6 +114,18 @@ to exactly one skill. See
 [ADR-0003](docs/adr/0003-workflow-graph-contract.md) for why the contract and
 the runtime are two different artifacts.
 
+Every registry entry carries its **schema body** — the JSON Schema the payload on
+that edge is checked against — and the body has two consumers, which is what keeps
+the shape defined once instead of twice. Inside a workflow island `agent({schema})`
+enforces it at runtime; outside one, `node scripts/render-templates.ts` renders it
+into the templates the skills ship (`plan-template.md`, `issue-template.md`,
+`session-summary-template.md`). Those three files are generated artifacts: change a
+section by editing the schema, and a hand edit reddens the drift test. A body is
+also self-contained — a `$ref` may only point into the entry's own `$defs` — because
+a workflow script has to inline it verbatim. None of this ever becomes a
+precondition: a session without the workflow runtime fills the same generated
+template in prose, exactly as before.
+
 The axis is an **island graph**, not one graph end to end. The Claude Code
 workflow runtime takes no mid-run user input, so every step that needs a human
 — the grilling session, the "user sets In Progress" gate, the review menu —

@@ -12,6 +12,17 @@ function read(path: string): Record<string, unknown> {
 const plugin = read("plugin.json").version;
 const marketplace = (read("marketplace.json").metadata as { version?: unknown } | undefined)?.version;
 
+function missing(value: unknown): boolean {
+  return typeof value !== "string" || value.length === 0;
+}
+
+if (missing(plugin) || missing(marketplace)) {
+  console.error("manifest versions are missing:");
+  console.error(`  - plugin.json version: ${plugin}`);
+  console.error(`  - marketplace.json metadata.version: ${marketplace}`);
+  process.exit(1);
+}
+
 if (plugin !== marketplace) {
   console.error("manifest versions disagree:");
   console.error(`  - plugin.json version: ${plugin}`);

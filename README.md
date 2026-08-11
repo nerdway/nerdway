@@ -106,7 +106,11 @@ written down as a contract in [`workflow-graph.json`](workflow-graph.json) and
 enforced by `node scripts/validate-workflow-graph.ts` (tests:
 `node --test scripts/**/*.test.ts`). The contract declares, per node, which
 skill runs it, what schema each edge carries, which gates guard it, what happens
-on failure, and how wide it may fan out. See
+on failure, and how wide it may fan out (`budget.maxWidth`, an integer from 1 to
+the runtime's cap of 16). Two nodes sharing an upstream is what "these may run
+at once" looks like — `wiki-recall` and `plan-context-fanout` are both plan-phase
+branches off `issue-write`, split into separate nodes only because a node belongs
+to exactly one skill. See
 [ADR-0003](docs/adr/0003-workflow-graph-contract.md) for why the contract and
 the runtime are two different artifacts.
 
@@ -128,9 +132,9 @@ human-free stretches become workflow islands:
 | Node | Skill | Phase | Runtime | Edge in → out |
 |---|---|---|---|---|
 | `issue-write` | `linear-issue-writer` | write | conversational | — → `IssueSpec` |
-| `wiki-recall` | `nerdbrain-search` | plan | conversational | `IssueSpec` → `ProjectContext` |
-| `plan-context-fanout` | `linear-issue-workflow` | plan | **workflow** | `IssueSpec`, `ProjectContext` → `PlanContext` |
-| `plan-draft` | `linear-issue-workflow` | plan | conversational | `PlanContext` → `ImplementationPlan` |
+| `wiki-recall` | `nerdbrain-search` | plan | **workflow** | `IssueSpec` → `ProjectContext` |
+| `plan-context-fanout` | `linear-issue-workflow` | plan | **workflow** | `IssueSpec` → `PlanContext` |
+| `plan-draft` | `linear-issue-workflow` | plan | conversational | `PlanContext`, `ProjectContext` → `ImplementationPlan` |
 | `implement` | `linear-issue-workflow` | implement | conversational | `ImplementationPlan` → `ChangeSet` |
 | `session-summary` | `linear-issue-workflow` | implement | conversational | `ChangeSet` → `SessionSummary` |
 | `review-menu` | `linear-issue-workflow` | review | conversational | `ChangeSet` → `ReviewRequest` |

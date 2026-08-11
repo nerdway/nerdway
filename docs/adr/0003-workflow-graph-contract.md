@@ -29,16 +29,29 @@ sequence.
   therefore cannot read `workflow-graph.json` or import edge schemas — every
   schema a workflow enforces must be inlined into the script as a JSON Schema
   literal passed to `agent({schema})`. Consistency between the contract and
-  those inline copies is bought with a **drift check in the validator** (rule 10
-  below), not with a shared definition. This duplication is deliberate, and the
-  drift check is an acceptance criterion rather than a nice-to-have, because it
-  is the only defence against the two drifting apart.
+  those inline copies is bought with a **drift check in the validator**, not
+  with a shared definition: `scripts/validate-workflow-graph.ts` greps each
+  `workflows/*.js` for schema literals and rejects any name absent from the
+  contract's registry. The check can only read the scripts as text, so it keys
+  off a naming convention — **a workflow script must declare its schemas as
+  `const SCHEMA_<Name> = {...}`, where `<Name>` is the contract's schema id**.
+  A script that names them anything else is invisible to the check and passes
+  vacuously. This duplication is deliberate, and the drift check is an
+  acceptance criterion rather than a nice-to-have, because it is the only
+  defence against the two drifting apart.
 - The contract describes the **whole axis**, including nodes that will never
   become a workflow. Each node declares `runtime`: `conversational` (needs
   mid-run human interaction, stays in the main agent), `workflow` (a graphable
   island), or `chain` (sequential and irreversible on purpose). The runtime
   allows no mid-run user input, so decision gates cannot live inside a workflow
   — the validator enforces that as a data rule.
+- **A node belongs to exactly one skill**, which is what splits work that runs
+  concurrently across several nodes: the vault recall (`nerdbrain-search`) and
+  the in-repo plan fan-out (`linear-issue-workflow`) are siblings sharing an
+  upstream, not one node, even though one island runs both. Concurrency is
+  expressed by two nodes depending on the same predecessor, never by nesting —
+  so a shared upstream is the only thing that means "these may run at once",
+  and a `dependsOn` edge always means a real data dependency.
 - `workflows/*.js` is plain JavaScript, the only untyped place in a repo that
   otherwise runs on Node 24 native type stripping. `Date.now()`,
   `Math.random()` and argument-less `new Date()` throw inside a script (they

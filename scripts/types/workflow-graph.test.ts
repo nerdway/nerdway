@@ -184,6 +184,50 @@ test("rejects a duplicate schema id in the registry", () => {
   assert.match(errors[0], /IssueSpec/);
 });
 
+test("rejects a node that is not an object instead of throwing", () => {
+  const errors = validateContract(contract([entryNode(), null]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /must be an object/);
+});
+
+test("rejects a node id that is not a string", () => {
+  const errors = validateContract(contract([entryNode(), planNode({ id: 123 })]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /string id/);
+});
+
+test("rejects an out that is not an array of schema names", () => {
+  const errors = validateContract(contract([entryNode(), planNode({ out: "ImplementationPlan" })]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /out must be an array/);
+});
+
+test("rejects a dependsOn that is not an array without also calling the node orphaned", () => {
+  const errors = validateContract(contract([entryNode(), planNode({ dependsOn: "write" })]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /dependsOn must be an array/);
+});
+
+test("rejects a schema registry entry with no description", () => {
+  const schemas = [{ id: "IssueSpec" }, { id: "ImplementationPlan", description: "the plan posted to Linear" }];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /IssueSpec/);
+});
+
+test("rejects a gate that names no mechanism", () => {
+  const gates = [{ kind: "deny", description: "no repo write before the plan is accepted" }];
+  const errors = validateContract(contract([entryNode(), planNode({ gates })]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /mechanism/);
+});
+
+test("rejects a second node marked as the axis entry", () => {
+  const errors = validateContract(contract([entryNode(), planNode({ entry: true })]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /entry/i);
+});
+
 test("reports every problem rather than stopping at the first", () => {
   const broken = planNode({ skill: "ghost-skill", budget: { maxWidth: 99 } });
   assert.equal(validateContract(contract([entryNode(), broken]), skillDirs).length, 2);

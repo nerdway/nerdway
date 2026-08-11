@@ -12,7 +12,7 @@ export interface SchemaEntry {
 }
 
 export interface Gate {
-  kind: "decision" | "deny";
+  kind: (typeof GATE_KINDS)[number];
   mechanism: string;
   description: string;
 }
@@ -79,6 +79,12 @@ function validateGates(id: string, runtime: unknown, raw: unknown, errors: strin
       errors.push(`${id}: unknown gate kind ${gate?.kind}`);
       continue;
     }
+    if (typeof gate.mechanism !== "string" || gate.mechanism.length === 0) {
+      errors.push(`${id}: gate ${gate.kind} must name the mechanism that enforces it`);
+    }
+    if (typeof gate.description !== "string" || gate.description.length === 0) {
+      errors.push(`${id}: gate ${gate.kind} must describe what it holds back`);
+    }
     if (gate.kind === "decision" && runtime === "workflow") {
       errors.push(`${id}: a decision gate cannot sit inside a workflow node — the runtime takes no mid-run user input`);
     }
@@ -129,8 +135,14 @@ export function validateContract(raw: unknown, skillDirs: string[], inlineSchema
   const errors: string[] = [];
   const registry = new Set<string>();
   for (const schema of c.schemas as SchemaEntry[]) {
-    if (typeof schema?.id !== "string") continue;
+    if (typeof schema !== "object" || schema === null || typeof schema.id !== "string") {
+      errors.push("each schemas entry must be an object with a string id");
+      continue;
+    }
     if (registry.has(schema.id)) errors.push(`duplicate schema id in the registry: ${schema.id}`);
+    if (typeof schema.description !== "string" || schema.description.length === 0) {
+      errors.push(`schema ${schema.id}: description must say what travels on the edge`);
+    }
     registry.add(schema.id);
   }
 
@@ -143,18 +155,32 @@ export function validateContract(raw: unknown, skillDirs: string[], inlineSchema
     byId.set(node.id, node);
   }
 
+  let entries = 0;
   for (const node of nodes) {
-    const id = typeof node?.id === "string" ? node.id : "<missing id>";
+    if (typeof node !== "object" || node === null) {
+      errors.push("each nodes entry must be an object");
+      continue;
+    }
+    const id = typeof node.id === "string" ? node.id : "<missing id>";
     if (seen.has(id)) continue;
     seen.add(id);
 
+    if (typeof node.id !== "string" || node.id.length === 0) {
+      errors.push("node is missing a string id");
+    }
+    if (node.entry === true && ++entries > 1) {
+      errors.push(`${id}: a second node is marked as the axis entry`);
+    }
+    for (const field of ["in", "out", "dependsOn"] as const) {
+      if (!isStringArray(node[field])) errors.push(`${id}: ${field} must be an array of strings`);
+    }
     if (!skillDirs.includes(node.skill)) {
       errors.push(`${id}: skill ${node.skill} is not a directory under skills/`);
     }
     if (!(RUNTIMES as readonly string[]).includes(node.runtime)) {
       errors.push(`${id}: unknown runtime ${node.runtime}`);
     }
-    if (names(node.dependsOn).length === 0 && node.entry !== true) {
+    if (isStringArray(node.dependsOn) && node.dependsOn.length === 0 && node.entry !== true) {
       errors.push(`${id}: orphaned node — no dependsOn and not marked as the axis entry`);
     }
     if (node.irreversible === true && (!Array.isArray(node.gates) || node.gates.length === 0)) {

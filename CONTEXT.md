@@ -50,6 +50,26 @@ the upstream node produces and the downstream node consumes. An edge with no
 schema on both ends is a contract error, not a loose coupling.
 _Avoid_: handoff, "pairs with" (status, not data)
 
+**Schema body**:
+The JSON Schema literal every registry entry in `workflow-graph.json` carries.
+One definition with two consumers: `agent({schema})` enforces it inside a
+workflow island, and the renderer builds the skill templates from its `title`
+and `description` fields.
+_Avoid_: schema name, type (both survive from when the registry held only ids)
+
+**Self-contained schema**:
+A schema body whose `$ref`s point only into its own `$defs`, so a workflow
+script can inline it verbatim. A reference reaching another registry entry
+would dangle the moment the literal is copied into a script, which is why the
+validator rejects it.
+_Avoid_: standalone, complete (say nothing about references)
+
+**Generated template**:
+A skill template file rendered from a schema body rather than written by hand —
+`plan-template.md`, `issue-template.md`, `session-summary-template.md`. Rebuild
+with `node scripts/render-templates.ts`; a hand edit reddens the drift test.
+_Avoid_: example, boilerplate (both imply it may be edited in place)
+
 **Workflow island**:
 A stretch of the axis wide enough, independent enough and free enough of human
 input to run as one `Workflow` script. Islands sit inside a conversational

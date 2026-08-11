@@ -6,9 +6,26 @@ export const GATE_KINDS = ["decision", "deny"] as const;
 
 export const MAX_WIDTH = 16;
 
+/** The list shapes the markdown renderer implements; anything else is a typo, not a mode. */
+export const RENDER_MODES = ["checklist", "numbered"] as const;
+
+export interface JsonSchema {
+  type?: string;
+  title?: string;
+  description?: string;
+  properties?: Record<string, JsonSchema>;
+  required?: string[];
+  items?: JsonSchema;
+  enum?: string[];
+  $defs?: Record<string, JsonSchema>;
+  $ref?: string;
+  "x-render"?: (typeof RENDER_MODES)[number];
+}
+
 export interface SchemaEntry {
   id: string;
   description: string;
+  schema: JsonSchema;
 }
 
 export interface Gate {
@@ -49,12 +66,118 @@ export interface InlineSchemaUse {
   schema: string;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
 function names(value: unknown): string[] {
   return isStringArray(value) ? value : [];
+}
+
+/**
+ * Checks one object schema — the registry entry itself, an `items` shape or a `$defs` entry —
+ * and recurses into every nested one, so a rule holds at every depth the contract can reach.
+ */
+function validateObjectSchema(id: string, path: string, raw: unknown, errors: string[]): void {
+  if (!isRecord(raw)) {
+    errors.push(`schema ${id}: ${path} must be a schema object`);
+    return;
+  }
+
+  const properties = raw.properties;
+  if (isRecord(properties)) {
+    for (const [name, property] of Object.entries(properties)) {
+      const where = `${path}.${name}`;
+      if (!isRecord(property)) {
+        errors.push(`schema ${id}: property ${where} must be a schema object`);
+        continue;
+      }
+      for (const field of ["title", "description"] as const) {
+        const value = property[field];
+        if (typeof value !== "string" || value.length === 0) {
+          errors.push(`schema ${id}: property ${where} must have a non-empty ${field} — the renderer builds the template from it`);
+        }
+      }
+      const mode = property["x-render"];
+      if (mode !== undefined && !(RENDER_MODES as readonly unknown[]).includes(mode)) {
+        errors.push(`schema ${id}: property ${where} asks for unknown x-render mode ${String(mode)}`);
+      }
+      if (isRecord(property.properties)) validateObjectSchema(id, where, property, errors);
+      if (isRecord(property.items) && property.items.$ref === undefined) {
+        validateObjectSchema(id, `${where}.items`, property.items, errors);
+      }
+    }
+  }
+
+  if (raw.required === undefined) return;
+  if (!isStringArray(raw.required)) {
+    errors.push(`schema ${id}: ${path} required must be an array of property names`);
+    return;
+  }
+  for (const name of raw.required) {
+    if (!isRecord(properties) || !Object.hasOwn(properties, name)) {
+      errors.push(`schema ${id}: ${path} required names ${name}, which is not among its properties`);
+    }
+  }
+}
+
+const LOCAL_REF = "#/$defs/";
+
+function validateRefs(id: string, node: unknown, defs: Set<string>, errors: string[]): void {
+  if (Array.isArray(node)) {
+    for (const item of node) validateRefs(id, item, defs, errors);
+    return;
+  }
+  if (!isRecord(node)) return;
+  const ref = node.$ref;
+  if (typeof ref === "string") {
+    if (!ref.startsWith(LOCAL_REF)) {
+      errors.push(`schema ${id}: $ref ${ref} leaves the document — a registry entry is inlined verbatim, so it must be self-contained`);
+    } else if (!defs.has(ref.slice(LOCAL_REF.length))) {
+      errors.push(`schema ${id}: $ref ${ref} names no entry in this document's $defs`);
+    }
+  }
+  for (const [key, value] of Object.entries(node)) {
+    if (key === "$ref") continue;
+    validateRefs(id, value, defs, errors);
+  }
+}
+
+function validateSchemaBody(id: string, raw: unknown, errors: string[]): void {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    errors.push(`schema ${id}: schema body is required — the JSON Schema the edge payload is checked against`);
+    return;
+  }
+  const body = raw as JsonSchema;
+  if (body.type !== "object") {
+    errors.push(`schema ${id}: schema body must declare type "object" — an edge carries a record, not a bare value`);
+  }
+  if (typeof body.title !== "string" || body.title.length === 0) {
+    errors.push(`schema ${id}: schema body must have a non-empty title — the renderer heads the section with it`);
+  }
+
+  const properties = body.properties;
+  if (!isRecord(properties) || Object.keys(properties).length === 0) {
+    errors.push(`schema ${id}: schema body must declare at least one property in properties`);
+    return;
+  }
+
+  validateRefs(id, body, new Set(isRecord(body.$defs) ? Object.keys(body.$defs) : []), errors);
+  validateObjectSchema(id, "properties", body, errors);
+
+  if (body.$defs !== undefined) {
+    if (!isRecord(body.$defs)) {
+      errors.push(`schema ${id}: $defs must be an object of definitions`);
+      return;
+    }
+    for (const [name, def] of Object.entries(body.$defs)) {
+      validateObjectSchema(id, `$defs.${name}`, def, errors);
+    }
+  }
 }
 
 function validateFailure(id: string, raw: unknown, errors: string[]): void {
@@ -143,6 +266,7 @@ export function validateContract(raw: unknown, skillDirs: string[], inlineSchema
     if (typeof schema.description !== "string" || schema.description.length === 0) {
       errors.push(`schema ${schema.id}: description must say what travels on the edge`);
     }
+    validateSchemaBody(schema.id, schema.schema, errors);
     registry.add(schema.id);
   }
 

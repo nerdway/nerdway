@@ -8,7 +8,8 @@ export interface Template {
 
 const BANNER =
   "<!-- GENERATED from the schema registry in workflow-graph.json.\n" +
-  "     Run `node scripts/render-templates.ts` to rebuild; editing this file directly reddens the drift test. -->";
+  "     Run `node scripts/render-templates.ts` to rebuild; editing this file directly reddens the drift test.\n" +
+  "     Delete this banner before posting — the body must start with the heading below. -->";
 
 const ISSUE_PREAMBLE = `<!--
   Issue body templates for linear-issue-writer.

@@ -280,3 +280,36 @@ test("requiredOnly drops the properties the schema does not require", () => {
   const full = schema({ objective, dependencies }, ["objective"]);
   assert.equal(renderSchema(full, PLACEHOLDER, { requiredOnly: true }), expected);
 });
+
+test("a long hint wraps at 80 columns, continuation lines aligned under the comment opener", () => {
+  const checklist = {
+    type: "string",
+    title: "Implementation checklist",
+    description:
+      "Use ONLY when the work is one deliverable with clear steps and is NOT split into sub-issues. If split into sub-issues, drop this section.",
+  };
+  const expected = `## Implementation plan
+
+### Implementation checklist
+
+<!-- Use ONLY when the work is one deliverable with clear steps and is NOT split
+     into sub-issues. If split into sub-issues, drop this section. -->
+`;
+  assert.equal(renderSchema(schema({ checklist }), PLACEHOLDER), expected);
+});
+
+test("a note leads the variant in, right under its heading", () => {
+  const expected = `## CHILD sub-issue (when splitting into stages)
+
+<!-- Each child is a focused slice of the parent. Keep it lean. -->
+
+### Objective
+
+<!-- One paragraph: what problem we solve and for whom. -->
+`;
+  const rendered = renderSchema(schema({ objective }), PLACEHOLDER, {
+    heading: "CHILD sub-issue (when splitting into stages)",
+    note: "Each child is a focused slice of the parent. Keep it lean.",
+  });
+  assert.equal(rendered, expected);
+});

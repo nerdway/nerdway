@@ -28,7 +28,7 @@
           "scope": {
             "type": "object",
             "title": "Scope",
-            "description": "What the issue covers and what it deliberately leaves out.",
+            "description": "Both halves matter: the out list is what stops the issue growing during planning.",
             "properties": {
               "inScope": {
                 "type": "array",
@@ -155,7 +155,7 @@
           "scope": {
             "type": "object",
             "title": "Scope",
-            "description": "What this plan delivers and what it deliberately leaves out.",
+            "description": "Both halves matter: the out list is what stops the work growing mid-implementation.",
             "properties": {
               "inScope": {
                 "type": "array",

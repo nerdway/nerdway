@@ -132,11 +132,13 @@ const [repoFacts, conventions, priorPlans, linearRelations, vault] = await paral
       { label: 'gather:prior-plans', phase: 'Gather', schema: stringListShape },
     ),
   () =>
-    agent(
-      issueHeader +
-        `Collect related Linear issues. Use the linear CLI (read-only): \`linear issues get ${issueId} -o json\` for the parent and links, then fetch the parent and its sub-issues the same way. Return items: one string per related issue — "TEAM-123 (state): title — why it matters to this plan". If the CLI is unavailable, return an empty list.`,
-      { label: 'gather:linear-relations', phase: 'Gather', schema: stringListShape },
-    ),
+    issueId === ''
+      ? Promise.resolve({ items: [] })
+      : agent(
+          issueHeader +
+            `Collect related Linear issues. Use the linear CLI (read-only): \`linear issues get ${issueId} -o json\` for the parent and links, then fetch the parent and its sub-issues the same way. Return items: one string per related issue — "TEAM-123 (state): title — why it matters to this plan". If the CLI is unavailable, return an empty list.`,
+          { label: 'gather:linear-relations', phase: 'Gather', schema: stringListShape },
+        ),
   () =>
     agent(
       issueHeader +
@@ -180,6 +182,7 @@ if (linearRelations === null) gaps.push('linear-relations gatherer failed: relat
 const planContext = {
   repoLayout: repoFacts !== null && typeof repoFacts.repoLayout === 'string' ? repoFacts.repoLayout.trim() : '',
   conventions: dedup(conventions !== null ? conventions.items : []),
+  // Cap: two prior-art sources (plans + Linear), each held to the search-result limit.
   priorArt: dedup([
     ...(priorPlans !== null ? priorPlans.items : []),
     ...(linearRelations !== null ? linearRelations.items : []),

@@ -1,16 +1,460 @@
 {
-  "_comment": "Topology of the issue lifecycle axis: every node, the schema each edge carries, gates, failure policy and width budget. scripts/validate-workflow-graph.ts enforces it; see docs/adr/0003-workflow-graph-contract.md. runtime: conversational = needs mid-run human interaction, stays in the main agent; workflow = graphable island runnable as a Workflow script; chain = sequential and deliberately not a graph. Schema bodies land in DEMO-246; workflow scripts must inline them as `const SCHEMA_<Name> = {...}`, which is what the drift check reads.",
+  "_comment": "Topology of the issue lifecycle axis: every node, the schema each edge carries, gates, failure policy and width budget. scripts/validate-workflow-graph.ts enforces it; see docs/adr/0003-workflow-graph-contract.md. runtime: conversational = needs mid-run human interaction, stays in the main agent; workflow = graphable island runnable as a Workflow script; chain = sequential and deliberately not a graph. Every registry entry carries its JSON Schema body: it is what `agent({schema})` enforces at runtime, what the markdown renderer builds the skill templates from, and it is self-contained (a $ref may only point into the entry's own $defs) because workflow scripts must inline it verbatim as `const SCHEMA_<Name> = {...}`, which is what the drift check reads.",
   "schemas": [
-    { "id": "IssueSpec", "description": "The filed issue: objective, scope, acceptance criteria, constraints." },
-    { "id": "ProjectContext", "description": "Vault recall for the project: entity page sections, decisions, 1-hop graph." },
-    { "id": "PlanContext", "description": "The in-repo half of the plan context, gathered in parallel: repo layout, prior plans, related issues, ADRs. The vault half travels separately as ProjectContext, because a node belongs to exactly one skill." },
-    { "id": "ImplementationPlan", "description": "The plan posted to Linear as a `## Implementation plan` comment." },
-    { "id": "ChangeSet", "description": "Commits pushed to the issue branch plus the draft PR that tracks them." },
-    { "id": "ReviewRequest", "description": "The review the user picked: dimensions to cover and the change range to read." },
-    { "id": "ReviewFindings", "description": "Verified findings (a list of the ReviewFinding shape from DEMO-246) with their verdicts." },
-    { "id": "SessionSummary", "description": "The `## Session summary` comment: what changed, what remains, validation, next steps." },
-    { "id": "MergedBranch", "description": "The merged PR/MR, the checkout switched to the base branch, the issue set to Done." },
-    { "id": "EntityPageUpdate", "description": "The entity page edit plus the index/log upkeep that goes with it." }
+    {
+      "id": "IssueSpec",
+      "description": "The filed issue: objective, scope, acceptance criteria, constraints.",
+      "schema": {
+        "type": "object",
+        "title": "Issue spec",
+        "properties": {
+          "objective": {
+            "type": "string",
+            "title": "Objective",
+            "description": "One or two sentences: the outcome we want and for whom. Testable, not a task list."
+          },
+          "problemAndContext": {
+            "type": "string",
+            "title": "Problem & context",
+            "description": "Why now? What's broken / missing / requested. Link related issues or docs."
+          },
+          "acceptanceCriteria": {
+            "type": "array",
+            "title": "Acceptance criteria",
+            "description": "Each item independently verifiable. This is what \"done\" means.",
+            "x-render": "checklist",
+            "items": { "type": "string" }
+          },
+          "scope": {
+            "type": "object",
+            "title": "Scope",
+            "description": "What the issue covers and what it deliberately leaves out.",
+            "properties": {
+              "inScope": {
+                "type": "array",
+                "title": "In scope",
+                "description": "What this issue delivers.",
+                "items": { "type": "string" }
+              },
+              "outOfScope": {
+                "type": "array",
+                "title": "Out of scope",
+                "description": "What it deliberately leaves to another issue.",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "constraints": {
+            "type": "array",
+            "title": "Constraints",
+            "description": "Tech constraints, non-functional requirements, deadlines, compatibility. Omit if none.",
+            "items": { "type": "string" }
+          },
+          "dependencies": {
+            "type": "array",
+            "title": "Dependencies / related",
+            "description": "Blocking issues, external prerequisites, related TEAM-123 ids. Omit if none.",
+            "items": { "type": "string" }
+          },
+          "implementationChecklist": {
+            "type": "array",
+            "title": "Implementation checklist",
+            "description": "Use ONLY when the work is one deliverable with clear steps and is NOT split into sub-issues. If split into sub-issues, drop this section.",
+            "x-render": "checklist",
+            "items": { "type": "string" }
+          },
+          "openQuestions": {
+            "type": "array",
+            "title": "Open questions",
+            "description": "Anything still ambiguous the planner/implementer must resolve. Omit if none.",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["objective", "acceptanceCriteria"]
+      }
+    },
+    {
+      "id": "ProjectContext",
+      "description": "Vault recall for the project: entity page sections, decisions, 1-hop graph.",
+      "schema": {
+        "type": "object",
+        "title": "Project context",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug",
+            "description": "Slug of the entity page the SessionStart hook injected."
+          },
+          "decisions": {
+            "type": "array",
+            "title": "Decisions",
+            "description": "Recorded project decisions the plan must not contradict without flagging it.",
+            "items": { "type": "string" }
+          },
+          "activeContext": {
+            "type": "string",
+            "title": "Active context",
+            "description": "What the entity page says is currently in flight."
+          },
+          "relatedPages": {
+            "type": "array",
+            "title": "Related pages",
+            "description": "One hop out: pages linked from the entity page or linking back to it.",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["slug", "decisions"]
+      }
+    },
+    {
+      "id": "PlanContext",
+      "description": "The in-repo half of the plan context, gathered in parallel: repo layout, prior plans, related issues, ADRs. The vault half travels separately as ProjectContext, because a node belongs to exactly one skill. Preliminary shape: the producing island is built in DEMO-247, which may correct it.",
+      "schema": {
+        "type": "object",
+        "title": "Plan context",
+        "properties": {
+          "repoLayout": {
+            "type": "string",
+            "title": "Repo layout",
+            "description": "The directories and files the change will touch."
+          },
+          "conventions": {
+            "type": "array",
+            "title": "Conventions",
+            "description": "In-repo rules the plan must follow: CONTEXT.md terms, ADRs, commit style.",
+            "items": { "type": "string" }
+          },
+          "priorArt": {
+            "type": "array",
+            "title": "Prior art",
+            "description": "Earlier plans, related issues and merged PRs worth reading before drafting.",
+            "items": { "type": "string" }
+          },
+          "commands": {
+            "type": "array",
+            "title": "Commands",
+            "description": "Test, build and validator commands the plan will cite.",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["repoLayout", "conventions"]
+      }
+    },
+    {
+      "id": "ImplementationPlan",
+      "description": "The plan posted to Linear as a `## Implementation plan` comment.",
+      "schema": {
+        "type": "object",
+        "title": "Implementation plan",
+        "properties": {
+          "objective": {
+            "type": "string",
+            "title": "Objective",
+            "description": "One paragraph: what problem we solve and for whom."
+          },
+          "scope": {
+            "type": "object",
+            "title": "Scope",
+            "description": "What this plan delivers and what it deliberately leaves out.",
+            "properties": {
+              "inScope": {
+                "type": "array",
+                "title": "In scope",
+                "description": "What this plan delivers.",
+                "items": { "type": "string" }
+              },
+              "outOfScope": {
+                "type": "array",
+                "title": "Out of scope",
+                "description": "What it deliberately leaves to another issue.",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "technicalApproach": {
+            "type": "string",
+            "title": "Technical Approach",
+            "description": "Architecture / strategy, and why this one over the alternatives."
+          },
+          "implementationSteps": {
+            "type": "array",
+            "title": "Implementation Steps",
+            "description": "Ordered steps, each one an atomic commit.",
+            "x-render": "numbered",
+            "items": { "type": "string" }
+          },
+          "acceptanceCriteria": {
+            "type": "array",
+            "title": "Acceptance Criteria",
+            "description": "Each item independently verifiable — this is what closes the issue.",
+            "x-render": "checklist",
+            "items": { "type": "string" }
+          },
+          "risks": {
+            "type": "array",
+            "title": "Risks",
+            "description": "One row per risk, each with the mitigation that keeps it survivable.",
+            "items": {
+              "type": "object",
+              "title": "Risk",
+              "description": "A risk and its mitigation.",
+              "properties": {
+                "risk": {
+                  "type": "string",
+                  "title": "Risk",
+                  "description": "What could go wrong."
+                },
+                "mitigation": {
+                  "type": "string",
+                  "title": "Mitigation",
+                  "description": "What keeps it from sinking the work."
+                }
+              },
+              "required": ["risk", "mitigation"]
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "title": "Dependencies",
+            "description": "Blocking issues, tooling and prerequisites outside this plan.",
+            "items": { "type": "string" }
+          }
+        },
+        "required": [
+          "objective",
+          "scope",
+          "technicalApproach",
+          "implementationSteps",
+          "acceptanceCriteria",
+          "risks",
+          "dependencies"
+        ]
+      }
+    },
+    {
+      "id": "ChangeSet",
+      "description": "Commits pushed to the issue branch plus the draft PR that tracks them.",
+      "schema": {
+        "type": "object",
+        "title": "Change set",
+        "properties": {
+          "branch": {
+            "type": "string",
+            "title": "Branch",
+            "description": "The issue branch the commits landed on."
+          },
+          "commits": {
+            "type": "array",
+            "title": "Commits",
+            "description": "One line per commit, in the order they were pushed.",
+            "items": { "type": "string" }
+          },
+          "pullRequest": {
+            "type": "string",
+            "title": "Pull request",
+            "description": "URL of the draft PR carrying the Linear magic word."
+          },
+          "validation": {
+            "type": "array",
+            "title": "Validation",
+            "description": "Commands run against the change and what they reported.",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["branch", "commits", "pullRequest"]
+      }
+    },
+    {
+      "id": "ReviewRequest",
+      "description": "The review the user picked: dimensions to cover and the change range to read. Preliminary shape: the consuming island is built in DEMO-248, which may correct it.",
+      "schema": {
+        "type": "object",
+        "title": "Review request",
+        "properties": {
+          "reviewer": {
+            "type": "string",
+            "title": "Reviewer",
+            "description": "Which reviewer the user picked from the menu.",
+            "enum": ["superpowers", "matt-pocock", "manual"]
+          },
+          "dimensions": {
+            "type": "array",
+            "title": "Dimensions",
+            "description": "What each reviewer pass must cover — one pass per dimension.",
+            "items": { "type": "string" }
+          },
+          "range": {
+            "type": "string",
+            "title": "Change range",
+            "description": "The diff range to read, e.g. `main...HEAD`."
+          }
+        },
+        "required": ["reviewer", "dimensions", "range"]
+      }
+    },
+    {
+      "id": "ReviewFindings",
+      "description": "Verified findings with their verdicts; a single finding never travels an edge on its own, so ReviewFinding lives as a `$defs` inside this entry.",
+      "schema": {
+        "type": "object",
+        "title": "Review findings",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "description": "One paragraph: what the review covered and whether the change is ready."
+          },
+          "findings": {
+            "type": "array",
+            "title": "Findings",
+            "description": "One row per finding that survived verification.",
+            "items": { "$ref": "#/$defs/ReviewFinding" }
+          }
+        },
+        "required": ["summary", "findings"],
+        "$defs": {
+          "ReviewFinding": {
+            "type": "object",
+            "title": "Finding",
+            "description": "A single verified finding.",
+            "properties": {
+              "file": {
+                "type": "string",
+                "title": "File",
+                "description": "Repo-relative path the finding sits in."
+              },
+              "line": {
+                "type": "integer",
+                "title": "Line",
+                "description": "1-indexed line the finding anchors to."
+              },
+              "claim": {
+                "type": "string",
+                "title": "Claim",
+                "description": "One sentence stating the defect."
+              },
+              "evidence": {
+                "type": "string",
+                "title": "Evidence",
+                "description": "Concrete inputs or state that make the claim fail — what makes it checkable."
+              },
+              "severity": {
+                "type": "string",
+                "title": "Severity",
+                "description": "How much damage it does if left in.",
+                "enum": ["critical", "major", "minor"]
+              },
+              "confidence": {
+                "type": "string",
+                "title": "Confidence",
+                "description": "How sure the verification pass is that the finding is real.",
+                "enum": ["high", "medium", "low"]
+              }
+            },
+            "required": ["file", "line", "claim", "evidence", "severity", "confidence"]
+          }
+        }
+      }
+    },
+    {
+      "id": "SessionSummary",
+      "description": "The `## Session summary` comment: what changed, what remains, validation, next steps.",
+      "schema": {
+        "type": "object",
+        "title": "Session summary",
+        "properties": {
+          "changed": {
+            "type": "string",
+            "title": "What changed",
+            "description": "Files and areas touched in this session."
+          },
+          "completed": {
+            "type": "array",
+            "title": "Scope completed",
+            "description": "What is finished and verified.",
+            "items": { "type": "string" }
+          },
+          "remaining": {
+            "type": "array",
+            "title": "Scope remaining",
+            "description": "What is still open, so the next session can resume from Linear alone.",
+            "items": { "type": "string" }
+          },
+          "status": {
+            "type": "string",
+            "title": "Current status",
+            "description": "Where the work stands and what the issue status is."
+          },
+          "validation": {
+            "type": "array",
+            "title": "Validation",
+            "description": "Commands run and what they reported — evidence, not assertions.",
+            "items": { "type": "string" }
+          },
+          "nextSteps": {
+            "type": "array",
+            "title": "Open questions / next steps",
+            "description": "What the next session should pick up, and what is still undecided.",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["changed", "completed", "remaining", "status", "validation", "nextSteps"]
+      }
+    },
+    {
+      "id": "MergedBranch",
+      "description": "The merged PR/MR, the checkout switched to the base branch, the issue set to Done.",
+      "schema": {
+        "type": "object",
+        "title": "Merged branch",
+        "properties": {
+          "pullRequest": {
+            "type": "string",
+            "title": "Pull request",
+            "description": "The merged PR/MR and the commit it landed as."
+          },
+          "baseBranch": {
+            "type": "string",
+            "title": "Base branch",
+            "description": "The branch the local checkout switched to after the merge."
+          },
+          "issueState": {
+            "type": "string",
+            "title": "Issue state",
+            "description": "The Linear state the issue was left in."
+          }
+        },
+        "required": ["pullRequest", "baseBranch", "issueState"]
+      }
+    },
+    {
+      "id": "EntityPageUpdate",
+      "description": "The entity page edit plus the index/log upkeep that goes with it.",
+      "schema": {
+        "type": "object",
+        "title": "Entity page update",
+        "properties": {
+          "page": {
+            "type": "string",
+            "title": "Page",
+            "description": "Vault path of the entity page that was written."
+          },
+          "sections": {
+            "type": "array",
+            "title": "Sections",
+            "description": "Which sections were edited or appended, and in which mode.",
+            "items": { "type": "string" }
+          },
+          "upkeep": {
+            "type": "array",
+            "title": "Index and log upkeep",
+            "description": "The `index.md` / `log.md` lines added alongside the page edit.",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["page", "sections"]
+      }
+    }
   ],
   "nodes": [
     {

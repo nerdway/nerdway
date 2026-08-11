@@ -3,7 +3,7 @@
   "schemas": [
     { "id": "IssueSpec", "description": "The filed issue: objective, scope, acceptance criteria, constraints." },
     { "id": "ProjectContext", "description": "Vault recall for the project: entity page sections, decisions, 1-hop graph." },
-    { "id": "PlanContext", "description": "Everything the plan draft reads, gathered in parallel: repo layout, prior plans, related issues, ADRs." },
+    { "id": "PlanContext", "description": "The in-repo half of the plan context, gathered in parallel: repo layout, prior plans, related issues, ADRs. The vault half travels separately as ProjectContext, because a node belongs to exactly one skill." },
     { "id": "ImplementationPlan", "description": "The plan posted to Linear as a `## Implementation plan` comment." },
     { "id": "ChangeSet", "description": "Commits pushed to the issue branch plus the draft PR that tracks them." },
     { "id": "ReviewRequest", "description": "The review the user picked: dimensions to cover and the change range to read." },
@@ -35,7 +35,7 @@
     {
       "id": "wiki-recall",
       "skill": "nerdbrain-search",
-      "runtime": "conversational",
+      "runtime": "workflow",
       "phase": "plan",
       "in": ["IssueSpec"],
       "out": ["ProjectContext"],
@@ -54,9 +54,9 @@
       "skill": "linear-issue-workflow",
       "runtime": "workflow",
       "phase": "plan",
-      "in": ["IssueSpec", "ProjectContext"],
+      "in": ["IssueSpec"],
       "out": ["PlanContext"],
-      "dependsOn": ["issue-write", "wiki-recall"],
+      "dependsOn": ["issue-write"],
       "failure": {
         "retries": 1,
         "fallback": "degrade to the sequential context read in the main agent",
@@ -71,9 +71,9 @@
       "skill": "linear-issue-workflow",
       "runtime": "conversational",
       "phase": "plan",
-      "in": ["PlanContext"],
+      "in": ["PlanContext", "ProjectContext"],
       "out": ["ImplementationPlan"],
-      "dependsOn": ["plan-context-fanout"],
+      "dependsOn": ["plan-context-fanout", "wiki-recall"],
       "failure": { "retries": 0, "fallback": "stop and ask the user", "killsRun": true, "reporting": "chat" },
       "budget": { "maxWidth": 1 },
       "gates": []

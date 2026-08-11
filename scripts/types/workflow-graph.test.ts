@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { validateContract } from "./workflow-graph.ts";
+import { extractInlineSchemas, validateContract } from "./workflow-graph.ts";
 
 const skillDirs = ["linear-issue-writer", "linear-issue-workflow", "linear-issue-close"];
 
@@ -174,8 +174,130 @@ test("rule 10: rejects a workflow script inlining a schema the contract does not
 });
 
 test("rule 10: accepts a workflow script inlining a declared schema", () => {
-  const inlined = [{ script: "workflows/plan-fanout.js", schema: "ImplementationPlan" }];
+  const inlined = [{ script: "workflows/plan-fanout.js", schema: "ImplementationPlan", body: schemaBody() }];
   assert.deepEqual(validateContract(contract(), skillDirs, inlined), []);
+});
+
+const fanoutScript = "workflows/plan-fanout.js";
+
+function boundNode(overrides: Record<string, unknown> = {}) {
+  return planNode({ runtime: "workflow", script: fanoutScript, ...overrides });
+}
+
+function inlinedPlan(overrides: Record<string, unknown> = {}) {
+  return { script: fanoutScript, schema: "ImplementationPlan", body: schemaBody(), ...overrides };
+}
+
+test("rule 17: accepts a bound node whose out schemas are inlined in its script", () => {
+  const errors = validateContract(contract([entryNode(), boundNode()]), skillDirs, [inlinedPlan()], [fanoutScript]);
+  assert.deepEqual(errors, []);
+});
+
+test("rule 17: rejects a script binding on a node that is not a workflow", () => {
+  const errors = validateContract(contract([entryNode(), planNode({ script: fanoutScript })]), skillDirs, [inlinedPlan()], [fanoutScript]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /script/);
+  assert.match(errors[0], /workflow/);
+});
+
+test("rule 17: rejects a binding whose script file does not exist", () => {
+  const errors = validateContract(contract([entryNode(), boundNode()]), skillDirs, [inlinedPlan()], []);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /plan-fanout\.js/);
+});
+
+test("rule 17: rejects a bound node whose out schema is never inlined in its script", () => {
+  const errors = validateContract(contract([entryNode(), boundNode()]), skillDirs, [], [fanoutScript]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /ImplementationPlan/);
+  assert.match(errors[0], /plan-fanout\.js/);
+});
+
+test("rule 17: an inline in a different script does not satisfy the binding", () => {
+  const elsewhere = inlinedPlan({ script: "workflows/other.js" });
+  const errors = validateContract(contract([entryNode(), boundNode()]), skillDirs, [elsewhere], [fanoutScript, "workflows/other.js"]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /ImplementationPlan/);
+});
+
+test("rule 17: does not require the node's in schemas to be inlined", () => {
+  // boundNode consumes IssueSpec, which is nowhere inlined — inputs arrive via args.
+  const errors = validateContract(contract([entryNode(), boundNode()]), skillDirs, [inlinedPlan()], [fanoutScript]);
+  assert.deepEqual(errors, []);
+});
+
+test("rule 17: a workflow node without a binding stays legal — its island is not built yet", () => {
+  const errors = validateContract(contract([entryNode(), planNode({ runtime: "workflow" })]), skillDirs);
+  assert.deepEqual(errors, []);
+});
+
+test("rule 17: rejects a script binding that is not a string", () => {
+  const errors = validateContract(contract([entryNode(), boundNode({ script: 42 })]), skillDirs, [inlinedPlan()], [fanoutScript]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /script/);
+});
+
+test("rule 18: rejects an inline body that drifted from the registry body", () => {
+  const drifted = inlinedPlan({ body: schemaBody({ title: "Something else" }) });
+  const errors = validateContract(contract([entryNode(), boundNode()]), skillDirs, [drifted], [fanoutScript]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /ImplementationPlan/);
+  assert.match(errors[0], /verbatim/);
+});
+
+test("rule 18: rejects an inline body missing a nested property of the registry body", () => {
+  const body = schemaBody({ properties: { objective: { type: "string", title: "Objective" } } });
+  const errors = validateContract(contract([entryNode(), boundNode()]), skillDirs, [inlinedPlan({ body })], [fanoutScript]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /ImplementationPlan/);
+});
+
+test("rule 18: rejects an inline literal that is not strict JSON", () => {
+  const unparsable = inlinedPlan({ body: undefined });
+  const errors = validateContract(contract([entryNode(), boundNode()]), skillDirs, [unparsable], [fanoutScript]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /JSON/);
+});
+
+test("rule 18: holds for an inline of a declared schema even without a node binding", () => {
+  const drifted = inlinedPlan({ body: schemaBody({ title: "Something else" }) });
+  const errors = validateContract(contract(), skillDirs, [drifted]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /ImplementationPlan/);
+});
+
+test("extractInlineSchemas: extracts the name and parsed body of a strict-JSON literal", () => {
+  const source = `const SCHEMA_PlanContext = {\n  "type": "object",\n  "title": "Plan context"\n}\nrest of the script`;
+  const uses = extractInlineSchemas(fanoutScript, source);
+  assert.deepEqual(uses, [
+    { script: fanoutScript, schema: "PlanContext", body: { type: "object", title: "Plan context" } },
+  ]);
+});
+
+test("extractInlineSchemas: a literal that is not strict JSON yields an undefined body", () => {
+  const source = `const SCHEMA_PlanContext = { type: 'object' }`;
+  const uses = extractInlineSchemas(fanoutScript, source);
+  assert.equal(uses.length, 1);
+  assert.equal(uses[0].body, undefined);
+});
+
+test("extractInlineSchemas: braces inside string values do not break the balanced scan", () => {
+  const source = `const SCHEMA_PlanContext = { "description": "a { brace } and \\" quote" }`;
+  const uses = extractInlineSchemas(fanoutScript, source);
+  assert.deepEqual(uses[0].body, { description: 'a { brace } and " quote' });
+});
+
+test("extractInlineSchemas: finds every SCHEMA_ constant in one file", () => {
+  const source = `const SCHEMA_PlanContext = { "type": "object" }\nconst other = 1\nconst SCHEMA_ProjectContext = { "type": "object" }`;
+  const uses = extractInlineSchemas(fanoutScript, source).map((use) => use.schema);
+  assert.deepEqual(uses, ["PlanContext", "ProjectContext"]);
+});
+
+test("extractInlineSchemas: a name not followed by an object literal yields an undefined body", () => {
+  const source = `const SCHEMA_PlanContext = buildSchema()`;
+  const uses = extractInlineSchemas(fanoutScript, source);
+  assert.equal(uses.length, 1);
+  assert.equal(uses[0].body, undefined);
 });
 
 test("rejects an unknown gate kind", () => {

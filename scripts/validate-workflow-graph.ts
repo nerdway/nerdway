@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { validateContract, type InlineSchemaUse } from "./types/workflow-graph.ts";
+import { extractInlineSchemas, validateContract, type InlineSchemaUse } from "./types/workflow-graph.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..");
@@ -13,17 +13,17 @@ const skillDirs = readdirSync(join(repoRoot, "skills"), { withFileTypes: true })
 
 const workflowsDir = join(repoRoot, "workflows");
 const inlineSchemas: InlineSchemaUse[] = [];
+const scriptFiles: string[] = [];
 if (existsSync(workflowsDir)) {
   for (const file of readdirSync(workflowsDir).filter((name) => name.endsWith(".js"))) {
+    scriptFiles.push(`workflows/${file}`);
     const source = readFileSync(join(workflowsDir, file), "utf8");
-    for (const match of source.matchAll(/\bconst\s+SCHEMA_([A-Za-z0-9]+)\s*=/g)) {
-      inlineSchemas.push({ script: `workflows/${file}`, schema: match[1] });
-    }
+    inlineSchemas.push(...extractInlineSchemas(`workflows/${file}`, source));
   }
 }
 
 const raw: unknown = JSON.parse(readFileSync(join(repoRoot, "workflow-graph.json"), "utf8"));
-const errors = validateContract(raw, skillDirs, inlineSchemas);
+const errors = validateContract(raw, skillDirs, inlineSchemas, scriptFiles);
 
 if (errors.length > 0) {
   console.error("workflow-graph.json validation failed:");

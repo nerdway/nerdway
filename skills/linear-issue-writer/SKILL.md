@@ -133,6 +133,11 @@ variant for small ones). The sections mirror `linear-issue-workflow/plan-templat
 so the planner knows exactly where to look. Match the issue language to the user /
 repo (PL or EN).
 
+`issue-template.md` is **generated** from the `IssueSpec` schema in
+`workflow-graph.json` (`node scripts/render-templates.ts`); fix a section by
+editing the schema, not the file. Filling it stays prose — nothing here asks you
+or the user for JSON.
+
 Write the body to a temp file and **show it to the user**. Wait for approval.
 
 ### 5. Create in Linear (always in Backlog)

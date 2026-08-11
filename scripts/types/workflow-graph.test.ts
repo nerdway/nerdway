@@ -7,6 +7,18 @@ const skillDirs = ["linear-issue-writer", "linear-issue-workflow", "linear-issue
 
 const failure = { retries: 0, fallback: "report and stop", killsRun: true, reporting: "linear-comment" };
 
+function schemaBody(overrides: Record<string, unknown> = {}) {
+  return {
+    type: "object",
+    title: "Implementation plan",
+    properties: {
+      objective: { type: "string", title: "Objective", description: "what we solve and for whom" },
+    },
+    required: ["objective"],
+    ...overrides,
+  };
+}
+
 function entryNode(overrides: Record<string, unknown> = {}) {
   return {
     id: "write",
@@ -43,8 +55,8 @@ function planNode(overrides: Record<string, unknown> = {}) {
 function contract(nodes: unknown[] = [entryNode(), planNode()], overrides: Record<string, unknown> = {}) {
   return {
     schemas: [
-      { id: "IssueSpec", description: "the issue as filed" },
-      { id: "ImplementationPlan", description: "the plan posted to Linear" },
+      { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ title: "Issue spec" }) },
+      { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
     ],
     nodes,
     ...overrides,
@@ -175,9 +187,9 @@ test("rejects an unknown gate kind", () => {
 
 test("rejects a duplicate schema id in the registry", () => {
   const schemas = [
-    { id: "IssueSpec", description: "the issue as filed" },
-    { id: "ImplementationPlan", description: "the plan posted to Linear" },
-    { id: "IssueSpec", description: "declared twice" },
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ title: "Issue spec" }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+    { id: "IssueSpec", description: "declared twice", schema: schemaBody({ title: "Issue spec" }) },
   ];
   const errors = validateContract(contract(undefined, { schemas }), skillDirs);
   assert.equal(errors.length, 1);
@@ -208,8 +220,202 @@ test("rejects a dependsOn that is not an array without also calling the node orp
   assert.match(errors[0], /dependsOn must be an array/);
 });
 
+test("rule 11: rejects a registry entry carrying no schema body", () => {
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed" },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /IssueSpec/);
+});
+
+test("rule 11: rejects a schema body that is not an object schema", () => {
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ type: "string" }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /IssueSpec/);
+});
+
+test("rule 11: rejects a schema body with no title for the renderer to head the section with", () => {
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ title: "" }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /title/);
+});
+
+test("rule 12: rejects a schema body whose properties are empty", () => {
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ properties: {}, required: [] }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /properties/);
+});
+
+test("rule 12: rejects properties that are an array instead of an object", () => {
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ properties: ["objective"], required: [] }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /properties/);
+});
+
+test("rule 13: rejects a required entry that names no declared property", () => {
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ required: ["objective", "ghost"] }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /ghost/);
+});
+
+test("rule 13: rejects a required that is not an array of property names", () => {
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ required: "objective" }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /required/);
+});
+
+test("rule 14: rejects a property with no title", () => {
+  const properties = { objective: { type: "string", description: "what we solve" } };
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ properties }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /objective/);
+});
+
+test("rule 14: rejects a property with no description for the template hint", () => {
+  const properties = { objective: { type: "string", title: "Objective" } };
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ properties }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /description/);
+});
+
+test("rule 14: reaches properties nested in items and $defs", () => {
+  const nested = schemaBody({
+    properties: {
+      findings: {
+        type: "array",
+        title: "Findings",
+        description: "one row per finding",
+        items: { $ref: "#/$defs/Finding" },
+      },
+    },
+    required: ["findings"],
+    $defs: {
+      Finding: {
+        type: "object",
+        title: "Finding",
+        description: "a single finding",
+        properties: { file: { type: "string", title: "File" } },
+        required: ["file"],
+      },
+    },
+  });
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: nested },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /file/);
+});
+
+function findingsBody(overrides: Record<string, unknown> = {}) {
+  return schemaBody({
+    title: "Review findings",
+    properties: {
+      findings: {
+        type: "array",
+        title: "Findings",
+        description: "one row per finding",
+        items: { $ref: "#/$defs/Finding" },
+      },
+    },
+    required: ["findings"],
+    $defs: {
+      Finding: {
+        type: "object",
+        title: "Finding",
+        description: "a single finding",
+        properties: { file: { type: "string", title: "File", description: "path of the file" } },
+        required: ["file"],
+      },
+    },
+    ...overrides,
+  });
+}
+
+test("rule 15: accepts a $ref into the document's own $defs", () => {
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: findingsBody() },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  assert.deepEqual(validateContract(contract(undefined, { schemas }), skillDirs), []);
+});
+
+test("rule 15: rejects a $ref reaching outside the document", () => {
+  const properties = {
+    findings: {
+      type: "array",
+      title: "Findings",
+      description: "one row per finding",
+      items: { $ref: "ImplementationPlan" },
+    },
+  };
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: findingsBody({ properties }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /\$ref/);
+});
+
+test("rule 15: rejects a $ref naming a $defs entry the document does not define", () => {
+  const properties = {
+    findings: {
+      type: "array",
+      title: "Findings",
+      description: "one row per finding",
+      items: { $ref: "#/$defs/Ghost" },
+    },
+  };
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: findingsBody({ properties }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /Ghost/);
+});
+
 test("rejects a schema registry entry with no description", () => {
-  const schemas = [{ id: "IssueSpec" }, { id: "ImplementationPlan", description: "the plan posted to Linear" }];
+  const schemas = [
+    { id: "IssueSpec", schema: schemaBody({ title: "Issue spec" }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
   const errors = validateContract(contract(undefined, { schemas }), skillDirs);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /IssueSpec/);

@@ -88,3 +88,25 @@ An invariant enforced mechanically rather than by prose — no Linear write
 before approval, no merge without a green check, no vault access outside
 filesystem/`rg`. Carried by `deny` gates.
 _Avoid_: guideline, convention (both imply it may be skipped)
+
+**Gatherer**:
+One concurrent `agent()` inside a workflow island that reads a single
+independent context source (repo layout, ADRs, prior plans, Linear relations,
+the vault) and returns a typed partial result. Gatherer count stays within the
+node's `budget.maxWidth` declared in the contract, never picked ad hoc.
+_Avoid_: subtask, worker (say nothing about the one-source-per-agent split)
+
+**Reducer**:
+The plain-code join at the end of an island — deduplication, dropping empty
+results, trimming to the recall limits — deterministic by construction (no
+agent, no clock, no randomness), so the same gatherer output always reduces to
+the same context.
+_Avoid_: merge agent, synthesizer (both imply a model does the joining)
+
+**Script binding**:
+The `script` field on a workflow node naming the `workflows/*.js` file that
+realises its island; two sibling nodes may share one script. The binding is
+what arms the drift check in the omission direction: every `out` schema of a
+bound node must be inlined in that script (rule 17), verbatim (rule 18). A
+workflow node without a binding is an island not yet built.
+_Avoid_: implementation pointer, link (both hide the drift-check role)

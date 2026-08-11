@@ -293,6 +293,32 @@ test("extractInlineSchemas: finds every SCHEMA_ constant in one file", () => {
   assert.deepEqual(uses, ["PlanContext", "ProjectContext"]);
 });
 
+test("extractInlineSchemas: an unterminated literal yields an undefined body", () => {
+  const source = `const SCHEMA_PlanContext = { "type": "object", "title": "Plan context"`;
+  const uses = extractInlineSchemas(fanoutScript, source);
+  assert.equal(uses.length, 1);
+  assert.equal(uses[0].body, undefined);
+});
+
+test("rule 18: a reordered required array is not a verbatim copy", () => {
+  const twoProps = schemaBody({
+    properties: {
+      objective: { type: "string", title: "Objective", description: "what we solve" },
+      scope: { type: "string", title: "Scope", description: "what is in and out" },
+    },
+    required: ["objective", "scope"],
+  });
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ title: "Issue spec" }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: twoProps },
+  ];
+  const reordered = { ...twoProps, required: ["scope", "objective"] };
+  const inlined = [{ script: fanoutScript, schema: "ImplementationPlan", body: reordered }];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs, inlined);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /verbatim/);
+});
+
 test("extractInlineSchemas: a name not followed by an object literal yields an undefined body", () => {
   const source = `const SCHEMA_PlanContext = buildSchema()`;
   const uses = extractInlineSchemas(fanoutScript, source);

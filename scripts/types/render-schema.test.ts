@@ -313,3 +313,29 @@ test("a note leads the variant in, right under its heading", () => {
   });
   assert.equal(rendered, expected);
 });
+
+test("an absent or null value drops its section instead of writing undefined into the comment", () => {
+  const context = { type: "string", title: "Problem & context", description: "why now" };
+  const expected = `## Implementation plan
+
+### Objective
+
+Every edge answers what travels through it.
+`;
+  const filled = { objective: "Every edge answers what travels through it." };
+  assert.equal(renderSchema(schema({ objective, context }), filled), expected);
+  assert.equal(renderSchema(schema({ objective, context }), { ...filled, context: null }), expected);
+});
+
+test("a pipe or a newline inside a cell does not break the table around it", () => {
+  const expected = `## Implementation plan
+
+### Risks
+
+| Risk | Mitigation |
+|------|------------|
+| a \\| b splits the row | line1<br>line2 |
+`;
+  const instance = { risks: [{ risk: "a | b splits the row", mitigation: "line1\nline2" }] };
+  assert.equal(renderSchema(schema({ risks }), instance), expected);
+});

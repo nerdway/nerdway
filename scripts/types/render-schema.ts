@@ -43,6 +43,11 @@ function resolve(schema: JsonSchema | undefined, defs: Record<string, JsonSchema
   return schema;
 }
 
+/** A cell may not carry the characters that end a cell or a row. */
+function cell(value: unknown): string {
+  return String(value).replaceAll("|", "\\|").replace(/\r?\n/g, "<br>");
+}
+
 function row(cells: string[]): string {
   return `| ${cells.join(" | ")} |`;
 }
@@ -58,7 +63,7 @@ function renderTable(item: JsonSchema, value: unknown): string {
   }
   const items = Array.isArray(value) ? value : [];
   const rows = items.map((entry) =>
-    row(columns.map(([name]) => String((entry as Record<string, unknown>)?.[name] ?? ""))),
+    row(columns.map(([name]) => cell((entry as Record<string, unknown>)?.[name] ?? ""))),
   );
   return [...header, ...rows].join("\n");
 }
@@ -100,7 +105,7 @@ function renderProperty(property: JsonSchema, value: unknown, defs: Defs): strin
     blocks.push(item?.type === "object" ? renderTable(item, value) : renderList(property, value));
   } else if (property.type === "object") {
     blocks.push(...renderMembers(property, value, (title) => `**${title}:**`, defs));
-  } else if (value !== PLACEHOLDER) {
+  } else if (value !== PLACEHOLDER && value !== undefined && value !== null) {
     blocks.push(String(value));
   }
 

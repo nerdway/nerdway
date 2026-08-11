@@ -118,6 +118,11 @@ issue language):
 - **Objective**, **Scope** (in/out), **Technical Approach**,
   **Implementation Steps**, **Acceptance Criteria**, **Risks**, **Dependencies**
 
+`plan-template.md` and `session-summary-template.md` are **generated** from the
+`ImplementationPlan` and `SessionSummary` schemas in `workflow-graph.json`
+(`node scripts/render-templates.ts`); change a section by editing the schema, not
+the file. Filling them stays prose — no step in this skill asks anyone for JSON.
+
 For ambiguous requirements, offer a **grilling session** before posting the
 plan (see below). A small, clear task gets no grilling — go straight to the
 plan.
@@ -262,7 +267,8 @@ After each session (including partial work), post:
 cat <summary.md> | linear issues comment <ID> -b -
 ```
 
-Body **must** start with `## Session summary` and include:
+The bundled `session-summary-template.md` has these sections ready. Body **must**
+start with `## Session summary` and include:
 
 - what changed (files / areas),
 - scope completed vs remaining,

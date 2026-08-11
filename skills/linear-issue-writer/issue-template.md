@@ -1,3 +1,7 @@
+<!-- GENERATED from the schema registry in workflow-graph.json.
+     Run `node scripts/render-templates.ts` to rebuild; editing this file directly reddens the drift test.
+     Delete this banner before posting — the body must start with the heading below. -->
+
 <!--
   Issue body templates for linear-issue-writer.
   Section names mirror linear-issue-workflow/plan-template.md so the planner
@@ -10,7 +14,8 @@
 
 ### Objective
 
-<!-- One or two sentences: the outcome we want and for whom. Testable, not a task list. -->
+<!-- One or two sentences: the outcome we want and for whom. Testable, not a
+     task list. -->
 
 ### Problem & context
 
@@ -18,31 +23,44 @@
 
 ### Acceptance criteria
 
-<!-- Checkbox list, each item independently verifiable. This is what "done" means. -->
+<!-- Each item independently verifiable. This is what "done" means. -->
 
 - [ ]
 - [ ]
 
 ### Scope
 
+<!-- Both halves matter: the out list is what stops the issue growing during
+     planning. -->
+
 **In scope:**
 
+<!-- What this issue delivers. -->
+
+-
 -
 
 **Out of scope:**
 
+<!-- What it deliberately leaves to another issue. -->
+
+-
 -
 
 ### Constraints
 
-<!-- Tech constraints, non-functional requirements, deadlines, compatibility. Omit if none. -->
+<!-- Tech constraints, non-functional requirements, deadlines, compatibility.
+     Omit if none. -->
 
+-
 -
 
 ### Dependencies / related
 
-<!-- Blocking issues, external prerequisites, related TEAM-123 ids. Omit if none. -->
+<!-- Blocking issues, external prerequisites, related TEAM-123 ids. Omit if
+     none. -->
 
+-
 -
 
 ### Implementation checklist
@@ -55,8 +73,10 @@
 
 ### Open questions
 
-<!-- Anything still ambiguous the planner/implementer must resolve. Omit if none. -->
+<!-- Anything still ambiguous the planner/implementer must resolve. Omit if
+     none. -->
 
+-
 -
 
 ---
@@ -65,9 +85,12 @@
 
 ### Objective
 
-<!-- One sentence: the outcome. -->
+<!-- One or two sentences: the outcome we want and for whom. Testable, not a
+     task list. -->
 
 ### Acceptance criteria
+
+<!-- Each item independently verifiable. This is what "done" means. -->
 
 - [ ]
 - [ ]
@@ -80,9 +103,12 @@
 
 ### Objective
 
-<!-- One sentence: what this stage delivers. -->
+<!-- One or two sentences: the outcome we want and for whom. Testable, not a
+     task list. -->
 
 ### Acceptance criteria
+
+<!-- Each item independently verifiable. This is what "done" means. -->
 
 - [ ]
 - [ ]

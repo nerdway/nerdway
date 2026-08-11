@@ -444,3 +444,106 @@ test("rejects an unknown runtime", () => {
   assert.equal(errors.length, 1);
   assert.match(errors[0], /island/);
 });
+
+test("rule 13: reaches the required lists nested in items and $defs", () => {
+  const nested = findingsBody({
+    properties: {
+      findings: {
+        type: "array",
+        title: "Findings",
+        description: "one row per finding",
+        items: {
+          type: "object",
+          title: "Finding",
+          description: "a single finding",
+          properties: { file: { type: "string", title: "File", description: "path of the file" } },
+          required: ["ghostInItems"],
+        },
+      },
+    },
+    $defs: {
+      Finding: {
+        type: "object",
+        title: "Finding",
+        description: "a single finding",
+        properties: { file: { type: "string", title: "File", description: "path of the file" } },
+        required: ["ghostInDefs"],
+      },
+    },
+  });
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: nested },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 2);
+  assert.ok(errors.some((error) => error.includes("ghostInItems")));
+  assert.ok(errors.some((error) => error.includes("ghostInDefs")));
+});
+
+test("rule 13: a required entry inherited from the prototype chain is not a declared property", () => {
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ required: ["toString"] }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /toString/);
+});
+
+test("rejects a $defs entry that is not a schema object", () => {
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: findingsBody({ $defs: { Finding: "not a schema" } }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /Finding/);
+});
+
+test("rejects a $defs that is not an object of definitions", () => {
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: findingsBody({ $defs: ["Finding"] }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.ok(errors.some((error) => /\$defs/.test(error)), JSON.stringify(errors));
+});
+
+test("rule 16: rejects an x-render mode the renderer does not know", () => {
+  const properties = {
+    criteria: {
+      type: "array",
+      title: "Acceptance criteria",
+      description: "each item independently verifiable",
+      "x-render": "checkist",
+      items: { type: "string" },
+    },
+  };
+  const schemas = [
+    { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ properties, required: [] }) },
+    { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+  ];
+  const errors = validateContract(contract(undefined, { schemas }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /checkist/);
+});
+
+test("rule 16: accepts the modes the renderer implements", () => {
+  for (const mode of ["checklist", "numbered"]) {
+    const properties = {
+      criteria: {
+        type: "array",
+        title: "Acceptance criteria",
+        description: "each item independently verifiable",
+        "x-render": mode,
+        items: { type: "string" },
+      },
+    };
+    const schemas = [
+      { id: "IssueSpec", description: "the issue as filed", schema: schemaBody({ properties, required: [] }) },
+      { id: "ImplementationPlan", description: "the plan posted to Linear", schema: schemaBody() },
+    ];
+    assert.deepEqual(validateContract(contract(undefined, { schemas }), skillDirs), []);
+  }
+});

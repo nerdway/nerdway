@@ -6,6 +6,9 @@ export const GATE_KINDS = ["decision", "deny"] as const;
 
 export const MAX_WIDTH = 16;
 
+/** The list shapes the markdown renderer implements; anything else is a typo, not a mode. */
+export const RENDER_MODES = ["checklist", "numbered"] as const;
+
 export interface JsonSchema {
   type?: string;
   title?: string;
@@ -16,7 +19,7 @@ export interface JsonSchema {
   enum?: string[];
   $defs?: Record<string, JsonSchema>;
   $ref?: string;
-  "x-render"?: string;
+  "x-render"?: (typeof RENDER_MODES)[number];
 }
 
 export interface SchemaEntry {
@@ -75,22 +78,50 @@ function names(value: unknown): string[] {
   return isStringArray(value) ? value : [];
 }
 
-function validateProperties(id: string, path: string, raw: unknown, errors: string[]): void {
-  if (!isRecord(raw)) return;
-  for (const [name, property] of Object.entries(raw)) {
-    const where = `${path}.${name}`;
-    if (!isRecord(property)) {
-      errors.push(`schema ${id}: property ${where} must be a schema object`);
-      continue;
-    }
-    for (const field of ["title", "description"] as const) {
-      const value = property[field];
-      if (typeof value !== "string" || value.length === 0) {
-        errors.push(`schema ${id}: property ${where} must have a non-empty ${field} — the renderer builds the template from it`);
+/**
+ * Checks one object schema — the registry entry itself, an `items` shape or a `$defs` entry —
+ * and recurses into every nested one, so a rule holds at every depth the contract can reach.
+ */
+function validateObjectSchema(id: string, path: string, raw: unknown, errors: string[]): void {
+  if (!isRecord(raw)) {
+    errors.push(`schema ${id}: ${path} must be a schema object`);
+    return;
+  }
+
+  const properties = raw.properties;
+  if (isRecord(properties)) {
+    for (const [name, property] of Object.entries(properties)) {
+      const where = `${path}.${name}`;
+      if (!isRecord(property)) {
+        errors.push(`schema ${id}: property ${where} must be a schema object`);
+        continue;
+      }
+      for (const field of ["title", "description"] as const) {
+        const value = property[field];
+        if (typeof value !== "string" || value.length === 0) {
+          errors.push(`schema ${id}: property ${where} must have a non-empty ${field} — the renderer builds the template from it`);
+        }
+      }
+      const mode = property["x-render"];
+      if (mode !== undefined && !(RENDER_MODES as readonly unknown[]).includes(mode)) {
+        errors.push(`schema ${id}: property ${where} asks for unknown x-render mode ${String(mode)}`);
+      }
+      if (isRecord(property.properties)) validateObjectSchema(id, where, property, errors);
+      if (isRecord(property.items) && property.items.$ref === undefined) {
+        validateObjectSchema(id, `${where}.items`, property.items, errors);
       }
     }
-    validateProperties(id, `${where}.items`, (property.items as JsonSchema | undefined)?.properties, errors);
-    validateProperties(id, where, property.properties, errors);
+  }
+
+  if (raw.required === undefined) return;
+  if (!isStringArray(raw.required)) {
+    errors.push(`schema ${id}: ${path} required must be an array of property names`);
+    return;
+  }
+  for (const name of raw.required) {
+    if (!isRecord(properties) || !Object.hasOwn(properties, name)) {
+      errors.push(`schema ${id}: ${path} required names ${name}, which is not among its properties`);
+    }
   }
 }
 
@@ -136,22 +167,15 @@ function validateSchemaBody(id: string, raw: unknown, errors: string[]): void {
   }
 
   validateRefs(id, body, new Set(isRecord(body.$defs) ? Object.keys(body.$defs) : []), errors);
-  validateProperties(id, "properties", properties, errors);
-  if (isRecord(body.$defs)) {
-    for (const [name, def] of Object.entries(body.$defs)) {
-      validateProperties(id, `$defs.${name}`, (def as JsonSchema)?.properties, errors);
-    }
-  }
+  validateObjectSchema(id, "properties", body, errors);
 
-  if (body.required !== undefined) {
-    if (!isStringArray(body.required)) {
-      errors.push(`schema ${id}: required must be an array of property names`);
-    } else {
-      for (const name of body.required) {
-        if (!(name in properties)) {
-          errors.push(`schema ${id}: required names ${name}, which is not among its properties`);
-        }
-      }
+  if (body.$defs !== undefined) {
+    if (!isRecord(body.$defs)) {
+      errors.push(`schema ${id}: $defs must be an object of definitions`);
+      return;
+    }
+    for (const [name, def] of Object.entries(body.$defs)) {
+      validateObjectSchema(id, `$defs.${name}`, def, errors);
     }
   }
 }

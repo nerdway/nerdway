@@ -116,16 +116,27 @@ the runtime are two different artifacts.
 
 Every registry entry carries its **schema body** — the JSON Schema the payload on
 that edge is checked against — and the body has two consumers, which is what keeps
-the shape defined once instead of twice. Today `node scripts/render-templates.ts`
+the shape defined once instead of twice. `node scripts/render-templates.ts`
 renders it into the templates the skills ship (`plan-template.md`,
-`issue-template.md`, `session-summary-template.md`); once the first island under
-`workflows/` lands, the same body is what its `agent({schema})` call will enforce
-at runtime, inlined verbatim. Those three files are generated artifacts: change a
+`issue-template.md`, `session-summary-template.md`), and inside a workflow island
+the same body is what `agent({schema})` enforces at runtime, inlined verbatim.
+Those three files are generated artifacts: change a
 section by editing the schema, and a hand edit reddens the drift test. A body is
 also self-contained — a `$ref` may only point into the entry's own `$defs` — because
 a workflow script has to inline it verbatim. None of this ever becomes a
 precondition: a session without the workflow runtime fills the same generated
 template in prose, exactly as before.
+
+The first island is real: `workflows/plan-context-fanout.js` runs the plan-phase
+fan-out (trigger `/nerd4rent:plan-context-fanout`, or `Workflow({scriptPath})`
+during development). One script realises both plan-phase workflow nodes — the
+contract's `script` binding on `wiki-recall` and `plan-context-fanout` points at
+the same file — spawning five concurrent gatherers (repo layout, conventions,
+prior plans, related Linear issues, nerdbrain vault) and reducing their output
+deterministically into `PlanContext` + `ProjectContext`. The binding also arms
+the drift check in the omission direction: every `out` schema of a bound node
+must be inlined in its script (rule 17) and every inline body must be a
+strict-JSON literal deep-equal to the registry body (rule 18).
 
 The axis is an **island graph**, not one graph end to end. The Claude Code
 workflow runtime takes no mid-run user input, so every step that needs a human
@@ -135,10 +146,10 @@ human-free stretches become workflow islands:
 
 ```
 [main agent, conversational, status-driven]
-  ├─ workflow island: plan-context fanout
+  ├─ workflow island: plan-context fanout           ← built: workflows/plan-context-fanout.js
   ├─ [GATE: the human sets In Progress in Linear]   ← outside the graph, necessarily
   ├─ implementation (sequential, conversational)
-  ├─ workflow island: review map → reduce → verify → synthesize
+  ├─ workflow island: review map → reduce → verify → synthesize   ← not built yet (DEMO-248)
   └─ close-out: a chain, pinned to Haiku, no workflow
 ```
 

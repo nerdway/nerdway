@@ -90,6 +90,48 @@ already In Progress.
 
 ## Planning phase (status Backlog / Todo)
 
+### Context fan-out (workflow island, when available)
+
+When the `Workflow` tool is available, gather the planning context through the
+island instead of reading sequentially: run `workflows/plan-context-fanout.js`
+(as `/nerd4rent:plan-context-fanout`, or directly via
+`Workflow({scriptPath: "<plugin>/workflows/plan-context-fanout.js", args: {issueId: "<ID>", spec: <IssueSpec>}})`
+— pass `args` as a real JSON object, never as a JSON-encoded string). One
+script realises both contract nodes (`wiki-recall` + `plan-context-fanout`):
+five gatherers run concurrently, a deterministic reducer (plain code, not an
+agent) dedupes, drops empties and trims to the `nerdbrain-wiki` limits (≤ 3
+related pages, ≤ 5 search results), and the island returns typed
+`PlanContext` + `ProjectContext` plus a `gaps` list.
+
+| Source | What it contributes | Schema field |
+|---|---|---|
+| Repo code (layout, `README.md`, `CONTEXT.md`) | directories/files the change touches; test, build and validator commands | `PlanContext.repoLayout`, `.commands` |
+| ADRs (`docs/adr/*.md`) + `CONTEXT.md` terms + commit style | hard in-repo rules the plan must not break | `PlanContext.conventions` |
+| Prior plans (`docs/superpowers/plans/`) and merged PRs | precedents: how similar changes were cut and committed | `PlanContext.priorArt` |
+| Related Linear issues (parent, siblings, links) | parent AC, cross-issue agreements and dependencies | `PlanContext.priorArt` |
+| Entity page + 1-hop graph (`nerdbrain-search` recipes) | project decisions, active context, related pages | `ProjectContext.slug`, `.decisions`, `.activeContext`, `.relatedPages` |
+
+When the island ran, its `ProjectContext` covers steps 0 and 0b below — skip
+them and draft from the returned context, reading sequentially only what the
+`gaps` list flags as missing. A failed vault gatherer never kills the run:
+`ProjectContext` comes back absent and flagged.
+
+**Degradation — two explicit paths, both land on the sequential steps 0/0b/1:**
+
+- **(a) Agent without the `Workflow` tool** (Agent Skills portability): the
+  topology is readable as prose here and in `workflow-graph.json`; gather the
+  same sources sequentially.
+- **(b) Claude Code with dynamic workflows unavailable or off**: workflows
+  need v2.1.154+ and a paid plan (on Pro additionally enabling them in
+  `/config`), and they can be disabled via `disableWorkflows` in settings, the
+  *Dynamic workflows* toggle in `/config`,
+  `CLAUDE_CODE_DISABLE_WORKFLOWS=1`, or an organisation's managed settings.
+
+**UX cost, so it does not surprise anyone:** in the default permission mode
+every workflow run prompts for consent — the plan phase running on every issue
+means a prompt on every issue. Silence it with "don't ask again" (per workflow,
+per project).
+
 ### 0. Read `## Decisions` from the entity page
 
 If the SessionStart inject for this project contains an `[omitted: ...

@@ -10,6 +10,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Comment lines wrap here, the way the prose in this repo does. */
+const WRAP_COLUMNS = 80;
+const INDENT = "     ";
+
+function comment(text: string): string {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(/\s+/).filter((word) => word.length > 0)) {
+    const candidate = line.length === 0 ? word : `${line} ${word}`;
+    if (candidate.length + INDENT.length > WRAP_COLUMNS && line.length > 0) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  lines.push(line);
+  return lines.map((entry, index) => (index === 0 ? `<!-- ${entry}` : `${INDENT}${entry}`)).join("\n") + " -->";
+}
+
 function marker(property: JsonSchema, index: number): string {
   if (property["x-render"] === "checklist") return "- [ ]";
   if (property["x-render"] === "numbered") return `${index + 1}.`;
@@ -71,8 +91,8 @@ function renderProperty(property: JsonSchema, value: unknown, defs: Defs): strin
   const blocks: string[] = [];
 
   if (value === PLACEHOLDER) {
-    blocks.push(`<!-- ${property.description} -->`);
-    if (Array.isArray(property.enum)) blocks.push(`<!-- one of: ${property.enum.join(" | ")} -->`);
+    blocks.push(comment(property.description ?? ""));
+    if (Array.isArray(property.enum)) blocks.push(comment(`one of: ${property.enum.join(" | ")}`));
   }
 
   if (property.type === "array") {
@@ -92,6 +112,8 @@ export interface RenderOptions {
   heading?: string;
   /** Keep only the properties the schema requires: the MINIMAL variant of a template. */
   requiredOnly?: boolean;
+  /** A lead-in comment for this variant, rendered right under the heading. */
+  note?: string;
 }
 
 export function renderSchema(schema: JsonSchema, value: unknown, options: RenderOptions = {}): string {
@@ -102,6 +124,7 @@ export function renderSchema(schema: JsonSchema, value: unknown, options: Render
   };
   const blocks = [
     `## ${options.heading ?? schema.title}`,
+    ...(options.note === undefined ? [] : [comment(options.note)]),
     ...renderMembers(trimmed, value, (title) => `### ${title}`, schema.$defs ?? {}),
   ];
   return `${blocks.join("\n\n")}\n`;

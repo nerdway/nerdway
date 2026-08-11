@@ -99,6 +99,56 @@ Four skills for maintaining a personal `~/.config/agent-skills/manifest.json` �
 
 These assume the manifest and sync scripts are already provisioned on the machine (they're chezmoi-managed dotfiles, not something these skills bootstrap from scratch).
 
+## Workflow topology
+
+The skills above are not a loose bag: they form the **issue lifecycle axis**,
+written down as a contract in [`workflow-graph.json`](workflow-graph.json) and
+enforced by `node scripts/validate-workflow-graph.ts` (tests:
+`node --test scripts/**/*.test.ts`). The contract declares, per node, which
+skill runs it, what schema each edge carries, which gates guard it, what happens
+on failure, and how wide it may fan out. See
+[ADR-0003](docs/adr/0003-workflow-graph-contract.md) for why the contract and
+the runtime are two different artifacts.
+
+The axis is an **island graph**, not one graph end to end. The Claude Code
+workflow runtime takes no mid-run user input, so every step that needs a human
+— the grilling session, the "user sets In Progress" gate, the review menu —
+stays in the conversational main agent, and only the wide, independent,
+human-free stretches become workflow islands:
+
+```
+[main agent, conversational, status-driven]
+  ├─ workflow island: plan-context fanout
+  ├─ [GATE: the human sets In Progress in Linear]   ← outside the graph, necessarily
+  ├─ implementation (sequential, conversational)
+  ├─ workflow island: review map → reduce → verify → synthesize
+  └─ close-out: a chain, pinned to Haiku, no workflow
+```
+
+| Node | Skill | Phase | Runtime | Edge in → out |
+|---|---|---|---|---|
+| `issue-write` | `linear-issue-writer` | write | conversational | — → `IssueSpec` |
+| `wiki-recall` | `nerdbrain-search` | plan | conversational | `IssueSpec` → `ProjectContext` |
+| `plan-context-fanout` | `linear-issue-workflow` | plan | **workflow** | `IssueSpec`, `ProjectContext` → `PlanContext` |
+| `plan-draft` | `linear-issue-workflow` | plan | conversational | `PlanContext` → `ImplementationPlan` |
+| `implement` | `linear-issue-workflow` | implement | conversational | `ImplementationPlan` → `ChangeSet` |
+| `session-summary` | `linear-issue-workflow` | implement | conversational | `ChangeSet` → `SessionSummary` |
+| `review-menu` | `linear-issue-workflow` | review | conversational | `ChangeSet` → `ReviewRequest` |
+| `review-verify` | `linear-issue-workflow` | review | **workflow** | `ReviewRequest` → `ReviewFindings` |
+| `close` | `linear-issue-close` | close | chain | `ReviewFindings` → `MergedBranch` |
+| `wiki-write` | `nerdbrain-wiki` | wiki | chain | `SessionSummary` → `EntityPageUpdate` |
+
+Degradation runs on two tracks, and both end in the same place — the sequence
+the skills already describe in prose:
+
+- **Other agents** (Cursor, Copilot, …) have no `Workflow` tool at all; they
+  read the topology as documentation and run the axis sequentially.
+- **Claude Code with workflows unavailable** — below v2.1.154, on a plan that
+  does not include them, or switched off via `"disableWorkflows": true`, the
+  *Dynamic workflows* toggle in `/config`, or `CLAUDE_CODE_DISABLE_WORKFLOWS=1`
+  — falls back the same way, so an island is always an optimization, never a
+  precondition.
+
 ## Installation
 
 ### Claude Code

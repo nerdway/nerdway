@@ -54,6 +54,8 @@ export interface GraphNode {
   gates: Gate[];
   entry?: boolean;
   irreversible?: boolean;
+  /** Repo-relative workflows/*.js file realising this island; legal only on runtime "workflow". */
+  script?: string;
 }
 
 export interface GraphContract {
@@ -64,6 +66,8 @@ export interface GraphContract {
 export interface InlineSchemaUse {
   script: string;
   schema: string;
+  /** The parsed literal; undefined when the literal was not a strict-JSON object. */
+  body?: unknown;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -76,6 +80,61 @@ function isStringArray(value: unknown): value is string[] {
 
 function names(value: unknown): string[] {
   return isStringArray(value) ? value : [];
+}
+
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((item, index) => deepEqual(item, b[index]));
+  }
+  if (isRecord(a) && isRecord(b)) {
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length && keys.every((key) => Object.hasOwn(b, key) && deepEqual(a[key], b[key]));
+  }
+  return false;
+}
+
+const INLINE_SCHEMA = /\bconst\s+SCHEMA_([A-Za-z0-9]+)\s*=\s*/g;
+
+/** The balanced object literal starting at `start`, or undefined when none opens there. */
+function objectLiteral(source: string, start: number): string | undefined {
+  if (source[start] !== "{") return undefined;
+  let depth = 0;
+  let quote: string | undefined;
+  for (let i = start; i < source.length; i++) {
+    const char = source[i];
+    if (quote !== undefined) {
+      if (char === "\\") i++;
+      else if (char === quote) quote = undefined;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === "`") quote = char;
+    else if (char === "{") depth++;
+    else if (char === "}" && --depth === 0) return source.slice(start, i + 1);
+  }
+  return undefined;
+}
+
+/**
+ * Every `const SCHEMA_<Name> = {...}` in a workflow script's source, with the literal
+ * parsed as strict JSON — an unparsable literal keeps body undefined, which rule 18
+ * turns into a loud error rather than a silent pass.
+ */
+export function extractInlineSchemas(script: string, source: string): InlineSchemaUse[] {
+  const uses: InlineSchemaUse[] = [];
+  for (const match of source.matchAll(INLINE_SCHEMA)) {
+    const literal = objectLiteral(source, match.index + match[0].length);
+    let body: unknown;
+    if (literal !== undefined) {
+      try {
+        body = JSON.parse(literal) as unknown;
+      } catch {
+        body = undefined;
+      }
+    }
+    uses.push({ script, schema: match[1], body });
+  }
+  return uses;
 }
 
 /**
@@ -248,7 +307,12 @@ function findCycle(nodes: GraphNode[], byId: Map<string, GraphNode>): string | u
   return undefined;
 }
 
-export function validateContract(raw: unknown, skillDirs: string[], inlineSchemas: InlineSchemaUse[] = []): string[] {
+export function validateContract(
+  raw: unknown,
+  skillDirs: string[],
+  inlineSchemas: InlineSchemaUse[] = [],
+  scriptFiles: string[] = [],
+): string[] {
   if (typeof raw !== "object" || raw === null) return ["contract must be an object with schemas and nodes arrays"];
   const c = raw as Record<string, unknown>;
   if (!Array.isArray(c.schemas) || !Array.isArray(c.nodes)) {
@@ -256,7 +320,7 @@ export function validateContract(raw: unknown, skillDirs: string[], inlineSchema
   }
 
   const errors: string[] = [];
-  const registry = new Set<string>();
+  const registry = new Map<string, unknown>();
   for (const schema of c.schemas as SchemaEntry[]) {
     if (typeof schema !== "object" || schema === null || typeof schema.id !== "string") {
       errors.push("each schemas entry must be an object with a string id");
@@ -267,7 +331,7 @@ export function validateContract(raw: unknown, skillDirs: string[], inlineSchema
       errors.push(`schema ${schema.id}: description must say what travels on the edge`);
     }
     validateSchemaBody(schema.id, schema.schema, errors);
-    registry.add(schema.id);
+    registry.set(schema.id, schema.schema);
   }
 
   const nodes = c.nodes as GraphNode[];
@@ -310,6 +374,22 @@ export function validateContract(raw: unknown, skillDirs: string[], inlineSchema
     if (node.irreversible === true && (!Array.isArray(node.gates) || node.gates.length === 0)) {
       errors.push(`${id}: irreversible action must sit behind a gate`);
     }
+    if (node.script !== undefined) {
+      if (typeof node.script !== "string" || node.script.length === 0) {
+        errors.push(`${id}: script binding must be a repo-relative workflows/*.js path`);
+      } else if (node.runtime !== "workflow") {
+        errors.push(`${id}: script binding is only legal on a workflow node — nothing else runs as an island`);
+      } else {
+        if (!scriptFiles.includes(node.script)) {
+          errors.push(`${id}: script ${node.script} does not exist under workflows/`);
+        }
+        for (const schema of names(node.out)) {
+          if (!inlineSchemas.some((use) => use.script === node.script && use.schema === schema)) {
+            errors.push(`${id}: out schema ${schema} is never inlined in ${node.script} — drift by omission, the island is invisible to the check`);
+          }
+        }
+      }
+    }
     validateFailure(id, node.failure, errors);
     validateGates(id, node.runtime, node.gates, errors);
     validateBudget(id, node.budget, errors);
@@ -335,6 +415,14 @@ export function validateContract(raw: unknown, skillDirs: string[], inlineSchema
   for (const use of inlineSchemas) {
     if (!registry.has(use.schema)) {
       errors.push(`${use.script}: inlines schema ${use.schema}, which drifted from the contract registry`);
+      continue;
+    }
+    if (use.body === undefined) {
+      errors.push(`${use.script}: the literal of SCHEMA_${use.schema} is not strict JSON, so the drift check cannot compare it to the registry`);
+      continue;
+    }
+    if (!deepEqual(use.body, registry.get(use.schema))) {
+      errors.push(`${use.script}: the body of SCHEMA_${use.schema} is not a verbatim copy of the registry body`);
     }
   }
 

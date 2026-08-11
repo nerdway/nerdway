@@ -28,7 +28,8 @@ sequence.
   script containing `import()` fails *before the run starts*. The script
   therefore cannot read `workflow-graph.json` or import edge schemas — every
   schema a workflow enforces must be inlined into the script as a JSON Schema
-  literal passed to `agent({schema})`. Consistency between the contract and
+  literal, passed to `agent({schema})` or used as the island's own exit check.
+  Consistency between the contract and
   those inline copies is bought with a **drift check in the validator**, not
   with a shared definition: `scripts/validate-workflow-graph.ts` greps each
   `workflows/*.js` for schema literals and rejects any name absent from the
@@ -36,7 +37,12 @@ sequence.
   off a naming convention — **a workflow script must declare its schemas as
   `const SCHEMA_<Name> = {...}`, where `<Name>` is the contract's schema id**.
   A script that names them anything else is invisible to the check and passes
-  vacuously. This duplication is deliberate, and the drift check is an
+  vacuously. Since DEMO-247 the check also runs in the other direction: a
+  workflow node whose island is built carries a `script` binding, every schema
+  in that node's `out` must be inlined in the bound script (rule 17), and each
+  inline literal must be strict JSON deep-equal to the registry body
+  (rule 18) — so drift by omission and drift by divergence both fail loudly.
+  This duplication is deliberate, and the drift check is an
   acceptance criterion rather than a nice-to-have, because it is the only
   defence against the two drifting apart.
 - The contract describes the **whole axis**, including nodes that will never

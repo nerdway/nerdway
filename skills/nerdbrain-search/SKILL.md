@@ -14,7 +14,9 @@ description: >-
 Four recipes against `~/obsidian/nerdbrain/5-wiki/`. All are plain `rg` —
 no MCP, no CLI wrapper (ADR-0001). To read a page whose path you already
 know (not a search), just `Read` it directly; these recipes are for when
-you don't yet know which file(s) you need.
+you don't yet know which file(s) you need. The vault gatherer inside
+`workflows/plan-context-fanout.js` (the contract's `wiki-recall` node) calls
+these same recipes from the workflow island.
 
 ## 1. Phrase in vault
 

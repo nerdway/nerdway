@@ -52,6 +52,23 @@ test("rejects a download strategy missing binary", () => {
   assert.match(errors[0], /binary/);
 });
 
+test("accepts an entry installed via npm", () => {
+  assert.deepEqual(validateContract({ clis: [entry({ npm: "linearis" })] }, skillDirs), []);
+});
+
+test("rejects an empty npm package name", () => {
+  const errors = validateContract({ clis: [entry({ npm: "" })] }, skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /npm/);
+});
+
+test("rejects an entry declaring both npm and install", () => {
+  const install = { "linux-x64": { download: "https://example.test/a.tar.gz", binary: "a" } };
+  const errors = validateContract({ clis: [entry({ npm: "linearis", install })] }, skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /npm or install/);
+});
+
 test("rejects a duplicate id", () => {
   const errors = validateContract({ clis: [entry(), entry()] }, skillDirs);
   assert.equal(errors.length, 1);

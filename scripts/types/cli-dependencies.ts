@@ -24,6 +24,7 @@ export interface CliEntry {
   releaseBase?: string;
   checksums?: string;
   manualInstall?: string;
+  npm?: string;
   install?: Partial<Record<PlatformKey, InstallStrategy>>;
   auth?: { check: string[]; instructions: string };
 }
@@ -84,6 +85,12 @@ function validateEntry(raw: unknown, skillDirs: string[], seen: Set<string>, err
     for (const skill of e.requiredBy) {
       if (!skillDirs.includes(skill)) errors.push(`${id}: requiredBy names ${skill}, which is not a directory under skills/`);
     }
+  }
+  if (e.npm !== undefined && (typeof e.npm !== "string" || e.npm.length === 0)) {
+    errors.push(`${id}: npm must be a non-empty package name`);
+  }
+  if (e.npm !== undefined && e.install !== undefined) {
+    errors.push(`${id}: declare npm or install, not both`);
   }
   if (e.install !== undefined) {
     if (typeof e.install !== "object" || e.install === null) {

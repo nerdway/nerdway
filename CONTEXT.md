@@ -3,6 +3,32 @@
 Claude Code plugin bundling the skills that run the Nerd4Rent daily developer
 workflow: Linear issue lifecycle and the nerdbrain second-brain wiki.
 
+## Standards
+
+The repo's coding standards, phrased so each one is checkable against a diff
+alone. The `repo-standards` review axis cites this section as its rule source;
+a rule that cannot be verified from the diff does not belong here.
+
+1. **No code comments**, except to state a constraint the code itself cannot
+   express. A comment explaining what the next line does, where code came
+   from, or why a change is correct is a violation.
+2. **Repo content is English-only** (docs, code, skill bodies); **commit
+   messages are Polish**, starting with a declarative noun form
+   (e.g. `Dodanie`, `Poprawa`).
+3. **Commits are atomic** — one logical change per commit; a commit mixing
+   unrelated concerns is a violation.
+4. **Generated templates are never hand-edited** — `plan-template.md`,
+   `issue-template.md`, `session-summary-template.md` change only by editing
+   the schema body in `workflow-graph.json` and re-running
+   `node scripts/render-templates.ts`.
+5. **Inline workflow schemas follow the drift-check convention** — a contract
+   schema in a `workflows/*.js` script is declared as `const SCHEMA_<Name> =`
+   holding a strict-JSON literal, verbatim deep-equal to the registry body;
+   intermediate shapes must NOT use the `SCHEMA_` prefix.
+6. **Changes are surgical** — every changed line traces to the issue being
+   implemented; refactoring or improving adjacent code it did not need to
+   touch is a violation.
+
 ## Language
 
 **Vault**:
@@ -110,3 +136,26 @@ what arms the drift check in the omission direction: every `out` schema of a
 bound node must be inlined in that script (rule 17), verbatim (rule 18). A
 workflow node without a binding is an island not yet built.
 _Avoid_: implementation pointer, link (both hide the drift-check role)
+
+**Review axis**:
+One of the four fixed, mutually independent review dimensions —
+`spec-compliance`, `repo-standards`, `correctness-regressions`, `security` —
+each mapped by its own agent in the review island. An axis whose engine is
+missing degrades to plain-agent; it is never removed.
+_Avoid_: dimension, reviewer (a reviewer is who runs an axis, not the axis)
+
+**Engine**:
+The review path driving one axis — e.g. `superpowers`, `matt-pocock`,
+`code-review`, `plain-agent` — detected per session in `review-menu`,
+because only the main agent sees the session's skill list. A free string in
+the contract (a new engine never forces a contract bump; the island degrades
+unknown values to plain-agent) and a prompt hint for the axis mapper, never
+a hard invocation.
+_Avoid_: reviewer, tool (both suggest the island calls it directly)
+
+**Rejection rule**:
+The adversarial verification threshold: 3 independent sceptics each try to
+refute a finding, and 2 or more refutations out of 3 reject it. A finding
+with fewer than 2 cast votes is dropped as unverified and counted — it never
+passes because verification failed.
+_Avoid_: majority vote (hides that the sceptics' goal is to refute), veto

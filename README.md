@@ -127,7 +127,7 @@ a workflow script has to inline it verbatim. None of this ever becomes a
 precondition: a session without the workflow runtime fills the same generated
 template in prose, exactly as before.
 
-The first island is real: `workflows/plan-context-fanout.js` runs the plan-phase
+Two islands are real. `workflows/plan-context-fanout.js` runs the plan-phase
 fan-out (trigger `/nerd4rent:plan-context-fanout`, or `Workflow({scriptPath})`
 during development). One script realises both plan-phase workflow nodes — the
 contract's `script` binding on `wiki-recall` and `plan-context-fanout` points at
@@ -137,6 +137,17 @@ deterministically into `PlanContext` + `ProjectContext`. The binding also arms
 the drift check in the omission direction: every `out` schema of a bound node
 must be inlined in its script (rule 17) and every inline body must be a
 strict-JSON literal deep-equal to the registry body (rule 18).
+
+The second island, `workflows/review-verify.js`, runs the review phase as
+map → reduce → verify → synthesize: one mapper per review axis
+(spec-compliance, repo-standards, correctness-regressions, security), a
+deterministic reducer (schema-invalid records dropped, dedup by `file:line`
+with the most severe finding winning the anchor, severity sort, cap 12), then
+adversarial verification — 3 sceptics per
+finding, each prompted to refute it, 2 or more refutations out of 3 reject it
+— and a synthesizer that writes only the summary while the reducer assembles
+the findings verbatim. Rejections and overflow are counted in the required
+`ReviewFindings.stats`, so degradation is visible, never silent.
 
 The axis is an **island graph**, not one graph end to end. The Claude Code
 workflow runtime takes no mid-run user input, so every step that needs a human
@@ -149,7 +160,7 @@ human-free stretches become workflow islands:
   ├─ workflow island: plan-context fanout           ← built: workflows/plan-context-fanout.js
   ├─ [GATE: the human sets In Progress in Linear]   ← outside the graph, necessarily
   ├─ implementation (sequential, conversational)
-  ├─ workflow island: review map → reduce → verify → synthesize   ← not built yet (DEMO-248)
+  ├─ workflow island: review map → reduce → verify → synthesize   ← built: workflows/review-verify.js
   └─ close-out: a chain, pinned to Haiku, no workflow
 ```
 

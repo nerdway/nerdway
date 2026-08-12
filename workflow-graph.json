@@ -266,22 +266,35 @@
     },
     {
       "id": "ReviewRequest",
-      "description": "The review the user picked: dimensions to cover and the change range to read. Preliminary shape: the consuming island is built in DEMO-248, which may correct it.",
+      "description": "The review request confirmed in review-menu: the four fixed axes, each with the engine detected for it, plus the change range to read. Only review-menu sees the session's skill list, so engine detection happens there, never inside the island.",
       "schema": {
         "type": "object",
         "title": "Review request",
         "properties": {
-          "reviewer": {
-            "type": "string",
-            "title": "Reviewer",
-            "description": "Which reviewer the user picked from the menu.",
-            "enum": ["superpowers", "matt-pocock", "manual"]
-          },
-          "dimensions": {
+          "axes": {
             "type": "array",
-            "title": "Dimensions",
-            "description": "What each reviewer pass must cover — one pass per dimension.",
-            "items": { "type": "string" }
+            "title": "Axes",
+            "description": "All four review axes, always present — a missing engine degrades an axis to plain-agent, never removes it.",
+            "items": {
+              "type": "object",
+              "title": "Axis",
+              "description": "One review axis and the engine driving it.",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "title": "Axis id",
+                  "description": "Which of the four fixed, mutually independent review axes this is.",
+                  "enum": ["spec-compliance", "repo-standards", "correctness-regressions", "security"]
+                },
+                "engine": {
+                  "type": "string",
+                  "title": "Engine",
+                  "description": "The review path driving this axis — a prompt hint for the mapper, not a hard invocation.",
+                  "enum": ["superpowers", "matt-pocock", "code-review", "plain-agent"]
+                }
+              },
+              "required": ["id", "engine"]
+            }
           },
           "range": {
             "type": "string",
@@ -289,12 +302,12 @@
             "description": "The diff range to read, e.g. `main...HEAD`."
           }
         },
-        "required": ["reviewer", "dimensions", "range"]
+        "required": ["axes", "range"]
       }
     },
     {
       "id": "ReviewFindings",
-      "description": "Verified findings with their verdicts; a single finding never travels an edge on its own, so ReviewFinding lives as a `$defs` inside this entry.",
+      "description": "Verified findings plus the stats that make degradation visible. Every finding survived adversarial verification: 3 independent sceptics each try to refute it, and 2 or more refutations out of 3 reject it; rejected findings never reach this payload, but their count does. A single finding never travels an edge on its own, so ReviewFinding lives as a `$defs` inside this entry.",
       "schema": {
         "type": "object",
         "title": "Review findings",
@@ -309,15 +322,49 @@
             "title": "Findings",
             "description": "One row per finding that survived verification.",
             "items": { "$ref": "#/$defs/ReviewFinding" }
+          },
+          "stats": {
+            "type": "object",
+            "title": "Stats",
+            "description": "Degradation made visible: what each stage let through, so a silent drop is impossible.",
+            "properties": {
+              "mapped": {
+                "type": "integer",
+                "title": "Mapped",
+                "description": "Raw findings the axis mappers returned, before reduction."
+              },
+              "verified": {
+                "type": "integer",
+                "title": "Verified",
+                "description": "Findings that survived adversarial verification."
+              },
+              "rejected": {
+                "type": "integer",
+                "title": "Rejected",
+                "description": "Findings refuted by 2 or more of the 3 sceptics."
+              },
+              "unverifiedOverflow": {
+                "type": "integer",
+                "title": "Unverified overflow",
+                "description": "Findings that never got a verdict: past the verification cap, or with fewer than 2 votes cast."
+              }
+            },
+            "required": ["mapped", "verified", "rejected", "unverifiedOverflow"]
           }
         },
-        "required": ["summary", "findings"],
+        "required": ["summary", "findings", "stats"],
         "$defs": {
           "ReviewFinding": {
             "type": "object",
             "title": "Finding",
             "description": "A single verified finding.",
             "properties": {
+              "axis": {
+                "type": "string",
+                "title": "Axis",
+                "description": "The review axis that raised the finding.",
+                "enum": ["spec-compliance", "repo-standards", "correctness-regressions", "security"]
+              },
               "file": {
                 "type": "string",
                 "title": "File",
@@ -351,7 +398,7 @@
                 "enum": ["high", "medium", "low"]
               }
             },
-            "required": ["file", "line", "claim", "evidence", "severity", "confidence"]
+            "required": ["axis", "file", "line", "claim", "evidence", "severity", "confidence"]
           }
         }
       }
@@ -573,7 +620,7 @@
         {
           "kind": "decision",
           "mechanism": "chat-approval",
-          "description": "The user picks the reviewer; the runtime takes no mid-run input, so this cannot move inside review-verify."
+          "description": "The user confirms the axis set and the detected engines; the runtime takes no mid-run input, so this cannot move inside review-verify."
         }
       ]
     },

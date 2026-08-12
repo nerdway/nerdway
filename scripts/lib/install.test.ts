@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { interpolate, parseChecksums } from "./install.ts";
+import { interpolate, npmGlobalBinDir, parseChecksums } from "./install.ts";
 
 test("interpolates version into releaseBase", () => {
   const base = interpolate("https://example.test/v{version}", { version: "1.10.0" });
@@ -15,6 +15,14 @@ test("interpolates releaseBase into an asset url", () => {
 
 test("leaves unknown placeholders untouched", () => {
   assert.equal(interpolate("{nope}/x", { version: "1.0.0" }), "{nope}/x");
+});
+
+test("npm global bin dir is prefix/bin on posix", () => {
+  assert.equal(npmGlobalBinDir("/Users/x/.npm", "darwin"), "/Users/x/.npm/bin");
+});
+
+test("npm global bin dir is the prefix itself on windows", () => {
+  assert.equal(npmGlobalBinDir("C:\\npm", "win32"), "C:\\npm");
 });
 
 test("parses a goreleaser checksums file", () => {

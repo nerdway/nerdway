@@ -2,8 +2,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { validateContract, type CliContract, type CliEntry } from "./types/cli-dependencies.ts";
-import { applyInstall, installDir } from "./lib/install.ts";
+import { validateContract, type CliContract, type CliEntry, type InstallStrategy } from "./types/cli-dependencies.ts";
+import { applyInstall, applyNpmInstall, installDir } from "./lib/install.ts";
 import { platformKey } from "./lib/platform.ts";
 import { probe, runCommand } from "./lib/probe.ts";
 import { SATISFIED, decideAfterInstall, formatReport, type Outcome, type Status } from "./lib/status.ts";
@@ -44,7 +44,7 @@ async function reconcileEntry(entry: CliEntry): Promise<Outcome> {
   const fallback = entry.manualInstall ?? "no install path declared";
   const strategy = key && entry.install ? entry.install[key] : undefined;
 
-  if (!strategy) {
+  if (!strategy && !entry.npm) {
     const status: Status = entry.install ? "UNSUPPORTED" : first.status === "missing" ? "MISSING" : "OUTDATED";
     return { id: entry.id, status, detail: fallback };
   }
@@ -52,13 +52,15 @@ async function reconcileEntry(entry: CliEntry): Promise<Outcome> {
     return { id: entry.id, status: first.status === "missing" ? "MISSING" : "OUTDATED", detail: "install skipped (--check)" };
   }
 
-  const outcome = await applyInstall(entry, strategy);
-  const placed = Boolean(outcome.placedAt) && existsSync(outcome.placedAt as string);
+  const outcome = entry.npm ? await applyNpmInstall(entry.npm) : await applyInstall(entry, strategy as InstallStrategy);
+  const placed = entry.npm ? outcome.ok : Boolean(outcome.placedAt) && existsSync(outcome.placedAt as string);
   const second = await probe(entry);
   const status = decideAfterInstall(first.status, second, placed);
 
   const detail = status === "NEEDS_PATH"
-    ? `placed at ${outcome.placedAt}; add ${installDir()} to PATH`
+    ? entry.npm
+      ? `add ${outcome.placedAt ?? "the npm global bin"} to PATH`
+      : `placed at ${outcome.placedAt}; add ${installDir()} to PATH`
     : outcome.ok ? outcome.detail : `${outcome.detail} (${fallback})`;
 
   return withAuth(entry, status, detail);

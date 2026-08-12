@@ -136,3 +136,24 @@ what arms the drift check in the omission direction: every `out` schema of a
 bound node must be inlined in that script (rule 17), verbatim (rule 18). A
 workflow node without a binding is an island not yet built.
 _Avoid_: implementation pointer, link (both hide the drift-check role)
+
+**Review axis**:
+One of the four fixed, mutually independent review dimensions —
+`spec-compliance`, `repo-standards`, `correctness-regressions`, `security` —
+each mapped by its own agent in the review island. An axis whose engine is
+missing degrades to plain-agent; it is never removed.
+_Avoid_: dimension, reviewer (a reviewer is who runs an axis, not the axis)
+
+**Engine**:
+The review path driving one axis — `superpowers`, `matt-pocock`,
+`code-review` or `plain-agent` — detected per session in `review-menu`,
+because only the main agent sees the session's skill list. A prompt hint for
+the axis mapper, never a hard invocation.
+_Avoid_: reviewer, tool (both suggest the island calls it directly)
+
+**Rejection rule**:
+The adversarial verification threshold: 3 independent sceptics each try to
+refute a finding, and 2 or more refutations out of 3 reject it. A finding
+with fewer than 2 cast votes is dropped as unverified and counted — it never
+passes because verification failed.
+_Avoid_: majority vote (hides that the sceptics' goal is to refute), veto

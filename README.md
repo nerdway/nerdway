@@ -49,7 +49,7 @@ A deliberately **mechanical, lightweight** close-out for a finished issue — pu
 
 1. Commits any leftover changes (repo convention: Polish, noun-form message, no co-author) — or skips if the tree is clean.
 2. Pushes the branch (sets upstream if needed).
-3. Detects GitHub vs GitLab from the origin remote and merges the PR/MR with the repo's default method (`gh pr merge` / `glab mr merge`; marks a draft PR ready first).
+3. Detects GitHub vs GitLab from the origin remote and merges the PR/MR with a merge commit (`gh pr merge --merge` / `glab mr merge`; marks a draft PR ready first).
 4. Switches the local checkout to the PR/MR's **base** branch (read from the PR/MR, not assumed to be `main`) and pulls.
 5. Sets the Linear issue to **Done** (`linear issue update <ID> -s Done`) — deterministic and covering GitLab, where there's no Linear↔GitHub auto-close.
 

@@ -16,8 +16,8 @@ description: >-
 
 A deterministic, mechanical close-out. Every step is an explicit command — run
 them in order, stop and report on the first error. **Do not resolve merge
-conflicts, pick non-default merge strategies, or improvise** — those are out of
-scope; report and stop instead.
+conflicts, deviate from the merge commands below, or improvise** — those are
+out of scope; report and stop instead.
 
 ## CLI reference
 
@@ -118,20 +118,11 @@ gh pr view --json baseRefName,isDraft
 ```
 
 - If `isDraft` is `true` → mark it ready first: `gh pr ready`.
-- Merge with the repo's default method. Detect the allowed methods and pick, in
-  preference order, squash → merge → rebase (this respects the repo settings and
-  never forces a disabled method):
+- Merge with a **merge commit** — the only method this workflow uses (the
+  branch's atomic commits must survive the merge):
 
   ```bash
-  gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed
-  ```
-
-  Then run exactly one of:
-
-  ```bash
-  gh pr merge --squash   # if squashMergeAllowed
-  gh pr merge --merge    # else if mergeCommitAllowed
-  gh pr merge --rebase   # else if rebaseMergeAllowed
+  gh pr merge --merge
   ```
 
 ### GitLab
@@ -141,7 +132,8 @@ gh pr view --json baseRefName,isDraft
 glab mr view
 ```
 
-Merge with the project's default method:
+Pass no method-selection flags — the project's merge-method setting decides,
+and a **merge commit** is the expected configuration:
 
 ```bash
 glab mr merge --yes
@@ -171,7 +163,7 @@ auto-close.
 
 ## Report
 
-Confirm briefly what happened: committed (or clean), pushed, merged (method),
+Confirm briefly what happened: committed (or clean), pushed, merged,
 now on `<base>`, issue `<ID>` set to Done. If any step stopped early, report
 which one and why.
 

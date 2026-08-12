@@ -289,8 +289,7 @@
                 "engine": {
                   "type": "string",
                   "title": "Engine",
-                  "description": "The review path driving this axis — a prompt hint for the mapper, not a hard invocation.",
-                  "enum": ["superpowers", "matt-pocock", "code-review", "plain-agent"]
+                  "description": "The review path driving this axis — a prompt hint for the mapper, not a hard invocation. A free string, so a new engine never forces a contract bump; the island degrades unknown values to plain-agent."
                 }
               },
               "required": ["id", "engine"]

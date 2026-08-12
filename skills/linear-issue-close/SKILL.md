@@ -118,20 +118,11 @@ gh pr view --json baseRefName,isDraft
 ```
 
 - If `isDraft` is `true` → mark it ready first: `gh pr ready`.
-- Merge with the repo's default method. Detect the allowed methods and pick, in
-  preference order, squash → merge → rebase (this respects the repo settings and
-  never forces a disabled method):
+- Merge with a **merge commit** — the only method this workflow uses (the
+  branch's atomic commits must survive the merge):
 
   ```bash
-  gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed
-  ```
-
-  Then run exactly one of:
-
-  ```bash
-  gh pr merge --squash   # if squashMergeAllowed
-  gh pr merge --merge    # else if mergeCommitAllowed
-  gh pr merge --rebase   # else if rebaseMergeAllowed
+  gh pr merge --merge
   ```
 
 ### GitLab
@@ -141,7 +132,8 @@ gh pr view --json baseRefName,isDraft
 glab mr view
 ```
 
-Merge with the project's default method:
+Merge with a **merge commit** (no method-selection flags — same rule as
+GitHub):
 
 ```bash
 glab mr merge --yes

@@ -145,10 +145,12 @@ missing degrades to plain-agent; it is never removed.
 _Avoid_: dimension, reviewer (a reviewer is who runs an axis, not the axis)
 
 **Engine**:
-The review path driving one axis — `superpowers`, `matt-pocock`,
-`code-review` or `plain-agent` — detected per session in `review-menu`,
-because only the main agent sees the session's skill list. A prompt hint for
-the axis mapper, never a hard invocation.
+The review path driving one axis — e.g. `superpowers`, `matt-pocock`,
+`code-review`, `plain-agent` — detected per session in `review-menu`,
+because only the main agent sees the session's skill list. A free string in
+the contract (a new engine never forces a contract bump; the island degrades
+unknown values to plain-agent) and a prompt hint for the axis mapper, never
+a hard invocation.
 _Avoid_: reviewer, tool (both suggest the island calls it directly)
 
 **Rejection rule**:

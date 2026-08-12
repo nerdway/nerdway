@@ -16,8 +16,8 @@ description: >-
 
 A deterministic, mechanical close-out. Every step is an explicit command — run
 them in order, stop and report on the first error. **Do not resolve merge
-conflicts, pick non-default merge strategies, or improvise** — those are out of
-scope; report and stop instead.
+conflicts, deviate from the merge commands below, or improvise** — those are
+out of scope; report and stop instead.
 
 ## CLI reference
 
@@ -132,8 +132,8 @@ gh pr view --json baseRefName,isDraft
 glab mr view
 ```
 
-Merge with a **merge commit** (no method-selection flags — same rule as
-GitHub):
+Pass no method-selection flags — the project's merge-method setting decides,
+and a **merge commit** is the expected configuration:
 
 ```bash
 glab mr merge --yes
@@ -163,7 +163,7 @@ auto-close.
 
 ## Report
 
-Confirm briefly what happened: committed (or clean), pushed, merged (method),
+Confirm briefly what happened: committed (or clean), pushed, merged,
 now on `<base>`, issue `<ID>` set to Done. If any step stopped early, report
 which one and why.
 

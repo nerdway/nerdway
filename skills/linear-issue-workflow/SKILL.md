@@ -276,19 +276,76 @@ Commit and push to the PR branch as work lands.
 
 ### 7. After implementation: offer code review — never closure
 
-Do **not** offer to merge the PR or close the issue. Present the code-review
-menu (same as the In Review phase below).
+Do **not** offer to merge the PR or close the issue. Enter the review phase
+(same as the In Review phase below): confirm the axes and engines, then run
+the review island.
 
 ## Code review phase (status In Review, or right after implementation)
 
-Offer the options actually available in the session:
+The review is not a menu of one reviewer: it runs along **four fixed,
+mutually independent axes**, mapped in parallel, reduced deterministically,
+verified adversarially and only then synthesized. Existing review paths
+(superpowers, Matt Pocock, `/code-review`) are **engines** of an axis, never
+axes of their own — two engines on the same axis would duplicate findings and
+break axis independence.
 
-1. **Superpowers code review** (e.g. `superpowers:requesting-code-review`) —
-   if available.
-2. **Matt Pocock review skills** — if available.
-3. **Oceń ręcznie** — the user reviews the PR themselves; always offered.
+| Axis | What it checks | Rule source | Preferred engine (when available) |
+|---|---|---|---|
+| `spec-compliance` | the change does what the issue asked, no more, no less | the issue's acceptance criteria (`linear` CLI) | plain agent |
+| `repo-standards` | the diff obeys the repo coding standards | `CONTEXT.md` `## Standards` | plain agent |
+| `correctness-regressions` | logic errors, broken edge cases, regressions | the diff itself | `superpowers` / `matt-pocock` / `code-review` |
+| `security` | injection, secrets, unsafe access the diff introduces | the diff itself | `code-review` |
 
-Run the chosen review, address findings, push fixes to the PR branch.
+**Confirm the request (review-menu, conversational).** Only the main agent
+sees the session's skill list, so engine detection happens here: check which
+review skills are available, fill `engine` per axis (a missing skill degrades
+that axis to `plain-agent` — it never removes the axis), default the range to
+`main...HEAD`, and confirm the set with the user. The engine is a prompt hint
+for the axis mapper, not a hard invocation — the subagent may lack the skill
+and must still review.
+
+**Run the island.** With the `Workflow` tool available, run
+`workflows/review-verify.js` via
+`Workflow({scriptPath: "<plugin>/workflows/review-verify.js", args: {issueId: "<ID>", request: {axes: [...], range: "..."}}})`
+— `args` as a real JSON object, never a JSON-encoded string. The island does:
+
+1. **Map** — one mapper per axis, all four concurrent, each confined to its
+   axis.
+2. **Reduce** — plain code, no model: schema-invalid records dropped, dedup by
+   `file:line`, grouped by axis, sorted by severity, capped at 12 findings.
+3. **Verify** — 3 independent sceptics per finding, each prompted to *refute*
+   it (the opposite goal to the reviewer's). **Rejection rule: 2 or more
+   refutations out of 3.** A finding with fewer than 2 cast votes is dropped
+   as unverified — it never passes because verification failed. Sceptic pairs
+   run in batches of at most 8, honouring the node's `maxWidth: 8` budget by
+   construction.
+4. **Synthesize** — the agent writes *only* the summary; the findings list is
+   assembled verbatim by the reducer, so no model can mutate or add a finding
+   after verification.
+
+Rejected findings stay out of the result, but every drop is counted:
+`stats { mapped, verified, rejected, unverifiedOverflow }` is required in
+`ReviewFindings`, and the counters go into the Linear comment (the node
+reports as `linear-comment`) — degradation is visible, never silent. Run
+failures (a dead mapper, missing votes) arrive in `gaps` beside the payload.
+
+Address the verified findings, push fixes to the PR branch.
+
+**Degradation — same two paths as the plan-phase island:**
+
+- **(a) Agent without the `Workflow` tool**: run the axes sequentially in the
+  main agent — one review pass per axis with the same prompts and rule
+  sources, then dedup and present the findings; offer the engines as the old
+  menu (superpowers / Matt Pocock / manual) when the user prefers a single
+  reviewer.
+- **(b) Claude Code with dynamic workflows unavailable or off** (below
+  v2.1.154, plan without workflows, `disableWorkflows`, the */config* toggle,
+  `CLAUDE_CODE_DISABLE_WORKFLOWS=1`, managed settings): same sequential
+  fallback.
+
+**UX cost:** in the default permission mode every workflow run prompts for
+consent — a review on every issue means a prompt on every issue. Silence it
+with "don't ask again" (per workflow, per project).
 
 ## Close-out (on user request, or status Done set manually)
 

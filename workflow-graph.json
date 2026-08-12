@@ -629,6 +629,7 @@
       "skill": "linear-issue-workflow",
       "runtime": "workflow",
       "phase": "review",
+      "script": "workflows/review-verify.js",
       "in": ["ReviewRequest"],
       "out": ["ReviewFindings"],
       "dependsOn": ["review-menu"],

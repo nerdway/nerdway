@@ -141,8 +141,9 @@ strict-JSON literal deep-equal to the registry body (rule 18).
 The second island, `workflows/review-verify.js`, runs the review phase as
 map → reduce → verify → synthesize: one mapper per review axis
 (spec-compliance, repo-standards, correctness-regressions, security), a
-deterministic reducer (schema-invalid records dropped, dedup by `file:line`,
-severity sort, cap 12), then adversarial verification — 3 sceptics per
+deterministic reducer (schema-invalid records dropped, dedup by `file:line`
+with the most severe finding winning the anchor, severity sort, cap 12), then
+adversarial verification — 3 sceptics per
 finding, each prompted to refute it, 2 or more refutations out of 3 reject it
 — and a synthesizer that writes only the summary while the reducer assembles
 the findings verbatim. Rejections and overflow are counted in the required

@@ -4,6 +4,17 @@ export type Runtime = (typeof RUNTIMES)[number];
 
 export const GATE_KINDS = ["decision", "deny"] as const;
 
+/**
+ * The closed vocabulary of enforcement mechanisms, paired by gate kind — the F4 role split
+ * as data: a decision is always the human's (Linear status or chat approval), a deny is
+ * always a hard stop that never asks. A new mechanism is an architecture change and must
+ * change this contract deliberately.
+ */
+export const GATE_MECHANISMS = {
+  decision: ["linear-status", "chat-approval"],
+  deny: ["pretooluse-hook", "settings-deny"],
+} as const;
+
 export const MAX_WIDTH = 16;
 
 /** The list shapes the markdown renderer implements; anything else is a typo, not a mode. */
@@ -31,7 +42,14 @@ export interface SchemaEntry {
 export interface Gate {
   kind: (typeof GATE_KINDS)[number];
   mechanism: string;
+  /** The frozenRules entry this gate enforces; mandatory on a deny gate. */
+  rule?: string;
   description: string;
+}
+
+export interface FrozenRule {
+  id: string;
+  rule: string;
 }
 
 export interface FailurePolicy {
@@ -60,6 +78,7 @@ export interface GraphNode {
 
 export interface GraphContract {
   schemas: SchemaEntry[];
+  frozenRules?: FrozenRule[];
   nodes: GraphNode[];
 }
 
@@ -245,13 +264,26 @@ function validateFailure(id: string, raw: unknown, errors: string[]): void {
     return;
   }
   const f = raw as Record<string, unknown>;
-  if (typeof f.retries !== "number") errors.push(`${id}: failure.retries must be a number`);
-  if (typeof f.fallback !== "string") errors.push(`${id}: failure.fallback must describe what happens instead`);
+  if (typeof f.retries !== "number" || !Number.isInteger(f.retries) || f.retries < 0) {
+    errors.push(`${id}: failure.retries must be an integer of at least 0`);
+  }
+  if (typeof f.fallback !== "string" || f.fallback.length === 0) {
+    errors.push(`${id}: failure.fallback must describe what happens instead`);
+  }
   if (typeof f.killsRun !== "boolean") errors.push(`${id}: failure.killsRun must be a boolean`);
-  if (typeof f.reporting !== "string") errors.push(`${id}: failure.reporting must name where the failure surfaces`);
+  if (typeof f.reporting !== "string" || f.reporting.length === 0) {
+    errors.push(`${id}: failure.reporting must name where the failure surfaces`);
+  }
 }
 
-function validateGates(id: string, runtime: unknown, raw: unknown, errors: string[]): void {
+function validateGates(
+  id: string,
+  runtime: unknown,
+  raw: unknown,
+  ruleIds: Set<string>,
+  referencedRules: Set<string>,
+  errors: string[],
+): void {
   if (!Array.isArray(raw)) {
     errors.push(`${id}: gates must be an array`);
     return;
@@ -263,6 +295,17 @@ function validateGates(id: string, runtime: unknown, raw: unknown, errors: strin
     }
     if (typeof gate.mechanism !== "string" || gate.mechanism.length === 0) {
       errors.push(`${id}: gate ${gate.kind} must name the mechanism that enforces it`);
+    } else if (!(GATE_MECHANISMS[gate.kind] as readonly string[]).includes(gate.mechanism)) {
+      errors.push(`${id}: ${gate.mechanism} is not a mechanism a ${gate.kind} gate may declare`);
+    }
+    if (gate.rule !== undefined) {
+      if (typeof gate.rule !== "string" || !ruleIds.has(gate.rule)) {
+        errors.push(`${id}: gate ${gate.kind} points to frozen rule ${String(gate.rule)}, which is not in the frozenRules registry`);
+      } else {
+        referencedRules.add(gate.rule);
+      }
+    } else if (gate.kind === "deny") {
+      errors.push(`${id}: a deny gate must reference the frozen rule it enforces — deny exists for nothing else`);
     }
     if (typeof gate.description !== "string" || gate.description.length === 0) {
       errors.push(`${id}: gate ${gate.kind} must describe what it holds back`);
@@ -334,6 +377,24 @@ export function validateContract(
     registry.set(schema.id, schema.schema);
   }
 
+  const ruleIds = new Set<string>();
+  const referencedRules = new Set<string>();
+  if (c.frozenRules !== undefined && !Array.isArray(c.frozenRules)) {
+    errors.push("frozenRules must be an array of rule entries");
+  } else {
+    for (const rule of (c.frozenRules ?? []) as FrozenRule[]) {
+      if (typeof rule !== "object" || rule === null || typeof rule.id !== "string" || rule.id.length === 0) {
+        errors.push("each frozenRules entry must be an object with a string id");
+        continue;
+      }
+      if (ruleIds.has(rule.id)) errors.push(`duplicate frozen rule id in the registry: ${rule.id}`);
+      if (typeof rule.rule !== "string" || rule.rule.length === 0) {
+        errors.push(`frozen rule ${rule.id}: rule must state the invariant it freezes`);
+      }
+      ruleIds.add(rule.id);
+    }
+  }
+
   const nodes = c.nodes as GraphNode[];
   const byId = new Map<string, GraphNode>();
   const seen = new Set<string>();
@@ -391,7 +452,7 @@ export function validateContract(
       }
     }
     validateFailure(id, node.failure, errors);
-    validateGates(id, node.runtime, node.gates, errors);
+    validateGates(id, node.runtime, node.gates, ruleIds, referencedRules, errors);
     validateBudget(id, node.budget, errors);
     for (const schema of [...names(node.in), ...names(node.out)]) {
       if (!registry.has(schema)) errors.push(`${id}: schema ${schema} is not in the schema registry`);
@@ -411,6 +472,12 @@ export function validateContract(
 
   const cycle = findCycle(nodes, byId);
   if (cycle !== undefined) errors.push(cycle);
+
+  for (const ruleId of ruleIds) {
+    if (!referencedRules.has(ruleId)) {
+      errors.push(`frozen rule ${ruleId} is enforced by no gate — a rule without enforcement is not a rule`);
+    }
+  }
 
   for (const use of inlineSchemas) {
     if (!registry.has(use.schema)) {

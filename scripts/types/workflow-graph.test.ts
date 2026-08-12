@@ -570,8 +570,8 @@ test("rejects a schema registry entry with no description", () => {
 });
 
 test("rejects a gate that names no mechanism", () => {
-  const gates = [{ kind: "deny", description: "no repo write before the plan is accepted" }];
-  const errors = validateContract(contract([entryNode(), planNode({ gates })]), skillDirs);
+  const gates = [{ kind: "deny", rule: "no-repo-change-before-in-progress", description: "no repo write before the plan is accepted" }];
+  const errors = validateContract(contract([entryNode(), planNode({ gates })], { frozenRules: [frozenRule] }), skillDirs);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /mechanism/);
 });
@@ -675,6 +675,115 @@ test("rule 16: rejects an x-render mode the renderer does not know", () => {
   const errors = validateContract(contract(undefined, { schemas }), skillDirs);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /checkist/);
+});
+
+const frozenRule = { id: "no-repo-change-before-in-progress", rule: "No repo change before the issue is In Progress." };
+
+const denyGate = {
+  kind: "deny",
+  mechanism: "settings-deny",
+  rule: "no-repo-change-before-in-progress",
+  description: "hard deny, never a question to the user",
+};
+
+test("rule 19: rejects a decision gate with a mechanism from the deny vocabulary", () => {
+  const gates = [{ ...decisionGate, mechanism: "settings-deny" }];
+  const errors = validateContract(contract([entryNode(), planNode({ gates })]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /settings-deny/);
+});
+
+test("rule 19: rejects a deny gate with a mechanism from the decision vocabulary", () => {
+  const gates = [{ ...denyGate, mechanism: "linear-status" }];
+  const errors = validateContract(contract([entryNode(), planNode({ gates })], { frozenRules: [frozenRule] }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /linear-status/);
+});
+
+test("rule 19: accepts every mechanism paired with its own kind", () => {
+  for (const mechanism of ["linear-status", "chat-approval"]) {
+    const gates = [{ ...decisionGate, mechanism }];
+    assert.deepEqual(validateContract(contract([entryNode(), planNode({ gates })]), skillDirs), []);
+  }
+  for (const mechanism of ["pretooluse-hook", "settings-deny"]) {
+    const gates = [{ ...denyGate, mechanism }];
+    assert.deepEqual(validateContract(contract([entryNode(), planNode({ gates })], { frozenRules: [frozenRule] }), skillDirs), []);
+  }
+});
+
+test("rule 20: rejects a gate rule naming no frozenRules entry", () => {
+  const gates = [{ ...denyGate, rule: "ghost-rule" }];
+  const errors = validateContract(contract([entryNode(), planNode({ gates })], { frozenRules: [frozenRule] }), skillDirs);
+  assert.equal(errors.length, 2);
+  assert.ok(errors.some((error) => error.includes("ghost-rule")));
+  assert.ok(errors.some((error) => error.includes("no-repo-change-before-in-progress")));
+});
+
+test("rule 20: a decision gate may reference a frozen rule", () => {
+  const gates = [{ ...decisionGate, rule: "no-repo-change-before-in-progress" }];
+  assert.deepEqual(validateContract(contract([entryNode(), planNode({ gates })], { frozenRules: [frozenRule] }), skillDirs), []);
+});
+
+test("rule 21: rejects a deny gate with no rule reference", () => {
+  const gates = [{ kind: "deny", mechanism: "settings-deny", description: "a deny with nothing to enforce" }];
+  const errors = validateContract(contract([entryNode(), planNode({ gates })]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /deny/);
+  assert.match(errors[0], /rule/);
+});
+
+test("rule 22: rejects a frozen rule no gate points to", () => {
+  const errors = validateContract(contract(undefined, { frozenRules: [frozenRule] }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /no-repo-change-before-in-progress/);
+});
+
+test("rejects a duplicate frozen rule id in the registry", () => {
+  const errors = validateContract(
+    contract([entryNode(), planNode({ gates: [denyGate] })], { frozenRules: [frozenRule, frozenRule] }),
+    skillDirs,
+  );
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /duplicate/i);
+});
+
+test("rejects a frozen rule with empty rule text", () => {
+  const errors = validateContract(
+    contract([entryNode(), planNode({ gates: [denyGate] })], { frozenRules: [{ ...frozenRule, rule: "" }] }),
+    skillDirs,
+  );
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /no-repo-change-before-in-progress/);
+});
+
+test("rejects a frozenRules that is not an array", () => {
+  const errors = validateContract(contract(undefined, { frozenRules: "no-repo-change" }), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /frozenRules/);
+});
+
+test("rule 7: rejects an empty fallback", () => {
+  const errors = validateContract(contract([entryNode(), planNode({ failure: { ...failure, fallback: "" } })]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /fallback/);
+});
+
+test("rule 7: rejects an empty reporting", () => {
+  const errors = validateContract(contract([entryNode(), planNode({ failure: { ...failure, reporting: "" } })]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /reporting/);
+});
+
+test("rule 7: rejects a negative retries", () => {
+  const errors = validateContract(contract([entryNode(), planNode({ failure: { ...failure, retries: -1 } })]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /retries/);
+});
+
+test("rule 7: rejects a fractional retries", () => {
+  const errors = validateContract(contract([entryNode(), planNode({ failure: { ...failure, retries: 1.5 } })]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /retries/);
 });
 
 test("rule 16: accepts the modes the renderer implements", () => {

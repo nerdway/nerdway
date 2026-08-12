@@ -104,15 +104,20 @@ _Avoid_: the graph, parallel phase
 
 **Gate**:
 A point where progress waits on something outside the agent. `decision` gates
-carry a human choice (the Linear status, an approval in chat) and can only sit
-between islands, never inside one; `deny` gates are hard refusals enforced by a
-`PreToolUse` hook.
+carry a human choice and can only sit between islands, never inside one;
+`deny` gates are hard refusals that never ask. Each kind draws its mechanism
+from a closed vocabulary the validator enforces: decision — `linear-status`,
+`chat-approval`; deny — `pretooluse-hook`, `settings-deny`. A new enforcement
+mechanism is an architecture change and must change the contract deliberately.
 _Avoid_: checkpoint, confirmation (blur decision and deny)
 
 **Frozen rule**:
 An invariant enforced mechanically rather than by prose — no Linear write
 before approval, no merge without a green check, no vault access outside
-filesystem/`rg`. Carried by `deny` gates.
+filesystem/`rg`. A first-class registry (`frozenRules`) in the contract:
+carried by a deny gate, or made unreachable without a human by a decision
+gate when the rule is stateful (approval, green verification) and a stateless
+deny cannot check it. A registry entry no gate points to is a contract error.
 _Avoid_: guideline, convention (both imply it may be skipped)
 
 **Gatherer**:

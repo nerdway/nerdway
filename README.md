@@ -114,6 +114,20 @@ to exactly one skill. See
 [ADR-0003](docs/adr/0003-workflow-graph-contract.md) for why the contract and
 the runtime are two different artifacts.
 
+Gates and frozen rules are data, not prose. Every **irreversible** action on
+the axis — writing the issue to Linear (`issue-write`), pushing commits
+(`implement`), merging and setting Done (`close`), writing the vault
+(`wiki-write`) — is marked `irreversible: true` and must sit behind a gate.
+A gate is one of two kinds with a closed mechanism vocabulary the validator
+enforces: a `decision` gate is the human's call (`linear-status` or
+`chat-approval` — the Linear status is the only carrier of acceptance), a
+`deny` gate is a hard stop that never asks (`pretooluse-hook` or
+`settings-deny`). The **`frozenRules`** registry makes the invariants
+first-class: a gate's `rule` field points into it, a deny gate exists only to
+enforce one, and a rule no gate points to is rejected — so a dangerous
+transition is unreachable, not merely "usually asked about". Human gates sit
+on the boundaries between workflows, never inside them.
+
 Every registry entry carries its **schema body** — the JSON Schema the payload on
 that edge is checked against — and the body has two consumers, which is what keeps
 the shape defined once instead of twice. `node scripts/render-templates.ts`

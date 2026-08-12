@@ -1,5 +1,23 @@
 {
-  "_comment": "Topology of the issue lifecycle axis: every node, the schema each edge carries, gates, failure policy and width budget. scripts/validate-workflow-graph.ts enforces it; see docs/adr/0003-workflow-graph-contract.md. runtime: conversational = needs mid-run human interaction, stays in the main agent; workflow = graphable island runnable as a Workflow script; chain = sequential and deliberately not a graph. Every registry entry carries its JSON Schema body: it is what `agent({schema})` enforces at runtime, what the markdown renderer builds the skill templates from, and it is self-contained (a $ref may only point into the entry's own $defs) because workflow scripts must inline it verbatim as `const SCHEMA_<Name> = {...}`, which is what the drift check reads. A workflow node whose island is built carries `script`: the repo-relative workflows/*.js file realising it (two sibling nodes may share one script — one island runs both). The binding arms the drift check in the omission direction: every schema in the node's `out` must be inlined in that script (rule 17) and each inline body must be a strict-JSON literal deep-equal to the registry body (rule 18). Inputs are deliberately exempt — they arrive through `args`, validated by their producer. A workflow node without `script` is an island not yet built.",
+  "_comment": "Topology of the issue lifecycle axis: every node, the schema each edge carries, gates, failure policy and width budget. scripts/validate-workflow-graph.ts enforces it; see docs/adr/0003-workflow-graph-contract.md. runtime: conversational = needs mid-run human interaction, stays in the main agent; workflow = graphable island runnable as a Workflow script; chain = sequential and deliberately not a graph. Every registry entry carries its JSON Schema body: it is what `agent({schema})` enforces at runtime, what the markdown renderer builds the skill templates from, and it is self-contained (a $ref may only point into the entry's own $defs) because workflow scripts must inline it verbatim as `const SCHEMA_<Name> = {...}`, which is what the drift check reads. A workflow node whose island is built carries `script`: the repo-relative workflows/*.js file realising it (two sibling nodes may share one script — one island runs both). The binding arms the drift check in the omission direction: every schema in the node's `out` must be inlined in that script (rule 17) and each inline body must be a strict-JSON literal deep-equal to the registry body (rule 18). Inputs are deliberately exempt — they arrive through `args`, validated by their producer. A workflow node without `script` is an island not yet built. Irreversible actions on the axis are inventoried as `irreversible: true`: issue-write (creates the Linear issue), implement (pushes commits), close (merges the PR/MR and sets Done), wiki-write (writes the nerdbrain vault); each must sit behind a gate (rule 6). Gates carry the role split as data: a `decision` gate is the human's call — mechanism `linear-status` or `chat-approval`, the Linear status being the only carrier of acceptance — while a `deny` gate is a hard prohibition that never asks, mechanism `pretooluse-hook` or `settings-deny`; the kind-mechanism pairing is a closed vocabulary (rule 19), so a new enforcement mechanism must change this contract deliberately. `frozenRules` is the first-class registry of frozen rules: a gate's `rule` points into it (rule 20), a deny gate exists only to enforce one (rule 21), and a rule no gate points to is rejected (rule 22). Human gates sit on the boundaries between workflows, never inside them — the runtime takes no mid-run decision input (rule 8).",
+  "frozenRules": [
+    {
+      "id": "no-linear-write-before-approval",
+      "rule": "Nothing is written to Linear before the user approves the drafted issue in chat."
+    },
+    {
+      "id": "no-repo-change-before-in-progress",
+      "rule": "No repo change — edit, build, install, commit, PR — before the issue is In Progress, a status only the human sets."
+    },
+    {
+      "id": "no-merge-without-green-verification",
+      "rule": "No merge without green verification: tests and validators pass before close runs."
+    },
+    {
+      "id": "vault-filesystem-only",
+      "rule": "No vault access other than filesystem Read/Edit/Write and rg — never a Linear or Obsidian MCP, never the Local REST API."
+    }
+  ],
   "schemas": [
     {
       "id": "IssueSpec",
@@ -509,6 +527,7 @@
       "runtime": "conversational",
       "phase": "write",
       "entry": true,
+      "irreversible": true,
       "in": [],
       "out": ["IssueSpec"],
       "dependsOn": [],
@@ -518,6 +537,7 @@
         {
           "kind": "decision",
           "mechanism": "chat-approval",
+          "rule": "no-linear-write-before-approval",
           "description": "The user approves the drafted issue before anything is written to Linear."
         }
       ]
@@ -575,6 +595,7 @@
       "skill": "linear-issue-workflow",
       "runtime": "conversational",
       "phase": "implement",
+      "irreversible": true,
       "in": ["ImplementationPlan"],
       "out": ["ChangeSet"],
       "dependsOn": ["plan-draft"],
@@ -584,6 +605,7 @@
         {
           "kind": "decision",
           "mechanism": "linear-status",
+          "rule": "no-repo-change-before-in-progress",
           "description": "The human sets the issue to In Progress in Linear; no repo change happens before that."
         }
       ]
@@ -661,6 +683,7 @@
         {
           "kind": "decision",
           "mechanism": "linear-status",
+          "rule": "no-merge-without-green-verification",
           "description": "The human asks to close, or sets the issue to Done with the PR still open; the merge is irreversible."
         }
       ]
@@ -670,6 +693,7 @@
       "skill": "nerdbrain-wiki",
       "runtime": "chain",
       "phase": "wiki",
+      "irreversible": true,
       "in": ["SessionSummary"],
       "out": ["EntityPageUpdate"],
       "dependsOn": ["session-summary"],
@@ -680,7 +704,14 @@
         "reporting": "chat"
       },
       "budget": { "maxWidth": 1 },
-      "gates": []
+      "gates": [
+        {
+          "kind": "deny",
+          "mechanism": "settings-deny",
+          "rule": "vault-filesystem-only",
+          "description": "Vault access is filesystem-only; the Obsidian/Linear MCP and the Local REST API are denied in settings.json — a hard stop, never a question."
+        }
+      ]
     }
   ]
 }

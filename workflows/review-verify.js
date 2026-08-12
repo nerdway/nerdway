@@ -126,10 +126,25 @@ const BATCH = 8
 const AXES = ['spec-compliance', 'repo-standards', 'correctness-regressions', 'security']
 const SEVERITY_RANK = { critical: 0, major: 1, minor: 2 }
 
-const issueId = args && args.issueId ? String(args.issueId) : ''
-const request = args && args.request ? args.request : {}
+// The Workflow harness has been observed delivering `args` as a JSON-encoded string even
+// when the caller passed a real object (live run wf_7dbcb074, Claude Code 2.1.226).
+let input = args
+if (typeof input === 'string') {
+  try {
+    input = JSON.parse(input)
+  } catch {
+    input = {}
+  }
+}
+const issueId = input && input.issueId ? String(input.issueId) : ''
+const request = input && input.request ? input.request : {}
 const range = typeof request.range === 'string' && request.range.length > 0 ? request.range : 'main...HEAD'
 const requestedAxes = Array.isArray(request.axes) ? request.axes : []
+
+const gaps = []
+if (issueId === '') {
+  gaps.push('spec-compliance axis ran without an issue id — acceptance criteria not read from Linear')
+}
 
 // The engine is a prompt hint, never a hard invocation: the subagent may lack the skill,
 // and the axis must still produce findings.
@@ -150,7 +165,9 @@ function engineFor(axisId) {
 const AXIS_PROMPTS = {
   'spec-compliance':
     `Review ONLY for spec compliance: does the change do what the issue asked, no more and no less? ` +
-    `Read the issue's acceptance criteria first: run \`linear issues get ${issueId} -o json\` (read-only) and use its description. ` +
+    (issueId === ''
+      ? `No issue id was provided, so acceptance criteria are not readable from Linear: read the pull request description (\`gh pr view\`) and review the change against the intent stated there. `
+      : `Read the issue's acceptance criteria first: run \`linear issues get ${issueId} -o json\` (read-only) and use its description. `) +
     `Report each unmet or violated acceptance criterion as a finding anchored to the diff line that misses it.`,
   'repo-standards':
     'Review ONLY against the repo coding standards: read the "## Standards" section of CONTEXT.md and check the diff against those rules alone. ' +
@@ -227,7 +244,6 @@ const mapped = await parallel(
 
 // --- Deterministic reducer: plain code, no agents, no clock, no randomness. ---
 
-const gaps = []
 const FINDING_REQUIRED = SCHEMA_ReviewFindings.$defs.ReviewFinding.required
 const SEVERITIES = SCHEMA_ReviewFindings.$defs.ReviewFinding.properties.severity.enum
 
@@ -353,7 +369,6 @@ if (synthesis === null) {
 
 const reviewFindings = { summary, findings: verified, stats }
 
-// Exit check against the inlined out-schema — the island's own contract enforcement.
 for (const field of SCHEMA_ReviewFindings.required) {
   const value = reviewFindings[field]
   if (value === undefined || value === null || (typeof value === 'string' && value.trim().length === 0)) {

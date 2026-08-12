@@ -242,7 +242,7 @@ function isWellFormed(finding) {
 
 let mappedCount = 0
 const deduped = []
-const seenAnchors = new Set()
+const anchorIndex = new Map()
 for (let i = 0; i < AXES.length; i++) {
   if (mapped[i] === null) {
     gaps.push(`${AXES[i]} mapper failed: the axis is missing from this run`)
@@ -253,21 +253,24 @@ for (let i = 0; i < AXES.length; i++) {
   for (const finding of findings) {
     if (!isWellFormed(finding)) continue
     const anchor = `${finding.file.trim()}:${finding.line}`
-    if (seenAnchors.has(anchor)) continue
-    seenAnchors.add(anchor)
-    deduped.push({
+    const entry = {
       axis: AXES[i],
       file: finding.file.trim(),
       line: finding.line,
       claim: finding.claim.trim(),
       evidence: finding.evidence.trim(),
       severity: finding.severity,
-    })
+    }
+    const at = anchorIndex.get(anchor)
+    if (at === undefined) {
+      anchorIndex.set(anchor, deduped.length)
+      deduped.push(entry)
+    } else if (SEVERITY_RANK[entry.severity] < SEVERITY_RANK[deduped[at].severity]) {
+      deduped[at] = entry
+    }
   }
 }
 
-// Stable severity sort (critical > major > minor); axis grouping survives inside each
-// severity band because mappers were collected in axis order.
 const candidates = deduped
   .map((finding, index) => ({ finding, index }))
   .sort((a, b) => SEVERITY_RANK[a.finding.severity] - SEVERITY_RANK[b.finding.severity] || a.index - b.index)
@@ -321,7 +324,6 @@ for (let findingIndex = 0; findingIndex < candidates.length; findingIndex++) {
     rejected++
     continue
   }
-  // Confidence is the verification margin: no refutation at all is high, one is medium.
   verified.push({ ...candidates[findingIndex], confidence: refutations === 0 ? 'high' : 'medium' })
 }
 

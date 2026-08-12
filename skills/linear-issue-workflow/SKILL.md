@@ -312,7 +312,8 @@ and must still review.
 1. **Map** — one mapper per axis, all four concurrent, each confined to its
    axis.
 2. **Reduce** — plain code, no model: schema-invalid records dropped, dedup by
-   `file:line`, grouped by axis, sorted by severity, capped at 12 findings.
+   `file:line` (the most severe finding wins the anchor), grouped by axis,
+   sorted by severity, capped at 12 findings.
 3. **Verify** — 3 independent sceptics per finding, each prompted to *refute*
    it (the opposite goal to the reviewer's). **Rejection rule: 2 or more
    refutations out of 3.** A finding with fewer than 2 cast votes is dropped

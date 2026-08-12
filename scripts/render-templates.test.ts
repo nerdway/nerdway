@@ -38,6 +38,7 @@ test("the real ReviewFindings schema keeps its table intact when a finding carri
     summary: "one finding survived verification",
     findings: [
       {
+        axis: "correctness-regressions",
         file: "scripts/types/render-schema.ts",
         line: 61,
         claim: "a cell holding `a | b` splits the row",
@@ -46,11 +47,12 @@ test("the real ReviewFindings schema keeps its table intact when a finding carri
         confidence: "high",
       },
     ],
+    stats: { mapped: 1, verified: 1, rejected: 0, unverifiedOverflow: 0 },
   });
   const rows = rendered.split("\n").filter((line) => line.startsWith("|"));
   assert.equal(rows.length, 3, "header, separator and exactly one data row");
   assert.equal(
     rows[2],
-    "| scripts/types/render-schema.ts | 61 | a cell holding `a \\| b` splits the row | line1<br>line2 | major | high |",
+    "| correctness-regressions | scripts/types/render-schema.ts | 61 | a cell holding `a \\| b` splits the row | line1<br>line2 | major | high |",
   );
 });

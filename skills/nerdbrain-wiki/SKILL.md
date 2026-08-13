@@ -149,9 +149,10 @@ Initialize `local-paths` with the current `host:$PWD` pair. Set `slug:` and
 
 **`linear.team` and `linear.project` are REQUIRED.** Establish both before
 writing the page — never save a page with empty or placeholder values:
-- If unknown, resolve with the `linear` CLI: `linear teams list` for the
-  team key, `linear projects list --team <key> -o json` for the project **UUID**
-  (the `id` field; use the UUID, not the name — stable across renames).
+- If unknown, resolve with the `linearis` CLI: `linearis teams list` for the
+  team key, `linearis projects list --fields nodes.id,nodes.name,nodes.teams.nodes.key`
+  for the project **UUID** (the `id` field of the entry matching the project
+  name and team key; use the UUID, not the name — stable across renames).
 - If the project has no Linear counterpart, set the scalar `linear: none`
   (explicit "checked, none exists" — not an omission).
 

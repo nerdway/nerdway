@@ -19,7 +19,7 @@ const ISSUE_PREAMBLE = `<!--
   Match the language (PL/EN) to the user / repo.
 -->`;
 
-const CHILD_NOTE = "<!-- Parent is linked via `linear issues create --parent <PARENT-ID>`, not in the body. -->";
+const CHILD_NOTE = "<!-- Parent is linked via `linearis issues create --parent-ticket <PARENT-ID>`, not in the body. -->";
 
 function schemaOf(contract: GraphContract, id: string): JsonSchema {
   const entry = contract.schemas.find((schema) => schema.id === id);

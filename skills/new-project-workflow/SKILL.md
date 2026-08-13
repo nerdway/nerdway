@@ -82,11 +82,11 @@ If they pick option 2, take the new name and use it everywhere downstream. Do **
 Ask for whatever is still undecided after parsing flags:
 
 1. **Repo visibility** — only if neither `--public` nor `--private` was supplied. Default: `public`.
-2. **Linear team** — always ask. Run `linear teams list`; user picks one. Why ask: teams vary across users; silent defaults land projects in the wrong workspace.
+2. **Linear team** — always ask. Run `linearis teams list`; user picks one. Why ask: teams vary across users; silent defaults land projects in the wrong workspace.
 
-After the team is chosen, run the **Linear project existence check**: `linear projects list --team <team> -o json`, and look for an entry whose `name` equals `<name>`. If found, capture its `id` (UUID) — this turns Linear's plan-step into a skip. The CLI exposes no project URL, so the UUID is what gets surfaced.
+After the team is chosen, run the **Linear project existence check**: `linearis projects list --fields nodes.id,nodes.name,nodes.url,nodes.teams.nodes.key` (there is no `--team` filter — match `name` **and** the team key in `teams.nodes[].key` client-side). If found, capture its `id` (UUID) and `url` — this turns Linear's plan-step into a skip.
 
-If `linear` is missing from PATH or `linear auth status` exits non-zero, skip Linear creation entirely and note in the plan: `Linear step skipped — linear CLI unavailable or not authenticated`.
+If `linearis` is missing from PATH or `linearis teams list --limit 1` exits non-zero (note: `linearis auth status` exits 0 even unauthenticated, so a real API call is the check), skip Linear creation entirely and note in the plan: `Linear step skipped — linearis CLI unavailable or not authenticated`.
 
 ## Step 3 — Present the plan, get single approval
 
@@ -175,21 +175,17 @@ Never use `--force` or `--confirm`-bypassing flags.
 
 ### 4.5 — Linear project
 
-Create the project, then read its UUID back — `projects create` takes no
-`--output` flag and prints nothing parseable, so the UUID needs a second call:
+Create the project — the response JSON already carries everything needed:
 
 ```bash
-linear projects create "<name>" --team <team> -d "<one-line description>"
-linear projects list --team <team> -o json
+linearis projects create "<name>" --team <team> --description "<one-line description>" \
+  --fields id,name,url
 ```
 
-From the second command's output, take the `.id` of the entry whose `name`
-equals `<name>`. Step 4.6 needs that UUID for the entity-page frontmatter. If
-the existence check in Step 2 already found a matching project, skip creation
-and reuse the UUID it captured.
-
-The CLI exposes no project URL in any command or output format — do not attempt
-to construct one.
+Take `.id` (UUID) and `.url` straight from the output. Step 4.6 needs that
+UUID for the entity-page frontmatter; surface the `url` to the user. If the
+existence check in Step 2 already found a matching project, skip creation and
+reuse the UUID it captured.
 
 ### 4.6 — Nerdbrain entity page (conditional)
 
@@ -201,7 +197,7 @@ Only run if inspection confirmed nerdbrain is reachable. Create `~/obsidian/nerd
 - `linear: { team: <team>, project: <uuid-from-step-4.5> }` — both fields are
   REQUIRED; prefill directly from step 4.5 (the project was just created or
   found there, so the UUID is known). If step 4.5 was skipped (no working
-  `linear` CLI), omit the `linear:` block — Linear was not checked, and
+  `linearis` CLI), omit the `linear:` block — Linear was not checked, and
   `linear: none` means a confirmed "no Linear counterpart exists"; backfill
   in a later session with the CLI available.
 - `created` / `updated`: today
@@ -264,7 +260,7 @@ A hardcoded list rots within weeks: skills get renamed, new ones appear, the use
 | `gh` not authenticated | Stop before step 4.4 with: "Run `gh auth login` and re-run." |
 | Repo already has remote `origin` | Skip `gh repo create`; use existing remote. |
 | GitHub repo with same name exists, no local remote | Wire the existing remote with `git remote add origin <url>` and push. No duplicate created. |
-| `linear` CLI missing or not authenticated | Skip Linear creation; continue. |
+| `linearis` CLI missing or not authenticated | Skip Linear creation; continue. |
 | Linear project with same name already exists in team | Surface existing UUID; do not create duplicate. |
 | Nerdbrain vault not reachable | Silently skip step 4.6. This is normal for users without nerdbrain. |
 | User aborts at approval gate | Print "Cancelled. No changes made." Step 1 is read-only. |

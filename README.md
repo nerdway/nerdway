@@ -2,6 +2,8 @@
 
 Open-source Claude Code skills that automate the daily developer workflow at [Nerd4Rent](https://nerd4rent.io).
 
+New here? Start with the [User Guide](docs/USER-GUIDE.md) — what graph engineering is, how this plugin practices it, and how to install and drive it day to day.
+
 ## Skills
 
 ### `nerd4rent:new-project-workflow`

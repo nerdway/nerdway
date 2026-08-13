@@ -56,7 +56,7 @@ test("the issue template carries all three variants, and only FULL keeps the opt
   assert.ok(content.includes("## CHILD sub-issue (when splitting into stages)"));
   assert.equal(content.split("### Objective").length - 1, 3);
   assert.equal(content.split("### Notes").length - 1, 1);
-  assert.ok(content.trimEnd().endsWith("--parent <PARENT-ID>`, not in the body. -->"));
+  assert.ok(content.trimEnd().endsWith("--parent-ticket <PARENT-ID>`, not in the body. -->"));
 });
 
 test("a template whose schema is missing from the registry fails loudly", () => {

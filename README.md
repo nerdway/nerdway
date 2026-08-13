@@ -12,7 +12,7 @@ Bootstraps a new project end-to-end in a single approval:
 2. Initializes git if absent.
 3. Scaffolds `README.md` if absent.
 4. Creates a GitHub repo with `gh` (public by default, confirm to flip).
-5. Creates a matching Linear project via the `linear-cli` skill (team picked at runtime).
+5. Creates a matching Linear project via the `linearis` CLI (team picked at runtime).
 6. Lets you pick a spec-creating skill: an always-available **inline grilling** interview run by the agent itself, plus whatever external spec skills are installed (e.g. `/to-prd`, `/office-hours`; wrappers like `/grill-me` are marked manual-only).
 
 Trigger phrases: *"new project workflow"*, *"bootstrap project"*, *"start a new project the nerd4rent way"*, or `/nerd4rent:new-project-workflow`.
@@ -24,24 +24,24 @@ Creates a **new** Linear issue for the current repo with goals specified clearly
 1. Resolves the target team/project (nerdbrain entity-page → git remote → ask), and confirms.
 2. Adaptively interviews for missing goals — straight to a draft for small clear tasks, a short one-question-at-a-time interview for vague or multi-part work.
 3. Drafts the issue from an adaptive template (full vs minimal) and gates the Linear write on your approval.
-4. Decomposes the work: a checklist in the body by default, or **real Linear sub-issues** (parent + children via `--parent`) when the topic plainly splits into stages — and you can force or decline the split.
-5. Creates the issue **in Backlog** (explicit `-s backlog`), then offers an optional **inline grilling session** (one question at a time, a recommended answer with each, facts checked by the agent, only decisions asked) that can sharpen the description or split the topic into sub-issues.
-6. Prints the new issue ID/URL and hands off to the status-driven flow: type the issue ID in a new session/message to start planning with `linear-issue-workflow`.
+4. Decomposes the work: a checklist in the body by default, or **real Linear sub-issues** (parent + children via `--parent-ticket`) when the topic plainly splits into stages — and you can force or decline the split.
+5. Creates the issue **in Backlog** (explicit `--status Backlog`), then offers an optional **inline grilling session** (one question at a time, a recommended answer with each, facts checked by the agent, only decisions asked) that can sharpen the description or split the topic into sub-issues.
+6. Prints the new issue ID and hands off to the status-driven flow: type the issue ID in a new session/message to start planning with `linear-issue-workflow`.
 
-Pairs with the `linear-cli` skill. Trigger: intent to create a new issue/task with no existing ID — *"utwórz/stwórz/dodaj/zgłoś issue"*, *"create issue"*, *"new task"*.
+Uses the `linearis` CLI (see Requirements). Trigger: intent to create a new issue/task with no existing ID — *"utwórz/stwórz/dodaj/zgłoś issue"*, *"create issue"*, *"new task"*.
 
 ### `nerd4rent:linear-issue-workflow`
 
 A mandatory **status-driven** workflow for working a Linear issue by ID (e.g. `KAM-145`). The issue's Linear status is the single source of truth — you steer by changing the status, the agent never asks you to "confirm the plan" in chat:
 
-1. Fetches the issue (`linear issue view -j`) at the start of every turn and dispatches on status — also when a bare issue ID is typed into a fresh session.
+1. Fetches the issue (`linearis issues read <ID>`) at the start of every turn and dispatches on status — also when a bare issue ID is typed into a fresh session.
 2. **Backlog/Todo** → drafts an implementation plan (for ambiguous requirements, first offers an inline grilling session with an ADR/glossary docs discipline), posts it as a `## Implementation plan` comment, sets the status to Todo, and ends the turn with no instructions.
 3. **In Progress** (set manually by you = plan approved) → starts implementation: branch from the Linear `branchName`, empty commit, push, **draft PR with magic words** (`Fixes TEAM-123`) so the Linear↔GitHub integration closes the issue on merge; then offers an implementation mode (superpowers / Matt Pocock skills / plain agent — whichever is available).
 4. After implementation or on **In Review** → offers a code-review menu (superpowers / Matt Pocock / review it yourself); never offers to merge or close on its own.
 5. Close-out on request: delegates to **`nerd4rent:linear-issue-close`** (below) to merge and finish the issue.
 6. Posts a `## Session summary` comment after every working session.
 
-Pairs with the `linear-cli` skill for CLI syntax. Trigger: any Linear issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
+Uses the `linearis` CLI (syntax proven in the skill's own CLI reference). Trigger: any Linear issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
 
 ### `nerd4rent:linear-issue-close`
 
@@ -51,9 +51,9 @@ A deliberately **mechanical, lightweight** close-out for a finished issue — pu
 2. Pushes the branch (sets upstream if needed).
 3. Detects GitHub vs GitLab from the origin remote and merges the PR/MR with a merge commit (`gh pr merge --merge` / `glab mr merge`; marks a draft PR ready first).
 4. Switches the local checkout to the PR/MR's **base** branch (read from the PR/MR, not assumed to be `main`) and pulls.
-5. Sets the Linear issue to **Done** (`linear issue update <ID> -s Done`) — deterministic and covering GitLab, where there's no Linear↔GitHub auto-close.
+5. Sets the Linear issue to **Done** (`linearis issues update <ID> --status Done`) — deterministic and covering GitLab, where there's no Linear↔GitHub auto-close.
 
-On any error (e.g. merge conflict, missing `gh`/`glab`) it stops and reports rather than improvising. Pairs with the `linear-cli` skill. Trigger: intent to close/merge/finish an issue — *"domknij"*, *"zamknij"*, *"zmerguj i zamknij"*, *"close out"*, *"merge and close"*.
+On any error (e.g. merge conflict, missing `gh`/`glab`) it stops and reports rather than improvising. Uses the `linearis` CLI. Trigger: intent to close/merge/finish an issue — *"domknij"*, *"zamknij"*, *"zmerguj i zamknij"*, *"close out"*, *"merge and close"*.
 
 ### `nerd4rent:nerdbrain-wiki`
 
@@ -82,11 +82,11 @@ Limits on how much to read (max related pages, snippet caps) stay with the calli
 
 Brings this machine to the CLI state the skills in this repo require:
 
-1. Probes every entry declared in `cli-dependencies.json` (currently `linear`, `gh`, `rg`, `git`).
-2. Installs or updates whatever is missing or outdated, verifying checksums where applicable.
+1. Probes every entry declared in `cli-dependencies.json` (currently `node`, `linearis`, `gh`, `rg`, `git`).
+2. Installs or updates whatever is missing or outdated — download with checksum verification, or `npm install --global` for entries declaring the `npm` method.
 3. Hands back the authentication steps only a human can complete — it never runs `auth login` flows itself.
 
-Trigger: `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a skill fails because a command like `linear`, `gh`, or `rg` is missing or too old.
+Trigger: `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a skill fails because a command like `linearis`, `gh`, or `rg` is missing or too old.
 
 ### Agent-skills manifest management
 
@@ -234,7 +234,8 @@ Cursor reads global skills from `~/.agents/skills/` (and `~/.cursor/skills/`); t
 
 - `git`
 - `gh` (GitHub CLI), authenticated (`gh auth status`)
-- `linear-cli` skill installed and configured (or Linear MCP — the skill degrades gracefully if absent)
+- Node.js ≥ 22 (with npm)
+- `linearis` CLI (`npm i -g linearis`), authenticated with a personal API key from Linear Settings → API (`LINEAR_API_TOKEN` or `linearis auth login`); the Linear skills degrade gracefully if absent
 
 ## Releasing
 

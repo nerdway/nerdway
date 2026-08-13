@@ -7,36 +7,45 @@ description: >-
   user) → implement (branch, empty commit, draft PR with magic words); In
   Review → code-review menu; Done → close-out. Never prints "confirm the plan"
   instructions — the user steers by changing the issue status in Linear.
-  Invoke this skill FIRST; the linear commands it needs are in its CLI reference.
+  Invoke this skill FIRST; the linearis commands it needs are in its CLI
+  reference.
 ---
 
 # Linear issue workflow
 
 ## CLI reference
 
-`linear` is `joa23/linear-cli` (Go). These are the only commands this skill needs:
+`linearis` is the Linear CLI (npm, pure JS, JSON-only output). These are the
+only commands this skill needs:
 
 | Purpose | Command |
 |---------|---------|
-| Status gate (every turn) | `linear issues get <ID> -f minimal -o json` |
-| Full context (entering a phase) | `linear issues export <ID> "${TMPDIR:-/tmp}/linear-<ID>"` |
-| Post a comment | `cat body.md \| linear issues comment <ID> -b -` |
-| Set status | `linear issues update <ID> --state 'In Progress'` |
-| Branch name | `linear issues slug <ID>` |
-| Active work in a team/project | `linear issues list --team <KEY> --project <name> --state 'Todo,In Progress,In Review'` |
+| Status gate (every turn) | `linearis issues read <ID> --fields identifier,title,state.name` |
+| Full context (entering a phase) | `linearis issues read <ID> --with-comments` |
+| Post a comment | `linearis issues discuss <ID> --body "$(cat body.md)"` |
+| Set status | `linearis issues update <ID> --status 'In Progress'` |
+| Branch name | `linearis issues read <ID> --fields branchName` |
+| Active work in a team/project | `linearis issues list --team <KEY> --project <name> --status 'Todo,In Progress,In Review'` |
 
-`get -f minimal -o json` returns exactly `identifier`, `title`, `state` — cheap
-enough to run every turn. `export` writes `<ID>.md` (state table, full
-description, every comment, a `References` section with linked PRs) plus an
-`assets/` folder holding inline images as local files ready to `Read`.
+`--fields` takes comma-separated dot-paths and trims the JSON to exactly those
+keys — the status gate returns only `identifier`, `title`, `state.name`, cheap
+enough to run every turn. `--with-comments` inlines every comment
+(`comments.nodes[].body`, markdown) into the issue JSON; linked PRs show up as
+comments from the GitHub sync. Inline images stay markdown URLs inside
+`description`/`body` — fetch one only when it matters.
 
-States are the team's own **names** — `Backlog`, not `backlog`; list them with
-`linear teams states <KEY>`.
+States are the team's own **names** — `Backlog`, not `backlog`; spaces are
+fine (`--status 'In Progress'`). There is no state-listing command: a wrong
+name fails loudly with `Status "X" for team ... not found`, naming nothing
+else — fix the name and retry.
 
-Multi-line bodies arrive on **stdin**, but only when the flag's value is the `-`
-sentinel — `-b -` for a comment. There is no `--body-file`, and a bare pipe is
-silently insufficient: without `-b -` the CLI answers `comment body is required`
-even though content was piped in.
+Multi-line bodies go through the flag, not stdin: `--body "$(cat body.md)"`
+preserves newlines, backticks and Polish diacritics as-is. There is no `-`
+stdin sentinel and no `--body-file`.
+
+The issue JSON carries no `url` field; when a link is needed, build it as
+`https://linear.app/<workspace>/issue/<ID>` (workspace slug as in the
+project's `url`).
 
 ## When this skill applies
 
@@ -57,12 +66,13 @@ typing approvals in chat.
    instruction in chat to implement counts as approval (then set In Progress
    to reflect it).
 2. **Status check every turn**: at the start of every turn that touches the
-   issue, run `linear issues get <ID> -f minimal -o json` and dispatch on the
-   current status. The status may have changed since the last message.
+   issue, run `linearis issues read <ID> --fields identifier,title,state.name`
+   and dispatch on the current status. The status may have changed since the
+   last message.
 3. **After every working session** on the issue: post a `## Session summary`
    comment (see below).
 
-Allowed regardless of status: `linear` read commands, reading code for
+Allowed regardless of status: `linearis` read commands, reading code for
 analysis, drafting plan text, posting Linear comments, answering questions.
 
 **Legacy marker:** older issues may carry a `Status: approved` line in the plan
@@ -71,11 +81,10 @@ workflow). Never post that marker on new work.
 
 ## Dispatch by status
 
-Fetch first — `linear issues export <ID> "${TMPDIR:-/tmp}/linear-<ID>"` — then
-`Read` the produced `<ID>.md`. That one file carries the state table, the full
-description, every comment, and a `References` section listing linked PRs;
-inline images land in `assets/` as local files. Export into the temp directory,
-never into the repo. Then:
+Fetch first — `linearis issues read <ID> --with-comments`. That one JSON
+carries the state, the full description and every comment (linked PRs appear
+as GitHub-sync comments); inline images stay markdown URLs in the bodies.
+Then:
 
 | Issue status | Phase |
 |--------------|-------|
@@ -208,8 +217,8 @@ run them, manually, as slash commands.
 Save the plan to a temp file, then:
 
 ```bash
-cat <path-to-plan.md> | linear issues comment <ID> -b -
-linear issues update <ID> --state Todo
+linearis issues discuss <ID> --body "$(cat <path-to-plan.md>)"
+linearis issues update <ID> --status Todo
 ```
 
 The posted body **must** start with `## Implementation plan` (no status line).
@@ -232,7 +241,9 @@ invoke `nerdbrain-wiki` to append/update the superseding decision under
 `## Decisions` on the entity page before continuing.
 
 1. **Branch** — existing policy unchanged:
-   - On `main`/`master`: `git checkout -b "$(linear issues slug <ID>)"`.
+   - On `main`/`master`: read the issue's native branch name —
+     `linearis issues read <ID> --fields branchName` — then
+     `git checkout -b <branchName>` with the returned value.
    - On another issue branch: ask the user — (a) branch from current,
      (b) branch from main/master, (c) stay.
 2. **Empty commit + push** (GitHub needs ≥1 commit to open a PR):
@@ -364,7 +375,7 @@ re-run.
 After each session (including partial work), post:
 
 ```bash
-cat <summary.md> | linear issues comment <ID> -b -
+linearis issues discuss <ID> --body "$(cat <summary.md>)"
 ```
 
 The bundled `session-summary-template.md` has these sections ready. Body **must**
@@ -381,8 +392,8 @@ The summary must be enough to resume from Linear alone.
 ## Nerdbrain entity-page integration
 
 - When the injected entity page's frontmatter has `linear.team` or
-  `linear.project`, query Linear for active work (`linear issues list
-  --team <key> --project <name> --state 'Todo,In Progress,In Review'`)
+  `linear.project`, query Linear for active work (`linearis issues list
+  --team <key> --project <name> --status 'Todo,In Progress,In Review'`)
   instead of re-asking the user.
 - When recording a decision on the entity page (nerdbrain write trigger),
   link it to the issue ID, e.g. `2026-05-05 — chose JWT (LIN-123)`.

@@ -17,7 +17,12 @@ export type ProbeResult =
 
 export function runCommand(argv: string[]): Promise<CommandResult> {
   return new Promise((resolve) => {
-    const child = spawn(argv[0], argv.slice(1), { shell: false, stdio: ["ignore", "pipe", "pipe"] });
+    // win32 needs a shell: npm and npm-installed CLIs are .cmd shims, which
+    // Node refuses to spawn directly (CVE-2024-27980). argv comes from the
+    // static contract, never from user input, so the shell adds no injection
+    // surface.
+    const shell = process.platform === "win32";
+    const child = spawn(argv[0], argv.slice(1), { shell, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk) => { stdout += String(chunk); });

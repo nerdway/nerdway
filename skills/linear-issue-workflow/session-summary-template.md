@@ -39,3 +39,13 @@
 
 -
 -
+
+### Metrics
+
+<!-- One line per figure the run already produced — `PlanContext.stats`, the
+     gaps an island reported, the verifier rejection rate. Passive by
+     construction: nothing is measured that the run did not emit anyway, and the
+     comment is the only place it is stored. Omit when no island ran. -->
+
+-
+-

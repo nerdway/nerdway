@@ -385,9 +385,13 @@ start with `## Session summary` and include:
 - scope completed vs remaining,
 - current status,
 - validation / test results,
-- open questions / next steps.
+- open questions / next steps,
+- metrics, whenever an island ran this session.
 
-The summary must be enough to resume from Linear alone.
+The summary must be enough to resume from Linear alone. The `metrics` section is
+where a run's `PlanContext.stats` and `gaps` become durable — the comment is the
+only place they are stored, so a session that ran the plan island and omits them
+loses the figure for good.
 
 ## Nerdbrain entity-page integration
 

@@ -41,6 +41,52 @@ const SCHEMA_PlanContext = {
       "title": "Commands",
       "description": "Test, build and validator commands the plan will cite.",
       "items": { "type": "string" }
+    },
+    "stats": {
+      "type": "object",
+      "title": "Fan-out stats",
+      "description": "Passive observability of the fan-out, counted by the reducer from what the run already produced. Optional: absent whenever the context was gathered sequentially instead of as an island.",
+      "properties": {
+        "gatherers": {
+          "type": "array",
+          "title": "Per gatherer",
+          "description": "One row per gatherer the island spawns, in its fixed spawn order — a failed gatherer stays in the list with zeros rather than vanishing.",
+          "items": {
+            "type": "object",
+            "title": "Gatherer stats",
+            "description": "What one gatherer contributed to the reduced context.",
+            "properties": {
+              "source": {
+                "type": "string",
+                "title": "Source",
+                "description": "The gatherer this row counts, e.g. `conventions`."
+              },
+              "returned": {
+                "type": "integer",
+                "title": "Returned",
+                "description": "Non-empty list items the gatherer returned, before reduction."
+              },
+              "unique": {
+                "type": "integer",
+                "title": "Unique",
+                "description": "Items it was the first to contribute that survived into the reduced context. A gatherer at zero across successive runs is a removal candidate."
+              }
+            },
+            "required": ["source", "returned", "unique"]
+          }
+        },
+        "duplicatesDropped": {
+          "type": "integer",
+          "title": "Duplicates dropped",
+          "description": "Returned items the reducer discarded as duplicates or past a recall limit — the fan-out's redundancy."
+        },
+        "gapsCount": {
+          "type": "integer",
+          "title": "Gaps",
+          "description": "Gaps the run reported: the node-failure count for this island."
+        }
+      },
+      "required": ["gatherers", "duplicatesDropped", "gapsCount"]
     }
   },
   "required": ["repoLayout", "conventions"]
@@ -149,17 +195,34 @@ const [repoFacts, conventions, priorPlans, linearRelations, vault] = await paral
 
 // --- Deterministic reducer: plain code, no agents, no clock, no randomness. ---
 
-function dedup(list) {
+// Fixed spawn order: a gatherer that failed keeps its row at zero instead of vanishing,
+// which is what makes the node-failure half of the metric readable.
+const SOURCES = ['repo-layout', 'conventions', 'prior-plans', 'linear-relations', 'vault']
+
+const tally = new Map(SOURCES.map((source) => [source, { source, returned: 0, unique: 0 }]))
+
+// Deduplicates a list assembled from one or more gatherers and attributes every surviving
+// item to the first gatherer that contributed it, in the fixed order above.
+function reduce(entries, limit) {
   const seen = new Set()
-  const out = []
-  for (const item of Array.isArray(list) ? list : []) {
-    if (typeof item !== 'string') continue
-    const trimmed = item.trim()
-    if (trimmed.length === 0 || seen.has(trimmed)) continue
-    seen.add(trimmed)
-    out.push(trimmed)
+  const values = []
+  const owners = []
+  for (const entry of entries) {
+    const row = tally.get(entry.source)
+    for (const item of Array.isArray(entry.items) ? entry.items : []) {
+      if (typeof item !== 'string') continue
+      const trimmed = item.trim()
+      if (trimmed.length === 0) continue
+      row.returned++
+      if (seen.has(trimmed)) continue
+      seen.add(trimmed)
+      values.push(trimmed)
+      owners.push(row)
+    }
   }
-  return out
+  const kept = limit === undefined ? values : values.slice(0, limit)
+  for (const row of owners.slice(0, kept.length)) row.unique++
+  return kept
 }
 
 // Missing required fields per the inlined out-schema — the island's own exit check.
@@ -181,13 +244,16 @@ if (linearRelations === null) gaps.push('linear-relations gatherer failed: relat
 
 const planContext = {
   repoLayout: repoFacts !== null && typeof repoFacts.repoLayout === 'string' ? repoFacts.repoLayout.trim() : '',
-  conventions: dedup(conventions !== null ? conventions.items : []),
+  conventions: reduce([{ source: 'conventions', items: conventions !== null ? conventions.items : [] }]),
   // Cap: two prior-art sources (plans + Linear), each held to the search-result limit.
-  priorArt: dedup([
-    ...(priorPlans !== null ? priorPlans.items : []),
-    ...(linearRelations !== null ? linearRelations.items : []),
-  ]).slice(0, 2 * MAX_SEARCH_RESULTS),
-  commands: dedup(repoFacts !== null ? repoFacts.commands : []),
+  priorArt: reduce(
+    [
+      { source: 'prior-plans', items: priorPlans !== null ? priorPlans.items : [] },
+      { source: 'linear-relations', items: linearRelations !== null ? linearRelations.items : [] },
+    ],
+    2 * MAX_SEARCH_RESULTS,
+  ),
+  commands: reduce([{ source: 'repo-layout', items: repoFacts !== null ? repoFacts.commands : [] }]),
 }
 for (const field of missingRequired(SCHEMA_PlanContext, planContext)) {
   gaps.push(`PlanContext.${field} is empty — degrade to the sequential context read for that part`)
@@ -201,9 +267,9 @@ if (vault === null) {
 } else {
   projectContext = {
     slug: typeof vault.slug === 'string' ? vault.slug.trim() : '',
-    decisions: dedup(vault.decisions),
+    decisions: reduce([{ source: 'vault', items: vault.decisions }]),
     activeContext: typeof vault.activeContext === 'string' ? vault.activeContext.trim() : '',
-    relatedPages: dedup(vault.relatedPages).slice(0, MAX_RELATED_PAGES),
+    relatedPages: reduce([{ source: 'vault', items: vault.relatedPages }], MAX_RELATED_PAGES),
   }
   const missing = missingRequired(SCHEMA_ProjectContext, projectContext)
   if (missing.length > 0) {
@@ -212,6 +278,14 @@ if (vault === null) {
   }
 }
 
+const gatherers = [...tally.values()]
+planContext.stats = {
+  gatherers,
+  duplicatesDropped: gatherers.reduce((total, row) => total + row.returned - row.unique, 0),
+  gapsCount: gaps.length,
+}
+
 log(`Reduced: ${planContext.conventions.length} conventions, ${planContext.priorArt.length} prior-art entries, vault ${projectContext !== null ? 'ok' : 'absent'}`)
+log(`Fan-out: ${gatherers.map((row) => `${row.source} ${row.unique}/${row.returned}`).join(', ')}; ${planContext.stats.duplicatesDropped} dropped, ${gaps.length} gaps`)
 
 return { planContext, projectContext, gaps }

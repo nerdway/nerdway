@@ -165,6 +165,22 @@ finding, each prompted to refute it, 2 or more refutations out of 3 reject it
 the findings verbatim. Rejections and overflow are counted in the required
 `ReviewFindings.stats`, so degradation is visible, never silent.
 
+The axis measures itself **passively**: a figure is collected only when it is a
+by-product of a run that happens anyway, and it is stored only where that run's
+result already lands — a Linear comment. Three of them. The **verifier
+rejection rate** (`rejected / (verified + rejected)` from `ReviewFindings.stats`)
+says whether adversarial verification earns its latency: read over the last ~5
+runs, below 10% the verifier is decoration and above 50% the reviewers are
+ill-defined — the thresholds live in [`CONTEXT.md`](CONTEXT.md). The **node
+failure rate** comes from the `gaps` both islands report, plus
+`stats.unverifiedOverflow`. **Fan-out effectiveness** is the optional
+`PlanContext.stats`: per gatherer, how many items it returned and how many it
+was the first to contribute, so a gatherer stuck near zero across runs becomes
+a removal candidate. The plan island's figures reach Linear through the
+optional `metrics` section of the session summary. Nothing here needs CI, a
+telemetry channel or a clock — the one candidate that did, critical-path
+length, was dropped rather than deferred.
+
 The axis is an **island graph**, not one graph end to end. The Claude Code
 workflow runtime takes no mid-run user input, so every step that needs a human
 — the grilling session, the "user sets In Progress" gate, the review menu —

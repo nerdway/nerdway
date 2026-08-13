@@ -19,26 +19,30 @@ Create well-formed Linear issues whose goals are specified clearly enough that
 
 ## CLI reference
 
-`linear` is `joa23/linear-cli` (Go). Commands this skill uses:
+`linearis` is the Linear CLI (npm, pure JS, JSON-only output). Commands this
+skill uses:
 
 | Purpose | Command |
 |---------|---------|
-| List teams | `linear teams list` |
-| List a team's projects | `linear projects list --team <KEY>` |
-| Sanity-check a team key | `linear issues list --team <KEY> --limit 1` |
-| Create an issue | `cat body.md \| linear issues create "<title>" --team <KEY> --project "<name>" --state Backlog -o json -d -` |
-| Create a sub-issue | the same, plus `--parent <PARENT-ID>` |
-| Replace a description | `cat body.md \| linear issues update <ID> -d -` |
+| List teams | `linearis teams list` |
+| List projects (with owning teams) | `linearis projects list --fields nodes.name,nodes.teams.nodes.key` |
+| Sanity-check a team key | `linearis issues list --team <KEY> --limit 1` |
+| Create an issue | `linearis issues create "<title>" --team <KEY> --project "<name>" --status Backlog --description "$(cat body.md)"` |
+| Create a sub-issue | the same, plus `--parent-ticket <PARENT-ID>` |
+| Replace a description | `linearis issues update <ID> --description "$(cat body.md)"` |
 
-The description arrives on **stdin**, and `-d -` is what makes the CLI read it —
-a bare pipe leaves the description empty on `create` and dies on
-`no updates specified` on `update`. There is no `--description-file`.
+The description goes through the flag, not stdin — `--description "$(cat
+body.md)"` preserves newlines, markdown and diacritics as-is. There is no `-`
+stdin sentinel and no `--description-file`. `projects list` has no `--team`
+filter; each returned project carries its owning teams, so filter on
+`teams.nodes[].key` client-side.
 
-`-o json` returns the created issue including `.identifier` and `.url`; there is
-no separate URL command (`linear issues get <ID> -o json` also carries `.url`
-for an issue that already exists). The CLI is never interactive, so there
-is no `--no-interactive` flag. States are the team's own **names**
-(`linear teams states <KEY>`) — `Backlog`, not `backlog`.
+Every command answers in JSON; the created issue includes `.identifier` but
+**no URL** — when one is needed, build it as
+`https://linear.app/<workspace>/issue/<ID>` (workspace slug as in the
+project's `url`). The CLI is never interactive. States are the team's own
+**names** — `Backlog`, not `backlog`; a wrong name fails loudly with
+`Status "X" for team ... not found`.
 
 ## When this skill applies
 
@@ -53,7 +57,7 @@ implement it → that is `nerd4rent:linear-issue-workflow`, not this skill. This
 ## Hard gate (do not skip)
 
 **No write to Linear** (`issue create`, sub-issues, labels) until the user has seen
-the drafted issue body and approved it. Allowed before approval: `linear` read
+the drafted issue body and approved it. Allowed before approval: `linearis` read
 commands, reading the repo/entity-page for context, asking clarifying questions,
 drafting the issue text. The same gate applies to sub-issues proposed by a
 grilling session (step 6).
@@ -88,9 +92,10 @@ before writing**:
 1. **nerdbrain entity-page** — if the injected project page has `linear.team`
    and/or `linear.project`, use them.
 2. **Git remote inference** — map the repo to a Linear team/project (e.g. via
-   `linear issues list --team <key> --limit 1` to sanity-check the key exists).
-3. **Ask** — if still unknown, list options (`linear teams list`,
-   `linear projects list --team <key>`) and ask which team/project.
+   `linearis issues list --team <key> --limit 1` to sanity-check the key exists).
+3. **Ask** — if still unknown, list options (`linearis teams list`,
+   `linearis projects list` filtered by `teams.nodes[].key`) and ask which
+   team/project.
 
 Show the resolved `team` + `project` and get a quick confirmation. This works in
 repos without a wiki page (fall back to inference/ask).
@@ -146,26 +151,25 @@ New issues start in **Backlog** — pass the state explicitly so the team's
 default state cannot override it:
 
 ```bash
-cat <path> | linear issues create "<title>" \
-  --team <key> --project "<name>" --state Backlog -o json -d -
+linearis issues create "<title>" \
+  --team <key> --project "<name>" --status Backlog --description "$(cat <path>)"
 ```
 
 For a parent + sub-issues, create the parent first, capture its `TEAM-123` ID from
-the output, then create each child with `--parent`:
+the output, then create each child with `--parent-ticket`:
 
 ```bash
-cat <parent.md> | linear issues create "<parent title>" \
-  --team <key> --project "<name>" --state Backlog -o json -d -
+linearis issues create "<parent title>" \
+  --team <key> --project "<name>" --status Backlog --description "$(cat <parent.md>)"
 # → read .identifier from the JSON, e.g. DEMO-123
-cat <child-1.md> | linear issues create "<child title>" \
-  --team <key> --project "<name>" --parent DEMO-123 --state Backlog -o json -d -
+linearis issues create "<child title>" \
+  --team <key> --project "<name>" --parent-ticket DEMO-123 --status Backlog --description "$(cat <child-1.md>)"
 ```
 
-Add `-l/--labels`, `-p/--priority`, `-e/--estimate`, etc. only when the user
-specified them — don't invent metadata. Priority takes a **name**
-(`urgent|high|normal|low`, or `none`); prefer the name over the numeric 0–4
-scale, whose meaning differs from the CLI this skill used previously.
-`--parent` handles parent/child directly.
+Add `--labels`, `--priority`, `--estimate`, etc. only when the user specified
+them — don't invent metadata. Priority is **numeric** (`1`=urgent, `2`=high,
+`3`=medium, `4`=low); `--estimate` fails loudly on teams with estimates
+disabled. `--parent-ticket` handles parent/child directly.
 
 ### 6. Grilling session (optional)
 
@@ -175,19 +179,19 @@ dla tego issue?* If yes, run it **inline** per the grilling protocol above
 Handle the outcome:
 
 - sharpened requirements → update the issue description
-  (`cat <path> | linear issues update <ID> -d -`) after showing the diff;
+  (`linearis issues update <ID> --description "$(cat <path>)"`) after showing
+  the diff;
 - the topic splits into stages → propose sub-issues (step 3 rules apply) and
-  create them with `--parent <ID> --state Backlog` **only after the user approves
-  the drafts** (hard gate above).
+  create them with `--parent-ticket <ID> --status Backlog` **only after the
+  user approves the drafts** (hard gate above).
 
 Skip the offer for a small, clear task — same adaptive threshold as step 2.
 
 ### 7. Output + handoff
 
-Print the created issue ID(s) and URL(s) — both come from step 5's `-o json`
-output (`.identifier` and `.url`); there is no URL command, though
-`linear issues get <ID> -o json` also carries `.url` for an existing issue.
-Then point at
+Print the created issue ID(s) — `.identifier` from step 5's JSON — and, when a
+link helps, build the URL as `https://linear.app/<workspace>/issue/<ID>` (the
+issue JSON carries no `url` field). Then point at
 the status-driven flow — do **not** offer to plan it yourself in this session:
 
 > *Issue utworzone (DEMO-123) — w Backlogu. Wpisz ID issue w nowej sesji lub

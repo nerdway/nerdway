@@ -153,6 +153,52 @@
             "title": "Commands",
             "description": "Test, build and validator commands the plan will cite.",
             "items": { "type": "string" }
+          },
+          "stats": {
+            "type": "object",
+            "title": "Fan-out stats",
+            "description": "Passive observability of the fan-out, counted by the reducer from what the run already produced. Optional: absent whenever the context was gathered sequentially instead of as an island.",
+            "properties": {
+              "gatherers": {
+                "type": "array",
+                "title": "Per gatherer",
+                "description": "One row per gatherer the island spawns, in its fixed spawn order — a failed gatherer stays in the list with zeros rather than vanishing.",
+                "items": {
+                  "type": "object",
+                  "title": "Gatherer stats",
+                  "description": "What one gatherer contributed to the reduced context.",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "title": "Source",
+                      "description": "The gatherer this row counts, e.g. `conventions`."
+                    },
+                    "returned": {
+                      "type": "integer",
+                      "title": "Returned",
+                      "description": "Non-empty list items the gatherer returned, before reduction."
+                    },
+                    "unique": {
+                      "type": "integer",
+                      "title": "Unique",
+                      "description": "Items it was the first to contribute that survived into the reduced context. A gatherer at zero across successive runs is a removal candidate."
+                    }
+                  },
+                  "required": ["source", "returned", "unique"]
+                }
+              },
+              "duplicatesDropped": {
+                "type": "integer",
+                "title": "Duplicates dropped",
+                "description": "Returned items the reducer discarded as duplicates or past a recall limit — the fan-out's redundancy."
+              },
+              "gapsCount": {
+                "type": "integer",
+                "title": "Gaps",
+                "description": "Gaps the run reported: the node-failure count for this island."
+              }
+            },
+            "required": ["gatherers", "duplicatesDropped", "gapsCount"]
           }
         },
         "required": ["repoLayout", "conventions"]

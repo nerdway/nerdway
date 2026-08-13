@@ -2,6 +2,8 @@
 
 Open-source Claude Code skills that automate the daily developer workflow at [Nerdway](https://nerdway.si).
 
+New here? Start with the [User Guide](docs/USER-GUIDE.md) — what graph engineering is, how this plugin practices it, and how to install and drive it day to day.
+
 ## Skills
 
 ### `nerdway:new-project-workflow`

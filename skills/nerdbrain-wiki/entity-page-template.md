@@ -9,8 +9,8 @@ remote: <git-remote-url-or-empty>
 local-paths:
   - {host: <hostname>, path: <absolute-path>}
 linear:              # REQUIRED — never leave empty or placeholder
-  team: <team-key>   # from `linear teams list` (e.g. DEMO)
-  project: <uuid>    # `id` from `linear projects list --team <key> -o json`
+  team: <team-key>   # from `linearis teams list` (e.g. DEMO)
+  project: <uuid>    # `id` from `linearis projects list` (match name + team key)
 # If the project has no Linear counterpart, replace the whole block with:
 # linear: none
 related: []

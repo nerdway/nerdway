@@ -164,3 +164,20 @@ refute a finding, and 2 or more refutations out of 3 reject it. A finding
 with fewer than 2 cast votes is dropped as unverified and counted — it never
 passes because verification failed.
 _Avoid_: majority vote (hides that the sceptics' goal is to refute), veto
+
+**Rejection rate**:
+`rejected / (verified + rejected)` from `ReviewFindings.stats`, read over the
+last ~5 review runs — a single run capped at 12 findings has a granularity of
+roughly 8%, too coarse to judge. Below **10%** the verifier is decoration:
+the sceptics refute nothing, so the stage buys latency instead of signal.
+Above **50%** the reviewers are ill-defined: most of what the axis mappers
+raise is noise. Between the two is the healthy band. The thresholds are an
+initial calibration; revising them is an edit here, never a contract change.
+_Avoid_: false-positive rate (claims a ground truth the verification has not)
+
+**Passive metric**:
+A figure counted from what a run already emitted, stored only where that run's
+result already lands — a Linear comment. The repo has no CI and no telemetry,
+so a metric that needs a new collection channel, a log file or a clock is not
+measured at all: it is rejected, not deferred.
+_Avoid_: telemetry, instrumentation (both imply a channel this repo does not have)

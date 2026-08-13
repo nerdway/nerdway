@@ -2,6 +2,8 @@
 
 Open-source Claude Code skills that automate the daily developer workflow at [Nerd4Rent](https://nerd4rent.io).
 
+New here? Start with the [User Guide](docs/USER-GUIDE.md) — installation, prerequisites, and how to use each skill day to day.
+
 ## Skills
 
 ### `nerd4rent:new-project-workflow`

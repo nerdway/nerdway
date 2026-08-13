@@ -21,20 +21,21 @@ out of scope; report and stop instead.
 
 ## CLI reference
 
-`linear` is `joa23/linear-cli` (Go). This skill issues exactly one write:
+`linearis` is the Linear CLI (npm, JSON-only output). This skill issues
+exactly one write:
 
 ```bash
-linear issues update <ID> --state Done
+linearis issues update <ID> --status Done
 ```
 
-`Done` is the team's own state **name**, not a state type — list a team's names
-with `linear teams states <KEY>`.
+`Done` is the team's own state **name**, not a state type; a wrong name fails
+loudly with `Status "X" for team ... not found`.
 
 There is no command mapping a branch back to an issue, so the ID is parsed from
 the branch name and every candidate is confirmed with a read before use:
 
 ```bash
-linear issues get <ID> -f minimal -o json
+linearis issues read <ID> --fields identifier
 ```
 
 It exits non-zero for an ID that does not exist, which is what makes the
@@ -47,12 +48,12 @@ branch:
 
 ```bash
 for candidate in $(git branch --show-current | grep -oiE '[a-z]+-[0-9]+' | tr '[:lower:]' '[:upper:]'); do
-  linear issues get "$candidate" -f minimal -o json >/dev/null 2>&1 && { echo "$candidate"; break; }
+  linearis issues read "$candidate" --fields identifier >/dev/null 2>&1 && { echo "$candidate"; break; }
 done
 ```
 
-Matching is case-insensitive because `linear issues slug` produces lowercase
-branch names; the result is upper-cased because Linear expects `DEMO-123`.
+Matching is case-insensitive because Linear's `branchName` is lowercase; the
+upper-casing is mandatory — `linearis` resolves `DEMO-123` but not `demo-123`.
 
 Every `letters-digits` fragment is a *candidate*, and the first one that
 actually resolves in Linear wins. Taking the leftmost match alone is not safe:
@@ -154,7 +155,7 @@ git checkout <base> && git pull
 ## Step 5 — Set the Linear issue to Done
 
 ```bash
-linear issues update <ID> --state Done
+linearis issues update <ID> --status Done
 ```
 
 This is idempotent and deterministic: it closes the issue on GitHub (independent

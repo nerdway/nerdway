@@ -1,6 +1,6 @@
 ---
 name: bootstrap-clis
-description: Bring this machine to the CLI state the skills in this repo require - probe every entry in cli-dependencies.json, install or update what is missing or outdated, and hand back the authentication steps only a human can complete. Use for `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a skill fails because a command like `linear`, `gh`, or `rg` is missing or too old.
+description: Bring this machine to the CLI state the skills in this repo require - probe every entry in cli-dependencies.json, install or update what is missing or outdated, and hand back the authentication steps only a human can complete. Use for `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a skill fails because a command like `linearis`, `gh`, or `rg` is missing or too old.
 ---
 
 # Bootstrap CLIs

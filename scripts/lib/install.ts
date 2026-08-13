@@ -89,3 +89,19 @@ export async function applyInstall(entry: CliEntry, strategy: InstallStrategy): 
     return { ok: false, detail: error instanceof Error ? error.message : String(error) };
   }
 }
+
+export function npmGlobalBinDir(prefix: string, platform: NodeJS.Platform): string {
+  return platform === "win32" ? prefix : join(prefix, "bin");
+}
+
+export async function applyNpmInstall(pkg: string): Promise<InstallOutcome> {
+  const result = await runCommand(["npm", "install", "--global", pkg]);
+  if (result.code !== 0) {
+    return { ok: false, detail: `npm install --global ${pkg} failed: ${(result.stderr || result.stdout).trim()}` };
+  }
+  const prefix = await runCommand(["npm", "prefix", "--global"]);
+  const bin = prefix.code === 0 && prefix.stdout.trim().length > 0
+    ? npmGlobalBinDir(prefix.stdout.trim(), process.platform)
+    : undefined;
+  return { ok: true, detail: `installed ${pkg} via npm`, placedAt: bin };
+}

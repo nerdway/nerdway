@@ -167,7 +167,7 @@ const AXIS_PROMPTS = {
     `Review ONLY for spec compliance: does the change do what the issue asked, no more and no less? ` +
     (issueId === ''
       ? `No issue id was provided, so acceptance criteria are not readable from Linear: read the pull request description (\`gh pr view\`) and review the change against the intent stated there. `
-      : `Read the issue's acceptance criteria first: run \`linear issues get ${issueId} -o json\` (read-only) and use its description. `) +
+      : `Read the issue's acceptance criteria first: run \`linearis issues read ${issueId}\` (read-only) and use its description. `) +
     `Report each unmet or violated acceptance criterion as a finding anchored to the diff line that misses it.`,
   'repo-standards':
     'Review ONLY against the repo coding standards: read the "## Standards" section of CONTEXT.md and check the diff against those rules alone. ' +

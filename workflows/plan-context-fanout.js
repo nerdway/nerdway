@@ -136,7 +136,7 @@ const [repoFacts, conventions, priorPlans, linearRelations, vault] = await paral
       ? Promise.resolve({ items: [] })
       : agent(
           issueHeader +
-            `Collect related Linear issues. Use the linear CLI (read-only): \`linear issues get ${issueId} -o json\` for the parent and links, then fetch the parent and its sub-issues the same way. Return items: one string per related issue — "TEAM-123 (state): title — why it matters to this plan". If the CLI is unavailable, return an empty list.`,
+            `Collect related Linear issues. Use the linearis CLI (read-only): \`linearis issues read ${issueId}\` returns JSON with parent, children and relations; fetch the parent and its sub-issues the same way. Return items: one string per related issue — "TEAM-123 (state): title — why it matters to this plan". If the CLI is unavailable, return an empty list.`,
           { label: 'gather:linear-relations', phase: 'Gather', schema: stringListShape },
         ),
   () =>

@@ -45,6 +45,7 @@ Git commands, each proven in this repo with the exit codes relied on below:
 | Does the branch exist | `git rev-parse --verify --quiet refs/heads/<branch>` then `refs/remotes/origin/<branch>` | 0 exists / 1 missing |
 | Is the hash still in the branch history | `git merge-base --is-ancestor <hash> <ref>` | 0 ancestor / 1 not |
 | Work done after the checkpoint | `git log --oneline <hash>..<ref>` | — |
+| Local branch vs its remote | `git rev-list --left-right --count <branch>...origin/<branch>` | — |
 | Default branch on origin | `git symbolic-ref --short refs/remotes/origin/HEAD` | — |
 
 ## Step 1 — Locate the checkpoint
@@ -78,24 +79,32 @@ Then branch on what you found:
 ## Step 2 — Verify against git
 
 Run `git fetch -q` first; a checkpoint written on another machine only makes
-sense against fresh remote refs. Then resolve the **reference tip**: the local
-branch from the entry if it exists, else `origin/<branch>`, else `HEAD`
-(after a machine switch HEAD is usually `main`, so HEAD is the fallback, not
-the primary comparison).
+sense against fresh remote refs. Then resolve the **reference tip**:
+`origin/<branch>` from the entry if it exists, else the local branch. After a
+fetch the remote tip is the shared truth; a local branch is only a stale or
+unpushed copy of it, so it is the fallback, never the primary comparison.
+HEAD is not a candidate — after a machine switch HEAD is usually `main`, which
+says nothing about the checkpointed branch.
 
-Check the four cases in this order and report **each one separately** — they
-mean different things and call for different actions:
+Walk the cases in this order and **stop at the first one that fires**: each
+later check assumes the earlier ones passed (an unknown hash makes every
+`merge-base` below exit 128; a missing branch leaves nothing to compare
+against). Report the case that fired with its evidence — they mean different
+things and call for different actions:
 
 | # | Check | Meaning | Report as |
 |---|-------|---------|-----------|
-| 1 | `git cat-file -e <hash>^{commit}` → 128 | the vault is *ahead* of this clone: the commit was made elsewhere and not pulled | "repo is behind the checkpoint — pull / fetch the branch" |
+| 1 | `git cat-file -e <hash>^{commit}` → 128 | the fetch just ran, so the commit exists only on the machine that wrote the checkpoint — it was never pushed | "checkpoint commit not on origin — push it from the other machine; nothing to pull here" |
 | 2 | branch missing locally **and** on origin | the branch is gone; run `git merge-base --is-ancestor <hash> origin/<default>` — 0 means the work was merged, 1 means it was lost or rewritten | "branch merged (or: branch gone, hash not on `<default>`)" |
 | 3 | `git merge-base --is-ancestor <hash> <ref>` → 1 | history was rewritten after the checkpoint | "hash is not in the branch history any more" |
 | 4 | ancestor, but `git log --oneline <hash>..<ref>` is non-empty | work continued after the checkpoint (typically a session that never wrote one) | "N commits after the checkpoint" + the log |
 
-Cases 1 and 4 are what a lagging Obsidian Sync looks like from each side;
-neither is an error in the checkpoint, and case 1 needs a `git pull`, not a
-new entry. An empty log in case 4 means git and the checkpoint agree.
+An empty log in case 4 means git and the checkpoint agree. When both
+`origin/<branch>` and the local branch exist, add one line from
+`git rev-list --left-right --count <branch>...origin/<branch>`: local behind
+means a fast-forward `git pull` is due, local ahead means unpushed work on
+this machine — neither is drift in the checkpoint. Case 4 is what a lagging
+Obsidian Sync looks like: the repo moved on, the page has not caught up yet.
 
 ## Step 3 — Verify against Linear
 
@@ -115,8 +124,9 @@ Print one compact block, always in this shape:
 
 1. **Checkpoint** — the entry as recorded (date, issue, status, branch, hash,
    next step).
-2. **Git** — "in sync" or the case(s) from Step 2 with their evidence (the
-   `git log` lines, the default-branch ancestry result).
+2. **Git** — "in sync" or the case from Step 2 with its evidence (the
+   `git log` lines, the default-branch ancestry result, the local/remote
+   ahead-behind count).
 3. **Linear** — "in sync" or `recorded X, now Y`.
 4. **Active issues** — the project's `Todo / In Progress / In Review` list from
    the CLI reference (team key and project from the page frontmatter), so the

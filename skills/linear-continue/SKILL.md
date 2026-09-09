@@ -40,7 +40,7 @@ Git commands, each proven in this repo with the exit codes relied on below:
 
 | Purpose | Command | Exit |
 |---------|---------|------|
-| Refresh remote refs | `git fetch -q` | — |
+| Refresh remote refs, drop deleted ones | `git fetch -q --prune` | — |
 | Is the hash known here | `git cat-file -e <hash>^{commit}` | 0 known / 128 unknown |
 | Does the branch exist | `git rev-parse --verify --quiet refs/heads/<branch>` then `refs/remotes/origin/<branch>` | 0 exists / 1 missing |
 | Is the hash still in the branch history | `git merge-base --is-ancestor <hash> <ref>` | 0 ancestor / 1 not |
@@ -78,13 +78,12 @@ Then branch on what you found:
 
 ## Step 2 — Verify against git
 
-Run `git fetch -q` first; a checkpoint written on another machine only makes
-sense against fresh remote refs. Then resolve the **reference tip**:
-`origin/<branch>` from the entry if it exists, else the local branch. After a
-fetch the remote tip is the shared truth; a local branch is only a stale or
-unpushed copy of it, so it is the fallback, never the primary comparison.
-HEAD is not a candidate — after a machine switch HEAD is usually `main`, which
-says nothing about the checkpointed branch.
+Run `git fetch -q --prune` first; a checkpoint written on another machine
+only makes sense against fresh remote refs, and without `--prune` a branch
+deleted on origin after a merge keeps a stale `origin/<branch>` here and
+looks alive. Then collect the **branch tips** that exist: `origin/<branch>`
+and the local `<branch>`. Either may be missing; either may be ahead of the
+other (a fast-forward pull due here, or unpushed work on this machine).
 
 Walk the cases in this order and **stop at the first one that fires**: each
 later check assumes the earlier ones passed (an unknown hash makes every
@@ -95,12 +94,14 @@ things and call for different actions:
 | # | Check | Meaning | Report as |
 |---|-------|---------|-----------|
 | 1 | `git cat-file -e <hash>^{commit}` → 128 | the fetch just ran, so the commit exists only on the machine that wrote the checkpoint — it was never pushed | "checkpoint commit not on origin — push it from the other machine; nothing to pull here" |
-| 2 | branch missing locally **and** on origin | the branch is gone; run `git merge-base --is-ancestor <hash> origin/<default>` — 0 means the work was merged, 1 means it was lost or rewritten | "branch merged (or: branch gone, hash not on `<default>`)" |
-| 3 | `git merge-base --is-ancestor <hash> <ref>` → 1 | history was rewritten after the checkpoint | "hash is not in the branch history any more" |
-| 4 | ancestor, but `git log --oneline <hash>..<ref>` is non-empty | work continued after the checkpoint (typically a session that never wrote one) | "N commits after the checkpoint" + the log |
+| 2 | no `origin/<branch>` **and** no local `<branch>` | the branch is gone; run `git merge-base --is-ancestor <hash> origin/<default>` — 0 means the work was merged, 1 means it was lost or rewritten. Without a resolvable `origin/<default>` (no remote, unset `origin/HEAD`) compare against `HEAD` instead | "branch merged (or: branch gone, hash not on `<default>`)" |
+| 3 | `git merge-base --is-ancestor <hash> <tip>` → 1 for **every** existing tip | history was rewritten after the checkpoint | "hash is not in the branch history any more" |
+| 4 | `git log --oneline <hash>..<ref>` is non-empty, where `<ref>` is the tip that contains the hash (`origin/<branch>` when both do) | work continued after the checkpoint (typically a session that never wrote one) | "N commits after the checkpoint" + the log |
 
-An empty log in case 4 means git and the checkpoint agree. When both
-`origin/<branch>` and the local branch exist, add one line from
+Case 3 must test both tips: a checkpoint taken after a local commit that was
+never pushed is an ancestor of the local branch but not of `origin/<branch>`,
+and that is unpushed work, not a rewrite. An empty log in case 4 means git
+and the checkpoint agree. When both tips exist, add one line from
 `git rev-list --left-right --count <branch>...origin/<branch>`: local behind
 means a fast-forward `git pull` is due, local ahead means unpushed work on
 this machine — neither is drift in the checkpoint. Case 4 is what a lagging

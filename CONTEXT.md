@@ -109,7 +109,17 @@ carry a human choice and can only sit between islands, never inside one;
 from a closed vocabulary the validator enforces: decision — `linear-status`,
 `chat-approval`; deny — `pretooluse-hook`, `settings-deny`. A new enforcement
 mechanism is an architecture change and must change the contract deliberately.
-_Avoid_: checkpoint, confirmation (blur decision and deny)
+_Avoid_: confirmation (blurs decision and deny); checkpoint (a recorded
+project state, not a stop — see **Checkpoint**)
+
+**Checkpoint**:
+One dated bullet under `## Checkpoints` on a project's entity page — issue ID,
+Linear status, branch, short HEAD hash, next step — written by the
+session-summary step and read back by `linear-continue`, which verifies it
+against git and Linear and asks before replacing it on drift. Newest first,
+capped at 10; a record of where the project stands, never a point where the
+agent waits.
+_Avoid_: gate, milestone (both name a stop; a checkpoint stops nothing)
 
 **Frozen rule**:
 An invariant enforced mechanically rather than by prose — no Linear write

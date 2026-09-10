@@ -1,7 +1,7 @@
 export const meta = {
   name: 'review-verify',
   description: 'Review a change range along 4 independent axes, reduce deterministically, verify adversarially, synthesize a summary',
-  whenToUse: 'Review phase of linear-issue-workflow, after review-menu confirmed the axes and engines',
+  whenToUse: 'Review phase of issue-workflow, after review-menu confirmed the axes and engines',
   phases: [
     { title: 'Map', detail: 'one mapper per review axis, all four concurrent' },
     { title: 'Verify', detail: '3 sceptics per finding, batches of at most 8' },

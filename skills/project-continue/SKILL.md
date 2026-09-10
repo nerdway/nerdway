@@ -8,7 +8,7 @@ description: >-
   Use when the user switches to a project (also on another machine) and asks
   "gdzie jesteśmy", "na czym stanęliśmy", "kontynuuj projekt", "continue",
   "where were we", "what's the state of this project". Reports and hints at the
-  issue ID to type; never enters linear-issue-workflow by itself.
+  issue ID to type; never enters issue-workflow by itself.
 ---
 
 # Linear continue: project checkpoints
@@ -132,7 +132,7 @@ Print one compact block, always in this shape:
 4. **Active issues** — the project's `Todo / In Progress / In Review` list from
    the CLI reference (team key and project from the page frontmatter), so the
    user sees the whole board, not only the checkpointed issue.
-5. **One hint line** — *type `<ID>` to resume it with `linear-issue-workflow`*,
+5. **One hint line** — *type `<ID>` to resume it with `issue-workflow`*,
    naming the checkpointed issue (or the single In Progress one when the
    checkpoint is stale). The hint is all this skill does about the workflow:
    it never dispatches into it, since the status-driven flow has its own
@@ -196,7 +196,7 @@ If the page has `## Decisions` and `## Active context` but no
   for search) — no Obsidian/Linear MCP, no Local REST API, no git against the
   vault (ADR-0001, `~/.claude/CLAUDE.md`).
 - **Linear is read-only here.** Status changes belong to the user in Linear,
-  or to `linear-issue-workflow` / `linear-issue-close`.
+  or to `issue-workflow` / `issue-close`.
 - **The injected page stays authoritative** for stack, commands and
   conventions; this skill narrows the "is it current?" question to one
   section and one entry.
@@ -205,7 +205,7 @@ If the page has `## Decisions` and `## Active context` but no
 
 - `nerd4rent:nerdbrain-wiki` — defines the `## Checkpoints` entry format and
   the Prepend, capped write mode this skill delegates to.
-- `nerd4rent:linear-issue-workflow` — writes a checkpoint in its mandatory
+- `nerd4rent:issue-workflow` — writes a checkpoint in its mandatory
   session-summary step, which is what keeps the history growing; type the
   issue ID from the report to enter it.
 - `nerd4rent:nerdbrain-search` — `rg` recipes if the page has to be found by

@@ -102,17 +102,6 @@ Brings this machine to the CLI state the skills in this repo require:
 
 Trigger: `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a skill fails because a command like `linearis`, `gh`, or `rg` is missing or too old.
 
-### Agent-skills manifest management
-
-Four skills for maintaining a personal `~/.config/agent-skills/manifest.json` — the whitelist that `agent-skills-sync.sh`/`.ps1` install across Claude Code, Cursor, and any other detected coding agent. Only `apply-manifest-changes` touches the live system; the other three just edit the JSON and then hand off to it.
-
-- **`nerd4rent:add-skill-to-manifest`** — register a new skill (and its source repo, as a plain `npx skills` source or a full Claude plugin marketplace) in the manifest.
-- **`nerd4rent:remove-skill-from-manifest`** — drop a skill, or an entire source, from the manifest.
-- **`nerd4rent:add-agent-to-manifest`** — add a new coding agent, either always-installed or auto-detected via a PATH/app-bundle probe.
-- **`nerd4rent:apply-manifest-changes`** — reconcile the live system to match the manifest: installs what's missing, removes only what a tracked source no longer lists. Always dry-runs and asks for confirmation before mutating anything.
-
-These assume the manifest and sync scripts are already provisioned on the machine (they're chezmoi-managed dotfiles, not something these skills bootstrap from scratch).
-
 ## Workflow topology
 
 The skills above are not a loose bag: they form the **issue lifecycle axis**,
@@ -193,8 +182,8 @@ optional `metrics` section of the session summary. Nothing here needs CI, a
 telemetry channel or a clock — the one candidate that did, critical-path
 length, was dropped rather than deferred.
 
-Not every skill is a node. `linear-continue`, like `bootstrap-clis` and the
-manifest skills, is an entry point *from outside* the axis: it answers "where
+Not every skill is a node. `linear-continue`, like `bootstrap-clis`, is an
+entry point *from outside* the axis: it answers "where
 were we" by reading the `## Checkpoints` entry that the `session-summary` →
 `wiki-write` edge already produces, and it asks the user before writing —
 which makes it conversational by nature and rules out an island. Registering it

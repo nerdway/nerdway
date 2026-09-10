@@ -201,10 +201,6 @@ How to trigger each skill and what to expect. All of them also respond to the sl
 
 These maintain a personal Obsidian vault with one entity page per project — the plan-phase island reads it as one of its five context sources, and decisions made during work are written back. They assume a specific vault layout under `~/obsidian/nerdbrain/` and matching rules in your global `~/.claude/CLAUDE.md`; without that setup they simply stay inactive.
 
-### Agent-skills manifest management (optional)
-
-Four skills (`add-skill-to-manifest`, `remove-skill-from-manifest`, `add-agent-to-manifest`, `apply-manifest-changes`) maintain a personal `~/.config/agent-skills/manifest.json` — a whitelist of skills to install across all your coding agents. They assume the manifest and its sync scripts are already provisioned on your machine (e.g. via dotfiles). Say *"add this skill to the manifest"*, *"sync my skills"*, etc.
-
 ## Troubleshooting
 
 - **`Issue with identifier "X" not found`** — wrong team prefix or workspace; check `linearis teams list`.

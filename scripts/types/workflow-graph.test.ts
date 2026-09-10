@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { extractInlineSchemas, validateContract } from "./workflow-graph.ts";
 
-const skillDirs = ["linear-issue-writer", "linear-issue-workflow", "linear-issue-close"];
+const skillDirs = ["issue-writer", "issue-workflow", "issue-close"];
 
 const failure = { retries: 0, fallback: "report and stop", killsRun: true, reporting: "tracker-comment" };
 
@@ -22,7 +22,7 @@ function schemaBody(overrides: Record<string, unknown> = {}) {
 function entryNode(overrides: Record<string, unknown> = {}) {
   return {
     id: "write",
-    skill: "linear-issue-writer",
+    skill: "issue-writer",
     runtime: "conversational",
     phase: "write",
     entry: true,
@@ -39,7 +39,7 @@ function entryNode(overrides: Record<string, unknown> = {}) {
 function planNode(overrides: Record<string, unknown> = {}) {
   return {
     id: "plan",
-    skill: "linear-issue-workflow",
+    skill: "issue-workflow",
     runtime: "conversational",
     phase: "plan",
     in: ["IssueSpec"],

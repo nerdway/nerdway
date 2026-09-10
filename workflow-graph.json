@@ -575,7 +575,7 @@
   "nodes": [
     {
       "id": "issue-write",
-      "skill": "linear-issue-writer",
+      "skill": "issue-writer",
       "runtime": "conversational",
       "phase": "write",
       "entry": true,
@@ -614,7 +614,7 @@
     },
     {
       "id": "plan-context-fanout",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "workflow",
       "phase": "plan",
       "script": "workflows/plan-context-fanout.js",
@@ -632,7 +632,7 @@
     },
     {
       "id": "plan-draft",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "conversational",
       "phase": "plan",
       "in": ["PlanContext", "ProjectContext"],
@@ -644,7 +644,7 @@
     },
     {
       "id": "implement",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "conversational",
       "phase": "implement",
       "irreversible": true,
@@ -664,7 +664,7 @@
     },
     {
       "id": "session-summary",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "conversational",
       "phase": "implement",
       "in": ["ChangeSet"],
@@ -676,7 +676,7 @@
     },
     {
       "id": "review-menu",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "conversational",
       "phase": "review",
       "in": ["ChangeSet"],
@@ -699,7 +699,7 @@
     },
     {
       "id": "review-verify",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "workflow",
       "phase": "review",
       "script": "workflows/review-verify.js",
@@ -717,7 +717,7 @@
     },
     {
       "id": "close",
-      "skill": "linear-issue-close",
+      "skill": "issue-close",
       "runtime": "chain",
       "phase": "close",
       "irreversible": true,

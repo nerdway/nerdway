@@ -12,8 +12,8 @@ const BANNER =
   "     Delete this banner before posting — the body must start with the heading below. -->";
 
 const ISSUE_PREAMBLE = `<!--
-  Issue body templates for linear-issue-writer.
-  Section names mirror linear-issue-workflow/plan-template.md so the planner
+  Issue body templates for issue-writer.
+  Section names mirror issue-workflow/plan-template.md so the planner
   knows where to look. Use the FULL variant for complex issues, the MINIMAL
   variant for small, clear tasks. Delete the guidance comments before posting.
   Match the language (PL/EN) to the user / repo.
@@ -36,11 +36,11 @@ export function buildTemplates(contract: GraphContract): Template[] {
 
   return [
     {
-      path: "skills/linear-issue-workflow/plan-template.md",
+      path: "skills/issue-workflow/plan-template.md",
       content: file([BANNER, renderSchema(schemaOf(contract, "ImplementationPlan"), PLACEHOLDER)]),
     },
     {
-      path: "skills/linear-issue-writer/issue-template.md",
+      path: "skills/issue-writer/issue-template.md",
       content: file([
         BANNER,
         ISSUE_PREAMBLE,
@@ -57,7 +57,7 @@ export function buildTemplates(contract: GraphContract): Template[] {
       ]),
     },
     {
-      path: "skills/linear-issue-workflow/session-summary-template.md",
+      path: "skills/issue-workflow/session-summary-template.md",
       content: file([BANNER, renderSchema(schemaOf(contract, "SessionSummary"), PLACEHOLDER)]),
     },
   ];

@@ -1,5 +1,5 @@
 ---
-name: linear-issue-workflow
+name: issue-workflow
 description: >-
   Mandatory status-driven workflow for Linear issues when the user provides an
   issue ID (e.g. KAM-145, ENG-123) to plan or implement. Dispatches on the

@@ -1,5 +1,5 @@
 ---
-name: linear-issue-close
+name: issue-close
 model: haiku
 description: >-
   Mechanically close out a Linear issue once the work is done: commit any

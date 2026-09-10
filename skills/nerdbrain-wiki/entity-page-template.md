@@ -42,6 +42,9 @@ Foot-guns, surprising behavior, "looks like X but isn't".
 ## Decisions
 - `YYYY-MM-DD` — decision + reason (+ Linear/issue link if applicable)
 
+## Checkpoints
+- YYYY-MM-DD — <ISSUE-ID> · <Linear status> · <branch> @ <7-char HEAD> — next: <one line>
+
 ## Active context
 What is happening now, deadlines, freeze windows, who to ask.
 Flag staleness when updated > 14 days ago.

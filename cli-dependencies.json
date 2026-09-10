@@ -15,7 +15,7 @@
       "minVersion": "2026.7.0",
       "versionCommand": ["linearis", "--version"],
       "versionRegex": "(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["linear-issue-workflow", "linear-issue-writer", "linear-issue-close", "new-project-workflow"],
+      "requiredBy": ["linear-issue-workflow", "linear-issue-writer", "linear-issue-close", "linear-continue", "new-project-workflow"],
       "npm": "linearis",
       "auth": {
         "check": ["linearis", "teams", "list", "--limit", "1"],
@@ -47,7 +47,7 @@
       "minVersion": "2.40.0",
       "versionCommand": ["git", "--version"],
       "versionRegex": "git version (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["linear-issue-workflow", "linear-issue-close", "new-project-workflow"],
+      "requiredBy": ["linear-issue-workflow", "linear-issue-close", "linear-continue", "new-project-workflow"],
       "manualInstall": "Install git before running this script; it is a prerequisite, not a target."
     }
   ]

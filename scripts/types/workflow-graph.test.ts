@@ -5,7 +5,7 @@ import { extractInlineSchemas, validateContract } from "./workflow-graph.ts";
 
 const skillDirs = ["linear-issue-writer", "linear-issue-workflow", "linear-issue-close"];
 
-const failure = { retries: 0, fallback: "report and stop", killsRun: true, reporting: "linear-comment" };
+const failure = { retries: 0, fallback: "report and stop", killsRun: true, reporting: "tracker-comment" };
 
 function schemaBody(overrides: Record<string, unknown> = {}) {
   return {
@@ -128,7 +128,7 @@ test("rule 7: rejects a node with no failure policy", () => {
 
 test("rule 7: rejects a failure policy missing killsRun", () => {
   const errors = validateContract(
-    contract([entryNode(), planNode({ failure: { retries: 0, fallback: "stop", reporting: "linear-comment" } })]),
+    contract([entryNode(), planNode({ failure: { retries: 0, fallback: "stop", reporting: "tracker-comment" } })]),
     skillDirs,
   );
   assert.equal(errors.length, 1);
@@ -141,7 +141,7 @@ test("rejects a duplicate node id", () => {
   assert.match(errors[0], /duplicate/i);
 });
 
-const decisionGate = { kind: "decision", mechanism: "linear-status", description: "human moves the issue to In Progress" };
+const decisionGate = { kind: "decision", mechanism: "tracker-status", description: "human moves the issue to In Progress" };
 
 test("rule 8: rejects a decision gate inside a workflow node", () => {
   const errors = validateContract(contract([entryNode(), planNode({ runtime: "workflow", gates: [decisionGate] })]), skillDirs);
@@ -694,14 +694,14 @@ test("rule 19: rejects a decision gate with a mechanism from the deny vocabulary
 });
 
 test("rule 19: rejects a deny gate with a mechanism from the decision vocabulary", () => {
-  const gates = [{ ...denyGate, mechanism: "linear-status" }];
+  const gates = [{ ...denyGate, mechanism: "tracker-status" }];
   const errors = validateContract(contract([entryNode(), planNode({ gates })], { frozenRules: [frozenRule] }), skillDirs);
   assert.equal(errors.length, 1);
-  assert.match(errors[0], /linear-status/);
+  assert.match(errors[0], /tracker-status/);
 });
 
 test("rule 19: accepts every mechanism paired with its own kind", () => {
-  for (const mechanism of ["linear-status", "chat-approval"]) {
+  for (const mechanism of ["tracker-status", "chat-approval"]) {
     const gates = [{ ...decisionGate, mechanism }];
     assert.deepEqual(validateContract(contract([entryNode(), planNode({ gates })]), skillDirs), []);
   }

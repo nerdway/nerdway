@@ -172,17 +172,17 @@ Only you can move an issue to **In Progress** — the agent never does it by its
 
 How to trigger each skill and what to expect. All of them also respond to the slash form `/nerd4rent:<skill-name>`.
 
-### `linear-issue-writer` — file a new issue
+### `issue-writer` — file a new issue
 
 - **Say:** *"create an issue"*, *"new task"*, *"utwórz/zgłoś issue"* — intent to file new work, with no existing issue ID.
 - **What happens:** the agent resolves the target team/project (and confirms it), interviews you only if the goal is unclear, shows you the drafted body, and creates the issue in Backlog only after you approve. For big topics it can split the work into real sub-issues, and optionally run a "grilling session" — a one-question-at-a-time interrogation that sharpens the requirements before planning starts.
 
-### `linear-issue-workflow` — plan, implement, review
+### `issue-workflow` — plan, implement, review
 
 - **Say:** any Linear issue ID (`DEMO-123`) with intent to work on it — *"plan DEMO-123"*, *"zrealizuj DEMO-123"*, or just the bare ID.
 - **What happens:** the status-driven flow described [above](#steering-with-linear-statuses), including both islands. During implementation it offers whichever implementation-style skills you have installed (TDD, subagent-driven, or plain).
 
-### `linear-issue-close` — merge and finish
+### `issue-close` — merge and finish
 
 - **Say:** *"merge and close"*, *"close out DEMO-123"*, *"domknij"*, *"zmerguj i zamknij"*.
 - **What happens:** the deliberately mechanical close-out chain — commit leftovers, push, merge the PR (GitHub or GitLab), switch your checkout to the base branch, set the issue to Done. On any error it stops and reports.
@@ -207,5 +207,5 @@ These maintain a personal Obsidian vault with one entity page per project — th
 - **`Status "X" for team ... not found`** — Linear statuses are your team's own names, spelled exactly (`In Progress`, not `in progress`).
 - **`linearis` errors about authentication** — set `LINEAR_API_TOKEN` or run `linearis auth login` (see [Prerequisites](#prerequisites)).
 - **`/plugin update` says nothing changed** — run `/plugin marketplace update nerd4rent-claude-plugin` first; if it still reports no change, no new version has been released yet.
-- **A skill doesn't trigger** — invoke it explicitly with the slash form, e.g. `/nerd4rent:linear-issue-workflow DEMO-123`.
+- **A skill doesn't trigger** — invoke it explicitly with the slash form, e.g. `/nerd4rent:issue-workflow DEMO-123`.
 - **The plan or review runs sequentially and slowly** — dynamic workflows are unavailable or disabled; see [Installation](#installation). The result is the same, only slower.

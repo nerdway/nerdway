@@ -1,5 +1,7 @@
 # Portable topology contract plus Workflow scripts as the Claude Code runtime
 
+*Amended by DEMO-300: skills renamed (linear-issue-writer → issue-writer, linear-issue-workflow → issue-workflow, linear-issue-close → issue-close), frozen rule no-linear-write-before-approval → no-tracker-write-before-approval, gate mechanism linear-status → tracker-status; names below are the ones in force when written.*
+
 The issue lifecycle axis (`linear-issue-writer` → `linear-issue-workflow` →
 `linear-issue-close` → `nerdbrain-wiki`/`nerdbrain-search`) was described only in
 prose spread across `SKILL.md` files, so its edges carried status ("hands off

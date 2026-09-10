@@ -6,6 +6,8 @@ New here? Start with the [User Guide](docs/USER-GUIDE.md) — what graph enginee
 
 ## Skills
 
+> **Renamed in 0.20.0:** `linear-issue-writer` → `issue-writer`, `linear-issue-workflow` → `issue-workflow`, `linear-issue-close` → `issue-close`, `linear-continue` → `project-continue`. Update any `nerd4rent:` references in your `CLAUDE.md` and hooks after `/plugin update`.
+
 ### `nerd4rent:new-project-workflow`
 
 Bootstraps a new project end-to-end in a single approval:
@@ -19,20 +21,20 @@ Bootstraps a new project end-to-end in a single approval:
 
 Trigger phrases: *"new project workflow"*, *"bootstrap project"*, *"start a new project the nerd4rent way"*, or `/nerd4rent:new-project-workflow`.
 
-### `nerd4rent:linear-issue-writer`
+### `nerd4rent:issue-writer`
 
-Creates a **new** Linear issue for the current repo with goals specified clearly enough that the planning agent can build an implementation plan straight from it. Upstream of `linear-issue-workflow`:
+Creates a **new** Linear issue for the current repo with goals specified clearly enough that the planning agent can build an implementation plan straight from it. Upstream of `issue-workflow`:
 
 1. Resolves the target team/project (nerdbrain entity-page → git remote → ask), and confirms.
 2. Adaptively interviews for missing goals — straight to a draft for small clear tasks, a short one-question-at-a-time interview for vague or multi-part work.
 3. Drafts the issue from an adaptive template (full vs minimal) and gates the Linear write on your approval.
 4. Decomposes the work: a checklist in the body by default, or **real Linear sub-issues** (parent + children via `--parent-ticket`) when the topic plainly splits into stages — and you can force or decline the split.
 5. Creates the issue **in Backlog** (explicit `--status Backlog`), then offers an optional **inline grilling session** (one question at a time, a recommended answer with each, facts checked by the agent, only decisions asked) that can sharpen the description or split the topic into sub-issues.
-6. Prints the new issue ID and hands off to the status-driven flow: type the issue ID in a new session/message to start planning with `linear-issue-workflow`.
+6. Prints the new issue ID and hands off to the status-driven flow: type the issue ID in a new session/message to start planning with `issue-workflow`.
 
 Uses the `linearis` CLI (see Requirements). Trigger: intent to create a new issue/task with no existing ID — *"utwórz/stwórz/dodaj/zgłoś issue"*, *"create issue"*, *"new task"*.
 
-### `nerd4rent:linear-issue-workflow`
+### `nerd4rent:issue-workflow`
 
 A mandatory **status-driven** workflow for working a Linear issue by ID (e.g. `KAM-145`). The issue's Linear status is the single source of truth — you steer by changing the status, the agent never asks you to "confirm the plan" in chat:
 
@@ -40,14 +42,14 @@ A mandatory **status-driven** workflow for working a Linear issue by ID (e.g. `K
 2. **Backlog/Todo** → drafts an implementation plan (for ambiguous requirements, first offers an inline grilling session with an ADR/glossary docs discipline), posts it as a `## Implementation plan` comment, sets the status to Todo, and ends the turn with no instructions.
 3. **In Progress** (set manually by you = plan approved) → starts implementation: branch from the Linear `branchName`, empty commit, push, **draft PR with magic words** (`Fixes TEAM-123`) so the Linear↔GitHub integration closes the issue on merge; then offers an implementation mode (superpowers / Matt Pocock skills / plain agent — whichever is available).
 4. After implementation or on **In Review** → offers a code-review menu (superpowers / Matt Pocock / review it yourself); never offers to merge or close on its own.
-5. Close-out on request: delegates to **`nerd4rent:linear-issue-close`** (below) to merge and finish the issue.
-6. Posts a `## Session summary` comment after every working session, and in the same step records a one-line **checkpoint** (date, issue, status, branch, HEAD, next step) under `## Checkpoints` on the project's nerdbrain entity page — the entry `linear-continue` reads back later; skipped silently when the vault is unreachable.
+5. Close-out on request: delegates to **`nerd4rent:issue-close`** (below) to merge and finish the issue.
+6. Posts a `## Session summary` comment after every working session, and in the same step records a one-line **checkpoint** (date, issue, status, branch, HEAD, next step) under `## Checkpoints` on the project's nerdbrain entity page — the entry `project-continue` reads back later; skipped silently when the vault is unreachable.
 
 Uses the `linearis` CLI (syntax proven in the skill's own CLI reference). Trigger: any Linear issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
 
-### `nerd4rent:linear-issue-close`
+### `nerd4rent:issue-close`
 
-A deliberately **mechanical, lightweight** close-out for a finished issue — purely procedural with explicit commands and no multi-step reasoning. It pins itself to **Haiku** via a `model: haiku` frontmatter field (a Claude Code skill extension; other agents ignore the field), so the close-out runs cheap regardless of the session model. Invoked by `linear-issue-workflow`'s close-out phase, or directly:
+A deliberately **mechanical, lightweight** close-out for a finished issue — purely procedural with explicit commands and no multi-step reasoning. It pins itself to **Haiku** via a `model: haiku` frontmatter field (a Claude Code skill extension; other agents ignore the field), so the close-out runs cheap regardless of the session model. Invoked by `issue-workflow`'s close-out phase, or directly:
 
 1. Commits any leftover changes (repo convention: Polish, noun-form message, no co-author) — or skips if the tree is clean.
 2. Pushes the branch (sets upstream if needed).
@@ -57,13 +59,13 @@ A deliberately **mechanical, lightweight** close-out for a finished issue — pu
 
 On any error (e.g. merge conflict, missing `gh`/`glab`) it stops and reports rather than improvising. Uses the `linearis` CLI. Trigger: intent to close/merge/finish an issue — *"domknij"*, *"zamknij"*, *"zmerguj i zamknij"*, *"close out"*, *"merge and close"*.
 
-### `nerd4rent:linear-continue`
+### `nerd4rent:project-continue`
 
 Answers "where are we" for the current project in one step, after you switch to it — on this machine or another one — instead of re-investigating issues and the repo from scratch:
 
 1. Reads the newest entry of `## Checkpoints` **directly from the entity page file** (the section is lazy, so the SessionStart inject never carries it).
 2. Verifies it against git (`git fetch --prune`, then four cases checked in order against the local and remote branch tips, stopping at the first that fires: hash unknown after the fetch = commit never pushed from the other machine; branch gone = merged or lost, decided against the default branch; hash no longer an ancestor = history rewritten; commits after the hash = work without a checkpoint) and against Linear (`linearis issues read <ID> --fields identifier,title,state.name` vs the recorded status).
-3. Reports the checkpoint, the git and Linear verdicts, the project's active issues (`Todo / In Progress / In Review`, team and project from the page frontmatter), and one hint line: type the issue ID to resume it with `linear-issue-workflow` — it never enters the workflow on its own.
+3. Reports the checkpoint, the git and Linear verdicts, the project's active issues (`Todo / In Progress / In Review`, team and project from the page frontmatter), and one hint line: type the issue ID to resume it with `issue-workflow` — it never enters the workflow on its own.
 4. On drift, **asks** before recording a new checkpoint; without a yes nothing is written. With no checkpoint at all it establishes the state from Linear and git, shows it, and records the first entry. With no entity page (`tier=none`) it reports only.
 
 The entry format and the *Prepend, capped* (10 newest) write mode live in `nerdbrain-wiki`. Uses `linearis` (read-only) and `git`. Trigger: *"gdzie jesteśmy"*, *"na czym stanęliśmy"*, *"kontynuuj projekt"*, *"continue"*, *"where were we"*.
@@ -73,7 +75,7 @@ The entry format and the *Prepend, capped* (10 newest) write mode live in `nerdb
 The HOW for maintaining a personal Obsidian "second brain" — one entity page per project at `5-wiki/entities/projects/<slug>.md`. It carries:
 
 - Section update modes (Edit/rewrite vs Append/chronological vs Prepend-capped vs flag-staleness).
-- The `## Checkpoints` section: a one-line entry format (date, issue, Linear status, branch, HEAD, next step), newest first, capped at 10 — the project's resumable state written by `linear-issue-workflow` and read by `linear-continue`.
+- The `## Checkpoints` section: a one-line entry format (date, issue, Linear status, branch, HEAD, next step), newest first, capped at 10 — the project's resumable state written by `issue-workflow` and read by `project-continue`.
 - The filesystem write pattern (`Read`/`Edit`/`Write` on the vault path; propagation is Obsidian Sync, not this skill's concern).
 - Graph recall on-demand: following `related:`/`[[links]]` (direct `Read`) and vault search via `nerd4rent:nerdbrain-search`, with hard context limits — no speculative reading of the graph.
 - Index (`index.md`) and log (`log.md`) maintenance steps.
@@ -122,7 +124,7 @@ the axis — writing the issue to Linear (`issue-write`), pushing commits
 (`implement`), merging and setting Done (`close`), writing the vault
 (`wiki-write`) — is marked `irreversible: true` and must sit behind a gate.
 A gate is one of two kinds with a closed mechanism vocabulary the validator
-enforces: a `decision` gate is the human's call (`linear-status` or
+enforces: a `decision` gate is the human's call (`tracker-status` or
 `chat-approval` — the Linear status is the only carrier of acceptance), a
 `deny` gate is a hard stop that never asks (`pretooluse-hook` or
 `settings-deny`). The **`frozenRules`** registry makes the invariants
@@ -182,7 +184,7 @@ optional `metrics` section of the session summary. Nothing here needs CI, a
 telemetry channel or a clock — the one candidate that did, critical-path
 length, was dropped rather than deferred.
 
-Not every skill is a node. `linear-continue`, like `bootstrap-clis`, is an
+Not every skill is a node. `project-continue`, like `bootstrap-clis`, is an
 entry point *from outside* the axis: it answers "where
 were we" by reading the `## Checkpoints` entry that the `session-summary` →
 `wiki-write` edge already produces, and it asks the user before writing —
@@ -208,15 +210,15 @@ human-free stretches become workflow islands:
 
 | Node | Skill | Phase | Runtime | Edge in → out |
 |---|---|---|---|---|
-| `issue-write` | `linear-issue-writer` | write | conversational | — → `IssueSpec` |
+| `issue-write` | `issue-writer` | write | conversational | — → `IssueSpec` |
 | `wiki-recall` | `nerdbrain-search` | plan | **workflow** | `IssueSpec` → `ProjectContext` |
-| `plan-context-fanout` | `linear-issue-workflow` | plan | **workflow** | `IssueSpec` → `PlanContext` |
-| `plan-draft` | `linear-issue-workflow` | plan | conversational | `PlanContext`, `ProjectContext` → `ImplementationPlan` |
-| `implement` | `linear-issue-workflow` | implement | conversational | `ImplementationPlan` → `ChangeSet` |
-| `session-summary` | `linear-issue-workflow` | implement | conversational | `ChangeSet` → `SessionSummary` |
-| `review-menu` | `linear-issue-workflow` | review | conversational | `ChangeSet` → `ReviewRequest` |
-| `review-verify` | `linear-issue-workflow` | review | **workflow** | `ReviewRequest` → `ReviewFindings` |
-| `close` | `linear-issue-close` | close | chain | `ReviewFindings` → `MergedBranch` |
+| `plan-context-fanout` | `issue-workflow` | plan | **workflow** | `IssueSpec` → `PlanContext` |
+| `plan-draft` | `issue-workflow` | plan | conversational | `PlanContext`, `ProjectContext` → `ImplementationPlan` |
+| `implement` | `issue-workflow` | implement | conversational | `ImplementationPlan` → `ChangeSet` |
+| `session-summary` | `issue-workflow` | implement | conversational | `ChangeSet` → `SessionSummary` |
+| `review-menu` | `issue-workflow` | review | conversational | `ChangeSet` → `ReviewRequest` |
+| `review-verify` | `issue-workflow` | review | **workflow** | `ReviewRequest` → `ReviewFindings` |
+| `close` | `issue-close` | close | chain | `ReviewFindings` → `MergedBranch` |
 | `wiki-write` | `nerdbrain-wiki` | wiki | chain | `SessionSummary` → `EntityPageUpdate` |
 
 Degradation runs on two tracks, and both end in the same place — the sequence

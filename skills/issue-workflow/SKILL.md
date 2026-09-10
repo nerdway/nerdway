@@ -1,5 +1,5 @@
 ---
-name: linear-issue-workflow
+name: issue-workflow
 description: >-
   Mandatory status-driven workflow for Linear issues when the user provides an
   issue ID (e.g. KAM-145, ENG-123) to plan or implement. Dispatches on the
@@ -338,7 +338,7 @@ and must still review.
 Rejected findings stay out of the result, but every drop is counted:
 `stats { mapped, verified, rejected, unverifiedOverflow }` is required in
 `ReviewFindings`, and the counters go into the Linear comment (the node
-reports as `linear-comment`) — degradation is visible, never silent. Run
+reports as `tracker-comment`) — degradation is visible, never silent. Run
 failures (a dead mapper, missing votes) arrive in `gaps` beside the payload.
 
 Address the verified findings, push fixes to the PR branch.
@@ -362,7 +362,7 @@ with "don't ask again" (per workflow, per project).
 ## Close-out (on user request, or status Done set manually)
 
 Only when the user asks to close/merge (or set Done manually with the PR still
-open): invoke **`nerd4rent:linear-issue-close`** with the issue ID. That skill
+open): invoke **`nerd4rent:issue-close`** with the issue ID. That skill
 mechanically commits any leftover changes, pushes, merges the PR/MR (GitHub or
 GitLab), switches the local checkout to the PR/MR base branch, and sets the
 issue to Done in Linear. It is deliberately lightweight (Haiku-friendly).
@@ -406,7 +406,7 @@ It is the same logical wiki write as any other entity-page update from this
 session, so bump `updated:` once and add one log line. Skip it silently when
 the vault is unreachable (`tier=none`) or the project has no entity page —
 the Linear comment already holds the full summary. This entry is what
-`linear-continue` reads back when the user asks "where were we" on this or
+`project-continue` reads back when the user asks "where were we" on this or
 another machine, so the branch and hash must be the real values after the
 session's last push.
 
@@ -424,11 +424,11 @@ session's last push.
 
 ## Related skills
 
-- `nerd4rent:linear-issue-writer` — upstream: creates the issue (in Backlog)
+- `nerd4rent:issue-writer` — upstream: creates the issue (in Backlog)
   that this skill plans and implements.
 - `nerd4rent:nerdbrain-search` — rg recipes underlying `nerdbrain-wiki`'s
   Graph recall step (used by 0b above).
-- `nerd4rent:linear-continue` — reads the checkpoint this skill writes and
+- `nerd4rent:project-continue` — reads the checkpoint this skill writes and
   answers "where were we" for the project; it hints at the issue ID to type
   here, never enters this workflow by itself.
 - Superpowers / Matt Pocock skills — optional implementation and review modes;

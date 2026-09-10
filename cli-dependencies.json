@@ -15,7 +15,7 @@
       "minVersion": "2026.7.0",
       "versionCommand": ["linearis", "--version"],
       "versionRegex": "(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["linear-issue-workflow", "linear-issue-writer", "linear-issue-close", "linear-continue", "new-project-workflow"],
+      "requiredBy": ["issue-workflow", "issue-writer", "issue-close", "project-continue", "new-project-workflow"],
       "npm": "linearis",
       "auth": {
         "check": ["linearis", "teams", "list", "--limit", "1"],
@@ -27,7 +27,7 @@
       "minVersion": "2.97.0",
       "versionCommand": ["gh", "--version"],
       "versionRegex": "gh version (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["linear-issue-workflow", "linear-issue-close", "new-project-workflow"],
+      "requiredBy": ["issue-workflow", "issue-close", "new-project-workflow"],
       "manualInstall": "winget install GitHub.cli | brew install gh | see https://github.com/cli/cli#installation",
       "auth": {
         "check": ["gh", "auth", "status"],
@@ -39,7 +39,7 @@
       "minVersion": "14.0.0",
       "versionCommand": ["rg", "--version"],
       "versionRegex": "ripgrep (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["nerdbrain-search", "linear-issue-workflow"],
+      "requiredBy": ["nerdbrain-search", "issue-workflow"],
       "manualInstall": "winget install BurntSushi.ripgrep.MSVC | brew install ripgrep | apt install ripgrep"
     },
     {
@@ -47,7 +47,7 @@
       "minVersion": "2.40.0",
       "versionCommand": ["git", "--version"],
       "versionRegex": "git version (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["linear-issue-workflow", "linear-issue-close", "linear-continue", "new-project-workflow"],
+      "requiredBy": ["issue-workflow", "issue-close", "project-continue", "new-project-workflow"],
       "manualInstall": "Install git before running this script; it is a prerequisite, not a target."
     }
   ]

@@ -1,5 +1,5 @@
 ---
-name: linear-issue-writer
+name: issue-writer
 description: >-
   Create a NEW Linear issue for the current repo/project with clearly specified
   goals, so the planning agent can build an implementation plan from it. Use when
@@ -8,14 +8,14 @@ description: >-
   Adaptively interviews for missing goals, drafts the issue, gates the Linear write
   on approval, creates the issue in Backlog, and offers an optional inline
   grilling session that can split the topic into sub-issues. Distinct
-  from linear-issue-workflow (which plans/implements an EXISTING issue ID).
+  from issue-workflow (which plans/implements an EXISTING issue ID).
   The CLI reference lives in the skill body.
 ---
 
 # Linear issue writer
 
 Create well-formed Linear issues whose goals are specified clearly enough that
-`nerd4rent:linear-issue-workflow` can plan implementation directly from them.
+`nerd4rent:issue-workflow` can plan implementation directly from them.
 
 ## CLI reference
 
@@ -51,7 +51,7 @@ Triggers include Polish *utwórz / stwórz / dodaj / zgłoś / załóż issue / 
 task* and English *create / open / file / new issue / task*.
 
 **Disambiguation:** if the user gives an existing `TEAM-123` and asks to plan or
-implement it → that is `nerd4rent:linear-issue-workflow`, not this skill. This skill
+implement it → that is `nerd4rent:issue-workflow`, not this skill. This skill
 *ends* by pointing at that one's status-driven flow.
 
 ## Hard gate (do not skip)
@@ -134,7 +134,7 @@ one-line objective) and let the user accept, edit, or decline before any write.
 ### 4. Draft the issue body
 
 Use the bundled `issue-template.md` (full variant for complex issues, minimal
-variant for small ones). The sections mirror `linear-issue-workflow/plan-template.md`
+variant for small ones). The sections mirror `issue-workflow/plan-template.md`
 so the planner knows exactly where to look. Match the issue language to the user /
 repo (PL or EN).
 
@@ -198,12 +198,12 @@ the status-driven flow — do **not** offer to plan it yourself in this session:
 > wiadomości, aby rozpocząć planowanie.*
 
 Planning, implementation, and review are driven by the issue's Linear status in
-`nerd4rent:linear-issue-workflow` — keep creation and planning as separate,
+`nerd4rent:issue-workflow` — keep creation and planning as separate,
 deliberate steps.
 
 ## Related skills
 
-- `nerd4rent:linear-issue-workflow` — downstream: status-driven planning and
+- `nerd4rent:issue-workflow` — downstream: status-driven planning and
   implementation of an issue ID produced here.
 - `mattpocock-skills:grilling` (optional, `npx skills` / `~/.agents/skills`) —
   question formats for the inline grilling protocol; degrade gracefully when

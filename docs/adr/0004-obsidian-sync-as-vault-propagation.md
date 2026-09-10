@@ -7,12 +7,14 @@ Wiki writes are filesystem-only: a skill mutates the vault with `Read` /
 Sync, and no git command is ever run against the vault — not `pull`, not
 `commit`, not `push`. ADR-0002 had made git the sync backbone for wiki writes;
 DEMO-218 (PR #12, `86e491a`, 2026-07-24) removed that protocol from
-`nerdbrain-wiki`, so the code has not implemented ADR-0002 since. The
-prohibition is enforced in three places: the hard rules in `~/.claude/CLAUDE.md`
+`nerdbrain-wiki`, so the code has not implemented ADR-0002 since. The git
+prohibition itself is a prose rule: the hard rules in `~/.claude/CLAUDE.md`
 ("propagation happens via Obsidian Sync, not git; skills must not run git
-against the vault"), the deny rules in `settings.json`, and the frozen rule
-`vault-filesystem-only` in `workflow-graph.json`, which the `settings-deny`
-gate of the `wiki-write` node points to.
+against the vault"). It sits beside the mechanically enforced half of the same
+policy — the deny rules in `settings.json` and the frozen rule
+`vault-filesystem-only` in `workflow-graph.json` (the `settings-deny` gate of
+the `wiki-write` node), which block the Obsidian/Linear MCP and the Local REST
+API but say nothing about git.
 
 This is the first written record of the decision. The DEMO-218 commit message
 cites "ADR-0003 (Obsidian Sync, 2026-07-14)", but no such ADR was ever written

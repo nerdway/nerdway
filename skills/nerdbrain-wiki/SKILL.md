@@ -135,8 +135,8 @@ user asks something the wiki would have answered.
 ## Checkpoints
 
 `## Checkpoints` is the project's structured "where are we" history: one
-bullet per working session, newest first, written by `linear-issue-workflow`'s
-session-summary step and by `linear-continue` (which also reads it). It sits
+bullet per working session, newest first, written by `issue-workflow`'s
+session-summary step and by `project-continue` (which also reads it). It sits
 between `## Decisions` and `## Active context`. `## Active context` stays the
 free-form narrative; a checkpoint is the one-line pointer that survives a
 machine switch.
@@ -156,7 +156,7 @@ machine switch.
 | HEAD | `git rev-parse --short HEAD` after the last commit of the session |
 | next | the first item of the session summary's next steps, trimmed to one line |
 
-The branch and hash are what make drift detectable later: `linear-continue`
+The branch and hash are what make drift detectable later: `project-continue`
 checks that the hash is still an ancestor of the branch tip and that the Linear
 status still matches. The date is a git-independent "how old is this" hint;
 never rely on it alone, since Obsidian Sync can deliver the page late.

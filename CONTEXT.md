@@ -60,8 +60,8 @@ phrase search, executed with `rg` over the vault files.
 _Avoid_: obsidian search (names the dropped tool)
 
 **Issue lifecycle axis**:
-The path an issue travels from `linear-issue-writer` through
-`linear-issue-workflow` to `linear-issue-close`, branching to
+The path an issue travels from `issue-writer` through
+`issue-workflow` to `issue-close`, branching to
 `nerdbrain-search` in the plan phase and to `nerdbrain-wiki` off the
 implement phase. Declared as a whole in `workflow-graph.json`.
 _Avoid_: pipeline, the flow (both hide that parts of it are not sequential)
@@ -107,7 +107,7 @@ _Avoid_: the graph, parallel phase
 A point where progress waits on something outside the agent. `decision` gates
 carry a human choice and can only sit between islands, never inside one;
 `deny` gates are hard refusals that never ask. Each kind draws its mechanism
-from a closed vocabulary the validator enforces: decision — `linear-status`,
+from a closed vocabulary the validator enforces: decision — `tracker-status`,
 `chat-approval`; deny — `pretooluse-hook`, `settings-deny`. A new enforcement
 mechanism is an architecture change and must change the contract deliberately.
 _Avoid_: confirmation (blurs decision and deny); checkpoint (a recorded
@@ -116,14 +116,14 @@ project state, not a stop — see **Checkpoint**)
 **Checkpoint**:
 One dated bullet under `## Checkpoints` on a project's entity page — issue ID,
 Linear status, branch, short HEAD hash, next step — written by the
-session-summary step and read back by `linear-continue`, which verifies it
+session-summary step and read back by `project-continue`, which verifies it
 against git and Linear and asks before replacing it on drift. Newest first,
 capped at 10; a record of where the project stands, never a point where the
 agent waits.
 _Avoid_: gate, milestone (both name a stop; a checkpoint stops nothing)
 
 **Frozen rule**:
-An invariant enforced mechanically rather than by prose — no Linear write
+An invariant enforced mechanically rather than by prose — no tracker write
 before approval, no merge without a green check, no vault access outside
 filesystem/`rg`. A first-class registry (`frozenRules`) in the contract:
 carried by a deny gate, or made unreachable without a human by a decision

@@ -1,7 +1,7 @@
 export const meta = {
   name: 'plan-context-fanout',
   description: 'Gather planning context for a Linear issue in parallel: repo, ADRs, prior plans, related issues, nerdbrain vault',
-  whenToUse: 'Planning phase of linear-issue-workflow, before drafting the implementation plan',
+  whenToUse: 'Planning phase of issue-workflow, before drafting the implementation plan',
   phases: [
     { title: 'Gather', detail: '4 repo gatherers + 1 vault gatherer, all concurrent' },
   ],

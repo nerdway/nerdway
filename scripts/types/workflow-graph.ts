@@ -11,7 +11,7 @@ export const GATE_KINDS = ["decision", "deny"] as const;
  * change this contract deliberately.
  */
 export const GATE_MECHANISMS = {
-  decision: ["linear-status", "chat-approval"],
+  decision: ["tracker-status", "chat-approval"],
   deny: ["pretooluse-hook", "settings-deny"],
 } as const;
 

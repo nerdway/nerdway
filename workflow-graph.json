@@ -1,8 +1,8 @@
 {
-  "_comment": "Topology of the issue lifecycle axis: every node, the schema each edge carries, gates, failure policy and width budget. scripts/validate-workflow-graph.ts enforces it; see docs/adr/0003-workflow-graph-contract.md. runtime: conversational = needs mid-run human interaction, stays in the main agent; workflow = graphable island runnable as a Workflow script; chain = sequential and deliberately not a graph. Every registry entry carries its JSON Schema body: it is what `agent({schema})` enforces at runtime, what the markdown renderer builds the skill templates from, and it is self-contained (a $ref may only point into the entry's own $defs) because workflow scripts must inline it verbatim as `const SCHEMA_<Name> = {...}`, which is what the drift check reads. A workflow node whose island is built carries `script`: the repo-relative workflows/*.js file realising it (two sibling nodes may share one script — one island runs both). The binding arms the drift check in the omission direction: every schema in the node's `out` must be inlined in that script (rule 17) and each inline body must be a strict-JSON literal deep-equal to the registry body (rule 18). Inputs are deliberately exempt — they arrive through `args`, validated by their producer. A workflow node without `script` is an island not yet built. Irreversible actions on the axis are inventoried as `irreversible: true`: issue-write (creates the Linear issue), implement (pushes commits), close (merges the PR/MR and sets Done), wiki-write (writes the nerdbrain vault); each must sit behind a gate (rule 6). Gates carry the role split as data: a `decision` gate is the human's call — mechanism `linear-status` or `chat-approval`, the Linear status being the only carrier of acceptance — while a `deny` gate is a hard prohibition that never asks, mechanism `pretooluse-hook` or `settings-deny`; the kind-mechanism pairing is a closed vocabulary (rule 19), so a new enforcement mechanism must change this contract deliberately. `frozenRules` is the first-class registry of frozen rules: a gate's `rule` points into it (rule 20), a deny gate exists only to enforce one (rule 21), and a rule no gate points to is rejected (rule 22). Human gates sit on the boundaries between workflows, never inside them — the runtime takes no mid-run decision input (rule 8).",
+  "_comment": "Topology of the issue lifecycle axis: every node, the schema each edge carries, gates, failure policy and width budget. scripts/validate-workflow-graph.ts enforces it; see docs/adr/0003-workflow-graph-contract.md. runtime: conversational = needs mid-run human interaction, stays in the main agent; workflow = graphable island runnable as a Workflow script; chain = sequential and deliberately not a graph. Every registry entry carries its JSON Schema body: it is what `agent({schema})` enforces at runtime, what the markdown renderer builds the skill templates from, and it is self-contained (a $ref may only point into the entry's own $defs) because workflow scripts must inline it verbatim as `const SCHEMA_<Name> = {...}`, which is what the drift check reads. A workflow node whose island is built carries `script`: the repo-relative workflows/*.js file realising it (two sibling nodes may share one script — one island runs both). The binding arms the drift check in the omission direction: every schema in the node's `out` must be inlined in that script (rule 17) and each inline body must be a strict-JSON literal deep-equal to the registry body (rule 18). Inputs are deliberately exempt — they arrive through `args`, validated by their producer. A workflow node without `script` is an island not yet built. Irreversible actions on the axis are inventoried as `irreversible: true`: issue-write (creates the Linear issue), implement (pushes commits), close (merges the PR/MR and sets Done), wiki-write (writes the nerdbrain vault); each must sit behind a gate (rule 6). Gates carry the role split as data: a `decision` gate is the human's call — mechanism `tracker-status` or `chat-approval`, the Linear status being the only carrier of acceptance — while a `deny` gate is a hard prohibition that never asks, mechanism `pretooluse-hook` or `settings-deny`; the kind-mechanism pairing is a closed vocabulary (rule 19), so a new enforcement mechanism must change this contract deliberately. `frozenRules` is the first-class registry of frozen rules: a gate's `rule` points into it (rule 20), a deny gate exists only to enforce one (rule 21), and a rule no gate points to is rejected (rule 22). Human gates sit on the boundaries between workflows, never inside them — the runtime takes no mid-run decision input (rule 8).",
   "frozenRules": [
     {
-      "id": "no-linear-write-before-approval",
+      "id": "no-tracker-write-before-approval",
       "rule": "Nothing is written to Linear before the user approves the drafted issue in chat."
     },
     {
@@ -575,7 +575,7 @@
   "nodes": [
     {
       "id": "issue-write",
-      "skill": "linear-issue-writer",
+      "skill": "issue-writer",
       "runtime": "conversational",
       "phase": "write",
       "entry": true,
@@ -589,7 +589,7 @@
         {
           "kind": "decision",
           "mechanism": "chat-approval",
-          "rule": "no-linear-write-before-approval",
+          "rule": "no-tracker-write-before-approval",
           "description": "The user approves the drafted issue before anything is written to Linear."
         }
       ]
@@ -614,7 +614,7 @@
     },
     {
       "id": "plan-context-fanout",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "workflow",
       "phase": "plan",
       "script": "workflows/plan-context-fanout.js",
@@ -632,7 +632,7 @@
     },
     {
       "id": "plan-draft",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "conversational",
       "phase": "plan",
       "in": ["PlanContext", "ProjectContext"],
@@ -644,19 +644,19 @@
     },
     {
       "id": "implement",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "conversational",
       "phase": "implement",
       "irreversible": true,
       "in": ["ImplementationPlan"],
       "out": ["ChangeSet"],
       "dependsOn": ["plan-draft"],
-      "failure": { "retries": 0, "fallback": "stop and report", "killsRun": true, "reporting": "linear-comment" },
+      "failure": { "retries": 0, "fallback": "stop and report", "killsRun": true, "reporting": "tracker-comment" },
       "budget": { "maxWidth": 1 },
       "gates": [
         {
           "kind": "decision",
-          "mechanism": "linear-status",
+          "mechanism": "tracker-status",
           "rule": "no-repo-change-before-in-progress",
           "description": "The human sets the issue to In Progress in Linear; no repo change happens before that."
         }
@@ -664,7 +664,7 @@
     },
     {
       "id": "session-summary",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "conversational",
       "phase": "implement",
       "in": ["ChangeSet"],
@@ -676,7 +676,7 @@
     },
     {
       "id": "review-menu",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "conversational",
       "phase": "review",
       "in": ["ChangeSet"],
@@ -699,7 +699,7 @@
     },
     {
       "id": "review-verify",
-      "skill": "linear-issue-workflow",
+      "skill": "issue-workflow",
       "runtime": "workflow",
       "phase": "review",
       "script": "workflows/review-verify.js",
@@ -710,14 +710,14 @@
         "retries": 1,
         "fallback": "report partial findings and mark the run incomplete",
         "killsRun": false,
-        "reporting": "linear-comment"
+        "reporting": "tracker-comment"
       },
       "budget": { "maxWidth": 8 },
       "gates": []
     },
     {
       "id": "close",
-      "skill": "linear-issue-close",
+      "skill": "issue-close",
       "runtime": "chain",
       "phase": "close",
       "irreversible": true,
@@ -734,7 +734,7 @@
       "gates": [
         {
           "kind": "decision",
-          "mechanism": "linear-status",
+          "mechanism": "tracker-status",
           "rule": "no-merge-without-green-verification",
           "description": "The human asks to close, or sets the issue to Done with the PR still open; the merge is irreversible."
         }

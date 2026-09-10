@@ -145,7 +145,7 @@ precondition: a session without the workflow runtime fills the same generated
 template in prose, exactly as before.
 
 Two islands are real. `workflows/plan-context-fanout.js` runs the plan-phase
-fan-out (trigger `/nerd4rent:plan-context-fanout`, or `Workflow({scriptPath})`
+fan-out (trigger `/nerd4rent:plan-context-fanout`, or `Workflow({name: "nerd4rent:plan-context-fanout", args})`
 during development). One script realises both plan-phase workflow nodes — the
 contract's `script` binding on `wiki-recall` and `plan-context-fanout` points at
 the same file — spawning five concurrent gatherers (repo layout, conventions,

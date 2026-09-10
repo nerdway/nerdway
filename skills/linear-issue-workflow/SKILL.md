@@ -104,7 +104,7 @@ already In Progress.
 When the `Workflow` tool is available, gather the planning context through the
 island instead of reading sequentially: run `workflows/plan-context-fanout.js`
 (as `/nerd4rent:plan-context-fanout`, or directly via
-`Workflow({scriptPath: "<plugin>/workflows/plan-context-fanout.js", args: {issueId: "<ID>", spec: <IssueSpec>}})`
+`Workflow({name: "nerd4rent:plan-context-fanout", args: {issueId: "<ID>", spec: <IssueSpec>}})`
 — pass `args` as a real JSON object, never as a JSON-encoded string). One
 script realises both contract nodes (`wiki-recall` + `plan-context-fanout`):
 five gatherers run concurrently, a deterministic reducer (plain code, not an
@@ -317,7 +317,7 @@ and must still review.
 
 **Run the island.** With the `Workflow` tool available, run
 `workflows/review-verify.js` via
-`Workflow({scriptPath: "<plugin>/workflows/review-verify.js", args: {issueId: "<ID>", request: {axes: [...], range: "..."}}})`
+`Workflow({name: "nerd4rent:review-verify", args: {issueId: "<ID>", request: {axes: [...], range: "..."}}})`
 — `args` as a real JSON object, never a JSON-encoded string. The island does:
 
 1. **Map** — one mapper per axis, all four concurrent, each confined to its

@@ -32,8 +32,8 @@ a rule that cannot be verified from the diff does not belong here.
 ## Language
 
 **Vault**:
-The nerdbrain Obsidian vault — a git checkout of `pawelwlazlo/nerdbrain`
-present on every machine where wiki skills run.
+The nerdbrain Obsidian vault, present on every machine where wiki skills
+run and propagated between them by Obsidian Sync.
 _Avoid_: notes folder, Obsidian database
 
 **Entity page**:
@@ -49,9 +49,10 @@ REST/CLI tiers are dropped.
 _Avoid_: mode, level
 
 **Wiki write**:
-One logical wiki mutation — page edit plus index/log upkeep — always
-concluded by a git commit and push of the vault.
-_Avoid_: page save (hides the git half)
+One logical wiki mutation — page edit plus index/log upkeep — written
+straight to the vault filesystem; propagation between machines is outside
+the term.
+_Avoid_: page save (hides the index/log half)
 
 **Graph read**:
 On-demand discovery of related vault notes via `[[links]]`, backlinks, and

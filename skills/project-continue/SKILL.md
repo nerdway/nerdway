@@ -1,5 +1,5 @@
 ---
-name: linear-continue
+name: project-continue
 description: >-
   Answer "where are we" for the current project in one step: read the newest
   entry of `## Checkpoints` on the project's nerdbrain entity page, verify it

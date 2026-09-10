@@ -1,5 +1,5 @@
 ---
-name: linear-issue-writer
+name: issue-writer
 description: >-
   Create a NEW Linear issue for the current repo/project with clearly specified
   goals, so the planning agent can build an implementation plan from it. Use when

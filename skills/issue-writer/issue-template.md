@@ -3,8 +3,8 @@
      Delete this banner before posting — the body must start with the heading below. -->
 
 <!--
-  Issue body templates for linear-issue-writer.
-  Section names mirror linear-issue-workflow/plan-template.md so the planner
+  Issue body templates for issue-writer.
+  Section names mirror issue-workflow/plan-template.md so the planner
   knows where to look. Use the FULL variant for complex issues, the MINIMAL
   variant for small, clear tasks. Delete the guidance comments before posting.
   Match the language (PL/EN) to the user / repo.

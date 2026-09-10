@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { validateContract } from "./cli-dependencies.ts";
 
-const skillDirs = ["linear-issue-workflow", "nerdbrain-search"];
+const skillDirs = ["issue-workflow", "nerdbrain-search"];
 
 function entry(overrides: Record<string, unknown> = {}) {
   return {
@@ -11,7 +11,7 @@ function entry(overrides: Record<string, unknown> = {}) {
     minVersion: "1.10.0",
     versionCommand: ["linear", "--version"],
     versionRegex: "linear version (\\d+\\.\\d+\\.\\d+)",
-    requiredBy: ["linear-issue-workflow"],
+    requiredBy: ["issue-workflow"],
     ...overrides,
   };
 }

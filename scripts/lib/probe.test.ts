@@ -10,7 +10,7 @@ function nodeEntry(overrides: Partial<CliEntry> = {}): CliEntry {
     minVersion: "24.0.0",
     versionCommand: ["node", "--version"],
     versionRegex: "v(\\d+\\.\\d+\\.\\d+)",
-    requiredBy: ["linear-issue-workflow"],
+    requiredBy: ["issue-workflow"],
     ...overrides,
   };
 }

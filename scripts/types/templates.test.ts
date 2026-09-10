@@ -33,9 +33,9 @@ test("builds one file per skill template, at the path the skill reads it from", 
   assert.deepEqual(
     buildTemplates(contract).map((template) => template.path),
     [
-      "skills/linear-issue-workflow/plan-template.md",
-      "skills/linear-issue-writer/issue-template.md",
-      "skills/linear-issue-workflow/session-summary-template.md",
+      "skills/issue-workflow/plan-template.md",
+      "skills/issue-writer/issue-template.md",
+      "skills/issue-workflow/session-summary-template.md",
     ],
   );
 });

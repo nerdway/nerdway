@@ -393,6 +393,23 @@ where a run's `PlanContext.stats` and `gaps` become durable — the comment is t
 only place they are stored, so a session that ran the plan island and omits them
 loses the figure for good.
 
+**Checkpoint on the entity page (same step).** Right after the comment is
+posted, record the session as one `## Checkpoints` entry on the project's
+nerdbrain entity page, following `nerdbrain-wiki`'s **Prepend, capped** mode
+(entry format, cap of 10, `updated:` bump, `log.md` line live there):
+
+```
+- YYYY-MM-DD — <ID> · <Linear status after the session> · <branch> @ <git rev-parse --short HEAD> — next: <first item of next steps, one line, English>
+```
+
+It is the same logical wiki write as any other entity-page update from this
+session, so bump `updated:` once and add one log line. Skip it silently when
+the vault is unreachable (`tier=none`) or the project has no entity page —
+the Linear comment already holds the full summary. This entry is what
+`linear-continue` reads back when the user asks "where were we" on this or
+another machine, so the branch and hash must be the real values after the
+session's last push.
+
 ## Nerdbrain entity-page integration
 
 - When the injected entity page's frontmatter has `linear.team` or
@@ -401,6 +418,9 @@ loses the figure for good.
   instead of re-asking the user.
 - When recording a decision on the entity page (nerdbrain write trigger),
   link it to the issue ID, e.g. `2026-05-05 — chose JWT (LIN-123)`.
+- The session-summary step writes a `## Checkpoints` entry (above); it rides
+  the same `session-summary` → `wiki-write` edge of the graph as any other
+  entity-page update, so it needs no extra gate or node.
 
 ## Related skills
 
@@ -408,6 +428,9 @@ loses the figure for good.
   that this skill plans and implements.
 - `nerd4rent:nerdbrain-search` — rg recipes underlying `nerdbrain-wiki`'s
   Graph recall step (used by 0b above).
+- `nerd4rent:linear-continue` — reads the checkpoint this skill writes and
+  answers "where were we" for the project; it hints at the issue ID to type
+  here, never enters this workflow by itself.
 - Superpowers / Matt Pocock skills — optional implementation and review modes;
   detect availability per session, degrade gracefully when absent.
 - `gitlab-to-linear` / `simgit` — GitLab → Linear import (separate flow).

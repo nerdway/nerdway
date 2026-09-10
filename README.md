@@ -41,7 +41,7 @@ A mandatory **status-driven** workflow for working a Linear issue by ID (e.g. `K
 3. **In Progress** (set manually by you = plan approved) → starts implementation: branch from the Linear `branchName`, empty commit, push, **draft PR with magic words** (`Fixes TEAM-123`) so the Linear↔GitHub integration closes the issue on merge; then offers an implementation mode (superpowers / Matt Pocock skills / plain agent — whichever is available).
 4. After implementation or on **In Review** → offers a code-review menu (superpowers / Matt Pocock / review it yourself); never offers to merge or close on its own.
 5. Close-out on request: delegates to **`nerd4rent:linear-issue-close`** (below) to merge and finish the issue.
-6. Posts a `## Session summary` comment after every working session.
+6. Posts a `## Session summary` comment after every working session, and in the same step records a one-line **checkpoint** (date, issue, status, branch, HEAD, next step) under `## Checkpoints` on the project's nerdbrain entity page — the entry `linear-continue` reads back later; skipped silently when the vault is unreachable.
 
 Uses the `linearis` CLI (syntax proven in the skill's own CLI reference). Trigger: any Linear issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
 
@@ -57,11 +57,23 @@ A deliberately **mechanical, lightweight** close-out for a finished issue — pu
 
 On any error (e.g. merge conflict, missing `gh`/`glab`) it stops and reports rather than improvising. Uses the `linearis` CLI. Trigger: intent to close/merge/finish an issue — *"domknij"*, *"zamknij"*, *"zmerguj i zamknij"*, *"close out"*, *"merge and close"*.
 
+### `nerd4rent:linear-continue`
+
+Answers "where are we" for the current project in one step, after you switch to it — on this machine or another one — instead of re-investigating issues and the repo from scratch:
+
+1. Reads the newest entry of `## Checkpoints` **directly from the entity page file** (the section is lazy, so the SessionStart inject never carries it).
+2. Verifies it against git (`git fetch --prune`, then four cases checked in order against the local and remote branch tips, stopping at the first that fires: hash unknown after the fetch = commit never pushed from the other machine; branch gone = merged or lost, decided against the default branch; hash no longer an ancestor = history rewritten; commits after the hash = work without a checkpoint) and against Linear (`linearis issues read <ID> --fields identifier,title,state.name` vs the recorded status).
+3. Reports the checkpoint, the git and Linear verdicts, the project's active issues (`Todo / In Progress / In Review`, team and project from the page frontmatter), and one hint line: type the issue ID to resume it with `linear-issue-workflow` — it never enters the workflow on its own.
+4. On drift, **asks** before recording a new checkpoint; without a yes nothing is written. With no checkpoint at all it establishes the state from Linear and git, shows it, and records the first entry. With no entity page (`tier=none`) it reports only.
+
+The entry format and the *Prepend, capped* (10 newest) write mode live in `nerdbrain-wiki`. Uses `linearis` (read-only) and `git`. Trigger: *"gdzie jesteśmy"*, *"na czym stanęliśmy"*, *"kontynuuj projekt"*, *"continue"*, *"where were we"*.
+
 ### `nerd4rent:nerdbrain-wiki`
 
 The HOW for maintaining a personal Obsidian "second brain" — one entity page per project at `5-wiki/entities/projects/<slug>.md`. It carries:
 
-- Section update modes (Edit/rewrite vs Append/chronological vs flag-staleness).
+- Section update modes (Edit/rewrite vs Append/chronological vs Prepend-capped vs flag-staleness).
+- The `## Checkpoints` section: a one-line entry format (date, issue, Linear status, branch, HEAD, next step), newest first, capped at 10 — the project's resumable state written by `linear-issue-workflow` and read by `linear-continue`.
 - The filesystem write pattern (`Read`/`Edit`/`Write` on the vault path; propagation is Obsidian Sync, not this skill's concern).
 - Graph recall on-demand: following `related:`/`[[links]]` (direct `Read`) and vault search via `nerd4rent:nerdbrain-search`, with hard context limits — no speculative reading of the graph.
 - Index (`index.md`) and log (`log.md`) maintenance steps.
@@ -180,6 +192,15 @@ a removal candidate. The plan island's figures reach Linear through the
 optional `metrics` section of the session summary. Nothing here needs CI, a
 telemetry channel or a clock — the one candidate that did, critical-path
 length, was dropped rather than deferred.
+
+Not every skill is a node. `linear-continue`, like `bootstrap-clis` and the
+manifest skills, is an entry point *from outside* the axis: it answers "where
+were we" by reading the `## Checkpoints` entry that the `session-summary` →
+`wiki-write` edge already produces, and it asks the user before writing —
+which makes it conversational by nature and rules out an island. Registering it
+as a node would mean inventing a `dependsOn` and an edge schema for a step that
+consumes an existing edge's output instead of extending the axis, so the
+contract stays at 10 nodes.
 
 The axis is an **island graph**, not one graph end to end. The Claude Code
 workflow runtime takes no mid-run user input, so every step that needs a human

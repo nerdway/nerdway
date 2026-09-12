@@ -163,19 +163,19 @@ const [repoFacts, conventions, priorPlans, linearRelations, vault] = await paral
     agent(
       issueHeader +
         'Map the repository for a planning agent. Read README.md and the top-level layout, find the directories and files this issue will likely touch, and collect the exact test/build/validator commands the repo documents (README, CLAUDE.md, scripts). Return repoLayout as one compact paragraph and commands as verbatim shell commands.',
-      { label: 'gather:repo-layout', phase: 'Gather', schema: repoFactsShape },
+      { label: 'gather:repo-layout', phase: 'Gather', schema: repoFactsShape, agentType: 'nerd4rent:plan-gatherer' },
     ),
   () =>
     agent(
       issueHeader +
         'Collect the in-repo rules a plan for this issue must follow. Read CONTEXT.md (glossary terms), every ADR under docs/adr/, and infer the commit-message style from `git log --oneline -15`. Return items: one string per rule or constraint, each prefixed with its source, e.g. "ADR-0003: ...", "CONTEXT.md: ...", "commits: ...".',
-      { label: 'gather:conventions', phase: 'Gather', schema: stringListShape },
+      { label: 'gather:conventions', phase: 'Gather', schema: stringListShape, agentType: 'nerd4rent:plan-gatherer' },
     ),
   () =>
     agent(
       issueHeader +
         'Collect prior art inside this repo: read every file under docs/superpowers/plans/ (if present) and the last few merged PRs (`gh pr list --state merged --limit 5`). Return items: one string per precedent — what it was and what a planner should copy from it.',
-      { label: 'gather:prior-plans', phase: 'Gather', schema: stringListShape },
+      { label: 'gather:prior-plans', phase: 'Gather', schema: stringListShape, agentType: 'nerd4rent:plan-gatherer' },
     ),
   () =>
     issueId === ''
@@ -183,13 +183,13 @@ const [repoFacts, conventions, priorPlans, linearRelations, vault] = await paral
       : agent(
           issueHeader +
             `Collect related Linear issues. Use the linearis CLI (read-only): \`linearis issues read ${issueId}\` returns JSON with parent, children and relations; fetch the parent and its sub-issues the same way. Return items: one string per related issue — "TEAM-123 (state): title — why it matters to this plan". If the CLI is unavailable, return an empty list.`,
-          { label: 'gather:linear-relations', phase: 'Gather', schema: stringListShape },
+          { label: 'gather:linear-relations', phase: 'Gather', schema: stringListShape, agentType: 'nerd4rent:plan-gatherer' },
         ),
   () =>
     agent(
       issueHeader +
-        `Recall project context from the nerdbrain vault using the nerd4rent:nerdbrain-search skill recipes (filesystem + rg only, vault at ~/obsidian/nerdbrain/5-wiki/). Find the project entity page under entities/projects/, extract its slug, the "## Decisions" section (one string per decision) and "## Active context", then assemble the 1-hop graph (outgoing [[links]] + backlinks) for relatedPages. Keep at most ${MAX_SEARCH_RESULTS} search results per query and at most ${MAX_RELATED_PAGES} related pages. If the vault is unreachable, fail rather than invent content.`,
-      { label: 'gather:vault', phase: 'Gather', schema: SCHEMA_ProjectContext },
+        `Recall project context from the nerdbrain vault using the preloaded nerdbrain-search recipes (filesystem + rg only, vault at ~/obsidian/nerdbrain/5-wiki/). Find the project entity page under entities/projects/, extract its slug, the "## Decisions" section (one string per decision) and "## Active context", then assemble the 1-hop graph (outgoing [[links]] + backlinks) for relatedPages. Keep at most ${MAX_SEARCH_RESULTS} search results per query and at most ${MAX_RELATED_PAGES} related pages. If the vault is unreachable, fail rather than invent content.`,
+      { label: 'gather:vault', phase: 'Gather', schema: SCHEMA_ProjectContext, agentType: 'nerd4rent:plan-gatherer' },
     ),
 ])
 

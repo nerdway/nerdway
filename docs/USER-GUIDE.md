@@ -29,7 +29,7 @@ Most agent workflows are written as prose: "first plan, then implement, then rev
 
 7. **Declare widths and budgets.** How wide a fan-out may go is part of the design, declared and bounded — not decided ad hoc at runtime.
 
-8. **Know when *not* to build a graph.** Work that is truly sequential and irreversible — commit, push, merge, close — gains nothing from parallelism and everything from being a short, dumb, deterministic chain. Graphing it would only add failure modes.
+8. **Know when *not* to build a graph.** Work that is truly sequential and irreversible — open the branch and the PR, commit, push, merge, close — gains nothing from parallelism and everything from being a short, dumb, deterministic chain. Graphing it would only add failure modes.
 
 If you take one thing from this list: draw your workflow as a graph, write on every edge *what data* crosses it, and be suspicious of every edge where you can't.
 
@@ -51,6 +51,7 @@ The axis is not one graph end to end, because the workflow runtime takes no mid-
 [main agent, conversational, status-driven]
   ├─ island #1: plan-context fan-out                (parallel)
   ├─ [GATE: you set In Progress in Linear]          (outside the agent)
+  ├─ start                                          (a chain, on purpose)
   ├─ implementation                                 (sequential, conversational)
   ├─ island #2: review map → reduce → verify → synthesize   (parallel)
   └─ close-out                                      (a chain, on purpose)
@@ -58,7 +59,7 @@ The axis is not one graph end to end, because the workflow runtime takes no mid-
 
 **Island #1 — plan fan-out** (principle 1). When you ask for a plan, five gatherers launch *concurrently*, each reading one independent source: repo layout, in-repo conventions (ADRs, glossary), prior plans and merged PRs, related Linear issues, and the project's knowledge-base page. A **reducer** — plain deterministic code, not a model — dedupes, drops empties, and trims the result. What used to be five sequential reads is one fan-out bounded by the width budget the contract declares (principle 7). Each gatherer is the plugin's own read-only `plan-gatherer` agent — Sonnet, with the vault-search recipes preloaded — rather than the default subagent on your session model.
 
-**Island #2 — adversarial review** (principles 3 and 4). The review is not "pick a reviewer". Four fixed, mutually independent **axes** are mapped in parallel — does the change do what the issue asked (`spec-compliance`), does the diff obey the repo's written standards (`repo-standards`), is it correct (`correctness-regressions`), is it safe (`security`). A deterministic reducer dedupes and caps the findings. Then each surviving finding faces **three independent sceptics, each prompted to refute it** — two or more refutations out of three kill the finding; a finding that fails to collect enough votes is dropped *as unverified*, and counted. The final summary is written by an agent, but the findings list is assembled verbatim by the reducer — no model can add or soften a finding after verification. Every run reports `stats {mapped, verified, rejected, unverifiedOverflow}` and a `gaps` list, so degradation is visible in the review comment itself, never silent. The mappers and the summary writer are dedicated read-only plugin agents on cheaper models (`review-mapper` on Sonnet, `review-synthesizer` on Haiku); the sceptics deliberately are not — they are the quality gate, and "when uncertain, refute" on a weaker model would refute everything.
+**Island #2 — adversarial review** (principles 3 and 4). The review is not "pick a reviewer". Four fixed, mutually independent **axes** are mapped in parallel — does the change do what the issue asked (`spec-compliance`), does the diff obey the repo's written standards (`repo-standards`), is it correct (`correctness-regressions`), is it safe (`security`). A deterministic reducer dedupes and caps the findings. Then each surviving finding faces **three independent sceptics, each prompted to refute it** — two or more refutations out of three kill the finding; a finding that fails to collect enough votes is dropped *as unverified*, and counted. The final summary is written by an agent, but the findings list is assembled verbatim by the reducer — no model can add or soften a finding after verification. Every run reports `stats {mapped, verified, rejected, unverifiedOverflow}` and a `gaps` list, so degradation is visible in the review comment itself, never silent. The mappers, the sceptics and the summary writer are all dedicated read-only plugin agents — no Edit, Write or MCP tools, by construction — but only the mappers and the summary writer run on cheaper models (`review-mapper` on Sonnet, `review-synthesizer` on Haiku). The sceptics (`review-sceptic`) deliberately keep the session model: they are the quality gate, and "when uncertain, refute" on a weaker model would refute everything.
 
 This asymmetry is not theoretical. In this repo's own history the verifier has rejected plausible-but-wrong findings (including a convincing command-injection claim, refuted 3-of-3) and confirmed real defects the implementing agent had missed.
 
@@ -74,7 +75,7 @@ Each edge schema in the contract has its body — a JSON Schema literal — cons
 
 ### Chains where chains belong
 
-Close-out — commit leftovers, push, merge the PR, switch branches, set Done — is truly sequential and irreversible, so it is a **chain**, deliberately kept out of the graph and pinned to a small, cheap model (principle 8). The same principle picks the model inside the islands: the mechanical roles — axis mappers, summary writer, context gatherers — run as dedicated read-only plugin agents in `agents/` on Sonnet or Haiku, selected per call with `agentType`, while the sceptics keep the session model because their judgement is the gate. Observability (metrics for the graph itself) is the one principle still open here — tracked as an explicit pending decision, where "we consciously don't collect" is an acceptable answer.
+Chains sit at both ends of the axis. Start — branch from the issue, empty first commit, push, draft PR with the `Fixes` magic word — and close-out — commit leftovers, push, merge the PR, switch branches, set Done — are truly sequential and irreversible, so each is a **chain** (`issue-start`, `issue-close`), deliberately kept out of the graph and pinned to a small, cheap model (principle 8). Start is not even a node of its own: it is the first half of `implement`, behind the same In Progress gate, and a separate node would only duplicate that gate. The same principle picks the model inside the islands: the mechanical roles — axis mappers, summary writer, context gatherers — run as dedicated read-only plugin agents in `agents/` on Sonnet or Haiku, selected per call with `agentType`, while the sceptics run as the read-only `review-sceptic` agent on the session model because their judgement is the gate. Observability (metrics for the graph itself) is the one principle still open here — tracked as an explicit pending decision, where "we consciously don't collect" is an acceptable answer.
 
 ### Degradation is part of the design
 
@@ -149,7 +150,7 @@ A typical feature, from idea to merged PR — with the graph moments marked:
 1. **File the issue.** Say *"create an issue: …"* and describe what you want. The agent interviews you if the goal is fuzzy, drafts the issue body, shows it to you, and — only after your approval (a decision gate guarding an irreversible write) — creates it in Linear, in **Backlog**. The body follows a template generated from the `IssueSpec` schema: the issue is the first typed edge of the axis.
 2. **Get a plan.** Type the issue ID (e.g. `DEMO-123`). *Island #1 fires*: five gatherers read your repo, conventions, prior art, related issues, and project knowledge in parallel, the reducer joins them, and the agent drafts a plan from the result. The plan lands as a `## Implementation plan` comment on the issue (shaped by the `ImplementationPlan` schema), status moves to **Todo**, and the agent stops — no "please confirm" in chat.
 3. **Approve by moving the status.** Read the plan in Linear. When you're happy, drag the issue to **In Progress**. That status change *is* the approval — a human gate stored outside the agent.
-4. **Implement.** Seeing In Progress, the agent creates a branch named after the issue, opens a **draft PR** wired to auto-close the issue on merge (`Fixes DEMO-123`), and implements the plan, committing atomically as it goes.
+4. **Implement.** Seeing In Progress, the agent hands the mechanical opening to the start chain — a branch named after the issue, an empty first commit, a **draft PR** wired to auto-close the issue on merge (`Fixes DEMO-123`) — and then implements the plan, committing atomically as it goes.
 5. **Review.** *Island #2 fires*: four axis mappers in parallel, deterministic reduce, three sceptics per finding trying to refute it, and a summary the model cannot use to smuggle findings past the verifier. The review comment includes the `stats` counters — read them: `rejected` tells you how many plausible findings the adversarial pass killed, `gaps` whether anything degraded. Fixes get pushed to the same PR.
 6. **Close.** Say *"merge and close"*. The close-out chain commits leftovers, pushes, merges the PR, switches your checkout back to the base branch, and marks the issue Done. On any error it stops and reports — it never improvises, because this is the irreversible part.
 
@@ -181,6 +182,11 @@ How to trigger each skill and what to expect. All of them also respond to the sl
 
 - **Say:** any Linear issue ID (`DEMO-123`) with intent to work on it — *"plan DEMO-123"*, *"zrealizuj DEMO-123"*, or just the bare ID.
 - **What happens:** the status-driven flow described [above](#steering-with-linear-statuses), including both islands. During implementation it offers whichever implementation-style skills you have installed (TDD, subagent-driven, or plain).
+
+### `issue-start` — open the branch and the PR
+
+- **Say:** *"start DEMO-123"*, *"zacznij DEMO-123"*, *"open the PR for DEMO-123"* — or nothing: `issue-workflow` calls it the moment it sees In Progress.
+- **What happens:** the mirror of the close-out chain — checks the issue is In Progress and the checkout is a clean `main`/`master`, creates the branch from the Linear `branchName`, makes the empty start commit, pushes, opens a draft PR (GitHub) or MR (GitLab) with `Fixes DEMO-123` in the body. On any error it stops and reports.
 
 ### `issue-close` — merge and finish
 

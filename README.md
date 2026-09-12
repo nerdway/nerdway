@@ -104,6 +104,31 @@ Brings this machine to the CLI state the skills in this repo require:
 
 Trigger: `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a skill fails because a command like `linearis`, `gh`, or `rg` is missing or too old.
 
+## Plugin agents
+
+Three read-only agents ship in `agents/` and register as `nerd4rent:<name>`
+in the same registry the Agent tool uses. They exist for the islands' mechanical
+roles — reading a diff or a source and returning data under a schema — so those
+roles run on a cheaper model with a structural tool whitelist (no Edit, Write or
+NotebookEdit; no ToolSearch, so no MCP) instead of the default workflow subagent
+on the session model. The islands select them per `agent()` call via
+`agentType`; the contract in `workflow-graph.json` is unchanged, because which
+agent runs a role is an execution parameter, not topology.
+
+| Agent | Model | Tools | Called by |
+|---|---|---|---|
+| `nerd4rent:review-mapper` | Sonnet | Read, Grep, Glob, Bash, Skill | the four axis mappers of `review-verify` |
+| `nerd4rent:review-synthesizer` | Haiku | Read | the summary writer of `review-verify` |
+| `nerd4rent:plan-gatherer` | Sonnet | Read, Grep, Glob, Bash, Skill; preloads `nerd4rent:nerdbrain-search` | the five gatherers of `plan-context-fanout` |
+
+The sceptics of the review island are deliberately **not** on a dedicated
+agent: they are the only quality gate, and their "when uncertain, refute" rule
+on a weaker model would refute everything. They stay on the default workflow
+subagent and the session model. The agents are not meant for direct delegation
+— their descriptions say so — and `plugin.json` does not list them, since the
+`agents` manifest field would replace the auto-discovered directory rather than
+add to it.
+
 ## Workflow topology
 
 The skills above are not a loose bag: they form the **issue lifecycle axis**,
@@ -152,7 +177,9 @@ during development). One script realises both plan-phase workflow nodes — the
 contract's `script` binding on `wiki-recall` and `plan-context-fanout` points at
 the same file — spawning five concurrent gatherers (repo layout, conventions,
 prior plans, related Linear issues, nerdbrain vault) and reducing their output
-deterministically into `PlanContext` + `ProjectContext`. The binding also arms
+deterministically into `PlanContext` + `ProjectContext`. The five gatherers
+run as the `nerd4rent:plan-gatherer` agent (see [Plugin agents](#plugin-agents)).
+The binding also arms
 the drift check in the omission direction: every `out` schema of a bound node
 must be inlined in its script (rule 17) and every inline body must be a
 strict-JSON literal deep-equal to the registry body (rule 18).
@@ -165,8 +192,11 @@ with the most severe finding winning the anchor, severity sort, cap 12), then
 adversarial verification — 3 sceptics per
 finding, each prompted to refute it, 2 or more refutations out of 3 reject it
 — and a synthesizer that writes only the summary while the reducer assembles
-the findings verbatim. Rejections and overflow are counted in the required
-`ReviewFindings.stats`, so degradation is visible, never silent.
+the findings verbatim. The mappers run as `nerd4rent:review-mapper` and the
+synthesizer as `nerd4rent:review-synthesizer`, while the sceptics stay on the
+default workflow subagent (see [Plugin agents](#plugin-agents)). Rejections and
+overflow are counted in the required `ReviewFindings.stats`, so degradation is
+visible, never silent.
 
 The axis measures itself **passively**: a figure is collected only when it is a
 by-product of a run that happens anyway, and it is stored only where that run's

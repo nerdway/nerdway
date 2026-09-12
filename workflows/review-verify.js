@@ -237,7 +237,7 @@ const mapped = await parallel(
         `Engine: ${ENGINE_HINTS[engineFor(axisId)]}\n\n` +
         `Stay strictly on your axis — the other three are covered by other reviewers. ` +
         `Return an empty findings list rather than padding with weak findings.`,
-      { label: `map:${axisId}`, phase: 'Map', schema: findingListShape },
+      { label: `map:${axisId}`, phase: 'Map', schema: findingListShape, agentType: 'nerd4rent:review-mapper' },
     ),
   ),
 )
@@ -356,7 +356,7 @@ const synthesis = await agent(
     `Verified findings (the only ones that survived adversarial verification):\n${JSON.stringify(verified, null, 2)}\n\n` +
     `Stats: ${JSON.stringify(stats)}\n\n` +
     `Do not restate the findings as a list — they travel separately. Judge readiness from their severity and the stats.`,
-  { label: 'synthesize:summary', phase: 'Synthesize', schema: summaryShape },
+  { label: 'synthesize:summary', phase: 'Synthesize', schema: summaryShape, agentType: 'nerd4rent:review-synthesizer' },
 )
 
 let summary

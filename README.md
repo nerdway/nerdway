@@ -40,12 +40,23 @@ A mandatory **status-driven** workflow for working a Linear issue by ID (e.g. `K
 
 1. Fetches the issue (`linearis issues read <ID>`) at the start of every turn and dispatches on status — also when a bare issue ID is typed into a fresh session.
 2. **Backlog/Todo** → drafts an implementation plan (for ambiguous requirements, first offers an inline grilling session with an ADR/glossary docs discipline), posts it as a `## Implementation plan` comment, sets the status to Todo, and ends the turn with no instructions.
-3. **In Progress** (set manually by you = plan approved) → starts implementation: branch from the Linear `branchName`, empty commit, push, **draft PR with magic words** (`Fixes TEAM-123`) so the Linear↔GitHub integration closes the issue on merge; then offers an implementation mode (superpowers / Matt Pocock skills / plain agent — whichever is available).
+3. **In Progress** (set manually by you = plan approved) → starts implementation by delegating to **`nerd4rent:issue-start`** (below): branch from the Linear `branchName`, empty commit, push, **draft PR with magic words** (`Fixes TEAM-123`) so the Linear↔GitHub integration closes the issue on merge; then offers an implementation mode (superpowers / Matt Pocock skills / plain agent — whichever is available).
 4. After implementation or on **In Review** → offers a code-review menu (superpowers / Matt Pocock / review it yourself); never offers to merge or close on its own.
 5. Close-out on request: delegates to **`nerd4rent:issue-close`** (below) to merge and finish the issue.
 6. Posts a `## Session summary` comment after every working session, and in the same step records a one-line **checkpoint** (date, issue, status, branch, HEAD, next step) under `## Checkpoints` on the project's nerdbrain entity page — the entry `project-continue` reads back later; skipped silently when the vault is unreachable.
 
 Uses the `linearis` CLI (syntax proven in the skill's own CLI reference). Trigger: any Linear issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
+
+### `nerd4rent:issue-start`
+
+The mirror of `issue-close` at the other end of an issue: a deliberately **mechanical, lightweight** Start for an issue the user has already moved to In Progress — purely procedural with explicit commands, no questions and no multi-step reasoning, pinned to **Haiku** via `model: haiku`. Invoked by `issue-workflow`'s Start step, or directly:
+
+1. Reads the issue (`linearis issues read <ID> --fields identifier,title,branchName,state.name`) and stops unless it is **In Progress** — the same approval gate `issue-workflow` enforces.
+2. Requires a clean checkout on `main`/`master`; on any other branch or with leftover changes it stops and reports (branching from another issue branch is `issue-workflow`'s decision, not the chain's).
+3. Creates the branch from the Linear `branchName`, makes the empty start commit (`Rozpoczęcie prac nad <ID>`, no co-author) and pushes with upstream.
+4. Detects GitHub vs GitLab from the origin remote and opens a **draft** PR/MR (`gh pr create --draft` / `glab mr create --draft`) whose body starts with `Fixes <ID>`, so the Linear integration tracks it and auto-closes the issue on merge.
+
+On any error (branch already exists, push rejected, missing `gh`/`glab`) it stops and reports rather than improvising. Uses the `linearis` CLI. Trigger: intent to start an issue that is In Progress — *"zacznij"*, *"rozpocznij"*, *"start DEMO-123"*, *"open the PR for"*.
 
 ### `nerd4rent:issue-close`
 
@@ -106,25 +117,28 @@ Trigger: `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a ski
 
 ## Plugin agents
 
-Three read-only agents ship in `agents/` and register as `nerd4rent:<name>`
+Four read-only agents ship in `agents/` and register as `nerd4rent:<name>`
 in the same registry the Agent tool uses. They exist for the islands' mechanical
 roles — reading a diff or a source and returning data under a schema — so those
-roles run on a cheaper model with a structural tool whitelist (no Edit, Write or
-NotebookEdit; no ToolSearch, so no MCP) instead of the default workflow subagent
-on the session model. The islands select them per `agent()` call via
+roles run with a structural tool whitelist (no Edit, Write or NotebookEdit; no
+ToolSearch, so no MCP) instead of the default workflow subagent with full tools,
+and, where the role allows it, on a cheaper model than the session's. The islands select them per `agent()` call via
 `agentType`; the contract in `workflow-graph.json` is unchanged, because which
 agent runs a role is an execution parameter, not topology.
 
 | Agent | Model | Tools | Called by |
 |---|---|---|---|
 | `nerd4rent:review-mapper` | Sonnet | Read, Grep, Glob, Bash, Skill | the four axis mappers of `review-verify` |
+| `nerd4rent:review-sceptic` | `inherit` (the session model) | Read, Grep, Glob, Bash, Skill | the three sceptics per finding of `review-verify` |
 | `nerd4rent:review-synthesizer` | Haiku | Read | the summary writer of `review-verify` |
 | `nerd4rent:plan-gatherer` | Sonnet | Read, Grep, Glob, Bash, Skill; preloads `nerd4rent:nerdbrain-search` | the five gatherers of `plan-context-fanout` |
 
-The sceptics of the review island are deliberately **not** on a dedicated
-agent: they are the only quality gate, and their "when uncertain, refute" rule
-on a weaker model would refute everything. They stay on the default workflow
-subagent and the session model. The agents are not meant for direct delegation
+The sceptics of the review island keep the **session model** on purpose
+(`model: inherit`): they are the only quality gate, and their "when uncertain,
+refute" rule on a weaker model would refute everything. What they gain from a
+dedicated agent is the tool whitelist alone — the default workflow subagent was
+observed running `git checkout` in the repo during a review, which the
+whitelist plus the agent's read-only rule now rule out. The agents are not meant for direct delegation
 — their descriptions say so — and `plugin.json` does not list them, since the
 `agents` manifest field would replace the auto-discovered directory rather than
 add to it.
@@ -192,9 +206,10 @@ with the most severe finding winning the anchor, severity sort, cap 12), then
 adversarial verification — 3 sceptics per
 finding, each prompted to refute it, 2 or more refutations out of 3 reject it
 — and a synthesizer that writes only the summary while the reducer assembles
-the findings verbatim. The mappers run as `nerd4rent:review-mapper` and the
-synthesizer as `nerd4rent:review-synthesizer`, while the sceptics stay on the
-default workflow subagent (see [Plugin agents](#plugin-agents)). Rejections and
+the findings verbatim. The mappers run as `nerd4rent:review-mapper`, the
+sceptics as `nerd4rent:review-sceptic` on the session model, and the
+synthesizer as `nerd4rent:review-synthesizer` (see
+[Plugin agents](#plugin-agents)). Rejections and
 overflow are counted in the required `ReviewFindings.stats`, so degradation is
 visible, never silent.
 
@@ -233,10 +248,16 @@ human-free stretches become workflow islands:
 [main agent, conversational, status-driven]
   ├─ workflow island: plan-context fanout           ← built: workflows/plan-context-fanout.js
   ├─ [GATE: the human sets In Progress in Linear]   ← outside the graph, necessarily
+  ├─ start: a chain, pinned to Haiku, no workflow    ← first half of `implement`: issue-start
   ├─ implementation (sequential, conversational)
   ├─ workflow island: review map → reduce → verify → synthesize   ← built: workflows/review-verify.js
   └─ close-out: a chain, pinned to Haiku, no workflow
 ```
+
+Chains sit at both ends of the axis: `issue-start` opens the branch and the
+draft PR, `issue-close` merges and finishes. Neither is a graph node of its
+own — Start is the first half of `implement`, behind the same `tracker-status`
+gate, and a separate node would only duplicate that gate.
 
 | Node | Skill | Phase | Runtime | Edge in → out |
 |---|---|---|---|---|

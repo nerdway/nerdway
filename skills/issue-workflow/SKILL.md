@@ -240,31 +240,40 @@ recorded decision), that acceptance is itself a nerdbrain write-trigger:
 invoke `nerdbrain-wiki` to append/update the superseding decision under
 `## Decisions` on the entity page before continuing.
 
-1. **Branch** — existing policy unchanged:
-   - On `main`/`master`: read the issue's native branch name —
-     `linearis issues read <ID> --fields branchName` — then
-     `git checkout -b <branchName>` with the returned value.
+The mechanical part of Start — branch from the issue's native `branchName`,
+empty start commit, push with upstream, draft PR/MR carrying the `Fixes <ID>`
+magic word — is the **`nerd4rent:issue-start`** chain (Haiku), the mirror of
+`issue-close` at the other end of the issue. The chain asks no questions and
+requires a clean checkout on `main`/`master`, so settle the branch question
+here first:
+
+1. **Branch policy** — existing policy unchanged:
+   - On `main`/`master`: delegate — invoke `nerd4rent:issue-start` with
+     `<ID>` and a one-paragraph summary for the PR body (from the plan's
+     Objective). It reads `branchName` itself, creates the branch, makes the
+     start commit, pushes, opens the draft PR/MR and reports the branch and
+     the PR/MR URL.
    - On another issue branch: ask the user — (a) branch from current,
-     (b) branch from main/master, (c) stay.
-2. **Empty commit + push** (GitHub needs ≥1 commit to open a PR):
+     (b) branch from main/master, (c) stay. After (b), `git checkout main &&
+     git pull` (or `master`), then delegate as above. After (a) or (c) the
+     chain's precondition does not hold — run its steps by hand: for (a)
+     `git checkout -b <branchName>` (value from `linearis issues read <ID>
+     --fields branchName`), then on the resulting branch:
 
-   ```bash
-   git commit --allow-empty -m "<start-of-work message>"
-   git push -u origin <branch>
-   ```
+     ```bash
+     git commit --allow-empty -m "Rozpoczęcie prac nad <ID>"
+     git push -u origin <branch>
+     gh pr create --draft --title "<ID>: <title>" \
+       --body "Fixes <ID>
 
-3. **Draft PR with Linear magic words** — use `gh`; the Linear CLI has no
-   PR-opening command:
-
-   ```bash
-   gh pr create --draft --title "<ID>: <title>" \
-     --body "Fixes <ID>
-
-   <one-paragraph summary>"
-   ```
+     <one-paragraph summary>"
+     ```
 
    `Fixes <ID>` (one line per issue if the PR closes several) lets the
    Linear↔GitHub integration track the PR and auto-close the issue on merge.
+2. **If `issue-start` stopped early** (issue not In Progress, dirty tree,
+   branch already exists, missing `gh`/`glab`), fix the reported cause or
+   resolve it with the user — never re-run the chain blindly.
 
 ### 5. Pick an implementation mode
 
@@ -426,6 +435,11 @@ session's last push.
 
 - `nerd4rent:issue-writer` — upstream: creates the issue (in Backlog)
   that this skill plans and implements.
+- `nerd4rent:issue-start` — the Start chain step 4 delegates to once the
+  user has set In Progress (branch, start commit, push, draft PR/MR);
+  mirror of `issue-close`.
+- `nerd4rent:issue-close` — the close-out chain (commit, push, merge,
+  switch to base, set Done).
 - `nerd4rent:nerdbrain-search` — rg recipes underlying `nerdbrain-wiki`'s
   Graph recall step (used by 0b above).
 - `nerd4rent:project-continue` — reads the checkpoint this skill writes and

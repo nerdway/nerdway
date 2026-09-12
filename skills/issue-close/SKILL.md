@@ -172,3 +172,5 @@ which one and why.
 
 - `nerd4rent:issue-workflow` — the status-driven workflow whose close-out
   phase delegates here.
+- `nerd4rent:issue-start` — the mirror chain at the other end of the issue:
+  branch, start commit, push, draft PR/MR.

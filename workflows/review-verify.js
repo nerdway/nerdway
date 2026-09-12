@@ -317,7 +317,7 @@ for (let start = 0; start < pairs.length; start += BATCH) {
           `Check the claim against the actual diff and repo. Refute it if the defect is not real, ` +
           `not introduced by this change, not at the stated location, or the evidence does not hold. ` +
           `When genuinely uncertain, refute.`,
-        { label: `verify:${pair.findingIndex + 1}/${candidates.length} vote ${pair.voteIndex + 1}`, phase: 'Verify', schema: voteShape },
+        { label: `verify:${pair.findingIndex + 1}/${candidates.length} vote ${pair.voteIndex + 1}`, phase: 'Verify', schema: voteShape, agentType: 'nerd4rent:review-sceptic' },
       ),
     ),
   )

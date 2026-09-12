@@ -15,7 +15,7 @@
       "minVersion": "2026.7.0",
       "versionCommand": ["linearis", "--version"],
       "versionRegex": "(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-writer", "issue-close", "project-continue", "new-project-workflow"],
+      "requiredBy": ["issue-workflow", "issue-writer", "issue-close", "project-continue", "new-project-workflow", "issue-start"],
       "npm": "linearis",
       "auth": {
         "check": ["linearis", "teams", "list", "--limit", "1"],
@@ -27,7 +27,7 @@
       "minVersion": "2.97.0",
       "versionCommand": ["gh", "--version"],
       "versionRegex": "gh version (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-close", "new-project-workflow"],
+      "requiredBy": ["issue-workflow", "issue-close", "new-project-workflow", "issue-start"],
       "manualInstall": "winget install GitHub.cli | brew install gh | see https://github.com/cli/cli#installation",
       "auth": {
         "check": ["gh", "auth", "status"],
@@ -47,7 +47,7 @@
       "minVersion": "2.40.0",
       "versionCommand": ["git", "--version"],
       "versionRegex": "git version (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-close", "project-continue", "new-project-workflow"],
+      "requiredBy": ["issue-workflow", "issue-close", "project-continue", "new-project-workflow", "issue-start"],
       "manualInstall": "Install git before running this script; it is a prerequisite, not a target."
     }
   ]

@@ -172,3 +172,5 @@ which one and why.
 
 - `nerdway:issue-workflow` — the status-driven workflow whose close-out
   phase delegates here.
+- `nerdway:issue-start` — the mirror chain at the other end of the issue:
+  branch, start commit, push, draft PR/MR.

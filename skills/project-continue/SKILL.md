@@ -11,7 +11,7 @@ description: >-
   issue ID to type; never enters issue-workflow by itself.
 ---
 
-# Linear continue: project checkpoints
+# Project continue: project checkpoints
 
 One conversational pass: **read → verify → report → (ask) → write**. The
 checkpoint lives on the entity page, so this skill works offline against the

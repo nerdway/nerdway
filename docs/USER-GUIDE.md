@@ -105,6 +105,7 @@ You need [Claude Code](https://claude.com/claude-code) (or another coding agent 
 | `gh` (GitHub CLI) | 2.97 | `brew install gh` / `winget install GitHub.cli` | `gh auth login` |
 | `linearis` (Linear CLI) | 2026.7.0 | `npm i -g linearis` | see below |
 | `glab` (GitLab CLI) — GitLab-hosted repos only | 1.117 | `brew install glab` / `winget install GLab.GLab` | `glab auth login` |
+| `az` (Azure CLI) — Azure DevOps-hosted repos only | 2.90 | `brew install azure-cli` / `winget install Microsoft.AzureCLI`, then `az extension add --name azure-devops` | `az login` or `az devops login` |
 | `rg` (ripgrep) | 14 | `brew install ripgrep` / `winget install BurntSushi.ripgrep.MSVC` | — |
 
 To authenticate `linearis`, create a personal API key in Linear under **Settings → Security & access → API → Personal API keys**, then either set it as the `LINEAR_API_TOKEN` environment variable or run `linearis auth login`. The key does not expire.
@@ -146,11 +147,11 @@ Restart the agent after installing. These agents run the sequential degradation 
 
 ## Telling the plugin which platform a project uses
 
-Before the first issue, the plugin needs to know where the project's issues live (Linear today; GitHub Issues, GitLab Issues and Azure DevOps Boards are planned) and where its code lives (GitHub or GitLab; Azure DevOps planned). Run `/determine-platform` once per repo — or just file an issue and `issue-writer` runs it for you.
+Before the first issue, the plugin needs to know where the project's issues live (Linear today; GitHub Issues, GitLab Issues and Azure DevOps Boards are planned) and where its code lives (GitHub, GitLab or Azure DevOps). Run `/determine-platform` once per repo — or just file an issue and `issue-writer` runs it for you.
 
 It checks what is already recorded, infers the rest from the git remote and your Linear CLI, and asks you a single numbered question only when the answer is ambiguous. The result lands as a `## Platform` section in the repo's `CLAUDE.md` (commit it with the next change — it is meant to travel with the repo) and, if you use the nerdbrain vault, as `platform:` on the project's entity page. Running it again changes nothing.
 
-The skills then read the matching adapter files — the one place the plugin keeps Linear, GitHub and GitLab commands. If you configure a platform whose adapter isn't in your plugin version yet, the skills tell you so instead of guessing.
+The skills then read the matching adapter files — the one place the plugin keeps Linear, GitHub, GitLab and Azure DevOps commands. If you configure a platform whose adapter isn't in your plugin version yet, the skills tell you so instead of guessing.
 
 ## A day with the plugin
 
@@ -200,12 +201,12 @@ How to trigger each skill and what to expect. All of them also respond to the sl
 ### `issue-start` — open the branch and the PR
 
 - **Say:** *"start DEMO-123"*, *"zacznij DEMO-123"*, *"open the PR for DEMO-123"* — or nothing: `issue-workflow` calls it the moment it sees In Progress.
-- **What happens:** the mirror of the close-out chain — checks the issue is In Progress and the checkout is a clean `main`/`master`, creates the branch from the Linear `branchName`, makes the empty start commit, pushes, opens a draft PR (GitHub) or MR (GitLab) with `Fixes DEMO-123` in the body. On any error it stops and reports.
+- **What happens:** the mirror of the close-out chain — checks the issue is In Progress and the checkout is a clean `main`/`master`, creates the branch from the Linear `branchName`, makes the empty start commit, pushes, opens a draft PR (GitHub, Azure DevOps) or MR (GitLab) with `Fixes DEMO-123` in the body — on Azure DevOps followed by the issue link, since Linear doesn't track PRs there. On any error it stops and reports.
 
 ### `issue-close` — merge and finish
 
 - **Say:** *"merge and close"*, *"close out DEMO-123"*, *"domknij"*, *"zmerguj i zamknij"*.
-- **What happens:** the deliberately mechanical close-out chain — commit leftovers, push, merge the PR (GitHub or GitLab), switch your checkout to the base branch, set the issue to Done. On any error it stops and reports.
+- **What happens:** the deliberately mechanical close-out chain — commit leftovers, push, merge the PR (GitHub, GitLab or Azure DevOps), switch your checkout to the base branch, set the issue to Done. On any error it stops and reports.
 
 ### `new-project-workflow` — bootstrap a project
 

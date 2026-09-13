@@ -36,6 +36,7 @@
         "project.list",
         "project.create",
         "issue.read",
+        "issue.read-relations",
         "issue.read-status",
         "issue.read-branch",
         "issue.resolve-from-branch",
@@ -50,7 +51,7 @@
     "vcs": {
       "config": "PlatformConfig.vcs",
       "sections": ["CLI", "Detection", "Operations", "Magic words", "URL"],
-      "operations": ["auth.check", "repo.view", "repo.create", "pr.create-draft", "pr.view-base", "pr.mark-ready", "pr.merge"]
+      "operations": ["auth.check", "repo.view", "repo.create", "pr.create-draft", "pr.view", "pr.diff", "pr.list-merged", "pr.view-base", "pr.mark-ready", "pr.merge"]
     }
   },
   "schemas": [

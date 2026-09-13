@@ -28,9 +28,22 @@ Establishes which **tracker** holds the project's issues (Linear, GitHub Issues,
 1. Reads what is already recorded: the `## Platform` section of the repo `CLAUDE.md`, then `platform:` on the nerdbrain entity page, then a legacy `linear:` block there.
 2. Otherwise infers: the origin remote host names the VCS; an authenticated Linear CLI plus exactly one Linear project named like the repo names the tracker — then it writes without asking.
 3. When the answer is ambiguous, asks **one** question: a numbered list of the six tracker + host combinations with a recommendation.
-4. Writes the result to both places — replacing only the `## Platform` section of `CLAUDE.md` (a second run leaves no diff), and `platform:` on the entity page in place of the legacy `linear:` — and returns it to the conversation.
+4. Writes the result to both places — replacing only the `## Platform` section of `CLAUDE.md` (a second run leaves no diff, and an existing `statuses` key survives), and `platform:` on the entity page in place of the legacy `linear:`.
+5. Chains into **`bind-statuses`** (below) to bind the workflow phases to the tracker, then returns the result to the conversation.
 
-Writing that section is allowed at any issue status: it is the one exemption from the "no repo change before In Progress" rule. Trigger: `/determine-platform`, a core skill reporting that no platform is configured, or *"which tracker does this project use"*.
+Writing that section is allowed at any issue status: it is an exemption from the "no repo change before In Progress" rule. Trigger: `/determine-platform`, a core skill reporting that no platform is configured, or *"which tracker does this project use"*.
+
+### `nerd4rent:bind-statuses`
+
+Binds the five **canonical phases** the workflow runs on — `backlog`, `todo`, `in-progress`, `in-review`, `done` — to how the tracker shows them, and records it as the `statuses` key of `## Platform` — see [Platform config and adapters](#platform-config-and-adapters):
+
+1. Reads the platform and the tracker adapter's supported strategies and default map.
+2. Proposes a **status strategy**: `native` (the tracker's own states) when the adapter supports it, else `label` (one label per phase plus open/closed), else `comment` (a `Status: <value>` marker comment) — `comment` also when you turn labels down.
+3. Lists the tracker's real states or labels where its CLI can, and asks **one** question: the proposed map with its reason.
+4. Creates missing labels only after an explicit yes, naming each one.
+5. Writes the block to `CLAUDE.md` (a second run leaves no diff) and to `platform.statuses` on the entity page, runs `validate-platform-config.ts`, and returns the result.
+
+Runs at the end of `determine-platform` or on its own at any time. Without a `statuses` block the adapter default applies, so Linear projects need nothing. Trigger: `/bind-statuses`, *"bind statuses"*, *"zmapuj statusy"*.
 
 ### `nerd4rent:issue-writer`
 
@@ -49,7 +62,7 @@ Uses the `linearis` CLI (see Requirements). Trigger: intent to create a new issu
 
 A mandatory **status-driven** workflow for working a Linear issue by ID (e.g. `KAM-145`). The issue's Linear status is the single source of truth — you steer by changing the status, the agent never asks you to "confirm the plan" in chat:
 
-1. Fetches the issue (`linearis issues read <ID>`) at the start of every turn and dispatches on status — also when a bare issue ID is typed into a fresh session.
+1. Fetches the issue (`linearis issues read <ID>`) at the start of every turn and dispatches on its **phase**, read through the project's status strategy (on Linear by default: the state name) — also when a bare issue ID is typed into a fresh session.
 2. **Backlog/Todo** → drafts an implementation plan (for ambiguous requirements, first offers an inline grilling session with an ADR/glossary docs discipline), posts it as a `## Implementation plan` comment, sets the status to Todo, and ends the turn with no instructions.
 3. **In Progress** (set manually by you = plan approved) → starts implementation by delegating to **`nerd4rent:issue-start`** (below): branch from the Linear `branchName`, empty commit, push, **draft PR with magic words** (`Fixes TEAM-123`) so the Linear↔GitHub integration closes the issue on merge; then offers an implementation mode (superpowers / Matt Pocock skills / plain agent — whichever is available).
 4. After implementation or on **In Review** → offers a code-review menu (superpowers / Matt Pocock / review it yourself); never offers to merge or close on its own.
@@ -147,14 +160,29 @@ github:
 
 `tracker` is one of `linear`, `github`, `gitlab`, `ado`, `none`; `vcs` one of `github`, `gitlab`, `ado`. The shape is the `PlatformConfig` schema in `workflow-graph.json`. `determine-platform` writes it; an entity page with only the older `linear: {team, project}` block keeps working as an alias.
 
+An optional `statuses` key, written by `bind-statuses`, binds the workflow's canonical phases to the tracker:
+
+```yaml
+statuses:
+  strategy: comment
+  map:
+    backlog: backlog
+    todo: todo
+    in-progress: in-progress
+    in-review: in-review
+    done: done
+```
+
+`native` maps phases to the tracker's state names, `label` to label names plus the reserved `open` (backlog only) and `closed` (always `done`), `comment` to the value of a `Status: <value>` marker comment. Without the key, the tracker adapter's `## Statuses` default applies — on Linear `native` with `Backlog / Todo / In Progress / In Review / Done`, so existing projects behave as before. What each strategy means is in [`adapters/statuses.md`](adapters/statuses.md); `node scripts/validate-platform-config.ts [path/to/CLAUDE.md]` checks a config (all five phases, a strategy the adapter supports, no value twice) and every tracker adapter's default. See [ADR-0006](docs/adr/0006-canonical-phases-and-status-strategies.md).
+
 The commands themselves live in **adapter files**, one per platform per axis:
 
 | Axis | Adapter files | Required sections |
 |---|---|---|
-| tracker | `adapters/trackers/linear.md` | `CLI`, `Issue ID`, `Operations`, `URL`, `Statuses` |
+| tracker | `adapters/trackers/linear.md` | `CLI`, `Issue ID`, `Operations`, `URL`, `Statuses`, `Status strategies` |
 | VCS host | `adapters/vcs/github.md`, `adapters/vcs/gitlab.md`, `adapters/vcs/ado.md` | `CLI`, `Detection`, `Operations`, `Magic words`, `URL` |
 
-Skills never quote a command: they name an **operation ID** (`issue.set-status`, `pr.merge`, …) and look it up in the adapter's `## Operations` table, read through `${CLAUDE_PLUGIN_ROOT}`. The `adapters` block of `workflow-graph.json` declares each axis's sections and operation IDs, and `node scripts/validate-workflow-graph.ts` rejects an adapter that misses one, repeats one, lists an undeclared one, or is named outside the config enum. A configured platform with no adapter file yet makes the skill stop with "adapter not available yet" — it never falls back to Linear. See [ADR-0005](docs/adr/0005-platform-adapters-as-reference-files.md).
+Skills never quote a command: they name an **operation ID** (`issue.set-status`, `pr.merge`, …) and look it up in the adapter's `## Operations` table, read through `${CLAUDE_PLUGIN_ROOT}`. The `adapters` block of `workflow-graph.json` declares each axis's sections and operation IDs, and `node scripts/validate-workflow-graph.ts` rejects an adapter that misses one, repeats one, lists an undeclared one, or is named outside the config enum — and a tracker adapter whose `## Status strategies` table does not list exactly the strategies of the config enum, or supports none. A configured platform with no adapter file yet makes the skill stop with "adapter not available yet" — it never falls back to Linear. See [ADR-0005](docs/adr/0005-platform-adapters-as-reference-files.md).
 
 ## Plugin agents
 
@@ -209,7 +237,7 @@ to exactly one skill. See
 the runtime are two different artifacts.
 
 Gates and frozen rules are data, not prose. Every **irreversible** action on
-the axis — writing the issue to Linear (`issue-write`), pushing commits
+the axis — creating tracker labels (`statuses-bind`), writing the issue to Linear (`issue-write`), pushing commits
 (`implement`), merging and setting Done (`close`), writing the vault
 (`wiki-write`) — is marked `irreversible: true` and must sit behind a gate.
 A gate is one of two kinds with a closed mechanism vocabulary the validator
@@ -221,8 +249,8 @@ first-class: a gate's `rule` field points into it, a deny gate exists only to
 enforce one, and a rule no gate points to is rejected — so a dangerous
 transition is unreachable, not merely "usually asked about". A rule's rare
 legitimate exception is data too: `exemptions` names the node, the narrow scope
-and the reason (today only `platform-determine` writing the `## Platform`
-section of `CLAUDE.md`). Human gates sit
+and the reason (today `platform-determine` writing the `## Platform`
+section of `CLAUDE.md`, and `statuses-bind` writing its `statuses` key). Human gates sit
 on the boundaries between workflows, never inside them.
 
 Every registry entry carries its **schema body** — the JSON Schema the payload on
@@ -315,6 +343,7 @@ gate, and a separate node would only duplicate that gate.
 | Node | Skill | Phase | Runtime | Edge in → out |
 |---|---|---|---|---|
 | `platform-determine` | `determine-platform` | write | conversational | — → `PlatformConfig` |
+| `statuses-bind` | `bind-statuses` | write | conversational | `PlatformConfig` → `PlatformConfig` |
 | `issue-write` | `issue-writer` | write | conversational | `PlatformConfig` → `IssueSpec` |
 | `wiki-recall` | `nerdbrain-search` | plan | **workflow** | `IssueSpec` → `ProjectContext` |
 | `plan-context-fanout` | `issue-workflow` | plan | **workflow** | `IssueSpec` → `PlanContext` |

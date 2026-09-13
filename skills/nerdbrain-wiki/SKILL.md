@@ -144,21 +144,21 @@ machine switch.
 **Entry format — one line, one bullet, English:**
 
 ```
-- YYYY-MM-DD — <ISSUE-ID> · <Linear status> · <branch> @ <7-char HEAD> — next: <one line>
+- YYYY-MM-DD — <ISSUE-ID> · <phase> · <branch> @ <7-char HEAD> — next: <one line>
 ```
 
 | Field | Value |
 |-------|-------|
 | date | day the entry was written |
 | issue ID | the issue the session worked on (one entry = one issue) |
-| Linear status | the team's state **name** at the time of writing (`In Progress`, `In Review`, …) |
+| phase | the issue's canonical phase at the time of writing (`in-progress`, `in-review`, …), read through the status strategy; older entries hold the tracker's state name (`In Progress`), which `project-continue` maps back |
 | branch | the git branch the session worked on |
 | HEAD | `git rev-parse --short HEAD` after the last commit of the session |
 | next | the first item of the session summary's next steps, trimmed to one line |
 
 The branch and hash are what make drift detectable later: `project-continue`
-checks that the hash is still an ancestor of the branch tip and that the Linear
-status still matches. The date is a git-independent "how old is this" hint;
+checks that the hash is still an ancestor of the branch tip and that the
+issue's phase still matches. The date is a git-independent "how old is this" hint;
 never rely on it alone, since Obsidian Sync can deliver the page late.
 
 **Write mode — Prepend, capped:** insert the new entry directly under the

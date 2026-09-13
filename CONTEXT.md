@@ -128,7 +128,7 @@ host (`github`, `gitlab`, `ado`) plus the identifiers each needs — schema
 `PlatformConfig`. Lives as the `## Platform` section of the repo `CLAUDE.md`,
 mirrored as `platform:` on the entity page, and is established by
 `determine-platform`; a legacy `linear:` block on an entity page is read as its
-alias.
+alias. An optional `statuses` block binds the canonical phases to the tracker.
 _Avoid_: platform settings, integration (both hide that it is one YAML object in two places)
 
 **Adapter**:
@@ -149,11 +149,36 @@ islands and their agents name the ID, never the command; `—` as the command ma
 offer.
 _Avoid_: command, verb (a command is what the adapter maps the ID to)
 
+**Canonical phase**:
+One of the five tracker-independent stages core skills dispatch on —
+`backlog`, `todo`, `in-progress`, `in-review`, `done`. A skill never compares
+a tracker's own state name; it reads the phase through the status strategy.
+Only the human moves an issue to `in-progress`.
+_Avoid_: status, state (both name what the tracker shows, not the phase)
+
+**Status strategy**:
+How a tracker shows a canonical phase: `native` (its own state field),
+`label` (one label per phase plus open/closed), or `comment` (the newest
+comment whose first line is `Status: <value>`). Chosen per project in the
+platform config's `statuses` block, else the tracker adapter's default;
+each adapter lists its recipe per strategy in `## Status strategies`, and
+the shared meaning lives in `adapters/statuses.md`.
+_Avoid_: status mode, status backend
+
+**Status map**:
+The flat phase → value object under `statuses.map`: state names for
+`native`, label names or the reserved `open`/`closed` for `label`, marker
+values for `comment`. All five phases are mapped and no value twice, so a
+value read back from the tracker names exactly one phase; a value the map does
+not hold is "phase unknown", never a guess. Written by `bind-statuses`.
+_Avoid_: status mapping table, state aliases
+
 **Exemption**:
 A validated exception on a frozen rule: the node allowed to act despite it,
-the narrow scope it may touch, and the reason. The only one today lets
-`platform-determine` replace the `## Platform` section of `CLAUDE.md` before
-any issue is In Progress.
+the narrow scope it may touch, and the reason. Two exist today, both on
+`no-repo-change-before-in-progress`: `platform-determine` replaces the
+`## Platform` section of `CLAUDE.md`, and `statuses-bind` writes its
+`statuses` key, before any issue is In Progress.
 _Avoid_: override, bypass (both imply the rule stops holding)
 
 **Frozen rule**:

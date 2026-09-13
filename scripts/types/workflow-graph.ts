@@ -372,7 +372,7 @@ const TABLE_SEPARATOR = /^\|[\s:|-]+\|?$/;
 export function tableRows(table: string): string[][] {
   const rows = table.split("\n").filter((line) => line.startsWith("|") && !TABLE_SEPARATOR.test(line.trim()));
   return rows.slice(1).map((row) => {
-    const cells = row.split("|").slice(1);
+    const cells = row.split(/(?<!\\)\|/).slice(1);
     if (row.trimEnd().endsWith("|")) cells.pop();
     return cells.map((cell) => cell.trim().replace(/^`(.*)`$/, "$1"));
   });
@@ -383,6 +383,14 @@ function operationIds(table: string): string[] {
 }
 
 export const UNSUPPORTED = "—";
+
+export function hasRecipes([, read, write]: string[]): boolean {
+  return [read, write].every((cell) => cell !== undefined && cell !== "" && cell !== UNSUPPORTED);
+}
+
+function isUnsupported([, read, write]: string[]): boolean {
+  return read === UNSUPPORTED && write === UNSUPPORTED;
+}
 
 function enumAt(registry: Map<string, unknown>, path: unknown): string[] | undefined {
   if (typeof path !== "string") return undefined;
@@ -407,12 +415,12 @@ function validateStrategyTable(where: string, table: string, strategies: string[
   for (const strategy of [...new Set(listed.filter((strategy) => !strategies.includes(strategy)))]) {
     errors.push(`${where}: strategy ${strategy} is not a value of the statuses strategy enum`);
   }
-  for (const [strategy, read, write] of rows) {
-    if ((read === UNSUPPORTED) !== (write === UNSUPPORTED)) {
-      errors.push(`${where}: strategy ${strategy} needs both a read and a write recipe, or ${UNSUPPORTED} in both`);
+  for (const row of rows) {
+    if (!hasRecipes(row) && !isUnsupported(row)) {
+      errors.push(`${where}: strategy ${row[0]} needs both a read and a write recipe, or ${UNSUPPORTED} in both`);
     }
   }
-  if (!rows.some(([, read, write]) => read !== UNSUPPORTED && write !== UNSUPPORTED)) {
+  if (!rows.some(hasRecipes)) {
     errors.push(`${where}: supports no strategy — at least one Status strategies row needs a read and a write recipe`);
   }
 }

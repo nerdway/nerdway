@@ -280,8 +280,8 @@ here first:
      (b) branch from main/master, (c) stay. After (b), `git checkout main &&
      git pull` (or `master`), then delegate as above. After (a) or (c) the
      chain's precondition does not hold — run its steps by hand: for (a)
-     `git checkout -b <branchName>` (value from `issue.read-branch`), then on
-     the resulting branch:
+     `issue.create-branch` with `<branchName>` from `issue.read-branch` and
+     the current branch as `<base>`, then on the resulting branch:
 
      ```bash
      git commit --allow-empty -m "Rozpoczęcie prac nad <ID>"

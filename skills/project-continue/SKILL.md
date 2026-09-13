@@ -76,7 +76,7 @@ Take the first bullet under `## Checkpoints` (entries are newest first) and
 split it on the format defined in `nerdbrain-wiki`:
 
 ```
-- YYYY-MM-DD — <ISSUE-ID> · <Linear status> · <branch> @ <hash> — next: <one line>
+- YYYY-MM-DD — <ISSUE-ID> · <phase> · <branch> @ <hash> — next: <one line>
 ```
 
 Then branch on what you found:
@@ -131,7 +131,7 @@ is looked up in the map. Compare the two **phases**, not the raw strings. A
 difference is drift on its own, reported separately from the git cases — an
 issue moved to `in-review` or `done` while the checkpoint still says
 `in-progress` is the common one. A failed read (issue deleted, no auth) or a
-value the map does not hold is reported as "Linear status unknown", never as
+value the map does not hold is reported as "phase unknown", never as
 a match.
 
 ## Step 4 — Report

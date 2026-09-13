@@ -427,7 +427,7 @@ nerdbrain entity page, following `nerdbrain-wiki`'s **Prepend, capped** mode
 (entry format, cap of 10, `updated:` bump, `log.md` line live there):
 
 ```
-- YYYY-MM-DD — <ID> · <Linear status after the session> · <branch> @ <git rev-parse --short HEAD> — next: <first item of next steps, one line, English>
+- YYYY-MM-DD — <ID> · <phase after the session> · <branch> @ <git rev-parse --short HEAD> — next: <first item of next steps, one line, English>
 ```
 
 It is the same logical wiki write as any other entity-page update from this

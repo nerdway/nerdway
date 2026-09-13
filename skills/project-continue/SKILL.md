@@ -3,7 +3,7 @@ name: project-continue
 description: >-
   Answer "where are we" for the current project in one step: read the newest
   entry of `## Checkpoints` on the project's nerdbrain entity page, verify it
-  against the repo (git) and Linear, report any drift, and — only with the
+  against the repo (git) and the tracker (Linear, GitHub Issues), report any drift, and — only with the
   user's consent, or when no checkpoint exists yet — record a fresh checkpoint.
   Use when the user switches to a project (also on another machine) and asks
   "gdzie jesteśmy", "na czym stanęliśmy", "kontynuuj projekt", "continue",
@@ -15,7 +15,7 @@ description: >-
 
 One conversational pass: **read → verify → report → (ask) → write**. The
 checkpoint lives on the entity page, so this skill works offline against the
-vault and only reaches Linear for the status check and the active-issue list.
+vault and only reaches the tracker for the status check and the active-issue list.
 The write, when it happens, goes through the `nerdbrain-wiki` procedure
 (section mode *Prepend, capped*, `updated:` bump, `log.md` line) — never
 through ad-hoc file surgery.
@@ -34,7 +34,8 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory.
 
-Take `<tracker>` and its identifiers (for Linear: team key and project UUID)
+Take `<tracker>` and its identifiers (for Linear: team key and project UUID;
+for GitHub Issues: `github.owner`/`github.repo`)
 from the `## Platform` section of the repo `CLAUDE.md`, else from the entity
 page frontmatter `platform:` — a legacy `linear:` block there means
 `tracker: linear` with that `team` and `project`. With neither, or with no
@@ -83,7 +84,7 @@ Then branch on what you found:
 
 - **`tier=none`, or no entity page for this project** → skip to
   [Step 5 — No checkpoint](#step-5--no-checkpoint) in read-only mode: state
-  the situation from repo and Linear, say plainly that nothing was written
+  the situation from repo and tracker, say plainly that nothing was written
   because the vault is unreachable, and stop.
 - **Page exists, but the section is missing or empty** → Step 5 with a write
   at the end.
@@ -120,7 +121,7 @@ means a fast-forward `git pull` is due, local ahead means unpushed work on
 this machine — neither is drift in the checkpoint. Case 4 is what a lagging
 Obsidian Sync looks like: the repo moved on, the page has not caught up yet.
 
-## Step 3 — Verify against Linear
+## Step 3 — Verify against the tracker
 
 Run `issue.read-status` for the checkpointed issue and turn its value into a
 phase through the status map.
@@ -143,7 +144,7 @@ Print one compact block, always in this shape:
 2. **Git** — "in sync" or the case from Step 2 with its evidence (the
    `git log` lines, the default-branch ancestry result, the local/remote
    ahead-behind count).
-3. **Linear** — "in sync" or `recorded X, now Y` (phases, with the raw values
+3. **Tracker** — "in sync" or `recorded X, now Y` (phases, with the raw values
    when they differ from the phase names).
 4. **Active issues** — the project's `todo / in-progress / in-review` list from
    `issue.list-active` (identifiers from the platform config), so the
@@ -154,7 +155,7 @@ Print one compact block, always in this shape:
    it never dispatches into it, since the status-driven flow has its own
    gates.
 
-**No drift** (git in sync, Linear in sync): the report is the whole result.
+**No drift** (git in sync, tracker in sync): the report is the whole result.
 Do not write anything — the checkpoint is still true.
 
 **Drift** in any check: after the report, ask **one question**:
@@ -192,7 +193,7 @@ Invoke `nerdbrain-wiki` and follow its **Prepend, capped** mode for
 `updated:` bumped, one line appended to `log.md`. Field values:
 
 - date — today;
-- issue ID and status — from the Linear read;
+- issue ID and status — from the tracker read;
 - branch and hash — `git branch --show-current` and `git rev-parse --short HEAD`
   (after a fetch, and after any commit the user just made);
 - next — one line, English, taken from the user's answer or from the newest
@@ -208,11 +209,11 @@ If the page has `## Decisions` and `## Active context` but no
   asked about; a silent overwrite would race Obsidian Sync, which may still be
   about to deliver a newer entry from another machine.
 - **`tier=none` or no entity page → zero writes**, full stop. The state report
-  from repo and Linear is still produced.
+  from repo and tracker is still produced.
 - **Vault access is filesystem-only** (`Read`/`Edit` on the vault path, `rg`
   for search) — no Obsidian/Linear MCP, no Local REST API, no git against the
   vault (ADR-0001, `~/.claude/CLAUDE.md`).
-- **Linear is read-only here.** Status changes belong to the user in Linear,
+- **The tracker is read-only here.** Status changes belong to the user on the tracker,
   or to `issue-workflow` / `issue-close`.
 - **The injected page stays authoritative** for stack, commands and
   conventions; this skill narrows the "is it current?" question to one

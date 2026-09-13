@@ -2,10 +2,11 @@
 name: issue-close
 model: haiku
 description: >-
-  Mechanically close out a Linear issue once the work is done: commit any
+  Mechanically close out a tracker issue (Linear, GitHub Issues) once the work
+  is done: commit any
   leftover changes, push, merge the PR (GitHub, Azure DevOps) or MR (GitLab),
   switch the local
-  checkout to the PR/MR base branch, and move the Linear issue to done. Purely
+  checkout to the PR/MR base branch, and move the issue to done. Purely
   procedural with explicit commands and no multi-step reasoning — pinned to Haiku
   (the `model` frontmatter above) to keep it cheap. Invoked by
   issue-workflow's close-out, or directly when the user asks to
@@ -14,7 +15,7 @@ description: >-
   adapters.
 ---
 
-# Linear issue close-out
+# Issue close-out
 
 A deterministic, mechanical close-out. Every step is an explicit command — run
 them in order, stop and report on the first error. **Do not resolve merge
@@ -127,8 +128,8 @@ git checkout <base> && git pull
 ## Step 5 — Move the issue to `done`
 
 Run `issue.set-status` from the tracker adapter with the phase `done`: the
-write recipe of the resolved strategy with `map.done` (`Done` on Linear by
-default).
+write recipe of the resolved strategy with `map.done` (`Done` on Linear,
+`closed` on GitHub Issues by default).
 
 This is idempotent and deterministic: it closes the issue independently of
 magic-word timing and covers hosts with no tracker auto-close.

@@ -6,7 +6,7 @@
       "minVersion": "22.0.0",
       "versionCommand": ["node", "--version"],
       "versionRegex": "v(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["bootstrap-clis"],
+      "requiredBy": ["bootstrap-clis", "bind-statuses"],
       "manualInstall": "Install Node.js >= 22 (with npm) before running this script; it is a prerequisite, not a target. https://nodejs.org"
     },
     {
@@ -15,7 +15,7 @@
       "minVersion": "2026.7.0",
       "versionCommand": ["linearis", "--version"],
       "versionRegex": "(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-writer", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform"],
+      "requiredBy": ["issue-workflow", "issue-writer", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform", "bind-statuses"],
       "npm": "linearis",
       "auth": {
         "check": ["linearis", "teams", "list", "--limit", "1"],
@@ -72,7 +72,7 @@
       "minVersion": "2.40.0",
       "versionCommand": ["git", "--version"],
       "versionRegex": "git version (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform"],
+      "requiredBy": ["issue-workflow", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform", "bind-statuses"],
       "manualInstall": "Install git before running this script; it is a prerequisite, not a target."
     }
   ]

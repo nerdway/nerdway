@@ -9,8 +9,8 @@ description: >-
   procedural with explicit commands and no multi-step reasoning — pinned to
   Haiku (the `model` frontmatter above) to keep it cheap. Invoked by
   issue-workflow's Start step, or directly when the user asks to start an
-  issue ("zacznij", "rozpocznij", "start DEMO-123", "open the PR for"). The
-  Linear command is in the CLI reference.
+  issue ("zacznij", "rozpocznij", "start DEMO-123", "open the PR for").
+  Tracker and VCS commands come from the platform adapters.
 ---
 
 # Linear issue start
@@ -20,18 +20,40 @@ them in order, stop and report on the first error. **Do not ask the user
 questions, resolve branch conflicts, deviate from the commands below, or
 improvise** — those are out of scope; report and stop instead.
 
-## CLI reference
+## Platform and adapters
 
-`linearis` is the Linear CLI (npm, JSON-only output). This skill issues
-exactly one read and no writes:
+Tracker and VCS commands live in two adapter files at the plugin root. Read
+both before the preconditions, then run each operation by its ID from the
+adapter's `## Operations` table:
 
-```bash
-linearis issues read <ID> --fields identifier,title,branchName,state.name
+```
+${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
+${CLAUDE_PLUGIN_ROOT}/adapters/vcs/<vcs>.md
 ```
 
-`--fields` trims the JSON to those keys. `branchName` is the branch name
-Linear derives from the issue (lowercase, already safe for git); `state.name`
-is the team's own state name, e.g. `In Progress`.
+If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
+directories up from this skill's base directory.
+
+Pick `<tracker>` and `<vcs>` from the first source that has them:
+
+1. the platform the caller passed;
+2. the `## Platform` section of the repo `CLAUDE.md`;
+3. the entity page frontmatter `platform:` — a legacy `linear:` block there
+   means `tracker: linear`.
+
+- No tracker from any source → stop and report: "no platform configured —
+  run `/determine-platform`".
+- No VCS from any source → detect it from `git remote get-url origin` with
+  the `## Detection` rules of the VCS adapters.
+- No adapter file for the value → stop and report: "adapter
+  `trackers/<tracker>` (or `vcs/<vcs>`) is not available yet in this plugin
+  version".
+- An operation whose command is `—` → stop and report it.
+
+The tracker adapter is used for exactly one read (`issue.read-branch`) and no
+writes. Its `branchName` is the branch name the tracker derives from the
+issue (already safe for git); `state.name` is the team's own state name from
+the adapter's `## Statuses` table.
 
 ## Inputs
 
@@ -42,8 +64,8 @@ is the team's own state name, e.g. `In Progress`.
 
 ## Preconditions — check all, stop on the first that fails
 
-1. **The issue is In Progress.** Run the read above; `state.name` must equal
-   `In Progress`. Any other status → stop and report it: this is the same
+1. **The issue is In Progress.** Run `issue.read-branch`; `state.name` must
+   equal `In Progress`. Any other status → stop and report it: this is the same
    approval gate `issue-workflow` enforces, and only the user moves the status.
 2. **The checkout is on `main` or `master`:**
 
@@ -85,38 +107,13 @@ git push -u origin <branchName>
 The message is fixed: Polish, noun form, **no co-author, no model or tool
 attribution**.
 
-## Step 3 — Detect platform and open the draft PR/MR
+## Step 3 — Open the draft PR/MR
 
-Detect GitHub vs GitLab from the origin remote:
-
-```bash
-git remote get-url origin
-```
-
-- Host contains `github.com` → **GitHub** (use `gh`).
-- Host contains `gitlab` → **GitLab** (use `glab`).
-- Ambiguous → fall back to whichever CLI is installed (`command -v gh` /
-  `command -v glab`). If the needed CLI is missing, **stop and report**.
-
-The body starts with the magic word line `Fixes <ID>` (one line per issue if
-the PR closes several), then a blank line, then `<summary>` — this is what
-lets the Linear integration track the PR/MR and auto-close the issue on merge.
-
-### GitHub
-
-```bash
-gh pr create --draft --title "<ID>: <title>" --body "Fixes <ID>
-
-<summary>"
-```
-
-### GitLab
-
-```bash
-glab mr create --draft --yes --title "<ID>: <title>" --description "Fixes <ID>
-
-<summary>"
-```
+Run `pr.create-draft` from the VCS adapter with the title `<ID>: <title>` and
+the body its `## Magic words` section prescribes — the line `Fixes <ID>` (one
+line per issue if the PR closes several), a blank line, then `<summary>`. That
+line is what lets the tracker integration track the PR/MR and auto-close the
+issue on merge.
 
 ## Report
 
@@ -130,3 +127,4 @@ early, report which one and why — the caller decides what to do next.
   delegates here once the user has set the issue In Progress.
 - `nerd4rent:issue-close` — the mirror chain at the other end of the issue:
   commit, push, merge, switch to base, set Done.
+- `nerd4rent:determine-platform` — records the platform this skill reads.

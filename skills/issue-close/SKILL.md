@@ -9,59 +9,56 @@ description: >-
   (the `model` frontmatter above) to keep it cheap. Invoked by
   issue-workflow's close-out, or directly when the user asks to
   close/merge/finish an issue ("domknij", "zamknij", "zmerguj i zamknij", "close
-  out", "merge and close"). The Linear command is in the CLI reference.
+  out", "merge and close"). Tracker and VCS commands come from the platform
+  adapters.
 ---
 
 # Linear issue close-out
 
 A deterministic, mechanical close-out. Every step is an explicit command — run
 them in order, stop and report on the first error. **Do not resolve merge
-conflicts, deviate from the merge commands below, or improvise** — those are
-out of scope; report and stop instead.
+conflicts, deviate from the merge commands, or improvise** — those are out of
+scope; report and stop instead.
 
-## CLI reference
+## Platform and adapters
 
-`linearis` is the Linear CLI (npm, JSON-only output). This skill issues
-exactly one write:
+Tracker and VCS commands live in two adapter files at the plugin root. Read
+both before Step 1, then run each operation by its ID from the adapter's
+`## Operations` table:
 
-```bash
-linearis issues update <ID> --status Done
+```
+${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
+${CLAUDE_PLUGIN_ROOT}/adapters/vcs/<vcs>.md
 ```
 
-`Done` is the team's own state **name**, not a state type; a wrong name fails
-loudly with `Status "X" for team ... not found`.
+If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
+directories up from this skill's base directory.
 
-There is no command mapping a branch back to an issue, so the ID is parsed from
-the branch name and every candidate is confirmed with a read before use:
+Pick `<tracker>` and `<vcs>` from the first source that has them:
 
-```bash
-linearis issues read <ID> --fields identifier
-```
+1. the platform the caller passed;
+2. the `## Platform` section of the repo `CLAUDE.md`;
+3. the entity page frontmatter `platform:` — a legacy `linear:` block there
+   means `tracker: linear`.
 
-It exits non-zero for an ID that does not exist, which is what makes the
-resolution below safe.
+- No tracker from any source → stop and report: "no platform configured —
+  run `/determine-platform`".
+- No VCS from any source → detect it from `git remote get-url origin` with
+  the `## Detection` rules of the VCS adapters.
+- No adapter file for the value → stop and report: "adapter
+  `trackers/<tracker>` (or `vcs/<vcs>`) is not available yet in this plugin
+  version".
+- An operation whose command is `—` → stop and report it, except
+  `pr.mark-ready`, which is then skipped (Step 3).
+
+The tracker adapter is used for one write (`issue.set-status`) and, when no
+ID was passed, `issue.resolve-from-branch`.
 
 ## Resolve the issue ID
 
-Use the ID passed by the caller. If none was passed, read it from the current
-branch:
-
-```bash
-for candidate in $(git branch --show-current | grep -oiE '[a-z]+-[0-9]+' | tr '[:lower:]' '[:upper:]'); do
-  linearis issues read "$candidate" --fields identifier >/dev/null 2>&1 && { echo "$candidate"; break; }
-done
-```
-
-Matching is case-insensitive because Linear's `branchName` is lowercase; the
-upper-casing is mandatory — `linearis` resolves `DEMO-123` but not `demo-123`.
-
-Every `letters-digits` fragment is a *candidate*, and the first one that
-actually resolves in Linear wins. Taking the leftmost match alone is not safe:
-a branch named `sprint-24-demo-456-fix` yields `SPRINT-24` before `DEMO-456`, and
-that wrong-but-plausible ID would flow into the Done write below and close
-somebody else's issue. Resolving each candidate also keeps older branches
-working — a `pawel/demo-123-tytul` branch from the previous CLI still lands on
-`DEMO-123`.
+Use the ID passed by the caller. If none was passed, run
+`issue.resolve-from-branch` — the tracker adapter's `## Issue ID` section
+explains why every candidate is confirmed before use.
 
 **If no candidate resolves, stop and ask the user for the ID** — never guess it.
 
@@ -96,57 +93,23 @@ If it fails because there is no upstream, set it:
 git push -u origin "$(git branch --show-current)"
 ```
 
-## Step 3 — Detect platform and merge
+## Step 3 — Merge
 
-Detect GitHub vs GitLab from the origin remote:
+From the VCS adapter, in this order:
 
-```bash
-git remote get-url origin
-```
-
-- Host contains `github.com` → **GitHub** (use `gh`).
-- Host contains `gitlab` → **GitLab** (use `glab`).
-- Ambiguous → fall back to whichever CLI is installed (`command -v gh` /
-  `command -v glab`). If the needed CLI is missing, **stop and report**.
-
-**Read the base branch BEFORE merging** (needed for Step 4) and merge:
-
-### GitHub
-
-```bash
-# base branch of the PR — capture for Step 4
-gh pr view --json baseRefName,isDraft
-```
-
-- If `isDraft` is `true` → mark it ready first: `gh pr ready`.
-- Merge with a **merge commit** — the only method this workflow uses (the
-  branch's atomic commits must survive the merge):
-
-  ```bash
-  gh pr merge --merge
-  ```
-
-### GitLab
-
-```bash
-# target (base) branch of the MR — capture for Step 4
-glab mr view
-```
-
-Pass no method-selection flags — the project's merge-method setting decides,
-and a **merge commit** is the expected configuration:
-
-```bash
-glab mr merge --yes
-```
+1. `pr.view-base` — **before merging**; capture the base branch for Step 4.
+2. `pr.mark-ready` — only when `pr.view-base` reports a draft (GitHub
+   `isDraft: true`); on GitLab the adapter lists no command and this step is
+   skipped.
+3. `pr.merge` — exactly as the adapter gives it: a **merge commit** is the
+   only method this workflow uses.
 
 If the merge fails (conflicts, protected branch, insufficient permissions),
 **stop and report the error** — do not attempt to resolve it.
 
 ## Step 4 — Switch to the base branch and sync
 
-Use the base/target branch captured in Step 3 (`baseRefName` on GitHub, the
-target branch on GitLab) — **do not assume `main`**:
+Use the base branch captured in Step 3 — **do not assume `main`**:
 
 ```bash
 git checkout <base> && git pull
@@ -154,13 +117,11 @@ git checkout <base> && git pull
 
 ## Step 5 — Set the Linear issue to Done
 
-```bash
-linearis issues update <ID> --status Done
-```
+Run `issue.set-status` from the tracker adapter with the state name for
+*Closed* from its `## Statuses` table (`Done` on Linear).
 
-This is idempotent and deterministic: it closes the issue on GitHub (independent
-of magic-word timing) and covers GitLab, where there is no Linear↔GitHub
-auto-close.
+This is idempotent and deterministic: it closes the issue independently of
+magic-word timing and covers hosts with no tracker auto-close.
 
 ## Report
 
@@ -174,3 +135,4 @@ which one and why.
   phase delegates here.
 - `nerd4rent:issue-start` — the mirror chain at the other end of the issue:
   branch, start commit, push, draft PR/MR.
+- `nerd4rent:determine-platform` — records the platform this skill reads.

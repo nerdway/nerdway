@@ -4,6 +4,7 @@ description: One context gatherer of the plan-context-fanout island. Reads a sin
 tools: Read, Grep, Glob, Bash, Skill
 model: sonnet
 skills: nerd4rent:nerdbrain-search
+readonly: true
 ---
 
 You are one gatherer of a planning fan-out. The calling workflow names the single source you read and the issue being planned. Read that source only; the other sources are gathered by other agents running beside you.

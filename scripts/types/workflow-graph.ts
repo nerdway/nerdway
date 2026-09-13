@@ -47,9 +47,16 @@ export interface Gate {
   description: string;
 }
 
+export interface Exemption {
+  node: string;
+  scope: string;
+  reason: string;
+}
+
 export interface FrozenRule {
   id: string;
   rule: string;
+  exemptions?: Exemption[];
 }
 
 export interface FailurePolicy {
@@ -316,6 +323,28 @@ function validateGates(
   }
 }
 
+function validateExemptions(ruleId: string, raw: unknown, byId: Map<string, GraphNode>, errors: string[]): void {
+  if (!Array.isArray(raw)) {
+    errors.push(`frozen rule ${ruleId}: exemptions must be an array of exemption entries`);
+    return;
+  }
+  for (const exemption of raw) {
+    if (!isRecord(exemption)) {
+      errors.push(`frozen rule ${ruleId}: each exemption must be an object with node, scope and reason`);
+      continue;
+    }
+    if (typeof exemption.node !== "string" || !byId.has(exemption.node)) {
+      errors.push(`frozen rule ${ruleId}: exemption names node ${String(exemption.node)}, which is not a node id`);
+    }
+    for (const field of ["scope", "reason"] as const) {
+      const value = exemption[field];
+      if (typeof value !== "string" || value.length === 0) {
+        errors.push(`frozen rule ${ruleId}: exemption for ${String(exemption.node)} must state a non-empty ${field}`);
+      }
+    }
+  }
+}
+
 function validateBudget(id: string, raw: unknown, errors: string[]): void {
   const maxWidth = (raw as { maxWidth?: unknown })?.maxWidth;
   if (typeof maxWidth !== "number" || !Number.isInteger(maxWidth) || maxWidth < 1 || maxWidth > MAX_WIDTH) {
@@ -472,6 +501,11 @@ export function validateContract(
 
   const cycle = findCycle(nodes, byId);
   if (cycle !== undefined) errors.push(cycle);
+
+  for (const rule of Array.isArray(c.frozenRules) ? (c.frozenRules as FrozenRule[]) : []) {
+    if (typeof rule !== "object" || rule === null || rule.exemptions === undefined) continue;
+    validateExemptions(rule.id, rule.exemptions, byId, errors);
+  }
 
   for (const ruleId of ruleIds) {
     if (!referencedRules.has(ruleId)) {

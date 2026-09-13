@@ -804,3 +804,43 @@ test("rule 16: accepts the modes the renderer implements", () => {
     assert.deepEqual(validateContract(contract(undefined, { schemas }), skillDirs), []);
   }
 });
+
+const exemption = { node: "write", scope: "the platform section of CLAUDE.md", reason: "configuration, not issue work" };
+
+function exemptedContract(exemptions: unknown) {
+  return contract([entryNode(), planNode({ gates: [denyGate] })], { frozenRules: [{ ...frozenRule, exemptions }] });
+}
+
+test("rule 23: accepts an exemption naming an existing node with scope and reason", () => {
+  assert.deepEqual(validateContract(exemptedContract([exemption]), skillDirs), []);
+});
+
+test("rule 23: rejects exemptions that are not an array", () => {
+  const errors = validateContract(exemptedContract(exemption), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /exemptions/);
+});
+
+test("rule 23: rejects an exemption naming no node", () => {
+  const errors = validateContract(exemptedContract([{ ...exemption, node: "ghost-node" }]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /ghost-node/);
+});
+
+test("rule 23: rejects an exemption with an empty scope", () => {
+  const errors = validateContract(exemptedContract([{ ...exemption, scope: "" }]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /scope/);
+});
+
+test("rule 23: rejects an exemption with no reason", () => {
+  const errors = validateContract(exemptedContract([{ node: "write", scope: "CLAUDE.md" }]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /reason/);
+});
+
+test("rule 23: rejects an exemption that is not an object instead of throwing", () => {
+  const errors = validateContract(exemptedContract(["write"]), skillDirs);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /exemption/);
+});

@@ -58,7 +58,7 @@ github:
 
 | Key | Values | Identifier block |
 |-----|--------|------------------|
-| `tracker` | `linear`, `github`, `gitlab`, `ado`, `none` | `linear: {team, project}` (project = UUID); GitHub/GitLab/ADO trackers reuse the VCS block of the same platform |
+| `tracker` | `linear`, `github`, `gitlab`, `ado`, `none` | `linear: {team, project}` (project = UUID); GitHub/GitLab/ADO trackers reuse the VCS block of the same platform; an ADO tracker's `ado.team`, `ado.board` and `ado.workItemType` are written by `bind-statuses` |
 | `vcs` | `github`, `gitlab`, `ado` | `github: {owner, repo}`, `gitlab: {group, project}`, `ado: {org, project}` |
 
 ## Step 1 — Read what is already recorded

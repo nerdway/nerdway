@@ -48,7 +48,7 @@
     },
     {
       "id": "jq",
-      "_comment": "the GitLab Issues tracker adapter filters `glab api` output with jq, because `glab api` has no --jq flag",
+      "_comment": "the GitLab Issues tracker adapter filters `glab api` output with jq, because `glab api` has no --jq flag; the Azure DevOps Boards tracker adapter builds JSON Patch bodies for `az devops invoke` and filters its output with jq",
       "minVersion": "1.6.0",
       "versionCommand": ["jq", "--version"],
       "versionRegex": "jq-(\\d+\\.\\d+(?:\\.\\d+)?)",
@@ -61,11 +61,11 @@
       "minVersion": "2.90.0",
       "versionCommand": ["az", "--version"],
       "versionRegex": "azure-cli\\s+(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-close", "issue-start"],
+      "requiredBy": ["issue-close", "issue-start", "issue-workflow", "issue-writer", "bind-statuses", "project-continue"],
       "manualInstall": "winget install Microsoft.AzureCLI | brew install azure-cli | see https://learn.microsoft.com/cli/azure/install-azure-cli",
       "auth": {
         "check": ["az", "extension", "show", "--name", "azure-devops"],
-        "instructions": "Run `az extension add --name azure-devops`, then `az login` (Microsoft Entra) or `az devops login` (personal access token)."
+        "instructions": "Run `az extension add --name azure-devops`, then `az login` (Microsoft Entra) or `az devops login` (personal access token). A personal access token needs Work Items (Read, write & manage), Code (Read & write) and Project and Team (Read); Azure DevOps Boards as a tracker needs team admin rights only to add board columns."
       }
     },
     {

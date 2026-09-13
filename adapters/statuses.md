@@ -57,6 +57,11 @@ The tracker's own state field.
 - **Read:** the issue's current state name.
 - **Write:** set the state to `map[<phase>]`.
 
+An adapter names the field it treats as the state. On Azure DevOps Boards it
+is the column of the team's board (the stock processes have too few states
+for five phases): the map holds column names, and a write sets the column
+together with the state that column maps.
+
 ## `label`
 
 One label per phase, plus the issue's open/closed flag.

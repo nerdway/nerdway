@@ -3,7 +3,7 @@ name: issue-start
 model: haiku
 description: >-
   Mechanically start work on a tracker issue (Linear, GitHub Issues, GitLab
-  Issues) already in
+  Issues, Azure DevOps Boards) already in
   the in-progress phase: read the issue's branch name, create the branch from a clean main/master
   checkout, make the empty start-of-work commit, push with upstream, and open a
   draft PR (GitHub, Azure DevOps) or MR (GitLab) carrying the `Fixes <ID>`
@@ -68,7 +68,7 @@ the issue (already safe for git).
 
 - `<ID>` — the issue identifier passed by the caller, in the form the tracker
   adapter's `## Issue ID` section gives (`DEMO-123` on Linear, `#123` on GitHub
-  Issues and GitLab Issues).
+  Issues, GitLab Issues and Azure DevOps Boards).
   If none was passed, stop and ask for it — never guess it.
 - `<summary>` — an optional one-paragraph summary for the PR/MR body, passed
   by the caller. When absent, use the issue title.

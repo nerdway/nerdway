@@ -40,6 +40,9 @@ confirmation-bypassing flags.
 - `gh label create` fails (exit 1) when the label already exists.
 - `gh issue list --label a --label b` means **a and b**; an OR over labels
   goes through `--search 'label:"a","b"'`.
+- `gh issue list` (with `--label` or `--search`) reads a search index that
+  trails a label write by a few seconds; `gh issue view` is immediate. Read
+  one issue's phase with `issue.read-status`, never by listing.
 - **`gh issue develop` does not fail when the branch already exists** — it
   exits 0 and checks the existing branch out. Its `--list` stops showing a
   linked branch once a PR is open from it, so it cannot tell whether a branch

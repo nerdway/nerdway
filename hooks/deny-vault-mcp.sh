@@ -12,16 +12,31 @@ try:
 except json.JSONDecodeError:
     data = {}
 
-blob = json.dumps(data, default=str).lower()
-tool = str(data.get("tool_name") or "").lower()
-server = str(data.get("mcp_server_name") or "").lower()
-url = str(data.get("url") or data.get("mcp_server_url") or "").lower()
+def field(*keys):
+    for key in keys:
+        value = data.get(key)
+        if isinstance(value, str) and value:
+            return value.lower()
+    return ""
+
+tool = field("tool_name")
+server = field("mcp_server_name")
+url = field("url", "mcp_server_url")
+command = field("command")
+inp = data.get("tool_input")
+if isinstance(inp, dict):
+    command = command or str(inp.get("command") or inp.get("url") or "").lower()
+elif isinstance(inp, str):
+    command = command or inp.lower()
+
+haystack = " ".join(part for part in (url, command) if part)
 
 blocked = (
     "obsidian" in server
     or "obsidian" in tool
-    or "127.0.0.1:27124" in blob
-    or "localhost:27124" in blob
+    or "127.0.0.1:27124" in haystack
+    or "localhost:27124" in haystack
+    or "[::1]:27124" in haystack
     or "27124" in url
 )
 

@@ -87,6 +87,7 @@ export interface AdapterAxis {
   config: string;
   sections: string[];
   operations: string[];
+  strategies?: string;
 }
 
 export interface GraphContract {
@@ -358,7 +359,7 @@ function validateExemptions(ruleId: string, raw: unknown, byId: Map<string, Grap
   }
 }
 
-function sectionBody(source: string, heading: string): string | undefined {
+export function sectionBody(source: string, heading: string): string | undefined {
   const lines = source.split("\n");
   const start = lines.findIndex((line) => line.trimEnd() === `## ${heading}`);
   if (start === -1) return undefined;
@@ -368,9 +369,52 @@ function sectionBody(source: string, heading: string): string | undefined {
 
 const TABLE_SEPARATOR = /^\|[\s:|-]+\|?$/;
 
-function operationIds(table: string): string[] {
+export function tableRows(table: string): string[][] {
   const rows = table.split("\n").filter((line) => line.startsWith("|") && !TABLE_SEPARATOR.test(line.trim()));
-  return rows.slice(1).map((row) => row.split("|")[1].trim().replace(/^`(.*)`$/, "$1"));
+  return rows.slice(1).map((row) => {
+    const cells = row.split("|").slice(1);
+    if (row.trimEnd().endsWith("|")) cells.pop();
+    return cells.map((cell) => cell.trim().replace(/^`(.*)`$/, "$1"));
+  });
+}
+
+function operationIds(table: string): string[] {
+  return tableRows(table).map((row) => row[0]);
+}
+
+export const UNSUPPORTED = "—";
+
+function enumAt(registry: Map<string, unknown>, path: unknown): string[] | undefined {
+  if (typeof path !== "string") return undefined;
+  const [schemaId, ...properties] = path.split(".");
+  let node: unknown = registry.get(schemaId);
+  for (const property of properties) {
+    node = isRecord(node) && isRecord(node.properties) ? node.properties[property] : undefined;
+  }
+  const values = isRecord(node) ? node.enum : undefined;
+  return isStringArray(values) ? values : undefined;
+}
+
+const STRATEGIES_SECTION = "Status strategies";
+
+function validateStrategyTable(where: string, table: string, strategies: string[], errors: string[]): void {
+  const rows = tableRows(table);
+  const listed = rows.map((row) => row[0]);
+  for (const strategy of strategies.filter((strategy) => !listed.includes(strategy))) {
+    errors.push(`${where}: strategy ${strategy} is missing from the Status strategies table`);
+  }
+  for (const strategy of duplicates(listed)) errors.push(`${where}: strategy ${strategy} is listed twice`);
+  for (const strategy of [...new Set(listed.filter((strategy) => !strategies.includes(strategy)))]) {
+    errors.push(`${where}: strategy ${strategy} is not a value of the statuses strategy enum`);
+  }
+  for (const [strategy, read, write] of rows) {
+    if ((read === UNSUPPORTED) !== (write === UNSUPPORTED)) {
+      errors.push(`${where}: strategy ${strategy} needs both a read and a write recipe, or ${UNSUPPORTED} in both`);
+    }
+  }
+  if (!rows.some(([, read, write]) => read !== UNSUPPORTED && write !== UNSUPPORTED)) {
+    errors.push(`${where}: supports no strategy — at least one Status strategies row needs a read and a write recipe`);
+  }
 }
 
 function duplicates(values: string[]): string[] {
@@ -385,15 +429,14 @@ function validateAdapters(raw: unknown, registry: Map<string, unknown>, files: A
   }
 
   const enums = new Map<string, string[]>();
+  const strategyEnums = new Map<string, string[]>();
   for (const [axis, spec] of Object.entries(raw)) {
     if (!isRecord(spec)) {
       errors.push(`adapters.${axis}: must be an object with config, sections and operations`);
       continue;
     }
-    const [schemaId, property] = typeof spec.config === "string" ? spec.config.split(".") : [];
-    const schema = registry.get(schemaId);
-    const values = isRecord(schema) && isRecord(schema.properties) ? (schema.properties[property] as JsonSchema | undefined)?.enum : undefined;
-    if (!isStringArray(values)) {
+    const values = enumAt(registry, spec.config);
+    if (values === undefined) {
       errors.push(`adapters.${axis}: config ${String(spec.config)} names no enum property of a registry schema`);
     } else {
       enums.set(axis, values);
@@ -405,6 +448,17 @@ function validateAdapters(raw: unknown, registry: Map<string, unknown>, files: A
       errors.push(`adapters.${axis}: operations must be a non-empty array of operation ids`);
     } else {
       for (const id of duplicates(spec.operations)) errors.push(`adapters.${axis}: operation ${id} is declared twice`);
+    }
+    if (spec.strategies !== undefined) {
+      const strategies = enumAt(registry, spec.strategies);
+      if (strategies === undefined) {
+        errors.push(`adapters.${axis}: strategies ${String(spec.strategies)} names no enum property of a registry schema`);
+      } else {
+        strategyEnums.set(axis, strategies);
+      }
+      if (!isStringArray(spec.sections) || !spec.sections.includes(STRATEGIES_SECTION)) {
+        errors.push(`adapters.${axis}: an axis declaring strategies must require the ${STRATEGIES_SECTION} section`);
+      }
     }
   }
 
@@ -423,6 +477,11 @@ function validateAdapters(raw: unknown, registry: Map<string, unknown>, files: A
       if (sectionBody(file.source, section) === undefined) {
         errors.push(`${where}: missing required section ## ${section}`);
       }
+    }
+    const strategies = strategyEnums.get(file.axis);
+    const strategyTable = sectionBody(file.source, STRATEGIES_SECTION);
+    if (strategies !== undefined && strategyTable !== undefined) {
+      validateStrategyTable(where, strategyTable, strategies, errors);
     }
     const table = sectionBody(file.source, "Operations");
     if (table === undefined) continue;

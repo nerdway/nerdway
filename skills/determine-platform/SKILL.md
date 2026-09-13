@@ -150,7 +150,9 @@ platform from this output, not from its own copy of `CLAUDE.md`.
 
 ## Boundaries
 
-- The only repo change is the `## Platform` section.
+- The only repo change is the `## Platform` section. Never commit or push
+  it: the skill may run on `main` or on another issue's branch, so the change
+  stays in the working tree for the user or the calling skill to commit.
 - Vault access is filesystem-only — no Obsidian or Linear MCP, no Local REST
   API, no git against the vault.
 - Never create tracker projects, repos or teams here; that is

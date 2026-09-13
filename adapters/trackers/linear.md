@@ -60,9 +60,9 @@ candidate resolves, stop and ask the user for the ID — never guess it.
 | `issue.read-status` | the read recipe of the resolved strategy in `## Status strategies` | the issue's canonical phase; cheap enough to run every turn |
 | `issue.read-branch` | `linearis issues read <ID> --fields identifier,title,branchName,state.name,url` | `branchName` is already safe for git |
 | `issue.resolve-from-branch` | the loop below | prints the first candidate that resolves, nothing when none does |
-| `issue.list-active` | `linearis issues list --team <KEY> --project <PROJECT> --status 'Todo,In Progress,In Review' --fields nodes.identifier,nodes.title,nodes.state.name` | the project's active board |
-| `issue.create` | `linearis issues create "<title>" --team <KEY> --project "<PROJECT>" --status Backlog --description "$(cat body.md)"` | pass the state explicitly so the team default cannot override it; the JSON carries `.identifier`, no URL |
-| `issue.create-child` | `linearis issues create "<title>" --team <KEY> --project "<PROJECT>" --parent-ticket <PARENT-ID> --status Backlog --description "$(cat body.md)"` | create the parent first and read its `.identifier` |
+| `issue.list-active` | `linearis issues list --team <KEY> --project <PROJECT> --status '<active states>' --fields nodes.identifier,nodes.title,nodes.state.name` | the project's active board; under `native` `<active states>` is `<map.todo>,<map.in-progress>,<map.in-review>`; under `comment` drop `--status` and keep the issues whose phase (`issue.read-status`) is one of those three |
+| `issue.create` | `linearis issues create "<title>" --team <KEY> --project "<PROJECT>" --status '<backlog state>' --description "$(cat body.md)"` | `<backlog state>` is `map.backlog` under `native`, else `Backlog`; pass the state explicitly so the team default cannot override it; the JSON carries `.identifier`, no URL |
+| `issue.create-child` | `linearis issues create "<title>" --team <KEY> --project "<PROJECT>" --parent-ticket <PARENT-ID> --status '<backlog state>' --description "$(cat body.md)"` | `<backlog state>` as for `issue.create`; create the parent first and read its `.identifier` |
 | `issue.update-description` | `linearis issues update <ID> --description "$(cat body.md)"` | replaces the whole description |
 | `issue.set-status` | the write recipe of the resolved strategy in `## Status strategies` | writes a canonical phase; never `in-progress` on the agent's own initiative |
 | `issue.comment` | `linearis issues discuss <ID> --body "$(cat body.md)"` | markdown body |

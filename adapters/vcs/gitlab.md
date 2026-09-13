@@ -31,6 +31,9 @@ Used only when no platform config exists: read `git remote get-url origin`.
 | `repo.view` | `—` | project bootstrap supports GitHub only |
 | `repo.create` | `—` | project bootstrap supports GitHub only |
 | `pr.create-draft` | `glab mr create --draft --yes --title "<ID>: <title>" --description "<body>"` | body per `## Magic words` |
+| `pr.view` | `glab mr view` | the MR's title and description; read-only |
+| `pr.diff` | `glab mr diff` | the MR's diff; read-only |
+| `pr.list-merged` | `glab mr list --merged --per-page 5` | the last merged MRs; read-only |
 | `pr.view-base` | `glab mr view` | read **before** merging: the target branch is the branch to switch to afterwards |
 | `pr.mark-ready` | `—` | the close-out runs no ready step on GitLab |
 | `pr.merge` | `glab mr merge --yes` | pass no method-selection flags — the project's merge-method setting decides, and a **merge commit** is the expected configuration |

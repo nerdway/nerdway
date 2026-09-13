@@ -149,7 +149,49 @@
           "statuses": {
             "type": "object",
             "title": "Statuses",
-            "description": "Reserved for binding workflow phases to the tracker's own state names. Not written yet: until status binding exists, state names live in the tracker adapter."
+            "description": "How the tracker shows the five canonical phases, written by `bind-statuses`. Optional: absent, the tracker adapter's `## Statuses` default applies.",
+            "properties": {
+              "strategy": {
+                "type": "string",
+                "title": "Strategy",
+                "description": "Where a phase lives on the tracker: its own state field, a label plus open/closed, or a `Status: <value>` marker comment. Each tracker adapter lists its recipe per strategy in `## Status strategies`.",
+                "enum": ["native", "label", "comment"]
+              },
+              "map": {
+                "type": "object",
+                "title": "Status map",
+                "description": "Phase → value: state names for `native`, label names or the reserved `open`/`closed` for `label`, marker values for `comment`. No value is mapped twice.",
+                "properties": {
+                  "backlog": {
+                    "type": "string",
+                    "title": "Backlog",
+                    "description": "A filed issue nobody has planned yet."
+                  },
+                  "todo": {
+                    "type": "string",
+                    "title": "Todo",
+                    "description": "The implementation plan is posted and waits for the human."
+                  },
+                  "in-progress": {
+                    "type": "string",
+                    "title": "In progress",
+                    "description": "The human approved the plan; only the human writes this phase."
+                  },
+                  "in-review": {
+                    "type": "string",
+                    "title": "In review",
+                    "description": "The change is up for code review."
+                  },
+                  "done": {
+                    "type": "string",
+                    "title": "Done",
+                    "description": "The work is merged or the human closed the issue."
+                  }
+                },
+                "required": ["backlog", "todo", "in-progress", "in-review", "done"]
+              }
+            },
+            "required": ["strategy", "map"]
           }
         },
         "required": ["tracker", "vcs"]

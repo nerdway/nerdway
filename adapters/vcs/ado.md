@@ -40,6 +40,9 @@ Used only when no platform config exists: read `git remote get-url origin`.
 | `repo.view` | `—` | project bootstrap supports GitHub only |
 | `repo.create` | `—` | project bootstrap supports GitHub only |
 | `pr.create-draft` | `az repos pr create --draft true --source-branch <branch> --title "<ID>: <title>" --description <line> <line> … -o json` | pass the body per `## Magic words` as **one argument per line** — `--description` joins its values with newlines |
+| `pr.view` | `az repos pr list --source-branch <branch> --status active --query "[0].{title:title,description:description,base:targetRefName}" -o json` | the PR's stated intent; read-only |
+| `pr.diff` | `—` | `az` has no PR diff; read the change with `git diff` over the range instead |
+| `pr.list-merged` | `az repos pr list --status completed --top 5 --query "[].{id:pullRequestId,title:title,source:sourceRefName}" -o json` | the last merged PRs; read-only |
 | `pr.view-base` | `az repos pr list --source-branch <branch> --status active --query "[0].{id:pullRequestId,base:targetRefName,isDraft:isDraft}" -o json` | read **before** merging: `base` without its `refs/heads/` prefix is the branch to switch to afterwards; `id` feeds `pr.mark-ready` and `pr.merge` |
 | `pr.mark-ready` | `az repos pr update --id <id> --draft false -o none` | only when `isDraft` is `true` — Azure DevOps refuses to complete a draft |
 | `pr.merge` | `az repos pr update --id <id> --status completed --squash false -o none` | a **merge commit** is the only method this workflow uses. A branch policy (required reviewers, build) that blocks completion → stop and report it; never bypass it |

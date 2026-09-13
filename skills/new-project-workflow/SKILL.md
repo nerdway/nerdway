@@ -17,6 +17,21 @@ The skill must be safe to re-run on a partially-set-up project. Before *any* ste
 
 This applies to git init, README, GitHub repo, Linear project, and the nerdbrain entity page.
 
+## Platform and adapters
+
+This skill bootstraps a **Linear + GitHub** project — the only combination it
+supports. Tracker and VCS commands live in adapter files at the plugin root,
+never in this skill; run each operation by its ID from the adapter's
+`## Operations` table:
+
+```
+${CLAUDE_PLUGIN_ROOT}/adapters/trackers/linear.md
+${CLAUDE_PLUGIN_ROOT}/adapters/vcs/github.md
+```
+
+If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
+directories up from this skill's base directory.
+
 ## Inputs
 
 The skill accepts an argument string with the following forms (all optional):
@@ -45,9 +60,9 @@ Run these checks in one tool batch. Their results feed into the plan and the ski
 | Does git have commits? | `git -C <dir> rev-list -n 1 HEAD` | Skip initial commit if yes |
 | Current branch? | `git -C <dir> symbolic-ref --short HEAD` | Rename to `main` if different |
 | README present? | `ls README.md` | Skip scaffold if yes |
-| Remote configured? | `git -C <dir> remote get-url origin` | Skip `gh repo create` if yes |
-| `gh` authenticated? | `gh auth status` | Flag if not |
-| GitHub repo exists? | `gh repo view <name>` | Skip `gh repo create` if yes; surface URL |
+| Remote configured? | `git -C <dir> remote get-url origin` | Skip repo creation if yes |
+| GitHub CLI authenticated? | `auth.check` (VCS adapter) | Flag if not |
+| GitHub repo exists? | `repo.view` (VCS adapter) | Skip repo creation if yes; surface URL |
 | Nerdbrain reachable? | `obsidian` CLI present + vault at `~/obsidian/nerdbrain` | Decide whether to include wiki step |
 
 The Linear-project existence check is deferred to **Step 2** because it requires the team selection to disambiguate.
@@ -82,11 +97,11 @@ If they pick option 2, take the new name and use it everywhere downstream. Do **
 Ask for whatever is still undecided after parsing flags:
 
 1. **Repo visibility** — only if neither `--public` nor `--private` was supplied. Default: `public`.
-2. **Linear team** — always ask. Run `linearis teams list`; user picks one. Why ask: teams vary across users; silent defaults land projects in the wrong workspace.
+2. **Linear team** — always ask. Run `team.list` (tracker adapter); user picks one. Why ask: teams vary across users; silent defaults land projects in the wrong workspace.
 
-After the team is chosen, run the **Linear project existence check**: `linearis projects list --fields nodes.id,nodes.name,nodes.url,nodes.teams.nodes.key` (there is no `--team` filter — match `name` **and** the team key in `teams.nodes[].key` client-side). If found, capture its `id` (UUID) and `url` — this turns Linear's plan-step into a skip.
+After the team is chosen, run the **Linear project existence check**: `project.list` (tracker adapter) — match `name` **and** the chosen team key client-side, as the adapter describes. If found, capture its `id` (UUID) and `url` — this turns Linear's plan-step into a skip.
 
-If `linearis` is missing from PATH or `linearis teams list --limit 1` exits non-zero (note: `linearis auth status` exits 0 even unauthenticated, so a real API call is the check), skip Linear creation entirely and note in the plan: `Linear step skipped — linearis CLI unavailable or not authenticated`.
+If the Linear CLI is missing from PATH or the tracker adapter's `auth.check` exits non-zero, skip Linear creation entirely and note in the plan: `Linear step skipped — Linear CLI unavailable or not authenticated`.
 
 ## Step 3 — Present the plan, get single approval
 
@@ -103,9 +118,8 @@ Plan for new project: <name>
   1. git init + branch main          [run] | [skip — already a repo on main]
   2. Create README.md                 [run] | [skip — exists, keeping]
   3. Initial commit                   [run] | [skip — repo has commits]
-  4. gh repo create <name> --<vis> \
-       --source=. --remote=origin \
-       --push                         [run] | [skip — exists: <url>]
+  4. GitHub repo <name> --<vis>, \
+       remote origin, push            [run] | [skip — exists: <url>]
   5. Linear project '<name>' in <team>
                                       [run] | [skip — exists: <uuid>]
   6. Nerdbrain wiki entity page      [run] | [skip — disabled]
@@ -160,29 +174,23 @@ git add -A && git commit -m "chore: initial commit"
 
 Skip if the repo already has commits.
 
-### 4.4 — gh repo create
+### 4.4 — GitHub repo
 
-```
-gh repo create <name> --public|--private --source=. --remote=origin --push
-```
+Run `repo.create` from the VCS adapter with the project name and the chosen
+visibility (it creates the repo, wires `origin` and pushes).
 
 Failure paths:
-- gh not installed → stop with: "Install `gh` (https://cli.github.com) and re-run." Earlier steps remain.
-- gh not authenticated → stop with: "Run `gh auth login` and re-run."
+- GitHub CLI not installed → stop with: "Install `gh` (https://cli.github.com) and re-run." Earlier steps remain.
+- GitHub CLI not authenticated → stop with the adapter's `auth.check` message.
 - Repo already exists on GitHub but no local remote → don't recreate; instead `git remote add origin <existing-url>` and `git push -u origin main`. Surface the existing URL.
 
 Never use `--force` or `--confirm`-bypassing flags.
 
 ### 4.5 — Linear project
 
-Create the project — the response JSON already carries everything needed:
-
-```bash
-linearis projects create "<name>" --team <team> --description "<one-line description>" \
-  --fields id,name,url
-```
-
-Take `.id` (UUID) and `.url` straight from the output. Step 4.6 needs that
+Create the project with `project.create` from the tracker adapter — the
+response JSON already carries everything needed: take `.id` (UUID) and `.url`
+straight from the output. Step 4.6 needs that
 UUID for the entity-page frontmatter; surface the `url` to the user. If the
 existence check in Step 2 already found a matching project, skip creation and
 reuse the UUID it captured.
@@ -194,12 +202,15 @@ Only run if inspection confirmed nerdbrain is reachable. Create `~/obsidian/nerd
 - `slug: <name>`
 - `remote: <github-url>`
 - `local-paths: [{host: <hostname>, path: <absolute-path>}]`
-- `linear: { team: <team>, project: <uuid-from-step-4.5> }` — both fields are
-  REQUIRED; prefill directly from step 4.5 (the project was just created or
-  found there, so the UUID is known). If step 4.5 was skipped (no working
-  `linearis` CLI), omit the `linear:` block — Linear was not checked, and
-  `linear: none` means a confirmed "no Linear counterpart exists"; backfill
-  in a later session with the CLI available.
+- `platform:` — the project's platform config, the same YAML object
+  `nerd4rent:determine-platform` writes:
+  `{tracker: linear, vcs: github, linear: {team: <team>, project: <uuid-from-step-4.5>}, github: {owner: <owner>, repo: <name>}}`.
+  Both Linear fields are REQUIRED; prefill them directly from step 4.5 (the
+  project was just created or found there, so the UUID is known). If step 4.5
+  was skipped (no working Linear CLI), omit the `platform:` block — the
+  tracker was not checked, and `tracker: none` means a confirmed "no tracker";
+  backfill in a later session with `/determine-platform`. Never write the
+  legacy `linear:` key.
 - `created` / `updated`: today
 
 Then append a one-liner to `5-wiki/index.md` under `## Projekty` and a log entry to `5-wiki/log.md`. Use the `obsidian-cli` skill for all vault writes.
@@ -256,11 +267,11 @@ A hardcoded list rots within weeks: skills get renamed, new ones appear, the use
 |-----------|----------|
 | Target directory doesn't exist | Ask whether to create it. Don't silently `mkdir`. |
 | Basename looks like a placeholder | Ask once for a name override; use the override everywhere remote-facing. |
-| `gh` not installed | Stop before step 4.4 with: "Install `gh` (https://cli.github.com) and re-run." Earlier steps remain. |
-| `gh` not authenticated | Stop before step 4.4 with: "Run `gh auth login` and re-run." |
-| Repo already has remote `origin` | Skip `gh repo create`; use existing remote. |
+| GitHub CLI not installed | Stop before step 4.4 with: "Install `gh` (https://cli.github.com) and re-run." Earlier steps remain. |
+| GitHub CLI not authenticated | Stop before step 4.4 with the adapter's `auth.check` message. |
+| Repo already has remote `origin` | Skip repo creation; use existing remote. |
 | GitHub repo with same name exists, no local remote | Wire the existing remote with `git remote add origin <url>` and push. No duplicate created. |
-| `linearis` CLI missing or not authenticated | Skip Linear creation; continue. |
+| Linear CLI missing or not authenticated | Skip Linear creation; continue. |
 | Linear project with same name already exists in team | Surface existing UUID; do not create duplicate. |
 | Nerdbrain vault not reachable | Silently skip step 4.6. This is normal for users without nerdbrain. |
 | User aborts at approval gate | Print "Cancelled. No changes made." Step 1 is read-only. |
@@ -272,14 +283,14 @@ A hardcoded list rots within weeks: skills get renamed, new ones appear, the use
 
 ```
 User: /nerd4rent:new-project-workflow ~/src/my-side-project --public
-Claude: [inspects: empty dir, gh authed, nerdbrain reachable]
+Claude: [inspects: empty dir, GitHub CLI authed, nerdbrain reachable]
         Linear teams:
           1. nerd4rent
           2. open-source
         Team [1]: 1
         [Linear existence check: no match]
         [shows plan with all steps [run]; user hits Y]
-        [executes: git init, README "My Side Project", commit, gh, linear, wiki]
+        [executes: git init, README "My Side Project", commit, GitHub, Linear, wiki]
         [shows spec skill menu]
         Pick [1-N]: 1
         [runs the inline grilling interview itself]
@@ -298,7 +309,7 @@ Claude: [inspects: git repo on main with commits, README exists,
           1. git init   [skip — already a repo on main]
           2. README     [skip — exists, keeping]
           3. commit     [skip — repo has commits]
-          4. gh repo    [skip — exists: github.com/user/mything; will wire remote + push]
+          4. GitHub     [skip — exists: github.com/user/mything; will wire remote + push]
           5. linear     [skip — exists: uuid b705df47-ca9b-…]
           6. nerdbrain  [run]
           7. spec menu
@@ -325,5 +336,5 @@ Claude: The directory name 'scratch-1747569600' looks like a placeholder.
 - **English-only in committed files** (README scaffold, commit messages) — tokenization efficiency, matches the user's global guidance for entity pages.
 - **Initial commit message**: `chore: initial commit`. Don't editorialize.
 - **Default branch**: `main`. Run `git branch -M main` after `git init` to make this explicit.
-- **Never `--force` anything.** No `gh repo create --force`, no `git push --force`. This skill must be safe to re-run.
+- **Never `--force` anything.** No forced repo creation, no `git push --force`. This skill must be safe to re-run.
 - **Title-case README headings** as defined in 4.2, never the raw slug.

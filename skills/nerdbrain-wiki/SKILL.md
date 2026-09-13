@@ -192,14 +192,24 @@ what you know with confidence; leave sections empty rather than guessing.
 Initialize `local-paths` with the current `host:$PWD` pair. Set `slug:` and
 `remote:` from the hook-injected values.
 
-**`linear.team` and `linear.project` are REQUIRED.** Establish both before
-writing the page — never save a page with empty or placeholder values:
-- If unknown, resolve with the `linearis` CLI: `linearis teams list` for the
-  team key, `linearis projects list --fields nodes.id,nodes.name,nodes.teams.nodes.key`
-  for the project **UUID** (the `id` field of the entry matching the project
-  name and team key; use the UUID, not the name — stable across renames).
-- If the project has no Linear counterpart, set the scalar `linear: none`
-  (explicit "checked, none exists" — not an omission).
+**`platform:` is REQUIRED.** It holds the project's platform config — the
+same YAML object as the `## Platform` section of the repo `CLAUDE.md`
+(`tracker`, `vcs`, and the identifier block of each platform in use; schema
+`PlatformConfig` in `workflow-graph.json`). Establish it before writing the
+page — never save a page with empty or placeholder values:
+- If unknown, invoke `nerd4rent:determine-platform`; it reads the repo, infers
+  or asks, and returns the object to copy. For a Linear tracker both
+  `linear.team` (key) and `linear.project` (**UUID**, not the name — stable
+  across renames) must be filled.
+- If the project has no tracker, set `tracker: none` (explicit "checked, none
+  exists" — not an omission).
+
+**Legacy `linear:` alias.** Older pages carry `linear: {team, project}` (or
+`linear: none`) instead of `platform:`. Read it as `tracker: linear` with
+those identifiers (`linear: none` = no tracker recorded) and the VCS inferred
+from `remote:`; such pages keep working without edits. Never write `linear:`
+on a new page; `determine-platform` replaces it with `platform:` when it
+mirrors the config.
 
 Then run the index + log maintenance steps above.
 

@@ -21,11 +21,22 @@ Bootstraps a new project end-to-end in a single approval:
 
 Trigger phrases: *"new project workflow"*, *"bootstrap project"*, *"start a new project the nerd4rent way"*, or `/nerd4rent:new-project-workflow`.
 
+### `nerd4rent:determine-platform`
+
+Establishes which **tracker** holds the project's issues (Linear, GitHub Issues, GitLab Issues, Azure DevOps Boards, or none) and which **VCS host** holds its code (GitHub, GitLab, Azure DevOps), and records it — see [Platform config and adapters](#platform-config-and-adapters):
+
+1. Reads what is already recorded: the `## Platform` section of the repo `CLAUDE.md`, then `platform:` on the nerdbrain entity page, then a legacy `linear:` block there.
+2. Otherwise infers: the origin remote host names the VCS; an authenticated Linear CLI plus exactly one Linear project named like the repo names the tracker — then it writes without asking.
+3. When the answer is ambiguous, asks **one** question: a numbered list of the six tracker + host combinations with a recommendation.
+4. Writes the result to both places — replacing only the `## Platform` section of `CLAUDE.md` (a second run leaves no diff), and `platform:` on the entity page in place of the legacy `linear:` — and returns it to the conversation.
+
+Writing that section is allowed at any issue status: it is the one exemption from the "no repo change before In Progress" rule. Trigger: `/determine-platform`, a core skill reporting that no platform is configured, or *"which tracker does this project use"*.
+
 ### `nerd4rent:issue-writer`
 
 Creates a **new** Linear issue for the current repo with goals specified clearly enough that the planning agent can build an implementation plan straight from it. Upstream of `issue-workflow`:
 
-1. Resolves the target team/project (nerdbrain entity-page → git remote → ask), and confirms.
+1. Resolves the platform (`## Platform` in `CLAUDE.md` → entity page → **delegates to `determine-platform`** when none is configured), then the target team/project, and confirms.
 2. Adaptively interviews for missing goals — straight to a draft for small clear tasks, a short one-question-at-a-time interview for vague or multi-part work.
 3. Drafts the issue from an adaptive template (full vs minimal) and gates the Linear write on your approval.
 4. Decomposes the work: a checklist in the body by default, or **real Linear sub-issues** (parent + children via `--parent-ticket`) when the topic plainly splits into stages — and you can force or decline the split.
@@ -109,11 +120,41 @@ Limits on how much to read (max related pages, snippet caps) stay with the calli
 
 Brings this machine to the CLI state the skills in this repo require:
 
-1. Probes every entry declared in `cli-dependencies.json` (currently `node`, `linearis`, `gh`, `rg`, `git`).
+1. Probes every entry declared in `cli-dependencies.json` (currently `node`, `linearis`, `gh`, `glab`, `rg`, `git`). A missing `glab` only matters on GitLab-hosted repos.
 2. Installs or updates whatever is missing or outdated — download with checksum verification, or `npm install --global` for entries declaring the `npm` method.
 3. Hands back the authentication steps only a human can complete — it never runs `auth login` flows itself.
 
 Trigger: `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a skill fails because a command like `linearis`, `gh`, or `rg` is missing or too old.
+
+## Platform config and adapters
+
+Every skill that talks to a tracker or a VCS host reads the project's **platform config** first — one YAML object kept as a `## Platform` section in the repo's committed `CLAUDE.md` (so it travels with the repo into every worktree) and mirrored as `platform:` on the nerdbrain entity page:
+
+````markdown
+## Platform
+
+```yaml
+tracker: linear
+vcs: github
+linear:
+  team: DEMO
+  project: <project-uuid>
+github:
+  owner: nerd4rent
+  repo: nerd4rent-claude-plugin
+```
+````
+
+`tracker` is one of `linear`, `github`, `gitlab`, `ado`, `none`; `vcs` one of `github`, `gitlab`, `ado`. The shape is the `PlatformConfig` schema in `workflow-graph.json`. `determine-platform` writes it; an entity page with only the older `linear: {team, project}` block keeps working as an alias.
+
+The commands themselves live in **adapter files**, one per platform per axis:
+
+| Axis | Adapter files | Required sections |
+|---|---|---|
+| tracker | `adapters/trackers/linear.md` | `CLI`, `Issue ID`, `Operations`, `URL`, `Statuses` |
+| VCS host | `adapters/vcs/github.md`, `adapters/vcs/gitlab.md` | `CLI`, `Detection`, `Operations`, `Magic words`, `URL` |
+
+Skills never quote a command: they name an **operation ID** (`issue.set-status`, `pr.merge`, …) and look it up in the adapter's `## Operations` table, read through `${CLAUDE_PLUGIN_ROOT}`. The `adapters` block of `workflow-graph.json` declares each axis's sections and operation IDs, and `node scripts/validate-workflow-graph.ts` rejects an adapter that misses one, repeats one, lists an undeclared one, or is named outside the config enum. A configured platform with no adapter file yet makes the skill stop with "adapter not available yet" — it never falls back to Linear. See [ADR-0005](docs/adr/0005-platform-adapters-as-reference-files.md).
 
 ## Plugin agents
 
@@ -169,7 +210,10 @@ enforces: a `decision` gate is the human's call (`tracker-status` or
 `settings-deny`). The **`frozenRules`** registry makes the invariants
 first-class: a gate's `rule` field points into it, a deny gate exists only to
 enforce one, and a rule no gate points to is rejected — so a dangerous
-transition is unreachable, not merely "usually asked about". Human gates sit
+transition is unreachable, not merely "usually asked about". A rule's rare
+legitimate exception is data too: `exemptions` names the node, the narrow scope
+and the reason (today only `platform-determine` writing the `## Platform`
+section of `CLAUDE.md`). Human gates sit
 on the boundaries between workflows, never inside them.
 
 Every registry entry carries its **schema body** — the JSON Schema the payload on
@@ -261,7 +305,8 @@ gate, and a separate node would only duplicate that gate.
 
 | Node | Skill | Phase | Runtime | Edge in → out |
 |---|---|---|---|---|
-| `issue-write` | `issue-writer` | write | conversational | — → `IssueSpec` |
+| `platform-determine` | `determine-platform` | write | conversational | — → `PlatformConfig` |
+| `issue-write` | `issue-writer` | write | conversational | `PlatformConfig` → `IssueSpec` |
 | `wiki-recall` | `nerdbrain-search` | plan | **workflow** | `IssueSpec` → `ProjectContext` |
 | `plan-context-fanout` | `issue-workflow` | plan | **workflow** | `IssueSpec` → `PlanContext` |
 | `plan-draft` | `issue-workflow` | plan | conversational | `PlanContext`, `ProjectContext` → `ImplementationPlan` |
@@ -315,6 +360,7 @@ Cursor reads global skills from `~/.agents/skills/` (and `~/.cursor/skills/`); t
 
 - `git`
 - `gh` (GitHub CLI), authenticated (`gh auth status`)
+- `glab` (GitLab CLI), authenticated (`glab auth status`) — only for GitLab-hosted repos
 - Node.js ≥ 22 (with npm)
 - `linearis` CLI (`npm i -g linearis`), authenticated with a personal API key from Linear Settings → API (`LINEAR_API_TOKEN` or `linearis auth login`); the Linear skills degrade gracefully if absent
 

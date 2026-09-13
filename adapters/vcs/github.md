@@ -14,8 +14,11 @@ Used only when no platform config exists: read `git remote get-url origin`.
 
 - Host contains `github.com` → GitHub.
 - Host contains `gitlab` → GitLab (`adapters/vcs/gitlab.md`).
+- Host `dev.azure.com`, `ssh.dev.azure.com`, `*.visualstudio.com` or
+  `vs-ssh.visualstudio.com` → Azure DevOps (`adapters/vcs/ado.md`).
 - Ambiguous → fall back to whichever CLI is installed (`command -v gh` /
-  `command -v glab`). If the needed CLI is missing, stop and report.
+  `command -v glab` / `command -v az`). If the needed CLI is missing, stop and
+  report.
 
 ## Operations
 

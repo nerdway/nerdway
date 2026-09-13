@@ -4,6 +4,8 @@
 
 *Amended by ADR-0006 (DEMO-303): tracker adapters gain a required `## Status strategies` section (rule 25) and the operations `status.list`, `label.list`, `label.create`; `issue.read-status` and `issue.set-status` now read and write a canonical phase through the configured status strategy, and `## Statuses` declares the adapter's default strategy and map.*
 
+*Amended by DEMO-304: branch creation becomes the tracker operation `issue.create-branch`. On Linear it stays `git checkout -b <branchName>`; GitHub Issues creates the branch with `gh issue develop`, which also links it to the issue in the GitHub UI. A plain git command in `issue-start` would have been a platform command quoted in a skill, and a per-adapter note would have left the skill to improvise.*
+
 Every core skill used to carry its Linear, GitHub and GitLab commands inline,
 so supporting another tracker (GitHub Issues, GitLab Issues, Azure DevOps
 Boards) or another VCS host (Azure DevOps Repos) would mean editing every

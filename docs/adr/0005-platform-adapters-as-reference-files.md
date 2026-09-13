@@ -2,6 +2,8 @@
 
 *Amended by DEMO-318: the workflow islands (`workflows/*.js`) and their agents (`agents/*.md`) name operation IDs too. A script cannot read files (ADR-0003) and a subagent's `${CLAUDE_PLUGIN_ROOT}` is unverified, so the calling skill resolves the adapter paths and passes them as `args.platform.adapters`; a `null` path becomes a `gaps` entry, never another platform's command. The adapter contract gains the read operations the islands need: `issue.read-relations`, `pr.view`, `pr.diff`, `pr.list-merged`.*
 
+*Amended by ADR-0006 (DEMO-303): tracker adapters gain a required `## Status strategies` section (rule 25) and the operations `status.list`, `label.list`, `label.create`; `issue.read-status` and `issue.set-status` now read and write a canonical phase through the configured status strategy, and `## Statuses` declares the adapter's default strategy and map.*
+
 Every core skill used to carry its Linear, GitHub and GitLab commands inline,
 so supporting another tracker (GitHub Issues, GitLab Issues, Azure DevOps
 Boards) or another VCS host (Azure DevOps Repos) would mean editing every

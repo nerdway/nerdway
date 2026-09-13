@@ -1,5 +1,7 @@
 # Canonical phases and status strategies
 
+*Amended by DEMO-306: on Azure DevOps Boards `native` binds the phases to the columns of the team's board, not to work item states. The stock processes have three or four states (Basic, Agile, Scrum) and a map may not name a value twice, while a team admin can add board columns without changing the process; each column maps to a state, so a column write sets both. No fourth `column` strategy was added — it would have changed the contract and every adapter for one tracker, and the phase still lives in the tracker's own field for that board.*
+
 The issue lifecycle used to be steered by Linear's own state names: skills
 compared `state.name` with `Todo`, `In Progress`, `In Review`, `Done`, and an
 older workflow approved a plan with a `Status: approved` comment line. Trackers

@@ -7,45 +7,43 @@ description: >-
   user) → implement (branch, empty commit, draft PR with magic words); In
   Review → code-review menu; Done → close-out. Never prints "confirm the plan"
   instructions — the user steers by changing the issue status in Linear.
-  Invoke this skill FIRST; the linearis commands it needs are in its CLI
-  reference.
+  Invoke this skill FIRST; the tracker and VCS commands it needs come from
+  the platform adapters.
 ---
 
 # Linear issue workflow
 
-## CLI reference
+## Platform and adapters
 
-`linearis` is the Linear CLI (npm, pure JS, JSON-only output). These are the
-only commands this skill needs:
+Tracker and VCS commands live in adapter files at the plugin root, never in
+this skill. Read the tracker adapter when entering a phase, and run every
+operation by its ID from the adapter's `## Operations` table:
 
-| Purpose | Command |
-|---------|---------|
-| Status gate (every turn) | `linearis issues read <ID> --fields identifier,title,state.name` |
-| Full context (entering a phase) | `linearis issues read <ID> --with-comments` |
-| Post a comment | `linearis issues discuss <ID> --body "$(cat body.md)"` |
-| Set status | `linearis issues update <ID> --status 'In Progress'` |
-| Branch name | `linearis issues read <ID> --fields branchName` |
-| Active work in a team/project | `linearis issues list --team <KEY> --project <name> --status 'Todo,In Progress,In Review'` |
+```
+${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
+${CLAUDE_PLUGIN_ROOT}/adapters/vcs/<vcs>.md
+```
 
-`--fields` takes comma-separated dot-paths and trims the JSON to exactly those
-keys — the status gate returns only `identifier`, `title`, `state.name`, cheap
-enough to run every turn. `--with-comments` inlines every comment
-(`comments.nodes[].body`, markdown) into the issue JSON; linked PRs show up as
-comments from the GitHub sync. Inline images stay markdown URLs inside
-`description`/`body` — fetch one only when it matters.
+If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
+directories up from this skill's base directory.
 
-States are the team's own **names** — `Backlog`, not `backlog`; spaces are
-fine (`--status 'In Progress'`). There is no state-listing command: a wrong
-name fails loudly with `Status "X" for team ... not found`, naming nothing
-else — fix the name and retry.
+Pick `<tracker>` and `<vcs>` from the first source that has them:
 
-Multi-line bodies go through the flag, not stdin: `--body "$(cat body.md)"`
-preserves newlines, backticks and Polish diacritics as-is. There is no `-`
-stdin sentinel and no `--body-file`.
+1. the `## Platform` section of the repo `CLAUDE.md`;
+2. the entity page frontmatter `platform:` — a legacy `linear:` block there
+   means `tracker: linear`, with `vcs` detected from `git remote get-url
+   origin` by the `## Detection` rules of the VCS adapters;
+3. neither → invoke `nerd4rent:determine-platform` and take the platform from
+   its output.
 
-The issue JSON carries no `url` field; when a link is needed, build it as
-`https://linear.app/<workspace>/issue/<ID>` (workspace slug as in the
-project's `url`).
+No adapter file for the value → stop and report: "adapter
+`trackers/<tracker>` (or `vcs/<vcs>`) is not available yet in this plugin
+version" — never fall back to another platform. Pass the resolved platform to
+`issue-start` and `issue-close` when delegating.
+
+The tracker adapter's `## CLI` section carries the command gotchas (field
+paths, multi-line bodies), `## URL` how to build an issue link, and
+`## Statuses` the team's state names used below.
 
 ## When this skill applies
 
@@ -66,13 +64,12 @@ typing approvals in chat.
    instruction in chat to implement counts as approval (then set In Progress
    to reflect it).
 2. **Status check every turn**: at the start of every turn that touches the
-   issue, run `linearis issues read <ID> --fields identifier,title,state.name`
-   and dispatch on the current status. The status may have changed since the
+   issue, run `issue.read-status` and dispatch on the current status. The status may have changed since the
    last message.
 3. **After every working session** on the issue: post a `## Session summary`
    comment (see below).
 
-Allowed regardless of status: `linearis` read commands, reading code for
+Allowed regardless of status: tracker read operations, reading code for
 analysis, drafting plan text, posting Linear comments, answering questions.
 
 **Legacy marker:** older issues may carry a `Status: approved` line in the plan
@@ -81,7 +78,7 @@ workflow). Never post that marker on new work.
 
 ## Dispatch by status
 
-Fetch first — `linearis issues read <ID> --with-comments`. That one JSON
+Fetch first — `issue.read`. That one JSON
 carries the state, the full description and every comment (linked PRs appear
 as GitHub-sync comments); inline images stay markdown URLs in the bodies.
 Then:
@@ -216,10 +213,8 @@ run them, manually, as slash commands.
 
 Save the plan to a temp file, then:
 
-```bash
-linearis issues discuss <ID> --body "$(cat <path-to-plan.md>)"
-linearis issues update <ID> --status Todo
-```
+Run `issue.comment` with the plan file as the body, then `issue.set-status`
+with `Todo`.
 
 The posted body **must** start with `## Implementation plan` (no status line).
 If step 0 found relevant decisions, note which ones the plan is consistent
@@ -257,22 +252,22 @@ here first:
      (b) branch from main/master, (c) stay. After (b), `git checkout main &&
      git pull` (or `master`), then delegate as above. After (a) or (c) the
      chain's precondition does not hold — run its steps by hand: for (a)
-     `git checkout -b <branchName>` (value from `linearis issues read <ID>
-     --fields branchName`), then on the resulting branch:
+     `git checkout -b <branchName>` (value from `issue.read-branch`), then on
+     the resulting branch:
 
      ```bash
      git commit --allow-empty -m "Rozpoczęcie prac nad <ID>"
      git push -u origin <branch>
-     gh pr create --draft --title "<ID>: <title>" \
-       --body "Fixes <ID>
-
-     <one-paragraph summary>"
      ```
 
+     and `pr.create-draft` from the VCS adapter with the title
+     `<ID>: <title>` and the body from its `## Magic words` section
+     (`Fixes <ID>`, a blank line, the one-paragraph summary).
+
    `Fixes <ID>` (one line per issue if the PR closes several) lets the
-   Linear↔GitHub integration track the PR and auto-close the issue on merge.
+   tracker integration track the PR and auto-close the issue on merge.
 2. **If `issue-start` stopped early** (issue not In Progress, dirty tree,
-   branch already exists, missing `gh`/`glab`), fix the reported cause or
+   branch already exists, missing VCS CLI), fix the reported cause or
    resolve it with the user — never re-run the chain blindly.
 
 ### 5. Pick an implementation mode
@@ -311,7 +306,7 @@ break axis independence.
 
 | Axis | What it checks | Rule source | Preferred engine (when available) |
 |---|---|---|---|
-| `spec-compliance` | the change does what the issue asked, no more, no less | the issue's acceptance criteria (`linear` CLI) | plain agent |
+| `spec-compliance` | the change does what the issue asked, no more, no less | the issue's acceptance criteria (tracker adapter `issue.read`) | plain agent |
 | `repo-standards` | the diff obeys the repo coding standards | `CONTEXT.md` `## Standards` | plain agent |
 | `correctness-regressions` | logic errors, broken edge cases, regressions | the diff itself | `superpowers` / `matt-pocock` / `code-review` |
 | `security` | injection, secrets, unsafe access the diff introduces | the diff itself | `code-review` |
@@ -381,11 +376,7 @@ re-run.
 
 ## Session summary (mandatory)
 
-After each session (including partial work), post:
-
-```bash
-linearis issues discuss <ID> --body "$(cat <summary.md>)"
-```
+After each session (including partial work), post it with `issue.comment`.
 
 The bundled `session-summary-template.md` has these sections ready. Body **must**
 start with `## Session summary` and include:
@@ -421,10 +412,10 @@ session's last push.
 
 ## Nerdbrain entity-page integration
 
-- When the injected entity page's frontmatter has `linear.team` or
-  `linear.project`, query Linear for active work (`linearis issues list
-  --team <key> --project <name> --status 'Todo,In Progress,In Review'`)
-  instead of re-asking the user.
+- When the platform config carries the tracker identifiers (`linear.team` /
+  `linear.project`, from `## Platform` or the entity page's `platform:` or
+  legacy `linear:`), query active work with `issue.list-active` instead of
+  re-asking the user.
 - When recording a decision on the entity page (nerdbrain write trigger),
   link it to the issue ID, e.g. `2026-05-05 — chose JWT (LIN-123)`.
 - The session-summary step writes a `## Checkpoints` entry (above); it rides

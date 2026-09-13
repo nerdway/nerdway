@@ -217,7 +217,7 @@ spelled out below the table.
 | Strategy | Read | Write |
 |----------|------|-------|
 | `native` | — | — |
-| `label` | `glab issue view <n> -R <REPO> --output json` — `state` `closed` → value `closed`; `opened` → the mapped names among `labels`, none → `open` | `closed` → `glab issue close <n> -R <REPO>`; a label `<value>` not in `label.list` → stop: "label `<value>` does not exist — run `/bind-statuses`"; otherwise `glab issue update <n> -R <REPO> --unlabel '<mapped label on the issue>'` once per other mapped label the read found, plus `--label '<value>'` unless `<value>` is `open` (skip the update when neither applies), then `glab issue reopen <n> -R <REPO>` when the read found `closed` |
+| `label` | `glab issue view <n> -R <REPO> --output json` — `state` `closed` → value `closed`; `opened` → the mapped names among `labels`, none → `open` | `closed` → `glab issue close <n> -R <REPO>`; a label `<value>` (not `open`) missing from `label.list` → stop: "label `<value>` does not exist — run `/bind-statuses`"; otherwise `glab issue update <n> -R <REPO> --unlabel '<mapped label on the issue>'` once per other mapped label the read found, plus `--label '<value>'` unless `<value>` is `open` (skip the update when neither applies), then `glab issue reopen <n> -R <REPO>` when the read found `closed` |
 | `comment` | the notes recipe of `issue.read`, then the marker-author check below | `glab issue note <n> -R <REPO> --message "Status: <value>"` |
 
 Marker-author check for the `comment` read. Walk the notes newest first and

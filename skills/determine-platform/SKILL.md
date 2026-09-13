@@ -81,9 +81,22 @@ the other in Step 4.
 
 | Signal | Command | Reading |
 |--------|---------|---------|
-| VCS host | `git remote get-url origin` | host `github.com` → `github` (`owner/repo` from the path); host containing `gitlab` → `gitlab` (`group/project` from the path, subgroups kept in `group`); `dev.azure.com` or `*.visualstudio.com` → `ado` (`org/project` from the path) |
+| VCS host | `git remote get-url origin` | host `github.com` → `github` (`owner/repo` from the path); host containing `gitlab` → `gitlab` (`group/project` from the path, subgroups kept in `group`); `dev.azure.com` or `*.visualstudio.com` (SSH hosts included) → `ado`, with `org` and `project` per the Azure DevOps table below |
 | Tracker CLI | `auth.check` from `adapters/trackers/linear.md` | exit 0 → the Linear CLI is installed and authenticated |
 | Linear project | `project.list` from `adapters/trackers/linear.md` | projects whose name equals the repo name, case-insensitive |
+
+Azure DevOps remotes come in four forms, and on `*.visualstudio.com` the
+organisation is the subdomain, not the first path segment:
+
+| Remote form | `org` | `project` |
+|-------------|-------|-----------|
+| `https://[<user>@]dev.azure.com/<org>/<project>/_git/<repo>` | first path segment | second path segment |
+| `https://<org>.visualstudio.com/[DefaultCollection/]<project>/_git/<repo>` | subdomain | segment before `_git` |
+| `git@ssh.dev.azure.com:v3/<org>/<project>/<repo>` | segment after `v3` | next segment |
+| `<org>@vs-ssh.visualstudio.com:v3/<org>/<project>/<repo>` | segment after `v3` | next segment |
+
+Percent-decode `project` (`My%20Project` → `My Project`); YAML-quote it when
+it contains spaces.
 
 The inference is **unambiguous** only when all three hold: the origin host
 maps to exactly one VCS, the Linear CLI is authenticated, and exactly one

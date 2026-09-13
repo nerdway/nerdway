@@ -977,3 +977,98 @@ test("rule 24: reads operation ids only from the Operations section", () => {
   assert.equal(errors.length, 1);
   assert.match(errors[0], /issue\.set-status/);
 });
+
+const strategiesPlatformSchema = {
+  ...platformSchema,
+  schema: schemaBody({
+    title: "Platform config",
+    properties: {
+      ...platformSchema.schema.properties,
+      statuses: {
+        type: "object",
+        title: "Statuses",
+        description: "how phases show on the tracker",
+        properties: {
+          strategy: { type: "string", title: "Strategy", description: "where a phase lives", enum: ["native", "label", "comment"] },
+        },
+      },
+    },
+    required: ["tracker"],
+  }),
+};
+
+const strategiesAxis = {
+  ...trackersAxis,
+  sections: ["CLI", "Operations", "Status strategies"],
+  strategies: "PlatformConfig.statuses.strategy",
+};
+
+function strategiesSource(rows: string[][] = [["native", "read it", "write it"], ["label", "—", "—"], ["comment", "read it", "write it"]]) {
+  const table = ["## Status strategies", "", "| Strategy | Read | Write |", "|---|---|---|", ...rows.map((row) => `| ${row.map((cell, index) => (index === 0 ? `\`${cell}\`` : cell)).join(" | ")} |`)];
+  return `${adapterSource()}\n\n${table.join("\n")}`;
+}
+
+function validateStrategies(files: unknown[], axis: Record<string, unknown> = strategiesAxis) {
+  const contractWithStrategies = contract(undefined, {
+    schemas: [...contract().schemas, strategiesPlatformSchema],
+    adapters: { trackers: axis },
+  });
+  return validateContract(contractWithStrategies, skillDirs, [], [], files as never);
+}
+
+test("rule 25: accepts an adapter listing every strategy of the enum, supporting at least one", () => {
+  assert.deepEqual(validateStrategies([adapterFile({ source: strategiesSource() })]), []);
+});
+
+test("rule 25: rejects an axis whose strategies names no enum property", () => {
+  const errors = validateStrategies([], { ...strategiesAxis, strategies: "PlatformConfig.statuses.ghost" });
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /PlatformConfig\.statuses\.ghost/);
+});
+
+test("rule 25: rejects an axis declaring strategies without requiring the Status strategies section", () => {
+  const errors = validateStrategies([], { ...strategiesAxis, sections: ["CLI", "Operations"] });
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /Status strategies/);
+});
+
+test("rule 25: rejects an adapter missing a strategy row", () => {
+  const source = strategiesSource([["native", "read it", "write it"], ["label", "—", "—"]]);
+  const errors = validateStrategies([adapterFile({ source })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /comment/);
+});
+
+test("rule 25: rejects an adapter listing a strategy twice", () => {
+  const source = strategiesSource([["native", "read it", "write it"], ["label", "—", "—"], ["comment", "—", "—"], ["native", "—", "—"]]);
+  const errors = validateStrategies([adapterFile({ source })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /native/);
+});
+
+test("rule 25: rejects an adapter listing a strategy the enum does not declare", () => {
+  const source = strategiesSource([["native", "read it", "write it"], ["label", "—", "—"], ["comment", "—", "—"], ["field", "—", "—"]]);
+  const errors = validateStrategies([adapterFile({ source })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /field/);
+});
+
+test("rule 25: rejects a strategy with a read recipe but no write recipe", () => {
+  const source = strategiesSource([["native", "read it", "write it"], ["label", "read it", "—"], ["comment", "—", "—"]]);
+  const errors = validateStrategies([adapterFile({ source })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /label/);
+});
+
+test("rule 25: rejects an adapter supporting no strategy", () => {
+  const source = strategiesSource([["native", "—", "—"], ["label", "—", "—"], ["comment", "—", "—"]]);
+  const errors = validateStrategies([adapterFile({ source })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /no strategy/);
+});
+
+test("rule 25: a missing Status strategies section is reported once, by the section check", () => {
+  const errors = validateStrategies([adapterFile()]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /missing required section ## Status strategies/);
+});

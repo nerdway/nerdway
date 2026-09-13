@@ -47,6 +47,19 @@
       }
     },
     {
+      "id": "az",
+      "_comment": "Azure CLI; the azure-devops extension is not a separate entry, so auth.check probes for it - signing in to a specific organisation is checked by adapters/vcs/ado.md, which knows the org",
+      "minVersion": "2.90.0",
+      "versionCommand": ["az", "--version"],
+      "versionRegex": "azure-cli\\s+(\\d+\\.\\d+\\.\\d+)",
+      "requiredBy": ["issue-close", "issue-start"],
+      "manualInstall": "winget install Microsoft.AzureCLI | brew install azure-cli | see https://learn.microsoft.com/cli/azure/install-azure-cli",
+      "auth": {
+        "check": ["az", "extension", "show", "--name", "azure-devops"],
+        "instructions": "Run `az extension add --name azure-devops`, then `az login` (Microsoft Entra) or `az devops login` (personal access token)."
+      }
+    },
+    {
       "id": "rg",
       "minVersion": "14.0.0",
       "versionCommand": ["rg", "--version"],

@@ -5,7 +5,8 @@ description: >-
   Mechanically start work on a Linear issue that is already In Progress: read
   the issue's native branch name, create the branch from a clean main/master
   checkout, make the empty start-of-work commit, push with upstream, and open a
-  draft PR (GitHub) or MR (GitLab) carrying the `Fixes <ID>` magic word. Purely
+  draft PR (GitHub, Azure DevOps) or MR (GitLab) carrying the `Fixes <ID>`
+  magic word. Purely
   procedural with explicit commands and no multi-step reasoning — pinned to
   Haiku (the `model` frontmatter above) to keep it cheap. Invoked by
   issue-workflow's Start step, or directly when the user asks to start an
@@ -84,7 +85,8 @@ the adapter's `## Statuses` table.
    Non-empty output → stop and report; leftover changes would land in the
    start commit of the wrong issue.
 
-Call the values from the read `<ID>`, `<title>` and `<branchName>` below.
+Call the values from the read `<ID>`, `<title>`, `<branchName>` and `<url>`
+below.
 
 ## Step 1 — Branch
 
@@ -97,7 +99,7 @@ issue was started before, and `issue-workflow` skips Start in that case.
 
 ## Step 2 — Empty start commit and push
 
-GitHub and GitLab need at least one commit to open a PR/MR:
+The VCS host needs at least one commit to open a PR/MR:
 
 ```bash
 git commit --allow-empty -m "Rozpoczęcie prac nad <ID>"
@@ -110,10 +112,12 @@ attribution**.
 ## Step 3 — Open the draft PR/MR
 
 Run `pr.create-draft` from the VCS adapter with the title `<ID>: <title>` and
-the body its `## Magic words` section prescribes — the line `Fixes <ID>` (one
-line per issue if the PR closes several), a blank line, then `<summary>`. That
-line is what lets the tracker integration track the PR/MR and auto-close the
-issue on merge.
+the body exactly as its `## Magic words` section prescribes — it starts with
+the line `Fixes <ID>` (one line per issue if the PR closes several) and ends
+with `<summary>`; a host without a tracker integration adds the issue
+`<url>`, obtained as the tracker adapter's `## URL` section describes. Pass the body in the argument
+form the operation's notes give. Print the PR/MR URL as the VCS adapter's
+`## URL` section describes.
 
 ## Report
 

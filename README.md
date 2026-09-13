@@ -62,12 +62,12 @@ Uses the `linearis` CLI (syntax proven in the skill's own CLI reference). Trigge
 
 The mirror of `issue-close` at the other end of an issue: a deliberately **mechanical, lightweight** Start for an issue the user has already moved to In Progress — purely procedural with explicit commands, no questions and no multi-step reasoning, pinned to **Haiku** via `model: haiku`. Invoked by `issue-workflow`'s Start step, or directly:
 
-1. Reads the issue (`linearis issues read <ID> --fields identifier,title,branchName,state.name`) and stops unless it is **In Progress** — the same approval gate `issue-workflow` enforces.
+1. Reads the issue (`linearis issues read <ID> --fields identifier,title,branchName,state.name,url`) and stops unless it is **In Progress** — the same approval gate `issue-workflow` enforces.
 2. Requires a clean checkout on `main`/`master`; on any other branch or with leftover changes it stops and reports (branching from another issue branch is `issue-workflow`'s decision, not the chain's).
 3. Creates the branch from the Linear `branchName`, makes the empty start commit (`Rozpoczęcie prac nad <ID>`, no co-author) and pushes with upstream.
-4. Detects GitHub vs GitLab from the origin remote and opens a **draft** PR/MR (`gh pr create --draft` / `glab mr create --draft`) whose body starts with `Fixes <ID>`, so the Linear integration tracks it and auto-closes the issue on merge.
+4. Opens a **draft** PR/MR on the configured VCS host (`gh pr create --draft` / `glab mr create --draft` / `az repos pr create --draft true`) whose body starts with `Fixes <ID>`, so the Linear integration tracks it and auto-closes the issue on merge. Azure DevOps has no Linear integration, so there the body also carries the issue URL.
 
-On any error (branch already exists, push rejected, missing `gh`/`glab`) it stops and reports rather than improvising. Uses the `linearis` CLI. Trigger: intent to start an issue that is In Progress — *"zacznij"*, *"rozpocznij"*, *"start DEMO-123"*, *"open the PR for"*.
+On any error (branch already exists, push rejected, missing `gh`/`glab`/`az`) it stops and reports rather than improvising. Uses the `linearis` CLI. Trigger: intent to start an issue that is In Progress — *"zacznij"*, *"rozpocznij"*, *"start DEMO-123"*, *"open the PR for"*.
 
 ### `nerd4rent:issue-close`
 
@@ -75,11 +75,11 @@ A deliberately **mechanical, lightweight** close-out for a finished issue — pu
 
 1. Commits any leftover changes (repo convention: Polish, noun-form message, no co-author) — or skips if the tree is clean.
 2. Pushes the branch (sets upstream if needed).
-3. Detects GitHub vs GitLab from the origin remote and merges the PR/MR with a merge commit (`gh pr merge --merge` / `glab mr merge`; marks a draft PR ready first).
+3. Merges the PR/MR on the configured VCS host with a merge commit (`gh pr merge --merge` / `glab mr merge` / `az repos pr update --status completed --squash false`; marks a draft PR ready first). A branch policy that blocks completion on Azure DevOps stops the chain — it is never bypassed.
 4. Switches the local checkout to the PR/MR's **base** branch (read from the PR/MR, not assumed to be `main`) and pulls.
-5. Sets the Linear issue to **Done** (`linearis issues update <ID> --status Done`) — deterministic and covering GitLab, where there's no Linear↔GitHub auto-close.
+5. Sets the Linear issue to **Done** (`linearis issues update <ID> --status Done`) — deterministic and covering GitLab and Azure DevOps, where there's no Linear↔GitHub auto-close.
 
-On any error (e.g. merge conflict, missing `gh`/`glab`) it stops and reports rather than improvising. Uses the `linearis` CLI. Trigger: intent to close/merge/finish an issue — *"domknij"*, *"zamknij"*, *"zmerguj i zamknij"*, *"close out"*, *"merge and close"*.
+On any error (e.g. merge conflict, missing `gh`/`glab`/`az`) it stops and reports rather than improvising. Uses the `linearis` CLI. Trigger: intent to close/merge/finish an issue — *"domknij"*, *"zamknij"*, *"zmerguj i zamknij"*, *"close out"*, *"merge and close"*.
 
 ### `nerd4rent:project-continue`
 
@@ -120,7 +120,7 @@ Limits on how much to read (max related pages, snippet caps) stay with the calli
 
 Brings this machine to the CLI state the skills in this repo require:
 
-1. Probes every entry declared in `cli-dependencies.json` (currently `node`, `linearis`, `gh`, `glab`, `rg`, `git`). A missing `glab` only matters on GitLab-hosted repos.
+1. Probes every entry declared in `cli-dependencies.json` (currently `node`, `linearis`, `gh`, `glab`, `az`, `rg`, `git`). A missing `glab` only matters on GitLab-hosted repos, a missing `az` (or its `azure-devops` extension) only on Azure DevOps-hosted ones.
 2. Installs or updates whatever is missing or outdated — download with checksum verification, or `npm install --global` for entries declaring the `npm` method.
 3. Hands back the authentication steps only a human can complete — it never runs `auth login` flows itself.
 
@@ -152,7 +152,7 @@ The commands themselves live in **adapter files**, one per platform per axis:
 | Axis | Adapter files | Required sections |
 |---|---|---|
 | tracker | `adapters/trackers/linear.md` | `CLI`, `Issue ID`, `Operations`, `URL`, `Statuses` |
-| VCS host | `adapters/vcs/github.md`, `adapters/vcs/gitlab.md` | `CLI`, `Detection`, `Operations`, `Magic words`, `URL` |
+| VCS host | `adapters/vcs/github.md`, `adapters/vcs/gitlab.md`, `adapters/vcs/ado.md` | `CLI`, `Detection`, `Operations`, `Magic words`, `URL` |
 
 Skills never quote a command: they name an **operation ID** (`issue.set-status`, `pr.merge`, …) and look it up in the adapter's `## Operations` table, read through `${CLAUDE_PLUGIN_ROOT}`. The `adapters` block of `workflow-graph.json` declares each axis's sections and operation IDs, and `node scripts/validate-workflow-graph.ts` rejects an adapter that misses one, repeats one, lists an undeclared one, or is named outside the config enum. A configured platform with no adapter file yet makes the skill stop with "adapter not available yet" — it never falls back to Linear. See [ADR-0005](docs/adr/0005-platform-adapters-as-reference-files.md).
 
@@ -361,6 +361,7 @@ Cursor reads global skills from `~/.agents/skills/` (and `~/.cursor/skills/`); t
 - `git`
 - `gh` (GitHub CLI), authenticated (`gh auth status`)
 - `glab` (GitLab CLI), authenticated (`glab auth status`) — only for GitLab-hosted repos
+- `az` (Azure CLI) with the `azure-devops` extension, signed in (`az login` or `az devops login`) — only for Azure DevOps-hosted repos
 - Node.js ≥ 22 (with npm)
 - `linearis` CLI (`npm i -g linearis`), authenticated with a personal API key from Linear Settings → API (`LINEAR_API_TOKEN` or `linearis auth login`); the Linear skills degrade gracefully if absent
 

@@ -57,7 +57,7 @@ candidate resolves, stop and ask the user for the ID — never guess it.
 | `project.create` | `linearis projects create "<name>" --team <KEY> --description "<one-line description>" --fields id,name,url` | take `.id` (UUID) and `.url` straight from the output |
 | `issue.read` | `linearis issues read <ID> --with-comments` | state, full description and every comment in one JSON |
 | `issue.read-status` | `linearis issues read <ID> --fields identifier,title,state.name` | cheap enough to run every turn; exits non-zero for an ID that does not exist |
-| `issue.read-branch` | `linearis issues read <ID> --fields identifier,title,branchName,state.name` | `branchName` is already safe for git |
+| `issue.read-branch` | `linearis issues read <ID> --fields identifier,title,branchName,state.name,url` | `branchName` is already safe for git |
 | `issue.resolve-from-branch` | the loop below | prints the first candidate that resolves, nothing when none does |
 | `issue.list-active` | `linearis issues list --team <KEY> --project <PROJECT> --status 'Todo,In Progress,In Review' --fields nodes.identifier,nodes.title,nodes.state.name` | the project's active board |
 | `issue.create` | `linearis issues create "<title>" --team <KEY> --project "<PROJECT>" --status Backlog --description "$(cat body.md)"` | pass the state explicitly so the team default cannot override it; the JSON carries `.identifier`, no URL |
@@ -76,7 +76,8 @@ done
 
 ## URL
 
-The issue JSON carries no `url` field. Build the link as
+Take the link from the issue JSON's `url` field (request it with
+`--fields … ,url`). When a `linearis` release returns no `url`, build it as
 `https://linear.app/<workspace>/issue/<ID>`, with the workspace slug taken
 from the project's `url` (`project.list`).
 

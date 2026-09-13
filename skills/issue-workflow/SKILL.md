@@ -41,6 +41,20 @@ No adapter file for the value → stop and report: "adapter
 version" — never fall back to another platform. Pass the resolved platform to
 `issue-start` and `issue-close` when delegating.
 
+The workflow islands cannot read files, so pass them the platform with the
+adapter paths already resolved, as `args.platform`:
+
+```
+platform: { tracker: "<tracker>", vcs: "<vcs>",
+            adapters: { tracker: "<absolute path>" | null,
+                        vcs: "<absolute path>" | null } }
+```
+
+Each path is the substituted `${CLAUDE_PLUGIN_ROOT}/adapters/...` file above,
+checked to exist; `null` when the file is missing or `tracker` is `none`. An
+island turns a `null` adapter into a `gaps` entry and runs no command of
+another platform.
+
 The tracker adapter's `## CLI` section carries the command gotchas (field
 paths, multi-line bodies), `## URL` how to build an issue link, and
 `## Statuses` the team's state names used below.
@@ -101,7 +115,7 @@ already In Progress.
 When the `Workflow` tool is available, gather the planning context through the
 island instead of reading sequentially: run `workflows/plan-context-fanout.js`
 (as `/nerd4rent:plan-context-fanout`, or directly via
-`Workflow({name: "nerd4rent:plan-context-fanout", args: {issueId: "<ID>", spec: <IssueSpec>}})`
+`Workflow({name: "nerd4rent:plan-context-fanout", args: {issueId: "<ID>", spec: <IssueSpec>, platform: <platform>}})`
 — pass `args` as a real JSON object, never as a JSON-encoded string). One
 script realises both contract nodes (`wiki-recall` + `plan-context-fanout`):
 five gatherers run concurrently, a deterministic reducer (plain code, not an
@@ -114,7 +128,7 @@ related pages, ≤ 5 search results), and the island returns typed
 | Repo code (layout, `README.md`, `CONTEXT.md`) | directories/files the change touches; test, build and validator commands | `PlanContext.repoLayout`, `.commands` |
 | ADRs (`docs/adr/*.md`) + `CONTEXT.md` terms + commit style | hard in-repo rules the plan must not break | `PlanContext.conventions` |
 | Prior plans (`docs/superpowers/plans/`) and merged PRs | precedents: how similar changes were cut and committed | `PlanContext.priorArt` |
-| Related Linear issues (parent, siblings, links) | parent AC, cross-issue agreements and dependencies | `PlanContext.priorArt` |
+| Related tracker issues (parent, siblings, links) | parent AC, cross-issue agreements and dependencies | `PlanContext.priorArt` |
 | Entity page + 1-hop graph (`nerdbrain-search` recipes) | project decisions, active context, related pages | `ProjectContext.slug`, `.decisions`, `.activeContext`, `.relatedPages` |
 
 When the island ran, its `ProjectContext` covers steps 0 and 0b below — skip
@@ -321,7 +335,7 @@ and must still review.
 
 **Run the island.** With the `Workflow` tool available, run
 `workflows/review-verify.js` via
-`Workflow({name: "nerd4rent:review-verify", args: {issueId: "<ID>", request: {axes: [...], range: "..."}}})`
+`Workflow({name: "nerd4rent:review-verify", args: {issueId: "<ID>", request: {axes: [...], range: "..."}, platform: <platform>}})`
 — `args` as a real JSON object, never a JSON-encoded string. The island does:
 
 1. **Map** — one mapper per axis, all four concurrent, each confined to its

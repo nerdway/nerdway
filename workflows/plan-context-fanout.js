@@ -1,6 +1,6 @@
 export const meta = {
   name: 'plan-context-fanout',
-  description: 'Gather planning context for a Linear issue in parallel: repo, ADRs, prior plans, related issues, nerdbrain vault',
+  description: 'Gather planning context for a tracker issue in parallel: repo, ADRs, prior plans, related issues, nerdbrain vault',
   whenToUse: 'Planning phase of issue-workflow, before drafting the implementation plan',
   phases: [
     { title: 'Gather', detail: '4 repo gatherers + 1 vault gatherer, all concurrent' },
@@ -9,8 +9,9 @@ export const meta = {
 
 // One script, two contract nodes (ADR-0003: one island runs both): `plan-context-fanout`
 // produces PlanContext from the repo, `wiki-recall` produces ProjectContext from the vault.
-// Input arrives as args: { issueId: "TEAM-123", spec: <IssueSpec> } — the IssueSpec edge
-// payload plus the issue id the Linear gatherer queries by.
+// Input arrives as args: { issueId: "TEAM-123", spec: <IssueSpec>, platform: <PlatformConfig> } —
+// the IssueSpec edge payload, the issue id the relations gatherer queries by, and the platform
+// with `adapters: { tracker, vcs }` holding absolute adapter file paths, null when unavailable.
 
 // Verbatim copies of the registry bodies in workflow-graph.json — the script cannot read
 // the contract at runtime (no fs, no import()), so the drift check (validator rules 17-18)
@@ -131,8 +132,24 @@ const GATHERERS = 5
 const MAX_RELATED_PAGES = 3
 const MAX_SEARCH_RESULTS = 5
 
-const issueId = args && args.issueId ? String(args.issueId) : ''
-const spec = args && args.spec ? JSON.stringify(args.spec) : '(no IssueSpec provided — gather generically)'
+let input = args
+if (typeof input === 'string') {
+  try {
+    input = JSON.parse(input)
+  } catch {
+    input = {}
+  }
+}
+const issueId = input && input.issueId ? String(input.issueId) : ''
+const spec = input && input.spec ? JSON.stringify(input.spec) : '(no IssueSpec provided — gather generically)'
+const platform = input && input.platform ? input.platform : {}
+const adapters = platform.adapters || {}
+const trackerAdapter = typeof adapters.tracker === 'string' && adapters.tracker.length > 0 ? adapters.tracker : null
+const vcsAdapter = typeof adapters.vcs === 'string' && adapters.vcs.length > 0 ? adapters.vcs : null
+
+function adapterInstruction(path, operation) {
+  return `Platform commands come from the adapter file \`${path}\`: read its "## CLI" and "## Operations" sections and run operation \`${operation}\` exactly as its table gives it. If that operation's command is \`—\`, skip it and say so.`
+}
 
 // Intermediate gatherer shapes — deliberately NOT named SCHEMA_<Name>: they are not
 // contract edges, so they must stay invisible to the drift check.
@@ -153,12 +170,16 @@ const stringListShape = {
   required: ['items'],
 }
 
+const gaps = []
+if (trackerAdapter === null) gaps.push(`tracker adapter unavailable (${platform.tracker || 'no platform'}) — related issues not gathered`)
+if (vcsAdapter === null) gaps.push(`vcs adapter unavailable (${platform.vcs || 'no platform'}) — merged PRs not gathered`)
+
 phase('Gather')
 log(`Fanning out ${GATHERERS} context gatherers for ${issueId || 'the issue'}`)
 
 const issueHeader = `Issue being planned: ${issueId}\nIssueSpec: ${spec}\n\n`
 
-const [repoFacts, conventions, priorPlans, linearRelations, vault] = await parallel([
+const [repoFacts, conventions, priorPlans, trackerRelations, vault] = await parallel([
   () =>
     agent(
       issueHeader +
@@ -174,16 +195,19 @@ const [repoFacts, conventions, priorPlans, linearRelations, vault] = await paral
   () =>
     agent(
       issueHeader +
-        'Collect prior art inside this repo: read every file under docs/superpowers/plans/ (if present) and the last few merged PRs (`gh pr list --state merged --limit 5`). Return items: one string per precedent — what it was and what a planner should copy from it.',
+        (vcsAdapter === null
+          ? 'Collect prior art inside this repo: read every file under docs/superpowers/plans/ (if present). '
+          : `Collect prior art inside this repo: read every file under docs/superpowers/plans/ (if present) and the last few merged PRs. ${adapterInstruction(vcsAdapter, 'pr.list-merged')} `) +
+        'Return items: one string per precedent — what it was and what a planner should copy from it.',
       { label: 'gather:prior-plans', phase: 'Gather', schema: stringListShape, agentType: 'nerd4rent:plan-gatherer' },
     ),
   () =>
-    issueId === ''
+    issueId === '' || trackerAdapter === null
       ? Promise.resolve({ items: [] })
       : agent(
           issueHeader +
-            `Collect related Linear issues. Use the linearis CLI (read-only): \`linearis issues read ${issueId}\` returns JSON with parent, children and relations; fetch the parent and its sub-issues the same way. Return items: one string per related issue — "TEAM-123 (state): title — why it matters to this plan". If the CLI is unavailable, return an empty list.`,
-          { label: 'gather:linear-relations', phase: 'Gather', schema: stringListShape, agentType: 'nerd4rent:plan-gatherer' },
+            `Collect the issues related to ${issueId}: its parent, sub-issues and linked issues, then the parent's other sub-issues. ${adapterInstruction(trackerAdapter, 'issue.read-relations')} Run it on ${issueId}, then on the parent. Return items: one string per related issue — "TEAM-123 (state): title — why it matters to this plan". If the CLI is unavailable, return an empty list.`,
+          { label: 'gather:tracker-relations', phase: 'Gather', schema: stringListShape, agentType: 'nerd4rent:plan-gatherer' },
         ),
   () =>
     agent(
@@ -197,7 +221,7 @@ const [repoFacts, conventions, priorPlans, linearRelations, vault] = await paral
 
 // Fixed spawn order: a gatherer that failed keeps its row at zero instead of vanishing,
 // which is what makes the node-failure half of the metric readable.
-const SOURCES = ['repo-layout', 'conventions', 'prior-plans', 'linear-relations', 'vault']
+const SOURCES = ['repo-layout', 'conventions', 'prior-plans', 'tracker-relations', 'vault']
 
 const tally = new Map(SOURCES.map((source) => [source, { source, returned: 0, unique: 0 }]))
 
@@ -236,20 +260,19 @@ function missingRequired(schema, value) {
   })
 }
 
-const gaps = []
 if (repoFacts === null) gaps.push('repo-layout gatherer failed: repoLayout and commands are missing')
 if (conventions === null) gaps.push('conventions gatherer failed: CONTEXT.md/ADR constraints are missing')
 if (priorPlans === null) gaps.push('prior-plans gatherer failed: docs/superpowers/plans precedents are missing')
-if (linearRelations === null) gaps.push('linear-relations gatherer failed: related issues are missing')
+if (trackerRelations === null) gaps.push('tracker-relations gatherer failed: related issues are missing')
 
 const planContext = {
   repoLayout: repoFacts !== null && typeof repoFacts.repoLayout === 'string' ? repoFacts.repoLayout.trim() : '',
   conventions: reduce([{ source: 'conventions', items: conventions !== null ? conventions.items : [] }]),
-  // Cap: two prior-art sources (plans + Linear), each held to the search-result limit.
+  // Cap: two prior-art sources (plans + tracker), each held to the search-result limit.
   priorArt: reduce(
     [
       { source: 'prior-plans', items: priorPlans !== null ? priorPlans.items : [] },
-      { source: 'linear-relations', items: linearRelations !== null ? linearRelations.items : [] },
+      { source: 'tracker-relations', items: trackerRelations !== null ? trackerRelations.items : [] },
     ],
     2 * MAX_SEARCH_RESULTS,
   ),

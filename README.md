@@ -47,9 +47,9 @@ Runs at the end of `determine-platform` or on its own at any time. Without a `st
 
 ### `nerd4rent:issue-writer`
 
-Creates a **new** issue (Linear or GitHub Issues) for the current repo with goals specified clearly enough that the planning agent can build an implementation plan straight from it. Upstream of `issue-workflow`:
+Creates a **new** issue (Linear, GitHub Issues or GitLab Issues) for the current repo with goals specified clearly enough that the planning agent can build an implementation plan straight from it. Upstream of `issue-workflow`:
 
-1. Resolves the platform (`## Platform` in `CLAUDE.md` → entity page → **delegates to `determine-platform`** when none is configured), then the target team/project (on GitHub Issues: the repo), and confirms.
+1. Resolves the platform (`## Platform` in `CLAUDE.md` → entity page → **delegates to `determine-platform`** when none is configured), then the target team/project (on GitHub Issues and GitLab Issues: the repo), and confirms.
 2. Adaptively interviews for missing goals — straight to a draft for small clear tasks, a short one-question-at-a-time interview for vague or multi-part work.
 3. Drafts the issue from an adaptive template (full vs minimal) and gates the Linear write on your approval.
 4. Decomposes the work: a checklist in the body by default, or **real Linear sub-issues** (parent + children via `--parent-ticket`) when the topic plainly splits into stages — and you can force or decline the split.
@@ -60,7 +60,7 @@ Uses the `linearis` CLI (see Requirements). Trigger: intent to create a new issu
 
 ### `nerd4rent:issue-workflow`
 
-A mandatory **status-driven** workflow for working a tracker issue by ID (e.g. `KAM-145` on Linear, `#123` or `owner/repo#123` on GitHub Issues). The issue's Linear status is the single source of truth — you steer by changing the status, the agent never asks you to "confirm the plan" in chat:
+A mandatory **status-driven** workflow for working a tracker issue by ID (e.g. `KAM-145` on Linear, `#123` or `owner/repo#123` on GitHub Issues, `#123` or `group/project#123` on GitLab Issues). The issue's Linear status is the single source of truth — you steer by changing the status, the agent never asks you to "confirm the plan" in chat:
 
 1. Fetches the issue (`linearis issues read <ID>`) at the start of every turn and dispatches on its **phase**, read through the project's status strategy (on Linear by default: the state name) — also when a bare issue ID is typed into a fresh session.
 2. **Backlog/Todo** → drafts an implementation plan (for ambiguous requirements, first offers an inline grilling session with an ADR/glossary docs discipline), posts it as a `## Implementation plan` comment, sets the status to Todo, and ends the turn with no instructions.
@@ -69,7 +69,7 @@ A mandatory **status-driven** workflow for working a tracker issue by ID (e.g. `
 5. Close-out on request: delegates to **`nerd4rent:issue-close`** (below) to merge and finish the issue.
 6. Posts a `## Session summary` comment after every working session, and in the same step records a one-line **checkpoint** (date, issue, status, branch, HEAD, next step) under `## Checkpoints` on the project's nerdbrain entity page — the entry `project-continue` reads back later; skipped silently when the vault is unreachable.
 
-Uses the tracker's CLI through its adapter (`linearis`, or `gh` for GitHub Issues). Trigger: any issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
+Uses the tracker's CLI through its adapter (`linearis`, `gh` for GitHub Issues, or `glab` for GitLab Issues). Trigger: any issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
 
 ### `nerd4rent:issue-start`
 
@@ -77,7 +77,7 @@ The mirror of `issue-close` at the other end of an issue: a deliberately **mecha
 
 1. Reads the issue (`linearis issues read <ID> --fields identifier,title,branchName,state.name,url`) and stops unless it is **In Progress** — the same approval gate `issue-workflow` enforces.
 2. Requires a clean checkout on `main`/`master`; on any other branch or with leftover changes it stops and reports (branching from another issue branch is `issue-workflow`'s decision, not the chain's).
-3. Creates the branch through the tracker's `issue.create-branch` (Linear: from its `branchName`; GitHub Issues: `gh issue develop`, which links the branch to the issue), makes the empty start commit (`Rozpoczęcie prac nad <ID>`, no co-author) and pushes with upstream.
+3. Creates the branch through the tracker's `issue.create-branch` (Linear: from its `branchName`; GitHub Issues: `gh issue develop`, which links the branch to the issue; GitLab Issues: `git checkout -b <number>-<title-slug>`), makes the empty start commit (`Rozpoczęcie prac nad <ID>`, no co-author) and pushes with upstream.
 4. Opens a **draft** PR/MR on the configured VCS host (`gh pr create --draft` / `glab mr create --draft` / `az repos pr create --draft true`) whose body starts with `Fixes <ID>`, so the Linear integration tracks it and auto-closes the issue on merge. Azure DevOps has no Linear integration, so there the body also carries the issue URL.
 
 On any error (branch already exists, push rejected, missing `gh`/`glab`/`az`) it stops and reports rather than improvising. Uses the `linearis` CLI. Trigger: intent to start an issue that is In Progress — *"zacznij"*, *"rozpocznij"*, *"start DEMO-123"*, *"open the PR for"*.
@@ -133,7 +133,7 @@ Limits on how much to read (max related pages, snippet caps) stay with the calli
 
 Brings this machine to the CLI state the skills in this repo require:
 
-1. Probes every entry declared in `cli-dependencies.json` (currently `node`, `linearis`, `gh`, `glab`, `az`, `rg`, `git`). A missing `glab` only matters on GitLab-hosted repos, a missing `az` (or its `azure-devops` extension) only on Azure DevOps-hosted ones.
+1. Probes every entry declared in `cli-dependencies.json` (currently `node`, `linearis`, `gh`, `glab`, `jq`, `az`, `rg`, `git`). A missing `glab` only matters on GitLab-hosted repos or GitLab Issues trackers, a missing `jq` only on GitLab Issues trackers, a missing `az` (or its `azure-devops` extension) only on Azure DevOps-hosted ones.
 2. Installs or updates whatever is missing or outdated — download with checksum verification, or `npm install --global` for entries declaring the `npm` method.
 3. Hands back the authentication steps only a human can complete — it never runs `auth login` flows itself.
 
@@ -173,18 +173,20 @@ statuses:
     done: done
 ```
 
-`native` maps phases to the tracker's state names, `label` to label names plus the reserved `open` (backlog only) and `closed` (always `done`), `comment` to the value of a `Status: <value>` marker comment. Without the key, the tracker adapter's `## Statuses` default applies — on Linear `native` with `Backlog / Todo / In Progress / In Review / Done`, so existing projects behave as before; on GitHub Issues `label` with `open / status::todo / status::in-progress / status::in-review / closed` (create the three labels with `/bind-statuses`). What each strategy means is in [`adapters/statuses.md`](adapters/statuses.md); `node scripts/validate-platform-config.ts [path/to/CLAUDE.md]` checks a config (all five phases, a strategy the adapter supports, no value twice) and every tracker adapter's default. See [ADR-0006](docs/adr/0006-canonical-phases-and-status-strategies.md).
+`native` maps phases to the tracker's state names, `label` to label names plus the reserved `open` (backlog only) and `closed` (always `done`), `comment` to the value of a `Status: <value>` marker comment. Without the key, the tracker adapter's `## Statuses` default applies — on Linear `native` with `Backlog / Todo / In Progress / In Review / Done`, so existing projects behave as before; on GitHub Issues and GitLab Issues `label` with `open / status::todo / status::in-progress / status::in-review / closed` (create the three labels with `/bind-statuses`). What each strategy means is in [`adapters/statuses.md`](adapters/statuses.md); `node scripts/validate-platform-config.ts [path/to/CLAUDE.md]` checks a config (all five phases, a strategy the adapter supports, no value twice) and every tracker adapter's default. See [ADR-0006](docs/adr/0006-canonical-phases-and-status-strategies.md).
 
 The commands themselves live in **adapter files**, one per platform per axis:
 
 | Axis | Adapter files | Required sections |
 |---|---|---|
-| tracker | `adapters/trackers/linear.md`, `adapters/trackers/github.md` | `CLI`, `Issue ID`, `Operations`, `URL`, `Statuses`, `Status strategies` |
+| tracker | `adapters/trackers/linear.md`, `adapters/trackers/github.md`, `adapters/trackers/gitlab.md` | `CLI`, `Issue ID`, `Operations`, `URL`, `Statuses`, `Status strategies` |
 | VCS host | `adapters/vcs/github.md`, `adapters/vcs/gitlab.md`, `adapters/vcs/ado.md` | `CLI`, `Detection`, `Operations`, `Magic words`, `URL` |
 
 Skills never quote a command: they name an **operation ID** (`issue.set-status`, `pr.merge`, …) and look it up in the adapter's `## Operations` table, read through `${CLAUDE_PLUGIN_ROOT}`. The `adapters` block of `workflow-graph.json` declares each axis's sections and operation IDs, and `node scripts/validate-workflow-graph.ts` rejects an adapter that misses one, repeats one, lists an undeclared one, or is named outside the config enum — and a tracker adapter whose `## Status strategies` table does not list exactly the strategies of the config enum, or supports none. A configured platform with no adapter file yet makes the skill stop with "adapter not available yet" — it never falls back to Linear.
 
 **GitHub Issues as the tracker** (`tracker: github`): issue IDs are `#123` (the configured repo) or `owner/repo#123`, and a PR number is rejected. The repo is the container — no team or project. Phases default to `status::*` labels plus open/closed, so a PR merged with `Fixes #123` into the default branch lands the issue on `done`. The `comment` strategy counts only markers whose author has write access to the repo (checked per author through the collaborator permission API). Sub-issues are GitHub's native ones (`gh issue create --parent`), and branches come from `gh issue develop` with an ASCII name `<number>-<title-slug>`. The token needs the `repo` scope (fine-grained: Issues, Contents and Pull requests, read and write). See [ADR-0005](docs/adr/0005-platform-adapters-as-reference-files.md).
+
+**GitLab Issues as the tracker** (`tracker: gitlab`): issue IDs are `#123` (the configured project) or `group/project#123`. The project is the container — no team or project to pick. Phases default to `status::*` labels plus opened/closed, and work on the Free tier: scoped-label exclusivity is a paid feature, so every status write removes the other status labels itself, and because GitLab silently creates a label that does not exist, a write stops unless the label is already there. An MR merged with `Fixes #123` into the default branch closes the issue and so lands it on `done`. The `comment` strategy counts only markers whose author is at least a Developer on the project (checked per author through the members API). GitLab Free has no sub-issues, so a child is an ordinary issue linked `relates_to` to its parent, with `Parent: #<n>` as the first line of its description. Branches are plain `git checkout -b <number>-<title-slug>`. The recipes pipe `glab api` output through `jq`; the token needs the `api` and `write_repository` scopes.
 
 ## Plugin agents
 
@@ -400,7 +402,8 @@ Cursor reads global skills from `~/.agents/skills/` (and `~/.cursor/skills/`); t
 
 - `git`
 - `gh` (GitHub CLI), authenticated (`gh auth status`)
-- `glab` (GitLab CLI), authenticated (`glab auth status`) — only for GitLab-hosted repos
+- `glab` (GitLab CLI), authenticated (`glab auth status`) — only for GitLab-hosted repos or GitLab Issues trackers
+- `jq` — only for GitLab Issues trackers
 - `az` (Azure CLI) with the `azure-devops` extension, signed in (`az login` or `az devops login`) — only for Azure DevOps-hosted repos
 - Node.js ≥ 22 (with npm)
 - `linearis` CLI (`npm i -g linearis`), authenticated with a personal API key from Linear Settings → API (`LINEAR_API_TOKEN` or `linearis auth login`); the Linear skills degrade gracefully if absent

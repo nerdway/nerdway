@@ -1,7 +1,7 @@
 ---
 name: issue-writer
 description: >-
-  Create a NEW tracker issue (Linear or GitHub Issues) for the current
+  Create a NEW tracker issue (Linear, GitHub Issues or GitLab Issues) for the current
   repo/project with clearly specified goals, so the planning agent can build an implementation plan from it. Use when
   the user wants to file/create/open a new issue or task ("utwórz/stwórz/dodaj/zgłoś
   issue/zadanie", "create issue", "new task") and does NOT yet have an issue ID.
@@ -40,7 +40,8 @@ Triggers include Polish *utwórz / stwórz / dodaj / zgłoś / załóż issue / 
 task* and English *create / open / file / new issue / task*.
 
 **Disambiguation:** if the user gives an existing issue ID (`TEAM-123`, or
-`#123` / `owner/repo#123` on GitHub Issues) and asks to plan or implement it → that is `nerd4rent:issue-workflow`, not this skill. This skill
+`#123` / `owner/repo#123` on GitHub Issues, `#123` / `group/project#123` on
+GitLab Issues) and asks to plan or implement it → that is `nerd4rent:issue-workflow`, not this skill. This skill
 *ends* by pointing at that one's status-driven flow.
 
 ## Hard gate (do not skip)
@@ -94,10 +95,10 @@ fall back to another tracker.
 `team.check`. Show the resolved `team` + `project` and get a quick
 confirmation **before writing**.
 
-When the adapter lists `team.*` and `project.*` as `—` (GitHub Issues), the
-repo is the container: take it from the config's `github` block
-(`owner/repo`), skip the team and project questions, and confirm the repo
-instead.
+When the adapter lists `team.*` and `project.*` as `—` (GitHub Issues,
+GitLab Issues), the repo is the container: take it from the config's `github`
+block (`owner/repo`) or `gitlab` block (`group/project`), skip the team and
+project questions, and confirm the repo instead.
 
 ### 2. Assess complexity (adaptive threshold)
 

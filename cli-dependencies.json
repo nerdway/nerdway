@@ -39,12 +39,21 @@
       "minVersion": "1.117.0",
       "versionCommand": ["glab", "--version"],
       "versionRegex": "glab(?: version)? (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-close", "issue-start"],
+      "requiredBy": ["issue-close", "issue-start", "issue-workflow", "issue-writer", "bind-statuses", "project-continue"],
       "manualInstall": "winget install GLab.GLab | brew install glab | see https://gitlab.com/gitlab-org/cli#installation",
       "auth": {
         "check": ["glab", "auth", "status"],
-        "instructions": "Run `glab auth login` and complete the flow for your GitLab host."
+        "instructions": "Run `glab auth login` and complete the flow for your GitLab host. A personal access token needs the `api` scope (issues, labels, notes and `glab api`, which GitLab Issues as a tracker uses) and `write_repository` (push)."
       }
+    },
+    {
+      "id": "jq",
+      "_comment": "the GitLab Issues tracker adapter filters `glab api` output with jq, because `glab api` has no --jq flag",
+      "minVersion": "1.6.0",
+      "versionCommand": ["jq", "--version"],
+      "versionRegex": "jq-(\\d+\\.\\d+(?:\\.\\d+)?)",
+      "requiredBy": ["issue-workflow", "issue-writer", "issue-start", "issue-close", "bind-statuses", "project-continue"],
+      "manualInstall": "winget install jqlang.jq | brew install jq | apt install jq"
     },
     {
       "id": "az",

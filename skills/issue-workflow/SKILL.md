@@ -1,9 +1,10 @@
 ---
 name: issue-workflow
 description: >-
-  Mandatory status-driven workflow for tracker issues (Linear, GitHub Issues)
-  when the user provides an issue ID (e.g. KAM-145, ENG-123; #123 or
-  owner/repo#123 in a GitHub Issues project) to plan or implement. Dispatches on the
+  Mandatory status-driven workflow for tracker issues (Linear, GitHub Issues,
+  GitLab Issues) when the user provides an issue ID (e.g. KAM-145, ENG-123;
+  #123, owner/repo#123 or group/project#123 in a GitHub or GitLab Issues
+  project) to plan or implement. Dispatches on the
   issue's workflow phase, read through the tracker's status strategy:
   backlog/todo → plan; in-progress (set manually by the user) → implement
   (branch, empty commit, draft PR with magic words); in-review → code-review
@@ -77,8 +78,9 @@ lists as `—` → stop and ask the user to run `/bind-statuses`.
 ## When this skill applies
 
 The user gave an **issue identifier** — `TEAM-123` on Linear; `#123` or
-`owner/repo#123` when the platform config says `tracker: github` (elsewhere
-`#123` is only a number, often a PR) — in a fresh session or mid-conversation — with intent to plan or implement (including Polish:
+`owner/repo#123` when the platform config says `tracker: github`; `#123` or
+`group/project#123` when it says `tracker: gitlab` (elsewhere `#123` is only a
+number, often a PR) — in a fresh session or mid-conversation — with intent to plan or implement (including Polish:
 *zaplanuj*, *zrealizuj*, *zrób*, *weź*, *napraw*, *wdroż*), or any message
 arrives in a session already working an issue.
 

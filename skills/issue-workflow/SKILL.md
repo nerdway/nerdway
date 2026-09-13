@@ -3,10 +3,11 @@ name: issue-workflow
 description: >-
   Mandatory status-driven workflow for Linear issues when the user provides an
   issue ID (e.g. KAM-145, ENG-123) to plan or implement. Dispatches on the
-  issue's Linear status: Backlog/Todo → plan; In Progress (set manually by the
-  user) → implement (branch, empty commit, draft PR with magic words); In
-  Review → code-review menu; Done → close-out. Never prints "confirm the plan"
-  instructions — the user steers by changing the issue status in Linear.
+  issue's workflow phase, read through the tracker's status strategy:
+  backlog/todo → plan; in-progress (set manually by the user) → implement
+  (branch, empty commit, draft PR with magic words); in-review → code-review
+  menu; done → close-out. Never prints "confirm the plan" instructions — the
+  user steers by changing the issue's status on the tracker.
   Invoke this skill FIRST; the tracker and VCS commands it needs come from
   the platform adapters.
 ---
@@ -57,7 +58,20 @@ another platform.
 
 The tracker adapter's `## CLI` section carries the command gotchas (field
 paths, multi-line bodies), `## URL` how to build an issue link, and
-`## Statuses` the team's state names used below.
+`## Status strategies` the read and write recipe per status strategy.
+
+## Phases and status strategy
+
+This skill dispatches on the five canonical phases — `backlog`, `todo`,
+`in-progress`, `in-review`, `done` — never on a tracker's own state names.
+Resolve the strategy and status map once per session, as
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` describes: the `statuses` block of
+the platform config, else the tracker adapter's `## Statuses` default (on
+Linear: `native`, `Backlog / Todo / In Progress / In Review / Done`).
+`issue.read-status` yields a phase through that strategy and
+`issue.set-status` writes one. A value the map does not hold is **phase
+unknown**: report the raw value and dispatch nothing. A strategy the adapter
+lists as `—` → stop and ask the user to run `/bind-statuses`.
 
 ## When this skill applies
 
@@ -66,49 +80,48 @@ mid-conversation — with intent to plan or implement (including Polish:
 *zaplanuj*, *zrealizuj*, *zrób*, *weź*, *napraw*, *wdroż*), or any message
 arrives in a session already working an issue.
 
-The **issue status in Linear is the single source of truth** for what phase to
-enter. The user steers the workflow by changing the status in Linear, not by
-typing approvals in chat.
+The **issue's phase on the tracker is the single source of truth** for what to
+do. The user steers the workflow by changing it there — a state, a label, or a
+`Status:` marker comment, depending on the strategy — not by typing approvals
+in chat.
 
 ## Hard gates (do not skip)
 
 1. **Before any repo change** (edit, write, build, install, commit, PR): the
-   issue status must be **In Progress** — set manually by the user in Linear.
-   Never set In Progress yourself to unlock implementation; an explicit user
-   instruction in chat to implement counts as approval (then set In Progress
-   to reflect it).
-2. **Status check every turn**: at the start of every turn that touches the
-   issue, run `issue.read-status` and dispatch on the current status. The status may have changed since the
-   last message.
+   issue's phase must be **`in-progress`** — written by the user on the
+   tracker, whatever the strategy. Never write `in-progress` yourself to unlock
+   implementation; an explicit user instruction in chat to implement counts as
+   approval (then write `in-progress` with `issue.set-status` to reflect it).
+2. **Phase check every turn**: at the start of every turn that touches the
+   issue, run `issue.read-status` and dispatch on the current phase. It may
+   have changed since the last message.
 3. **After every working session** on the issue: post a `## Session summary`
    comment (see below).
 
-Allowed regardless of status: tracker read operations, reading code for
-analysis, drafting plan text, posting Linear comments, answering questions.
+Allowed regardless of phase: tracker read operations, reading code for
+analysis, drafting plan text, posting tracker comments, answering questions.
 
-**Legacy marker:** older issues may carry a `Status: approved` line in the plan
-comment thread. Treat it as equivalent to In Progress (approval under the old
-workflow). Never post that marker on new work.
-
-## Dispatch by status
+## Dispatch by phase
 
 Fetch first — `issue.read`. That one JSON
 carries the state, the full description and every comment (linked PRs appear
 as GitHub-sync comments); inline images stay markdown URLs in the bodies.
-Then:
+Read the phase from it with the strategy's read recipe (under `comment` the
+marker is in those comments), then:
 
-| Issue status | Phase |
-|--------------|-------|
-| Backlog / Todo | **Planning** — draft and post a plan (or refine the existing one); set status **Todo**; end the turn with no instructions for the user |
-| In Progress | **Implementation** — rebuild context from the `## Implementation plan` comment and later comments; if branch/PR missing, run the Start step first |
-| In Review | **Code review** — present the code-review menu |
-| Done (set manually, PR unmerged) | **Close-out** — push, merge PR, ask about switching to main/master |
+| Phase | What to do |
+|-------|------------|
+| `backlog` / `todo` | **Planning** — draft and post a plan (or refine the existing one); write phase **`todo`**; end the turn with no instructions for the user |
+| `in-progress` | **Implementation** — rebuild context from the `## Implementation plan` comment and later comments; if branch/PR missing, run the Start step first |
+| `in-review` | **Code review** — present the code-review menu |
+| `done` (set manually, PR unmerged) | **Close-out** — push, merge PR, ask about switching to main/master |
+| unknown | report the raw value read from the tracker and stop |
 
 This table also governs a bare issue ID typed into a **fresh session**: check
-the status and enter the matching phase — do not restart planning for an issue
-already In Progress.
+the phase and do what it says — do not restart planning for an issue already
+`in-progress`.
 
-## Planning phase (status Backlog / Todo)
+## Planning phase (`backlog` / `todo`)
 
 ### Context fan-out (workflow island, when available)
 
@@ -223,12 +236,12 @@ implementation modes). Never delegate to the `grill-me` / `grill-with-docs`
 wrappers: they carry `disable-model-invocation: true` and only the user can
 run them, manually, as slash commands.
 
-### 2. Post plan to Linear and set Todo
+### 2. Post plan to the tracker and write `todo`
 
 Save the plan to a temp file, then:
 
 Run `issue.comment` with the plan file as the body, then `issue.set-status`
-with `Todo`.
+with the phase `todo`.
 
 The posted body **must** start with `## Implementation plan` (no status line).
 If step 0 found relevant decisions, note which ones the plan is consistent
@@ -238,9 +251,10 @@ with, and mark any deviation as `Odstępstwo od decyzji YYYY-MM-DD — powód`.
 
 Report briefly that the plan is in Linear — and stop. Do **not** tell the user
 to approve, confirm, or set any status. The user signals approval by moving the
-issue to **In Progress** in Linear (or by asking you to implement in chat).
+issue to **`in-progress`** on the tracker (or by asking you to implement in
+chat).
 
-## Implementation phase (status In Progress)
+## Implementation phase (`in-progress`)
 
 ### 4. Start (once per issue — skip if branch and PR already exist)
 
@@ -280,7 +294,7 @@ here first:
 
    `Fixes <ID>` (one line per issue if the PR closes several) lets the
    tracker integration track the PR and auto-close the issue on merge.
-2. **If `issue-start` stopped early** (issue not In Progress, dirty tree,
+2. **If `issue-start` stopped early** (issue not `in-progress`, dirty tree,
    branch already exists, missing VCS CLI), fix the reported cause or
    resolve it with the user — never re-run the chain blindly.
 
@@ -306,10 +320,10 @@ Commit and push to the PR branch as work lands.
 ### 7. After implementation: offer code review — never closure
 
 Do **not** offer to merge the PR or close the issue. Enter the review phase
-(same as the In Review phase below): confirm the axes and engines, then run
+(same as the `in-review` phase below): confirm the axes and engines, then run
 the review island.
 
-## Code review phase (status In Review, or right after implementation)
+## Code review phase (`in-review`, or right after implementation)
 
 The review is not a menu of one reviewer: it runs along **four fixed,
 mutually independent axes**, mapped in parallel, reduced deterministically,
@@ -377,13 +391,13 @@ Address the verified findings, push fixes to the PR branch.
 consent — a review on every issue means a prompt on every issue. Silence it
 with "don't ask again" (per workflow, per project).
 
-## Close-out (on user request, or status Done set manually)
+## Close-out (on user request, or phase `done` set manually)
 
-Only when the user asks to close/merge (or set Done manually with the PR still
+Only when the user asks to close/merge (or set `done` manually with the PR still
 open): invoke **`nerd4rent:issue-close`** with the issue ID. That skill
 mechanically commits any leftover changes, pushes, merges the PR/MR (GitHub or
 GitLab), switches the local checkout to the PR/MR base branch, and sets the
-issue to Done in Linear. It is deliberately lightweight (Haiku-friendly).
+issue's phase to `done`. It is deliberately lightweight (Haiku-friendly).
 
 If the merge fails (e.g. conflicts), it stops and reports — resolve, then
 re-run.
@@ -441,10 +455,12 @@ session's last push.
 - `nerd4rent:issue-writer` — upstream: creates the issue (in Backlog)
   that this skill plans and implements.
 - `nerd4rent:issue-start` — the Start chain step 4 delegates to once the
-  user has set In Progress (branch, start commit, push, draft PR/MR);
+  user has set `in-progress` (branch, start commit, push, draft PR/MR);
   mirror of `issue-close`.
+- `nerd4rent:bind-statuses` — binds the phases to the tracker (strategy and
+  map) this skill reads and writes.
 - `nerd4rent:issue-close` — the close-out chain (commit, push, merge,
-  switch to base, set Done).
+  switch to base, write `done`).
 - `nerd4rent:nerdbrain-search` — rg recipes underlying `nerdbrain-wiki`'s
   Graph recall step (used by 0b above).
 - `nerd4rent:project-continue` — reads the checkpoint this skill writes and

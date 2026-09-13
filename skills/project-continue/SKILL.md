@@ -3,7 +3,7 @@ name: project-continue
 description: >-
   Answer "where are we" for the current project in one step: read the newest
   entry of `## Checkpoints` on the project's nerdbrain entity page, verify it
-  against the repo (git) and the tracker (Linear, GitHub Issues, GitLab Issues), report any drift, and — only with the
+  against the repo (git) and the tracker (Linear, GitHub Issues, GitLab Issues, Azure DevOps Boards), report any drift, and — only with the
   user's consent, or when no checkpoint exists yet — record a fresh checkpoint.
   Use when the user switches to a project (also on another machine) and asks
   "gdzie jesteśmy", "na czym stanęliśmy", "kontynuuj projekt", "continue",
@@ -36,7 +36,8 @@ directories up from this skill's base directory.
 
 Take `<tracker>` and its identifiers (for Linear: team key and project UUID;
 for GitHub Issues: `github.owner`/`github.repo`; for GitLab Issues:
-`gitlab.group`/`gitlab.project`)
+`gitlab.group`/`gitlab.project`; for Azure DevOps Boards: `ado.org`/`ado.project`
+with `ado.team`/`ado.board`)
 from the `## Platform` section of the repo `CLAUDE.md`, else from the entity
 page frontmatter `platform:` — a legacy `linear:` block there means
 `tracker: linear` with that `team` and `project`. With neither, or with no

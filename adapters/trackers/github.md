@@ -35,6 +35,11 @@ confirmation-bypassing flags.
 - `gh issue edit --remove-label <name>` is a no-op for a label the issue does
   not carry, but **fails** (`'<name>' not found`, exit 1) for a label that
   does not exist in the repo — remove only labels read from the issue.
+- `gh api repos/<REPO>/collaborators/<login>/permission --jq .permission`
+  gives the author's access to the repo: `admin`, `write` (maintainers
+  included), `read` (triage included) or `none`. It exits 1 with HTTP 404 for
+  a deleted account, and with HTTP 403 when the caller itself has no push
+  access to `<REPO>`.
 - `gh issue close` / `gh issue reopen` on an issue already in that state
   print a `!` warning and exit 0.
 - `gh label create` fails (exit 1) when the label already exists.
@@ -163,11 +168,11 @@ the map, following the rules of `adapters/statuses.md`.
 |----------|------|-------|
 | `native` | — | — |
 | `label` | `gh issue view <n> -R <REPO> --json number,title,state,labels,url` — `state` `CLOSED` → value `closed`; `OPEN` → the mapped names among `labels[].name`, none → `open` | `closed` → `gh issue close <n> -R <REPO>`; otherwise `gh issue edit <n> -R <REPO> --remove-label '<mapped label on the issue>'` once per other mapped label the read found, plus `--add-label '<value>'` unless `<value>` is `open`, then `gh issue reopen <n> -R <REPO>` when the read found `CLOSED` |
-| `comment` | `gh issue view <n> -R <REPO> --json number,title,url,comments` — sort by `createdAt`, take the newest body whose first line is `Status: <value>` **and** whose `authorAssociation` is `OWNER`, `MEMBER` or `COLLABORATOR`; markers from anyone else are ignored | `gh issue comment <n> -R <REPO> --body "Status: <value>"` |
+| `comment` | `gh issue view <n> -R <REPO> --json number,title,url,comments` — sort by `createdAt`, newest first, keep the bodies whose first line is `Status: <value>`; for each in turn run `gh api repos/<REPO>/collaborators/<author.login>/permission --jq .permission` and take the first whose author has `admin` or `write`; a `read`/`none` author or a 404 skips that marker; a 403 → stop, phase unknown (the caller cannot verify authors) | `gh issue comment <n> -R <REPO> --body "Status: <value>"` |
 
-The `comment` author filter keeps outsiders on a public repo from moving an
-issue with a marker. It is one request per read and deliberately coarse:
-`MEMBER` is any member of the owning organisation, even without write access
-to this repo, and `COLLABORATOR` includes read-only collaborators of a private
-repo. Where that is too wide, use `label` — only users with triage or write
-access can change labels.
+Under `comment` anyone who can see an issue can comment on it, so a marker
+counts only when its author has write access to the repo — the rule of
+`adapters/statuses.md`. `authorAssociation` cannot tell that: `MEMBER` is any
+member of the owning organisation and `COLLABORATOR` includes read-only
+collaborators, so the recipe asks the permissions endpoint instead, usually
+once per read (the newest marker's author).

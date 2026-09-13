@@ -49,6 +49,7 @@
         "issue.read-relations",
         "issue.read-status",
         "issue.read-branch",
+        "issue.create-branch",
         "issue.resolve-from-branch",
         "issue.list-active",
         "issue.create",

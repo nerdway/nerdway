@@ -6,7 +6,7 @@
       "minVersion": "22.0.0",
       "versionCommand": ["node", "--version"],
       "versionRegex": "v(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["bootstrap-clis", "bind-statuses"],
+      "requiredBy": ["bootstrap-clis", "bind-statuses", "issue-start", "issue-workflow"],
       "manualInstall": "Install Node.js >= 22 (with npm) before running this script; it is a prerequisite, not a target. https://nodejs.org"
     },
     {
@@ -27,11 +27,11 @@
       "minVersion": "2.97.0",
       "versionCommand": ["gh", "--version"],
       "versionRegex": "gh version (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-close", "new-project-workflow", "issue-start"],
+      "requiredBy": ["issue-workflow", "issue-close", "new-project-workflow", "issue-start", "issue-writer", "bind-statuses", "project-continue", "determine-platform"],
       "manualInstall": "winget install GitHub.cli | brew install gh | see https://github.com/cli/cli#installation",
       "auth": {
         "check": ["gh", "auth", "status"],
-        "instructions": "Run `gh auth login` and complete the browser flow."
+        "instructions": "Run `gh auth login` and complete the browser flow; its classic token carries the `repo` scope (plus `read:org` for organisation repos) that GitHub Issues as a tracker needs. A fine-grained token needs Issues, Contents and Pull requests set to read and write on the repo - Contents because `gh issue develop` creates the issue branch."
       }
     },
     {

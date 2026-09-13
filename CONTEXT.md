@@ -122,6 +122,38 @@ capped at 10; a record of where the project stands, never a point where the
 agent waits.
 _Avoid_: gate, milestone (both name a stop; a checkpoint stops nothing)
 
+**Platform config**:
+The project's tracker (`linear`, `github`, `gitlab`, `ado`, `none`) and VCS
+host (`github`, `gitlab`, `ado`) plus the identifiers each needs — schema
+`PlatformConfig`. Lives as the `## Platform` section of the repo `CLAUDE.md`,
+mirrored as `platform:` on the entity page, and is established by
+`determine-platform`; a legacy `linear:` block on an entity page is read as its
+alias.
+_Avoid_: platform settings, integration (both hide that it is one YAML object in two places)
+
+**Adapter**:
+One markdown file per platform per axis — `adapters/trackers/<name>.md` or
+`adapters/vcs/<name>.md` — holding that platform's commands under the sections
+its axis requires. Selected by the platform config; read by core skills
+through `${CLAUDE_PLUGIN_ROOT}`. A missing adapter stops the skill; it never
+falls back to another platform.
+_Avoid_: driver, plugin (both suggest executable code)
+
+**Operation ID**:
+The stable name of one platform action — `issue.set-status`, `pr.merge` — as
+declared in the `adapters` block of `workflow-graph.json` and listed in the
+first column of every adapter's `## Operations` table. Skills name the ID,
+never the command; `—` as the command marks an action the platform does not
+offer.
+_Avoid_: command, verb (a command is what the adapter maps the ID to)
+
+**Exemption**:
+A validated exception on a frozen rule: the node allowed to act despite it,
+the narrow scope it may touch, and the reason. The only one today lets
+`platform-determine` replace the `## Platform` section of `CLAUDE.md` before
+any issue is In Progress.
+_Avoid_: override, bypass (both imply the rule stops holding)
+
 **Frozen rule**:
 An invariant enforced mechanically rather than by prose — no tracker write
 before approval, no merge without a green check, no vault access outside

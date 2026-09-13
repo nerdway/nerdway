@@ -2,6 +2,8 @@
 
 *Amended by DEMO-300: skills renamed (linear-issue-writer → issue-writer, linear-issue-workflow → issue-workflow, linear-issue-close → issue-close), frozen rule no-linear-write-before-approval → no-tracker-write-before-approval, gate mechanism linear-status → tracker-status; names below are the ones in force when written.*
 
+*Amended by ADR-0005 (DEMO-301): the contract gains `exemptions` on a frozen rule (rule 23 — a validated exception naming a node, its scope and reason) and a top-level `adapters` block declaring each platform axis's required sections and operation IDs (rule 24); `platform-determine` replaces `issue-write` as the axis entry.*
+
 The issue lifecycle axis (`linear-issue-writer` → `linear-issue-workflow` →
 `linear-issue-close` → `nerdbrain-wiki`/`nerdbrain-search`) was described only in
 prose spread across `SKILL.md` files, so its edges carried status ("hands off

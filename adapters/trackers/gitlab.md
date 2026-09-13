@@ -182,8 +182,8 @@ is `<CODE_PROJECT>` encoded.
 ## URL
 
 Take the link from the issue JSON's `web_url` field. Without it, build
-`https://<HOST>/<PROJECT>/-/issues/<n>` — gitlab.com redirects it to
-`/-/work_items/<n>`.
+`https://<HOST>/<PROJECT>/-/issues/<n>` — gitlab.com serves it as well as
+the `/-/work_items/<n>` form its API returns.
 
 ## Statuses
 

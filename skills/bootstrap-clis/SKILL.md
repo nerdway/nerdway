@@ -42,6 +42,7 @@ bare relative one — in every command below.
    | `NEEDS_AUTH` | Installed, not authenticated | Give the user the printed command; do not run it for them |
    | `NEEDS_PATH` | Binary placed, not resolvable | Tell the user to add `~/.local/bin` to PATH, then re-run |
    | `MISSING` | Absent, no install ran (no `install` strategy for this entry, or the run was `--check`) | If the detail says the install was skipped for `--check`, re-run without `--check`; otherwise give the user the `manualInstall` hint |
+   | `MISSING` for `glab` | The GitLab CLI is absent | Not blocking for a machine that works on no GitLab repos — say so, and give the `manualInstall` hint only when the user works on a GitLab-hosted repo (`vcs: gitlab`). The run still exits 1 |
    | `OUTDATED` | Present but below `minVersion`, no install ran (same two causes as `MISSING`) | Same as `MISSING` |
    | `UNSUPPORTED` | No install path for this platform | Give the `manualInstall` hint |
    | `FAILED` | Install ran and did not work | Report the detail verbatim; do not substitute another architecture |

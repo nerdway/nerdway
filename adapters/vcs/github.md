@@ -49,6 +49,11 @@ Fixes <ID>
 It lets the Linear↔GitHub integration track the PR and auto-close the issue
 on merge.
 
+With `tracker: github` the ID is the GitHub one: `Fixes #123` for an issue in
+the same repo, `Fixes owner/repo#123` for an issue in another repo. GitHub
+closes the issue itself, but only when the PR merges into the repo's
+**default branch**.
+
 ## URL
 
 `gh pr create` prints the PR URL; `gh repo view <name>` and

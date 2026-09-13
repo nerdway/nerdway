@@ -39,7 +39,7 @@ Used only when no platform config exists: read `git remote get-url origin`.
 | `auth.check` | `az devops project list --organization https://dev.azure.com/<org> --top 1 -o none` | a real API call: passes for both `az login` and a PAT, fails without the extension. Error → stop with "Run `az extension add --name azure-devops`, then `az login` (or `az devops login` with a PAT), and re-run." |
 | `repo.view` | `—` | project bootstrap supports GitHub only |
 | `repo.create` | `—` | project bootstrap supports GitHub only |
-| `pr.create-draft` | `az repos pr create --draft true --source-branch <branch> --title "<ID>: <title>" --description <line> <line> … -o json` | pass the body per `## Magic words` as **one argument per line** — `--description` joins its values with newlines |
+| `pr.create-draft` | `az repos pr create --draft true --source-branch <branch> --title "<ID>: <title>" --description <line> <line> … -o json` | pass the body per `## Magic words` as **one argument per line** — `--description` joins its values with newlines; with `tracker: ado` add `--work-items <n>` |
 | `pr.view` | `az repos pr list --source-branch <branch> --status active --query "[0].{title:title,description:description,base:targetRefName}" -o json` | the PR's stated intent; read-only |
 | `pr.diff` | `—` | `az` has no PR diff; read the change with `git diff` over the range instead |
 | `pr.list-merged` | `az repos pr list --status completed --top 5 --query "[].{id:pullRequestId,title:title,source:sourceRefName}" -o json` | the last merged PRs; read-only |
@@ -65,6 +65,22 @@ Fixes <ID>
 As arguments: `--description "Fixes <ID>" "<issue URL>" "" "<summary>"`.
 
 The close-out sets the issue to Done explicitly.
+
+With `tracker: ado` the ID is the work item's: the description is `Fixes #<n>`,
+a blank line and the summary — no URL line, since `--work-items <n>` links the
+work item to the PR (its Development section) and ADO links commits whose
+message mentions `#<n>`:
+
+```
+Fixes #<n>
+
+<one-paragraph summary>
+```
+
+As arguments: `--work-items <n> --description "Fixes #<n>" "" "<summary>"`.
+When the PR completes, `Fixes #<n>` moves the work item to its `Completed`
+state and the board's last column — the link alone does not. The close-out
+writes `done` anyway; writing the column the item already sits in succeeds.
 
 ## URL
 

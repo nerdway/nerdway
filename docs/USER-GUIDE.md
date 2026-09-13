@@ -104,7 +104,8 @@ You need [Claude Code](https://claude.com/claude-code) (or another coding agent 
 | `node` (with npm) | 22 | <https://nodejs.org> | — |
 | `gh` (GitHub CLI) | 2.97 | `brew install gh` / `winget install GitHub.cli` | `gh auth login` |
 | `linearis` (Linear CLI) | 2026.7.0 | `npm i -g linearis` | see below |
-| `glab` (GitLab CLI) — GitLab-hosted repos only | 1.117 | `brew install glab` / `winget install GLab.GLab` | `glab auth login` |
+| `glab` (GitLab CLI) — GitLab-hosted repos or GitLab Issues only | 1.117 | `brew install glab` / `winget install GLab.GLab` | `glab auth login` (token scopes `api`, `write_repository`) |
+| `jq` — GitLab Issues only | 1.6 | `brew install jq` / `winget install jqlang.jq` | — |
 | `az` (Azure CLI) — Azure DevOps-hosted repos only | 2.90 | `brew install azure-cli` / `winget install Microsoft.AzureCLI`, then `az extension add --name azure-devops` | `az login` or `az devops login` |
 | `rg` (ripgrep) | 14 | `brew install ripgrep` / `winget install BurntSushi.ripgrep.MSVC` | — |
 
@@ -147,7 +148,7 @@ Restart the agent after installing. These agents run the sequential degradation 
 
 ## Telling the plugin which platform a project uses
 
-Before the first issue, the plugin needs to know where the project's issues live (Linear or GitHub Issues today; GitLab Issues and Azure DevOps Boards are planned) and where its code lives (GitHub, GitLab or Azure DevOps). Run `/determine-platform` once per repo — or just file an issue and `issue-writer` runs it for you.
+Before the first issue, the plugin needs to know where the project's issues live (Linear, GitHub Issues or GitLab Issues today; Azure DevOps Boards is planned) and where its code lives (GitHub, GitLab or Azure DevOps). Run `/determine-platform` once per repo — or just file an issue and `issue-writer` runs it for you.
 
 It checks what is already recorded, infers the rest from the git remote and your Linear CLI, and asks you a single numbered question only when the answer is ambiguous. The result lands as a `## Platform` section in the repo's `CLAUDE.md` (commit it with the next change — it is meant to travel with the repo) and, if you use the nerdbrain vault, as `platform:` on the project's entity page. Running it again changes nothing.
 
@@ -181,7 +182,7 @@ The issue's status in Linear is the single source of truth for what the agent do
 
 Only you can move an issue to **In Progress** — the agent never does it by itself to unlock implementation (an explicit request to implement in chat counts as approval, and the agent then sets the status to reflect it).
 
-The table uses Linear's default names. On GitHub Issues the same steps are labels: **Backlog** is an open issue with no status label, then `status::todo`, `status::in-progress`, `status::in-review`, and **Done** is a closed issue — so merging the PR with `Fixes #123` finishes it. Under the hood the agent works with five phases and reads them through the project's status strategy, so the same steering works with labels (`status::in-progress`) or with a comment whose first line is `Status: in-progress` — whatever `/bind-statuses` recorded. A status the map doesn't know (say, *Canceled*) makes the agent report it and do nothing.
+The table uses Linear's default names. On GitHub Issues and GitLab Issues the same steps are labels: **Backlog** is an open issue with no status label, then `status::todo`, `status::in-progress`, `status::in-review`, and **Done** is a closed issue — so merging the PR or MR with `Fixes #123` finishes it. Under the hood the agent works with five phases and reads them through the project's status strategy, so the same steering works with labels (`status::in-progress`) or with a comment whose first line is `Status: in-progress` — whatever `/bind-statuses` recorded. A status the map doesn't know (say, *Canceled*) makes the agent report it and do nothing.
 
 ## Skills reference
 
@@ -200,17 +201,17 @@ How to trigger each skill and what to expect. All of them also respond to the sl
 ### `issue-writer` — file a new issue
 
 - **Say:** *"create an issue"*, *"new task"*, *"utwórz/zgłoś issue"* — intent to file new work, with no existing issue ID.
-- **What happens:** the agent resolves the platform (running `determine-platform` if none is recorded) and the target team/project — on GitHub Issues the repo — (and confirms it), interviews you only if the goal is unclear, shows you the drafted body, and creates the issue in Backlog only after you approve. For big topics it can split the work into real sub-issues, and optionally run a "grilling session" — a one-question-at-a-time interrogation that sharpens the requirements before planning starts.
+- **What happens:** the agent resolves the platform (running `determine-platform` if none is recorded) and the target team/project — on GitHub Issues and GitLab Issues the repo — (and confirms it), interviews you only if the goal is unclear, shows you the drafted body, and creates the issue in Backlog only after you approve. For big topics it can split the work into real sub-issues, and optionally run a "grilling session" — a one-question-at-a-time interrogation that sharpens the requirements before planning starts.
 
 ### `issue-workflow` — plan, implement, review
 
-- **Say:** any issue ID (`DEMO-123` on Linear; `#123` or `owner/repo#123` in a GitHub Issues project) with intent to work on it — *"plan DEMO-123"*, *"zrealizuj DEMO-123"*, or just the bare ID.
+- **Say:** any issue ID (`DEMO-123` on Linear; `#123` or `owner/repo#123` in a GitHub Issues project; `#123` or `group/project#123` in a GitLab Issues project) with intent to work on it — *"plan DEMO-123"*, *"zrealizuj DEMO-123"*, or just the bare ID.
 - **What happens:** the status-driven flow described [above](#steering-with-linear-statuses), including both islands. During implementation it offers whichever implementation-style skills you have installed (TDD, subagent-driven, or plain).
 
 ### `issue-start` — open the branch and the PR
 
 - **Say:** *"start DEMO-123"*, *"zacznij DEMO-123"*, *"open the PR for DEMO-123"* — or nothing: `issue-workflow` calls it the moment it sees In Progress.
-- **What happens:** the mirror of the close-out chain — checks the issue is In Progress and the checkout is a clean `main`/`master`, creates the branch (from the Linear `branchName`, or with `gh issue develop` on GitHub Issues, named `<number>-<title>` in ASCII), makes the empty start commit, pushes, opens a draft PR (GitHub, Azure DevOps) or MR (GitLab) with `Fixes DEMO-123` in the body — on Azure DevOps followed by the issue link, since Linear doesn't track PRs there. On any error it stops and reports.
+- **What happens:** the mirror of the close-out chain — checks the issue is In Progress and the checkout is a clean `main`/`master`, creates the branch (from the Linear `branchName`, or with `gh issue develop` on GitHub Issues and `git checkout -b` on GitLab Issues, named `<number>-<title>` in ASCII), makes the empty start commit, pushes, opens a draft PR (GitHub, Azure DevOps) or MR (GitLab) with `Fixes DEMO-123` in the body — on Azure DevOps followed by the issue link, since Linear doesn't track PRs there. On any error it stops and reports.
 
 ### `issue-close` — merge and finish
 

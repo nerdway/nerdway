@@ -58,8 +58,9 @@ phase. A strategy whose `## Status strategies` row is `—` → stop and report
 "strategy not supported — run `/bind-statuses`".
 
 The tracker adapter is used for two reads (`issue.read-status`,
-`issue.read-branch`) and no writes. `branchName` is the branch name the
-tracker derives from the issue (already safe for git).
+`issue.read-branch`) and one branch operation (`issue.create-branch`), and
+writes no status. `branchName` is the branch name the tracker derives from
+the issue (already safe for git).
 
 ## Inputs
 
@@ -97,11 +98,10 @@ Then run `issue.read-branch` and call its values `<ID>`, `<title>`,
 
 ## Step 1 — Branch
 
-```bash
-git checkout -b <branchName>
-```
+Run `issue.create-branch` with `<ID>`, `<branchName>` and `<base>` — the
+branch checked in precondition 2. It leaves the new branch checked out.
 
-If the branch already exists, the command fails — stop and report: the
+If the branch already exists, the operation fails — stop and report: the
 issue was started before, and `issue-workflow` skips Start in that case.
 
 ## Step 2 — Empty start commit and push

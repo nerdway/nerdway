@@ -184,6 +184,15 @@ whitelist plus the agent's read-only rule now rule out. The agents are not meant
 `agents` manifest field would replace the auto-discovered directory rather than
 add to it.
 
+None of the agents quotes a tracker or VCS command. Their read-only Bash lists
+name adapter **operation IDs** (`issue.read`, `issue.read-relations`, `pr.view`,
+`pr.diff`, `pr.list-merged`, plus `issue.list-active` for the gatherer), and
+every other adapter operation is forbidden to them. Since a workflow script
+cannot read files, `issue-workflow` resolves the adapter paths and passes them
+to both islands as `args.platform.adapters`; an island hands the path to its
+agents in the prompt, and a missing adapter (`null`) becomes a `gaps` entry
+instead of a command from another platform.
+
 ## Workflow topology
 
 The skills above are not a loose bag: they form the **issue lifecycle axis**,
@@ -234,7 +243,7 @@ fan-out (trigger `/nerd4rent:plan-context-fanout`, or `Workflow({name: "nerd4ren
 during development). One script realises both plan-phase workflow nodes — the
 contract's `script` binding on `wiki-recall` and `plan-context-fanout` points at
 the same file — spawning five concurrent gatherers (repo layout, conventions,
-prior plans, related Linear issues, nerdbrain vault) and reducing their output
+prior plans, related tracker issues, nerdbrain vault) and reducing their output
 deterministically into `PlanContext` + `ProjectContext`. The five gatherers
 run as the `nerd4rent:plan-gatherer` agent (see [Plugin agents](#plugin-agents)).
 The binding also arms

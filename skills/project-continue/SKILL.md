@@ -41,6 +41,12 @@ page frontmatter `platform:` — a legacy `linear:` block there means
 adapter file for the value, report the tracker checks as "tracker unknown —
 run `/determine-platform`" and carry on with git alone.
 
+Take the status strategy and map from the platform's `statuses` block, else
+the tracker adapter's `## Statuses` default;
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` defines how a value maps to one
+of the canonical phases (`backlog`, `todo`, `in-progress`, `in-review`,
+`done`).
+
 ## Git commands
 
 Each proven in this repo with the exit codes relied on below:
@@ -116,13 +122,17 @@ Obsidian Sync looks like: the repo moved on, the page has not caught up yet.
 
 ## Step 3 — Verify against Linear
 
-Run `issue.read-status` for the checkpointed issue.
+Run `issue.read-status` for the checkpointed issue and turn its value into a
+phase through the status map.
 
-Compare `state.name` with the status recorded in the entry. A difference is
-drift on its own, reported separately from the git cases — an issue moved to
-*In Review* or *Done* while the checkpoint still says *In Progress* is the
-common one. A failed read (issue deleted, no auth) is reported as "Linear
-status unknown", never as a match.
+Turn the status recorded in the entry into a phase the same way — a canonical
+phase name is taken as is, anything else (an older entry holding `In Progress`)
+is looked up in the map. Compare the two **phases**, not the raw strings. A
+difference is drift on its own, reported separately from the git cases — an
+issue moved to `in-review` or `done` while the checkpoint still says
+`in-progress` is the common one. A failed read (issue deleted, no auth) or a
+value the map does not hold is reported as "Linear status unknown", never as
+a match.
 
 ## Step 4 — Report
 
@@ -133,12 +143,13 @@ Print one compact block, always in this shape:
 2. **Git** — "in sync" or the case from Step 2 with its evidence (the
    `git log` lines, the default-branch ancestry result, the local/remote
    ahead-behind count).
-3. **Linear** — "in sync" or `recorded X, now Y`.
-4. **Active issues** — the project's `Todo / In Progress / In Review` list from
+3. **Linear** — "in sync" or `recorded X, now Y` (phases, with the raw values
+   when they differ from the phase names).
+4. **Active issues** — the project's `todo / in-progress / in-review` list from
    `issue.list-active` (identifiers from the platform config), so the
    user sees the whole board, not only the checkpointed issue.
 5. **One hint line** — *type `<ID>` to resume it with `issue-workflow`*,
-   naming the checkpointed issue (or the single In Progress one when the
+   naming the checkpointed issue (or the single `in-progress` one when the
    checkpoint is stale). The hint is all this skill does about the workflow:
    it never dispatches into it, since the status-driven flow has its own
    gates.
@@ -170,7 +181,7 @@ then — page present, vault reachable — record the first checkpoint without
 asking: the section was empty, so there is nothing to overwrite and the entry
 only captures what was just shown. Pick the issue for the entry in this order:
 the issue whose branch is checked out (ID from
-`issue.resolve-from-branch`), else the single *In Progress* issue,
+`issue.resolve-from-branch`), else the single `in-progress` issue,
 else ask which one. With `tier=none` or no page, stop after the report and say
 so.
 

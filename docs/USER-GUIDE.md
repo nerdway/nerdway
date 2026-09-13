@@ -151,6 +151,8 @@ Before the first issue, the plugin needs to know where the project's issues live
 
 It checks what is already recorded, infers the rest from the git remote and your Linear CLI, and asks you a single numbered question only when the answer is ambiguous. The result lands as a `## Platform` section in the repo's `CLAUDE.md` (commit it with the next change — it is meant to travel with the repo) and, if you use the nerdbrain vault, as `platform:` on the project's entity page. Running it again changes nothing.
 
+At the end it runs `/bind-statuses`, which decides how the tracker shows the workflow's five phases — `backlog`, `todo`, `in-progress`, `in-review`, `done`. On Linear the recommendation is the team's own states (`native`), which is also what applies when you decline, so nothing changes for you. Where a tracker has no states, the phases become labels (`status::todo`, plus open/closed), or — if you can't or don't want to add labels — `Status: <phase>` marker comments. It asks one question, creates labels only after you say yes, and adds a `statuses` key to the same `## Platform` section. You can run `/bind-statuses` again at any time.
+
 The skills then read the matching adapter files — the one place the plugin keeps Linear, GitHub, GitLab and Azure DevOps commands. If you configure a platform whose adapter isn't in your plugin version yet, the skills tell you so instead of guessing.
 
 ## A day with the plugin
@@ -179,6 +181,8 @@ The issue's status in Linear is the single source of truth for what the agent do
 
 Only you can move an issue to **In Progress** — the agent never does it by itself to unlock implementation (an explicit request to implement in chat counts as approval, and the agent then sets the status to reflect it).
 
+The table uses Linear's default names. Under the hood the agent works with five phases and reads them through the project's status strategy, so the same steering works with labels (`status::in-progress`) or with a comment whose first line is `Status: in-progress` — whatever `/bind-statuses` recorded. A status the map doesn't know (say, *Canceled*) makes the agent report it and do nothing.
+
 ## Skills reference
 
 How to trigger each skill and what to expect. All of them also respond to the slash form `/nerd4rent:<skill-name>`.
@@ -187,6 +191,11 @@ How to trigger each skill and what to expect. All of them also respond to the sl
 
 - **Say:** `/determine-platform`, *"which tracker does this project use"* — or nothing: `issue-writer` calls it when no platform is configured.
 - **What happens:** reads the `## Platform` section of `CLAUDE.md` and the entity page, infers from the git remote and the Linear CLI, asks one question only if still ambiguous, then writes the section (and the entity page mirror) and shows you the result. It is the only skill allowed to change the repo before an issue is In Progress, and it touches that one section alone.
+
+### `bind-statuses` — map workflow phases to the tracker
+
+- **Say:** `/bind-statuses`, *"bind statuses"*, *"zmapuj statusy"* — or nothing: `determine-platform` ends with it.
+- **What happens:** proposes a status strategy (the tracker's states, labels, or marker comments) and a phase map in one question, creates missing labels only after you agree, writes the `statuses` key into `## Platform` (and the entity page mirror), and validates it. Running it twice with the same answers changes nothing.
 
 ### `issue-writer` — file a new issue
 
@@ -225,7 +234,8 @@ These maintain a personal Obsidian vault with one entity page per project — th
 ## Troubleshooting
 
 - **`Issue with identifier "X" not found`** — wrong team prefix or workspace; check `linearis teams list`.
-- **`Status "X" for team ... not found`** — Linear statuses are your team's own names, spelled exactly (`In Progress`, not `in progress`).
+- **`Status "X" for team ... not found`** — Linear statuses are your team's own names, spelled exactly (`In Progress`, not `in progress`); fix the map with `/bind-statuses` if you renamed them.
+- **"phase unknown"** — the issue shows a state, label or marker the status map doesn't hold; move the issue to a mapped status, or extend the map with `/bind-statuses`.
 - **`linearis` errors about authentication** — set `LINEAR_API_TOKEN` or run `linearis auth login` (see [Prerequisites](#prerequisites)).
 - **`/plugin update` says nothing changed** — run `/plugin marketplace update nerd4rent-claude-plugin` first; if it still reports no change, no new version has been released yet.
 - **A skill doesn't trigger** — invoke it explicitly with the slash form, e.g. `/nerd4rent:issue-workflow DEMO-123`.

@@ -88,7 +88,10 @@ A marker comment on the issue.
   `in-progress`).
 - **Marker:** a comment whose **first line** is exactly `Status: <value>`.
   A marker quoted inside prose, indented, or on a later line does not count.
-  Any author counts.
+  Any author counts — acceptable only where just project members can comment
+  (a private Linear workspace). An adapter for a tracker where outsiders can
+  comment (public GitHub or GitLab issues) must restrict its read recipe to
+  markers from users with write access, or list `comment` as `—`.
 - **Read:** the newest comment carrying a marker; its value is looked up in
   the map. No marker comment at all → `backlog`.
 - **Write** `<phase>`: post a new comment whose body is the single line

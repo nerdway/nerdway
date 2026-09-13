@@ -106,8 +106,10 @@ Answer yes, name another strategy (native / comment), or edit the map.
 ```
 
 Loop on corrections until the user confirms. Every phase gets a value, no
-value twice, `open`/`closed` only under `label` (`done: closed` always there,
-`open` only for `backlog`) — `adapters/statuses.md` has the reasons.
+value twice, no quote, backtick, `$` or backslash in a value (recipes put it
+into shell commands), `open`/`closed` only under `label` (`done: closed`
+always there, `open` only for `backlog`) — `adapters/statuses.md` has the
+reasons.
 
 ## Step 5 — Create missing labels (label strategy only, with consent)
 
@@ -155,7 +157,7 @@ following `nerd4rent:nerdbrain-wiki` (filesystem only, `updated:` bump, one
 ## Step 7 — Validate
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/validate-platform-config.ts "$(git rev-parse --show-toplevel)/CLAUDE.md"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/validate-platform-config.ts" "$(git rev-parse --show-toplevel)/CLAUDE.md"
 ```
 
 Non-zero exit → show the errors, fix the block with the user, write again.

@@ -61,8 +61,9 @@ legacy `Status: approved` marker is removed rather than aliased: the
   `## Status strategies`, supports at least one, and gives a read and a write
   recipe for each one it supports. A real config is checked by
   `scripts/validate-platform-config.ts`: all five phases mapped, a known
-  strategy the adapter supports, no value mapped twice, `open`/`closed` only
-  under `label` — and every tracker adapter's own default the same way.
+  strategy the adapter supports, no value mapped twice, no quote, backtick,
+  `$` or backslash in a value (adapter recipes interpolate it into shell
+  commands), `open`/`closed` only under `label` — and every tracker adapter's own default the same way.
 - Writing the `statuses` key of `## Platform` is a second exemption on
   `no-repo-change-before-in-progress`, held by the `statuses-bind` node.
   Creating a missing label on the tracker is irreversible outward-facing work,
@@ -73,7 +74,9 @@ legacy `Status: approved` marker is removed rather than aliased: the
 - Under `comment`, a marker is only counted as a standalone first line of a
   comment, so a quoted marker inside prose never moves an issue; any author's
   marker counts, since a solo developer writes as the same account the agent
-  uses.
+  uses. That holds only where outsiders cannot comment: an adapter for a public
+  tracker must restrict markers to users with write access or not offer
+  `comment`.
 - `determine-platform` chains into `bind-statuses`, and `bind-statuses` also
   runs on its own at any time; both keep an existing `statuses` block when
   they rewrite the section.

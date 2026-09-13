@@ -20,23 +20,30 @@ The write, when it happens, goes through the `nerdbrain-wiki` procedure
 (section mode *Prepend, capped*, `updated:` bump, `log.md` line) — never
 through ad-hoc file surgery.
 
-## CLI reference
+## Platform and adapters
 
-`linearis` is the Linear CLI (npm, JSON-only output). This skill only reads:
+Tracker commands live in an adapter file at the plugin root, never in this
+skill. This skill only reads, through two operations of the tracker adapter:
+`issue.read-status` (status of the checkpointed issue) and
+`issue.list-active` (active issues of the project):
 
-| Purpose | Command |
-|---------|---------|
-| Status of the checkpointed issue | `linearis issues read <ID> --fields identifier,title,state.name` |
-| Active issues of the project | `linearis issues list --team <KEY> --project <PROJECT> --status 'Todo,In Progress,In Review' --fields nodes.identifier,nodes.title,nodes.state.name` |
+```
+${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
+```
 
-`--project` accepts the project **UUID** from the entity page's
-`linear.project` frontmatter as well as the project name. On `list` the
-result is `{nodes: [...]}`, so `--fields` paths need the `nodes.` prefix —
-`--fields identifier` returns `{}` with no error. `--status` requires
-`--team`; states are the team's own **names** (`In Progress`, not
-`started`).
+If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
+directories up from this skill's base directory.
 
-Git commands, each proven in this repo with the exit codes relied on below:
+Take `<tracker>` and its identifiers (for Linear: team key and project UUID)
+from the `## Platform` section of the repo `CLAUDE.md`, else from the entity
+page frontmatter `platform:` — a legacy `linear:` block there means
+`tracker: linear` with that `team` and `project`. With neither, or with no
+adapter file for the value, report the tracker checks as "tracker unknown —
+run `/determine-platform`" and carry on with git alone.
+
+## Git commands
+
+Each proven in this repo with the exit codes relied on below:
 
 | Purpose | Command | Exit |
 |---------|---------|------|
@@ -109,9 +116,7 @@ Obsidian Sync looks like: the repo moved on, the page has not caught up yet.
 
 ## Step 3 — Verify against Linear
 
-```bash
-linearis issues read <ID> --fields identifier,title,state.name
-```
+Run `issue.read-status` for the checkpointed issue.
 
 Compare `state.name` with the status recorded in the entry. A difference is
 drift on its own, reported separately from the git cases — an issue moved to
@@ -130,7 +135,7 @@ Print one compact block, always in this shape:
    ahead-behind count).
 3. **Linear** — "in sync" or `recorded X, now Y`.
 4. **Active issues** — the project's `Todo / In Progress / In Review` list from
-   the CLI reference (team key and project from the page frontmatter), so the
+   `issue.list-active` (identifiers from the platform config), so the
    user sees the whole board, not only the checkpointed issue.
 5. **One hint line** — *type `<ID>` to resume it with `issue-workflow`*,
    naming the checkpointed issue (or the single In Progress one when the
@@ -152,8 +157,9 @@ the "next" line before writing if they want to.
 
 Establish the state from the two sources the checkpoint would have summarised:
 
+Run `issue.list-active`, then:
+
 ```bash
-linearis issues list --team <KEY> --project <PROJECT> --status 'Todo,In Progress,In Review' --fields nodes.identifier,nodes.title,nodes.state.name
 git status --short
 git branch --show-current
 git log --oneline -5
@@ -163,8 +169,8 @@ Show the result in the Step 4 shape (sections 4 and 5, plus the git state),
 then — page present, vault reachable — record the first checkpoint without
 asking: the section was empty, so there is nothing to overwrite and the entry
 only captures what was just shown. Pick the issue for the entry in this order:
-the issue whose branch is checked out (ID parsed from the branch name and
-confirmed with `linearis issues read`), else the single *In Progress* issue,
+the issue whose branch is checked out (ID from
+`issue.resolve-from-branch`), else the single *In Progress* issue,
 else ask which one. With `tier=none` or no page, stop after the report and say
 so.
 

@@ -214,7 +214,7 @@ If the page has `## Decisions` and `## Active context` but no
   from repo and tracker is still produced.
 - **Vault access is filesystem-only** (`Read`/`Edit` on the vault path, `rg`
   for search) — no Obsidian/Linear MCP, no Local REST API, no git against the
-  vault (ADR-0001, `~/.claude/CLAUDE.md`).
+  vault (ADR-0001, user rules / `AGENTS.md` / `~/.claude/CLAUDE.md`).
 - **The tracker is read-only here.** Status changes belong to the user on the tracker,
   or to `issue-workflow` / `issue-close`.
 - **The injected page stays authoritative** for stack, commands and

@@ -8,13 +8,15 @@ description: >-
   `## Checkpoints`, the filesystem write pattern, the frontmatter
   `updated:` bump, the entity-page template for a new page, or steps to append to
   the wiki index.md / log.md. Also covers advisory boundary cases. The WHEN-to-write
-  triggers and hard safety rules live in the global ~/.claude/CLAUDE.md.
+  triggers and hard safety rules live in the user rules / AGENTS.md /
+  ~/.claude/CLAUDE.md.
 ---
 
 # nerdbrain-wiki: writing entity pages
 
-This skill is the **HOW**. The global `~/.claude/CLAUDE.md` decides **WHEN** to
-write and holds the hard safety rules (no MCP, vault root). Use the
+This skill is the **HOW**. The user rules / `AGENTS.md` / global
+`~/.claude/CLAUDE.md` decide **WHEN** to write and hold the hard safety
+rules (no MCP, vault root). Use the
 `obsidian-cli` skill for the broader CLI surface and `obsidian-markdown` for
 note syntax.
 

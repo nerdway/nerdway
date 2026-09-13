@@ -3,7 +3,8 @@ name: issue-close
 model: haiku
 description: >-
   Mechanically close out a Linear issue once the work is done: commit any
-  leftover changes, push, merge the PR (GitHub) or MR (GitLab), switch the local
+  leftover changes, push, merge the PR (GitHub, Azure DevOps) or MR (GitLab),
+  switch the local
   checkout to the PR/MR base branch, and set the Linear issue to Done. Purely
   procedural with explicit commands and no multi-step reasoning — pinned to Haiku
   (the `model` frontmatter above) to keep it cheap. Invoked by
@@ -97,15 +98,17 @@ git push -u origin "$(git branch --show-current)"
 
 From the VCS adapter, in this order:
 
-1. `pr.view-base` — **before merging**; capture the base branch for Step 4.
-2. `pr.mark-ready` — only when `pr.view-base` reports a draft (GitHub
-   `isDraft: true`); on GitLab the adapter lists no command and this step is
-   skipped.
-3. `pr.merge` — exactly as the adapter gives it: a **merge commit** is the
-   only method this workflow uses.
+1. `pr.view-base` — **before merging**; capture the base branch for Step 4,
+   the draft flag, and the PR `<id>` when the adapter returns one.
+2. `pr.mark-ready` — only when `pr.view-base` reports a draft
+   (`isDraft: true`); when the adapter lists `—` for it, this step is skipped.
+3. `pr.merge` — exactly as the adapter gives it, with the `<id>` from step 1
+   when its command takes one: a **merge commit** is the only method this
+   workflow uses.
 
-If the merge fails (conflicts, protected branch, insufficient permissions),
-**stop and report the error** — do not attempt to resolve it.
+If the merge fails (conflicts, protected branch, branch policy, insufficient
+permissions), **stop and report the error** — do not attempt to resolve or
+bypass it.
 
 ## Step 4 — Switch to the base branch and sync
 

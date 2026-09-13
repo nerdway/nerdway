@@ -34,8 +34,8 @@ Used only when no platform config exists: read `git remote get-url origin`.
 | `pr.view` | `glab mr view` | the MR's title and description; read-only |
 | `pr.diff` | `glab mr diff` | the MR's diff; read-only |
 | `pr.list-merged` | `glab mr list --merged --per-page 5` | the last merged MRs; read-only |
-| `pr.view-base` | `glab mr view` | read **before** merging: the target branch is the branch to switch to afterwards |
-| `pr.mark-ready` | `—` | the close-out runs no ready step on GitLab |
+| `pr.view-base` | `glab mr view --output json` | read **before** merging: `target_branch` is the branch to switch to afterwards, `draft` the draft flag |
+| `pr.mark-ready` | `glab mr update --ready` | only when `draft` is `true` — `glab mr merge` refuses a draft MR (exit 1) |
 | `pr.merge` | `glab mr merge --yes` | pass no method-selection flags — the project's merge-method setting decides, and a **merge commit** is the expected configuration |
 
 ## Magic words
@@ -49,8 +49,15 @@ Fixes <ID>
 <one-paragraph summary>
 ```
 
-There is no Linear↔GitHub-style auto-close on GitLab, so the close-out sets
-the issue to Done explicitly.
+There is no Linear↔GitHub-style auto-close on GitLab, so with a Linear
+tracker the close-out sets the issue to Done explicitly.
+
+With `tracker: gitlab` the ID is the GitLab one: `Fixes #123` for an issue in
+the same project, `Fixes group/project#123` for an issue in another project.
+GitLab closes the issue itself (`Fixes`, `Closes` and `Resolves` behave the
+same), but only when the MR merges into the project's **default branch** and
+the project has automatic issue closing enabled; the close-out writes `done`
+anyway, and closing an already closed issue succeeds.
 
 ## URL
 

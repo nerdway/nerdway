@@ -49,8 +49,15 @@ Fixes <ID>
 <one-paragraph summary>
 ```
 
-There is no Linear↔GitHub-style auto-close on GitLab, so the close-out sets
-the issue to Done explicitly.
+There is no Linear↔GitHub-style auto-close on GitLab, so with a Linear
+tracker the close-out sets the issue to Done explicitly.
+
+With `tracker: gitlab` the ID is the GitLab one: `Fixes #123` for an issue in
+the same project, `Fixes group/project#123` for an issue in another project.
+GitLab closes the issue itself (`Fixes`, `Closes` and `Resolves` behave the
+same), but only when the MR merges into the project's **default branch** and
+the project has automatic issue closing enabled; the close-out writes `done`
+anyway, and closing an already closed issue succeeds.
 
 ## URL
 

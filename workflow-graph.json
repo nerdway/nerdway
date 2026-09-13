@@ -36,6 +36,7 @@
         "project.list",
         "project.create",
         "issue.read",
+        "issue.read-relations",
         "issue.read-status",
         "issue.read-branch",
         "issue.resolve-from-branch",
@@ -50,7 +51,7 @@
     "vcs": {
       "config": "PlatformConfig.vcs",
       "sections": ["CLI", "Detection", "Operations", "Magic words", "URL"],
-      "operations": ["auth.check", "repo.view", "repo.create", "pr.create-draft", "pr.view-base", "pr.mark-ready", "pr.merge"]
+      "operations": ["auth.check", "repo.view", "repo.create", "pr.create-draft", "pr.view", "pr.diff", "pr.list-merged", "pr.view-base", "pr.mark-ready", "pr.merge"]
     }
   },
   "schemas": [
@@ -747,9 +748,9 @@
       "runtime": "workflow",
       "phase": "plan",
       "script": "workflows/plan-context-fanout.js",
-      "in": ["IssueSpec"],
+      "in": ["IssueSpec", "PlatformConfig"],
       "out": ["ProjectContext"],
-      "dependsOn": ["issue-write"],
+      "dependsOn": ["issue-write", "platform-determine"],
       "failure": {
         "retries": 0,
         "fallback": "continue without vault context and flag the gap in the plan",
@@ -765,9 +766,9 @@
       "runtime": "workflow",
       "phase": "plan",
       "script": "workflows/plan-context-fanout.js",
-      "in": ["IssueSpec"],
+      "in": ["IssueSpec", "PlatformConfig"],
       "out": ["PlanContext"],
-      "dependsOn": ["issue-write"],
+      "dependsOn": ["issue-write", "platform-determine"],
       "failure": {
         "retries": 1,
         "fallback": "degrade to the sequential context read in the main agent",
@@ -850,9 +851,9 @@
       "runtime": "workflow",
       "phase": "review",
       "script": "workflows/review-verify.js",
-      "in": ["ReviewRequest"],
+      "in": ["ReviewRequest", "PlatformConfig"],
       "out": ["ReviewFindings"],
-      "dependsOn": ["review-menu"],
+      "dependsOn": ["review-menu", "platform-determine"],
       "failure": {
         "retries": 1,
         "fallback": "report partial findings and mark the run incomplete",

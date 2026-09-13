@@ -56,6 +56,7 @@ candidate resolves, stop and ask the user for the ID — never guess it.
 | `project.list` | `linearis projects list --fields nodes.id,nodes.name,nodes.url,nodes.teams.nodes.key` | match `name` **and** the team key in `teams.nodes[].key` client-side; `id` is the project UUID |
 | `project.create` | `linearis projects create "<name>" --team <KEY> --description "<one-line description>" --fields id,name,url` | take `.id` (UUID) and `.url` straight from the output |
 | `issue.read` | `linearis issues read <ID> --with-comments` | state, full description and every comment in one JSON |
+| `issue.read-relations` | `linearis issues read <ID> --fields identifier,title,state.name,parent,children,relations,inverseRelations` | parent, sub-issues and linked issues without the comments; run it again on the parent to reach the siblings |
 | `issue.read-status` | `linearis issues read <ID> --fields identifier,title,state.name` | cheap enough to run every turn; exits non-zero for an ID that does not exist |
 | `issue.read-branch` | `linearis issues read <ID> --fields identifier,title,branchName,state.name,url` | `branchName` is already safe for git |
 | `issue.resolve-from-branch` | the loop below | prints the first candidate that resolves, nothing when none does |

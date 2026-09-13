@@ -135,15 +135,17 @@ _Avoid_: platform settings, integration (both hide that it is one YAML object in
 One markdown file per platform per axis — `adapters/trackers/<name>.md` or
 `adapters/vcs/<name>.md` — holding that platform's commands under the sections
 its axis requires. Selected by the platform config; read by core skills
-through `${CLAUDE_PLUGIN_ROOT}`. A missing adapter stops the skill; it never
-falls back to another platform.
+through `${CLAUDE_PLUGIN_ROOT}`, and by island agents through the absolute
+path the calling skill passes in `args.platform.adapters`. A missing adapter
+stops the skill and becomes a gap in an island; it never falls back to
+another platform.
 _Avoid_: driver, plugin (both suggest executable code)
 
 **Operation ID**:
 The stable name of one platform action — `issue.set-status`, `pr.merge` — as
 declared in the `adapters` block of `workflow-graph.json` and listed in the
-first column of every adapter's `## Operations` table. Skills name the ID,
-never the command; `—` as the command marks an action the platform does not
+first column of every adapter's `## Operations` table. Skills, workflow
+islands and their agents name the ID, never the command; `—` as the command marks an action the platform does not
 offer.
 _Avoid_: command, verb (a command is what the adapter maps the ID to)
 

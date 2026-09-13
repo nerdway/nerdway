@@ -8,11 +8,16 @@ slug: <slug>
 remote: <git-remote-url-or-empty>
 local-paths:
   - {host: <hostname>, path: <absolute-path>}
-linear:              # REQUIRED — never leave empty or placeholder
-  team: <team-key>   # from `linearis teams list` (e.g. DEMO)
-  project: <uuid>    # `id` from `linearis projects list` (match name + team key)
-# If the project has no Linear counterpart, replace the whole block with:
-# linear: none
+platform:            # REQUIRED — same object as the repo CLAUDE.md `## Platform` section
+  tracker: linear    # linear | github | gitlab | ado | none
+  vcs: github        # github | gitlab | ado
+  linear:            # identifier block of each platform in use
+    team: <team-key>
+    project: <uuid>
+  github:
+    owner: <owner>
+    repo: <repo>
+# No tracker: `tracker: none` and no `linear:` block inside `platform:`.
 related: []
 ---
 

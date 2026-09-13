@@ -47,9 +47,16 @@ export interface Gate {
   description: string;
 }
 
+export interface Exemption {
+  node: string;
+  scope: string;
+  reason: string;
+}
+
 export interface FrozenRule {
   id: string;
   rule: string;
+  exemptions?: Exemption[];
 }
 
 export interface FailurePolicy {
@@ -76,10 +83,23 @@ export interface GraphNode {
   script?: string;
 }
 
+export interface AdapterAxis {
+  config: string;
+  sections: string[];
+  operations: string[];
+}
+
 export interface GraphContract {
   schemas: SchemaEntry[];
   frozenRules?: FrozenRule[];
   nodes: GraphNode[];
+  adapters?: Record<string, AdapterAxis>;
+}
+
+export interface AdapterFile {
+  axis: string;
+  name: string;
+  source: string;
 }
 
 export interface InlineSchemaUse {
@@ -316,6 +336,108 @@ function validateGates(
   }
 }
 
+function validateExemptions(ruleId: string, raw: unknown, byId: Map<string, GraphNode>, errors: string[]): void {
+  if (!Array.isArray(raw)) {
+    errors.push(`frozen rule ${ruleId}: exemptions must be an array of exemption entries`);
+    return;
+  }
+  for (const exemption of raw) {
+    if (!isRecord(exemption)) {
+      errors.push(`frozen rule ${ruleId}: each exemption must be an object with node, scope and reason`);
+      continue;
+    }
+    if (typeof exemption.node !== "string" || !byId.has(exemption.node)) {
+      errors.push(`frozen rule ${ruleId}: exemption names node ${String(exemption.node)}, which is not a node id`);
+    }
+    for (const field of ["scope", "reason"] as const) {
+      const value = exemption[field];
+      if (typeof value !== "string" || value.length === 0) {
+        errors.push(`frozen rule ${ruleId}: exemption for ${String(exemption.node)} must state a non-empty ${field}`);
+      }
+    }
+  }
+}
+
+function sectionBody(source: string, heading: string): string | undefined {
+  const lines = source.split("\n");
+  const start = lines.findIndex((line) => line.trimEnd() === `## ${heading}`);
+  if (start === -1) return undefined;
+  const end = lines.findIndex((line, index) => index > start && line.startsWith("## "));
+  return lines.slice(start + 1, end === -1 ? undefined : end).join("\n");
+}
+
+const TABLE_SEPARATOR = /^\|[\s:|-]+\|?$/;
+
+function operationIds(table: string): string[] {
+  const rows = table.split("\n").filter((line) => line.startsWith("|") && !TABLE_SEPARATOR.test(line.trim()));
+  return rows.slice(1).map((row) => row.split("|")[1].trim().replace(/^`(.*)`$/, "$1"));
+}
+
+function duplicates(values: string[]): string[] {
+  return [...new Set(values.filter((value, index) => values.indexOf(value) !== index))];
+}
+
+function validateAdapters(raw: unknown, registry: Map<string, unknown>, files: AdapterFile[], errors: string[]): void {
+  if (raw === undefined && files.length === 0) return;
+  if (!isRecord(raw)) {
+    errors.push("adapters must be an object mapping each adapter directory to its axis contract");
+    return;
+  }
+
+  const enums = new Map<string, string[]>();
+  for (const [axis, spec] of Object.entries(raw)) {
+    if (!isRecord(spec)) {
+      errors.push(`adapters.${axis}: must be an object with config, sections and operations`);
+      continue;
+    }
+    const [schemaId, property] = typeof spec.config === "string" ? spec.config.split(".") : [];
+    const schema = registry.get(schemaId);
+    const values = isRecord(schema) && isRecord(schema.properties) ? (schema.properties[property] as JsonSchema | undefined)?.enum : undefined;
+    if (!isStringArray(values)) {
+      errors.push(`adapters.${axis}: config ${String(spec.config)} names no enum property of a registry schema`);
+    } else {
+      enums.set(axis, values);
+    }
+    if (!isStringArray(spec.sections) || !spec.sections.includes("Operations")) {
+      errors.push(`adapters.${axis}: sections must be an array of headings including Operations`);
+    }
+    if (!isStringArray(spec.operations) || spec.operations.length === 0) {
+      errors.push(`adapters.${axis}: operations must be a non-empty array of operation ids`);
+    } else {
+      for (const id of duplicates(spec.operations)) errors.push(`adapters.${axis}: operation ${id} is declared twice`);
+    }
+  }
+
+  for (const file of files) {
+    const where = `adapters/${file.axis}/${file.name}.md`;
+    const spec = raw[file.axis];
+    if (!isRecord(spec)) {
+      errors.push(`${where}: directory ${file.axis} is not an axis declared in the adapters block`);
+      continue;
+    }
+    const values = enums.get(file.axis);
+    if (values !== undefined && !values.includes(file.name)) {
+      errors.push(`${where}: ${file.name} is not a value of ${String(spec.config)}, so no config can select this adapter`);
+    }
+    for (const section of names(spec.sections)) {
+      if (sectionBody(file.source, section) === undefined) {
+        errors.push(`${where}: missing required section ## ${section}`);
+      }
+    }
+    const table = sectionBody(file.source, "Operations");
+    if (table === undefined) continue;
+    const declared = names(spec.operations);
+    const listed = operationIds(table);
+    for (const id of declared.filter((id) => !listed.includes(id))) {
+      errors.push(`${where}: operation ${id} is missing from the Operations table`);
+    }
+    for (const id of duplicates(listed)) errors.push(`${where}: operation ${id} is listed twice`);
+    for (const id of [...new Set(listed.filter((id) => !declared.includes(id)))]) {
+      errors.push(`${where}: operation ${id} is not declared for the ${file.axis} axis`);
+    }
+  }
+}
+
 function validateBudget(id: string, raw: unknown, errors: string[]): void {
   const maxWidth = (raw as { maxWidth?: unknown })?.maxWidth;
   if (typeof maxWidth !== "number" || !Number.isInteger(maxWidth) || maxWidth < 1 || maxWidth > MAX_WIDTH) {
@@ -355,6 +477,7 @@ export function validateContract(
   skillDirs: string[],
   inlineSchemas: InlineSchemaUse[] = [],
   scriptFiles: string[] = [],
+  adapterFiles: AdapterFile[] = [],
 ): string[] {
   if (typeof raw !== "object" || raw === null) return ["contract must be an object with schemas and nodes arrays"];
   const c = raw as Record<string, unknown>;
@@ -473,11 +596,18 @@ export function validateContract(
   const cycle = findCycle(nodes, byId);
   if (cycle !== undefined) errors.push(cycle);
 
+  for (const rule of Array.isArray(c.frozenRules) ? (c.frozenRules as FrozenRule[]) : []) {
+    if (typeof rule !== "object" || rule === null || rule.exemptions === undefined) continue;
+    validateExemptions(rule.id, rule.exemptions, byId, errors);
+  }
+
   for (const ruleId of ruleIds) {
     if (!referencedRules.has(ruleId)) {
       errors.push(`frozen rule ${ruleId} is enforced by no gate — a rule without enforcement is not a rule`);
     }
   }
+
+  validateAdapters(c.adapters, registry, adapterFiles, errors);
 
   for (const use of inlineSchemas) {
     if (!registry.has(use.schema)) {

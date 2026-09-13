@@ -15,7 +15,7 @@
       "minVersion": "2026.7.0",
       "versionCommand": ["linearis", "--version"],
       "versionRegex": "(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-writer", "issue-close", "project-continue", "new-project-workflow", "issue-start"],
+      "requiredBy": ["issue-workflow", "issue-writer", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform"],
       "npm": "linearis",
       "auth": {
         "check": ["linearis", "teams", "list", "--limit", "1"],
@@ -35,6 +35,18 @@
       }
     },
     {
+      "id": "glab",
+      "minVersion": "1.117.0",
+      "versionCommand": ["glab", "--version"],
+      "versionRegex": "glab(?: version)? (\\d+\\.\\d+\\.\\d+)",
+      "requiredBy": ["issue-close", "issue-start"],
+      "manualInstall": "winget install GLab.GLab | brew install glab | see https://gitlab.com/gitlab-org/cli#installation",
+      "auth": {
+        "check": ["glab", "auth", "status"],
+        "instructions": "Run `glab auth login` and complete the flow for your GitLab host."
+      }
+    },
+    {
       "id": "rg",
       "minVersion": "14.0.0",
       "versionCommand": ["rg", "--version"],
@@ -47,7 +59,7 @@
       "minVersion": "2.40.0",
       "versionCommand": ["git", "--version"],
       "versionRegex": "git version (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-close", "project-continue", "new-project-workflow", "issue-start"],
+      "requiredBy": ["issue-workflow", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform"],
       "manualInstall": "Install git before running this script; it is a prerequisite, not a target."
     }
   ]

@@ -1,4 +1,4 @@
-import { sectionBody, tableRows, UNSUPPORTED } from "./workflow-graph.ts";
+import { hasRecipes, sectionBody, tableRows, UNSUPPORTED } from "./workflow-graph.ts";
 
 export interface PlatformVocabulary {
   trackers: string[];
@@ -21,19 +21,27 @@ const RESERVED = { open: "backlog", closed: "done" } as const;
 
 const YAML_LINE = /^([A-Za-z0-9_-]+):(?:\s+(.*))?$/;
 const UNSUPPORTED_SCALAR = /^[[{|>&*!-]/;
+const QUOTED_SCALAR = /^(["'])(.*)\1(?:\s+#.*)?$/;
+const SHELL_UNSAFE = /['"`$\\\n]/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function unquote(value: string): string {
-  const quoted = /^"(.*)"$/.exec(value) ?? /^'(.*)'$/.exec(value);
-  return quoted === null ? value : quoted[1];
+function scalar(value: string): string {
+  const quoted = QUOTED_SCALAR.exec(value);
+  if (quoted !== null) return quoted[2];
+  const comment = value.search(/\s#/);
+  return (comment === -1 ? value : value.slice(0, comment)).trim();
+}
+
+function normalizeNewlines(text: string): string {
+  return text.replace(/\r\n/g, "\n");
 }
 
 export function parseYaml(text: string): YamlResult {
   const root: Record<string, unknown> = {};
-  const stack: { indent: number; node: Record<string, unknown> }[] = [{ indent: -1, node: root }];
+  const stack: { indent: number; childIndent?: number; node: Record<string, unknown> }[] = [{ indent: -1, node: root }];
   const errors: string[] = [];
 
   text.split("\n").forEach((line, index) => {
@@ -47,8 +55,18 @@ export function parseYaml(text: string): YamlResult {
       return;
     }
     while (indent <= stack[stack.length - 1].indent) stack.pop();
-    const parent = stack[stack.length - 1].node;
+    const frame = stack[stack.length - 1];
+    frame.childIndent ??= indent;
+    if (indent !== frame.childIndent) {
+      errors.push(`${where}: inconsistent indentation — siblings of one map must start in the same column`);
+      return;
+    }
+    const parent = frame.node;
     const [, key, rawValue] = match;
+    if (key === "__proto__") {
+      errors.push(`${where}: key __proto__ is not allowed`);
+      return;
+    }
     if (Object.hasOwn(parent, key)) {
       errors.push(`${where}: duplicate key ${key}`);
       return;
@@ -64,7 +82,7 @@ export function parseYaml(text: string): YamlResult {
       errors.push(`${where}: unsupported YAML value for ${key} — lists, flow collections and block scalars are not read`);
       return;
     }
-    parent[key] = unquote(value);
+    parent[key] = scalar(value);
   });
 
   return errors.length > 0 ? { errors } : { value: root, errors };
@@ -77,7 +95,7 @@ function onlyYamlBlock(body: string, where: string): PlatformYaml {
 }
 
 export function platformYaml(markdown: string): PlatformYaml {
-  const body = sectionBody(markdown, "Platform");
+  const body = sectionBody(normalizeNewlines(markdown), "Platform");
   if (body === undefined) return { errors: ["no line-start ## Platform section"] };
   return onlyYamlBlock(body, "## Platform");
 }
@@ -85,7 +103,7 @@ export function platformYaml(markdown: string): PlatformYaml {
 export function supportedStrategies(adapterSource: string): string[] {
   const table = sectionBody(adapterSource, "Status strategies") ?? "";
   return tableRows(table)
-    .filter(([, read, write]) => read !== UNSUPPORTED && write !== UNSUPPORTED)
+    .filter(hasRecipes)
     .map(([strategy]) => strategy);
 }
 
@@ -96,7 +114,11 @@ function validateMap(where: string, strategy: unknown, raw: unknown, vocabulary:
   }
   for (const phase of vocabulary.phases) {
     const value = raw[phase];
-    if (typeof value !== "string" || value.length === 0) errors.push(`${where}.map is missing phase ${phase}`);
+    if (typeof value !== "string" || value.length === 0) {
+      errors.push(`${where}.map is missing phase ${phase}`);
+    } else if (SHELL_UNSAFE.test(value)) {
+      errors.push(`${where}.map.${phase} holds a quote, backtick, $, backslash or newline — adapter recipes interpolate the value into shell commands`);
+    }
   }
   for (const key of Object.keys(raw).filter((key) => !vocabulary.phases.includes(key))) {
     errors.push(`${where}.map names ${key}, which is not a canonical phase`);
@@ -111,6 +133,7 @@ function validateMap(where: string, strategy: unknown, raw: unknown, vocabulary:
     if (phases.length > 1) errors.push(`${where}.map maps ${value} to ${phases.join(" and ")} — a value read back must name one phase`);
   }
 
+  if (strategy === undefined) return;
   for (const [reserved, phase] of Object.entries(RESERVED)) {
     const users = phasesByValue.get(reserved) ?? [];
     if (users.length === 0) continue;
@@ -134,7 +157,8 @@ function validateStatuses(where: string, raw: unknown, vocabulary: PlatformVocab
   } else if (!supported.includes(strategy)) {
     errors.push(`${where}.strategy ${strategy} is not supported by the tracker adapter (its Status strategies row is ${UNSUPPORTED})`);
   }
-  validateMap(where, strategy, raw.map, vocabulary, errors);
+  const knownStrategy = typeof strategy === "string" && vocabulary.strategies.includes(strategy) ? strategy : undefined;
+  validateMap(where, knownStrategy, raw.map, vocabulary, errors);
   return errors;
 }
 
@@ -160,9 +184,10 @@ export function validatePlatformConfig(raw: unknown, vocabulary: PlatformVocabul
 
 export function validateAdapterDefaults(name: string, adapterSource: string, vocabulary: PlatformVocabulary): string[] {
   const where = `adapters/trackers/${name}.md ## Statuses`;
-  const block = onlyYamlBlock(sectionBody(adapterSource, "Statuses") ?? "", where);
+  const source = normalizeNewlines(adapterSource);
+  const block = onlyYamlBlock(sectionBody(source, "Statuses") ?? "", where);
   if (block.yaml === undefined) return block.errors;
   const parsed = parseYaml(block.yaml);
   if (parsed.value === undefined) return parsed.errors.map((error) => `${where}: ${error}`);
-  return validateStatuses(where, parsed.value, vocabulary, supportedStrategies(adapterSource));
+  return validateStatuses(where, parsed.value, vocabulary, supportedStrategies(source));
 }

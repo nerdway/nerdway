@@ -214,3 +214,49 @@ test("validateAdapterDefaults: rejects a Statuses section with no yaml block", (
   assert.equal(errors.length, 1);
   assert.match(errors[0], /yaml/);
 });
+
+test("parseYaml: rejects a __proto__ key instead of swapping the prototype", () => {
+  const { value, errors } = parseYaml("map:\n  __proto__:\n    backlog: Backlog");
+  assert.equal(value, undefined);
+  assert.match(errors[0], /__proto__/);
+});
+
+test("parseYaml: strips a trailing comment from plain and quoted values", () => {
+  const { value, errors } = parseYaml("tracker: linear # main\nmap:\n  todo: 'Todo' # planned");
+  assert.deepEqual(errors, []);
+  assert.deepEqual(value, { tracker: "linear", map: { todo: "Todo" } });
+});
+
+test("parseYaml: rejects a sibling indented deeper than the first key of its map", () => {
+  assert.match(parseYaml("tracker: linear\n  vcs: github").errors[0], /line 2/);
+});
+
+test("parseYaml: rejects a dedent to an indentation no enclosing map uses", () => {
+  assert.match(parseYaml("a:\n    b: one\n  c: two").errors[0], /line 3/);
+});
+
+test("platformYaml: reads a CRLF file", () => {
+  const markdown = "## Platform\r\n\r\n```yaml\r\ntracker: linear\r\nvcs: github\r\n```\r\n";
+  const { yaml, errors } = platformYaml(markdown);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(parseYaml(yaml ?? "").value, { tracker: "linear", vcs: "github" });
+});
+
+test("rejects a map value carrying shell quoting or expansion characters", () => {
+  for (const value of ["x'; touch pwned; echo '", 'In "Review"', "$(id)", "`id`", "a\\b"]) {
+    const errors = validatePlatformConfig(config({ strategy: "native", map: { ...nativeMap, "in-review": value } }), vocabulary, adapter());
+    assert.equal(errors.length, 1, value);
+    assert.match(errors[0], /in-review/);
+  }
+});
+
+test("an unknown strategy does not also report reserved values against it", () => {
+  const errors = validatePlatformConfig(config({ strategy: "labels", map: labelMap }), vocabulary, labelAdapter);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /labels/);
+});
+
+test("supportedStrategies: a row with empty or missing recipe cells is not supported", () => {
+  const source = adapter([["native", "", ""], ["label", "—", "—"], ["comment", "read", "write"]]).concat("\n| `label` |");
+  assert.deepEqual(supportedStrategies(source), ["comment"]);
+});

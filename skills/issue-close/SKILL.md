@@ -5,7 +5,7 @@ description: >-
   Mechanically close out a Linear issue once the work is done: commit any
   leftover changes, push, merge the PR (GitHub, Azure DevOps) or MR (GitLab),
   switch the local
-  checkout to the PR/MR base branch, and set the Linear issue to Done. Purely
+  checkout to the PR/MR base branch, and move the Linear issue to done. Purely
   procedural with explicit commands and no multi-step reasoning — pinned to Haiku
   (the `model` frontmatter above) to keep it cheap. Invoked by
   issue-workflow's close-out, or directly when the user asks to
@@ -51,6 +51,12 @@ Pick `<tracker>` and `<vcs>` from the first source that has them:
   version".
 - An operation whose command is `—` → stop and report it, except
   `pr.mark-ready`, which is then skipped (Step 3).
+
+The status strategy and map come from the `statuses` block of the platform
+(same sources, same order), else the tracker adapter's `## Statuses` default;
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` defines how a value maps to a
+phase. A strategy whose `## Status strategies` row is `—` → stop and report
+"strategy not supported — run `/bind-statuses`".
 
 The tracker adapter is used for one write (`issue.set-status`) and, when no
 ID was passed, `issue.resolve-from-branch`.
@@ -118,10 +124,11 @@ Use the base branch captured in Step 3 — **do not assume `main`**:
 git checkout <base> && git pull
 ```
 
-## Step 5 — Set the Linear issue to Done
+## Step 5 — Move the issue to `done`
 
-Run `issue.set-status` from the tracker adapter with the state name for
-*Closed* from its `## Statuses` table (`Done` on Linear).
+Run `issue.set-status` from the tracker adapter with the phase `done`: the
+write recipe of the resolved strategy with `map.done` (`Done` on Linear by
+default).
 
 This is idempotent and deterministic: it closes the issue independently of
 magic-word timing and covers hosts with no tracker auto-close.
@@ -129,7 +136,7 @@ magic-word timing and covers hosts with no tracker auto-close.
 ## Report
 
 Confirm briefly what happened: committed (or clean), pushed, merged,
-now on `<base>`, issue `<ID>` set to Done. If any step stopped early, report
+now on `<base>`, issue `<ID>` moved to done. If any step stopped early, report
 which one and why.
 
 ## Related skills

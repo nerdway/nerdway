@@ -2,7 +2,7 @@
 name: issue-start
 model: haiku
 description: >-
-  Mechanically start work on a Linear issue that is already In Progress: read
+  Mechanically start work on a Linear issue already in the in-progress phase: read
   the issue's native branch name, create the branch from a clean main/master
   checkout, make the empty start-of-work commit, push with upstream, and open a
   draft PR (GitHub, Azure DevOps) or MR (GitLab) carrying the `Fixes <ID>`
@@ -51,10 +51,15 @@ Pick `<tracker>` and `<vcs>` from the first source that has them:
   version".
 - An operation whose command is `—` → stop and report it.
 
-The tracker adapter is used for exactly one read (`issue.read-branch`) and no
-writes. Its `branchName` is the branch name the tracker derives from the
-issue (already safe for git); `state.name` is the team's own state name from
-the adapter's `## Statuses` table.
+The status strategy and map come from the `statuses` block of the platform
+(same sources, same order), else the tracker adapter's `## Statuses` default;
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` defines how a value maps to a
+phase. A strategy whose `## Status strategies` row is `—` → stop and report
+"strategy not supported — run `/bind-statuses`".
+
+The tracker adapter is used for two reads (`issue.read-status`,
+`issue.read-branch`) and no writes. `branchName` is the branch name the
+tracker derives from the issue (already safe for git).
 
 ## Inputs
 
@@ -65,9 +70,11 @@ the adapter's `## Statuses` table.
 
 ## Preconditions — check all, stop on the first that fails
 
-1. **The issue is In Progress.** Run `issue.read-branch`; `state.name` must
-   equal `In Progress`. Any other status → stop and report it: this is the same
-   approval gate `issue-workflow` enforces, and only the user moves the status.
+1. **The issue is in the `in-progress` phase.** Run `issue.read-status` and
+   look the value up in the status map; it must be `in-progress`. Any other
+   phase, or a value the map does not hold → stop and report it: this is the
+   same approval gate `issue-workflow` enforces, and only the user moves the
+   issue there.
 2. **The checkout is on `main` or `master`:**
 
    ```bash
@@ -85,8 +92,8 @@ the adapter's `## Statuses` table.
    Non-empty output → stop and report; leftover changes would land in the
    start commit of the wrong issue.
 
-Call the values from the read `<ID>`, `<title>`, `<branchName>` and `<url>`
-below.
+Then run `issue.read-branch` and call its values `<ID>`, `<title>`,
+`<branchName>` and `<url>` below.
 
 ## Step 1 — Branch
 
@@ -128,7 +135,7 @@ early, report which one and why — the caller decides what to do next.
 ## Related skills
 
 - `nerd4rent:issue-workflow` — the status-driven workflow whose Start step
-  delegates here once the user has set the issue In Progress.
+  delegates here once the user has moved the issue to `in-progress`.
 - `nerd4rent:issue-close` — the mirror chain at the other end of the issue:
-  commit, push, merge, switch to base, set Done.
+  commit, push, merge, switch to base, write `done`.
 - `nerd4rent:determine-platform` — records the platform this skill reads.

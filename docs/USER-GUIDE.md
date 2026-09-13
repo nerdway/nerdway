@@ -104,6 +104,7 @@ You need [Claude Code](https://claude.com/claude-code) (or another coding agent 
 | `node` (with npm) | 22 | <https://nodejs.org> | — |
 | `gh` (GitHub CLI) | 2.97 | `brew install gh` / `winget install GitHub.cli` | `gh auth login` |
 | `linearis` (Linear CLI) | 2026.7.0 | `npm i -g linearis` | see below |
+| `glab` (GitLab CLI) — GitLab-hosted repos only | 1.117 | `brew install glab` / `winget install GLab.GLab` | `glab auth login` |
 | `rg` (ripgrep) | 14 | `brew install ripgrep` / `winget install BurntSushi.ripgrep.MSVC` | — |
 
 To authenticate `linearis`, create a personal API key in Linear under **Settings → Security & access → API → Personal API keys**, then either set it as the `LINEAR_API_TOKEN` environment variable or run `linearis auth login`. The key does not expire.
@@ -143,6 +144,14 @@ npx skills update                                     # keep them current
 
 Restart the agent after installing. These agents run the sequential degradation path — same topology, read as prose.
 
+## Telling the plugin which platform a project uses
+
+Before the first issue, the plugin needs to know where the project's issues live (Linear today; GitHub Issues, GitLab Issues and Azure DevOps Boards are planned) and where its code lives (GitHub or GitLab; Azure DevOps planned). Run `/determine-platform` once per repo — or just file an issue and `issue-writer` runs it for you.
+
+It checks what is already recorded, infers the rest from the git remote and your Linear CLI, and asks you a single numbered question only when the answer is ambiguous. The result lands as a `## Platform` section in the repo's `CLAUDE.md` (commit it with the next change — it is meant to travel with the repo) and, if you use the nerdbrain vault, as `platform:` on the project's entity page. Running it again changes nothing.
+
+The skills then read the matching adapter files — the one place the plugin keeps Linear, GitHub and GitLab commands. If you configure a platform whose adapter isn't in your plugin version yet, the skills tell you so instead of guessing.
+
 ## A day with the plugin
 
 A typical feature, from idea to merged PR — with the graph moments marked:
@@ -173,10 +182,15 @@ Only you can move an issue to **In Progress** — the agent never does it by its
 
 How to trigger each skill and what to expect. All of them also respond to the slash form `/nerd4rent:<skill-name>`.
 
+### `determine-platform` — record the tracker and host
+
+- **Say:** `/determine-platform`, *"which tracker does this project use"* — or nothing: `issue-writer` calls it when no platform is configured.
+- **What happens:** reads the `## Platform` section of `CLAUDE.md` and the entity page, infers from the git remote and the Linear CLI, asks one question only if still ambiguous, then writes the section (and the entity page mirror) and shows you the result. It is the only skill allowed to change the repo before an issue is In Progress, and it touches that one section alone.
+
 ### `issue-writer` — file a new issue
 
 - **Say:** *"create an issue"*, *"new task"*, *"utwórz/zgłoś issue"* — intent to file new work, with no existing issue ID.
-- **What happens:** the agent resolves the target team/project (and confirms it), interviews you only if the goal is unclear, shows you the drafted body, and creates the issue in Backlog only after you approve. For big topics it can split the work into real sub-issues, and optionally run a "grilling session" — a one-question-at-a-time interrogation that sharpens the requirements before planning starts.
+- **What happens:** the agent resolves the platform (running `determine-platform` if none is recorded) and the target team/project (and confirms it), interviews you only if the goal is unclear, shows you the drafted body, and creates the issue in Backlog only after you approve. For big topics it can split the work into real sub-issues, and optionally run a "grilling session" — a one-question-at-a-time interrogation that sharpens the requirements before planning starts.
 
 ### `issue-workflow` — plan, implement, review
 

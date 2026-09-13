@@ -113,4 +113,4 @@
 - [ ]
 - [ ]
 
-<!-- Parent is linked via `linearis issues create --parent-ticket <PARENT-ID>`, not in the body. -->
+<!-- Parent is linked with the tracker adapter's `issue.create-child`, not in the body. -->

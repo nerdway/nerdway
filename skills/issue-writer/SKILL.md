@@ -9,7 +9,8 @@ description: >-
   on approval, creates the issue in Backlog, and offers an optional inline
   grilling session that can split the topic into sub-issues. Distinct
   from issue-workflow (which plans/implements an EXISTING issue ID).
-  The CLI reference lives in the skill body.
+  Delegates to determine-platform when no platform is configured; tracker
+  commands come from the platform adapter.
 ---
 
 # Linear issue writer
@@ -17,32 +18,20 @@ description: >-
 Create well-formed Linear issues whose goals are specified clearly enough that
 `nerd4rent:issue-workflow` can plan implementation directly from them.
 
-## CLI reference
+## Platform and adapters
 
-`linearis` is the Linear CLI (npm, pure JS, JSON-only output). Commands this
-skill uses:
+Tracker commands live in an adapter file at the plugin root, never in this
+skill. Run every operation by its ID from the adapter's `## Operations`
+table; its `## CLI` section carries the command gotchas (multi-line bodies,
+metadata flags), `## URL` how to build an issue link, and `## Statuses` the
+state names:
 
-| Purpose | Command |
-|---------|---------|
-| List teams | `linearis teams list` |
-| List projects (with owning teams) | `linearis projects list --fields nodes.name,nodes.teams.nodes.key` |
-| Sanity-check a team key | `linearis issues list --team <KEY> --limit 1` |
-| Create an issue | `linearis issues create "<title>" --team <KEY> --project "<name>" --status Backlog --description "$(cat body.md)"` |
-| Create a sub-issue | the same, plus `--parent-ticket <PARENT-ID>` |
-| Replace a description | `linearis issues update <ID> --description "$(cat body.md)"` |
+```
+${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
+```
 
-The description goes through the flag, not stdin — `--description "$(cat
-body.md)"` preserves newlines, markdown and diacritics as-is. There is no `-`
-stdin sentinel and no `--description-file`. `projects list` has no `--team`
-filter; each returned project carries its owning teams, so filter on
-`teams.nodes[].key` client-side.
-
-Every command answers in JSON; the created issue includes `.identifier` but
-**no URL** — when one is needed, build it as
-`https://linear.app/<workspace>/issue/<ID>` (workspace slug as in the
-project's `url`). The CLI is never interactive. States are the team's own
-**names** — `Backlog`, not `backlog`; a wrong name fails loudly with
-`Status "X" for team ... not found`.
+If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
+directories up from this skill's base directory.
 
 ## When this skill applies
 
@@ -56,9 +45,9 @@ implement it → that is `nerd4rent:issue-workflow`, not this skill. This skill
 
 ## Hard gate (do not skip)
 
-**No write to Linear** (`issue create`, sub-issues, labels) until the user has seen
-the drafted issue body and approved it. Allowed before approval: `linearis` read
-commands, reading the repo/entity-page for context, asking clarifying questions,
+**No write to Linear** (`issue.create`, sub-issues, labels) until the user has seen
+the drafted issue body and approved it. Allowed before approval: tracker read
+operations, reading the repo/entity-page for context, asking clarifying questions,
 drafting the issue text. The same gate applies to sub-issues proposed by a
 grilling session (step 6).
 
@@ -84,21 +73,26 @@ slash commands.
 
 ## Workflow
 
-### 1. Resolve target team & project
+### 1. Resolve the platform, then the target team & project
 
-Determine where the issue is filed, in this order, then **confirm with the user
-before writing**:
+**Platform first.** Take the tracker and its identifiers from the first source
+that has them:
 
-1. **nerdbrain entity-page** — if the injected project page has `linear.team`
-   and/or `linear.project`, use them.
-2. **Git remote inference** — map the repo to a Linear team/project (e.g. via
-   `linearis issues list --team <key> --limit 1` to sanity-check the key exists).
-3. **Ask** — if still unknown, list options (`linearis teams list`,
-   `linearis projects list` filtered by `teams.nodes[].key`) and ask which
-   team/project.
+1. the `## Platform` section of the repo `CLAUDE.md`;
+2. the entity page frontmatter `platform:` — a legacy `linear:` block there
+   means `tracker: linear` with that `team` and `project`;
+3. neither → **invoke `nerd4rent:determine-platform`** and take the platform
+   from its output.
 
-Show the resolved `team` + `project` and get a quick confirmation. This works in
-repos without a wiki page (fall back to inference/ask).
+No adapter file for the tracker → stop and report: "adapter
+`trackers/<tracker>` is not available yet in this plugin version" — never
+fall back to another tracker.
+
+**Then the target.** Use the config's identifiers (for Linear: `team` key and
+`project`). When the config names none, list options (`team.list`,
+`project.list` filtered by team) and ask; sanity-check a typed team key with
+`team.check`. Show the resolved `team` + `project` and get a quick
+confirmation **before writing**.
 
 ### 2. Assess complexity (adaptive threshold)
 
@@ -147,29 +141,17 @@ Write the body to a temp file and **show it to the user**. Wait for approval.
 
 ### 5. Create in Linear (always in Backlog)
 
-New issues start in **Backlog** — pass the state explicitly so the team's
-default state cannot override it:
+New issues start in **Backlog** — run `issue.create` with the title, the
+config's team and project, and the approved body file; the adapter passes the
+state explicitly so the team's default state cannot override it.
 
-```bash
-linearis issues create "<title>" \
-  --team <key> --project "<name>" --status Backlog --description "$(cat <path>)"
-```
+For a parent + sub-issues, create the parent first with `issue.create`,
+capture its `TEAM-123` ID from the output, then create each child with
+`issue.create-child`, passing that ID as the parent.
 
-For a parent + sub-issues, create the parent first, capture its `TEAM-123` ID from
-the output, then create each child with `--parent-ticket`:
-
-```bash
-linearis issues create "<parent title>" \
-  --team <key> --project "<name>" --status Backlog --description "$(cat <parent.md>)"
-# → read .identifier from the JSON, e.g. DEMO-123
-linearis issues create "<child title>" \
-  --team <key> --project "<name>" --parent-ticket DEMO-123 --status Backlog --description "$(cat <child-1.md>)"
-```
-
-Add `--labels`, `--priority`, `--estimate`, etc. only when the user specified
-them — don't invent metadata. Priority is **numeric** (`1`=urgent, `2`=high,
-`3`=medium, `4`=low); `--estimate` fails loudly on teams with estimates
-disabled. `--parent-ticket` handles parent/child directly.
+Add labels, priority or estimate only when the user specified them — don't
+invent metadata; the adapter's `## CLI` section lists the flags and their
+quirks.
 
 ### 6. Grilling session (optional)
 
@@ -179,19 +161,17 @@ dla tego issue?* If yes, run it **inline** per the grilling protocol above
 Handle the outcome:
 
 - sharpened requirements → update the issue description
-  (`linearis issues update <ID> --description "$(cat <path>)"`) after showing
-  the diff;
+  (`issue.update-description`) after showing the diff;
 - the topic splits into stages → propose sub-issues (step 3 rules apply) and
-  create them with `--parent-ticket <ID> --status Backlog` **only after the
-  user approves the drafts** (hard gate above).
+  create them with `issue.create-child` under `<ID>` **only after the user
+  approves the drafts** (hard gate above).
 
 Skip the offer for a small, clear task — same adaptive threshold as step 2.
 
 ### 7. Output + handoff
 
 Print the created issue ID(s) — `.identifier` from step 5's JSON — and, when a
-link helps, build the URL as `https://linear.app/<workspace>/issue/<ID>` (the
-issue JSON carries no `url` field). Then point at
+link helps, build the URL per the adapter's `## URL` section. Then point at
 the status-driven flow — do **not** offer to plan it yourself in this session:
 
 > *Issue utworzone (DEMO-123) — w Backlogu. Wpisz ID issue w nowej sesji lub
@@ -205,6 +185,8 @@ deliberate steps.
 
 - `nerd4rent:issue-workflow` — downstream: status-driven planning and
   implementation of an issue ID produced here.
+- `nerd4rent:determine-platform` — upstream: records the platform this skill
+  files issues on; invoked from step 1 when none is configured.
 - `mattpocock-skills:grilling` (optional, `npx skills` / `~/.agents/skills`) —
   question formats for the inline grilling protocol; degrade gracefully when
   absent.

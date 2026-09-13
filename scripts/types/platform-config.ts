@@ -162,6 +162,30 @@ function validateStatuses(where: string, raw: unknown, vocabulary: PlatformVocab
   return errors;
 }
 
+const ADO_BOARD_KEYS: readonly string[] = ["team", "board"];
+const ADO_SHELL_KEYS = ["team", "board", "workItemType"];
+
+function defaultStrategy(adapterSource: string | undefined): unknown {
+  if (adapterSource === undefined) return undefined;
+  const block = onlyYamlBlock(sectionBody(normalizeNewlines(adapterSource), "Statuses") ?? "", "## Statuses");
+  return block.yaml === undefined ? undefined : parseYaml(block.yaml).value?.strategy;
+}
+
+function validateAdoBlock(raw: Record<string, unknown>, trackerAdapter: string | undefined): string[] {
+  const ado = isRecord(raw.ado) ? raw.ado : {};
+  const strategy = raw.statuses === undefined ? defaultStrategy(trackerAdapter) : isRecord(raw.statuses) ? raw.statuses.strategy : undefined;
+  const errors: string[] = [];
+  for (const key of ADO_SHELL_KEYS) {
+    const value = ado[key];
+    if (strategy === "native" && ADO_BOARD_KEYS.includes(key) && (typeof value !== "string" || value.length === 0)) {
+      errors.push(`ado.${key} is required under the native strategy — the phases are the columns of that team's board`);
+    } else if (typeof value === "string" && SHELL_UNSAFE.test(value)) {
+      errors.push(`ado.${key} holds a quote, backtick, $, backslash or newline — adapter recipes interpolate the value into shell commands`);
+    }
+  }
+  return errors;
+}
+
 export function validatePlatformConfig(raw: unknown, vocabulary: PlatformVocabulary, trackerAdapter: string | undefined): string[] {
   if (!isRecord(raw)) return ["platform config must be a YAML map"];
   const errors: string[] = [];
@@ -171,6 +195,7 @@ export function validatePlatformConfig(raw: unknown, vocabulary: PlatformVocabul
   if (typeof raw.vcs !== "string" || !vocabulary.vcs.includes(raw.vcs)) {
     errors.push(`vcs ${String(raw.vcs)} is not one of ${vocabulary.vcs.join(", ")}`);
   }
+  if (raw.tracker === "ado") errors.push(...validateAdoBlock(raw, trackerAdapter));
   if (raw.statuses === undefined) return errors;
   if (raw.tracker === "none") {
     errors.push("statuses is set, but tracker is none — there is no tracker to bind phases to");

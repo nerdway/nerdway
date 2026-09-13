@@ -260,3 +260,41 @@ test("supportedStrategies: a row with empty or missing recipe cells is not suppo
   const source = adapter([["native", "", ""], ["label", "—", "—"], ["comment", "read", "write"]]).concat("\n| `label` |");
   assert.deepEqual(supportedStrategies(source), ["comment"]);
 });
+
+const adoVocabulary: PlatformVocabulary = { ...vocabulary, trackers: [...vocabulary.trackers, "ado"], vcs: [...vocabulary.vcs, "ado"] };
+const adoDefaults = ["strategy: native", "map:", "  backlog: New", "  todo: Todo", "  in-progress: Active", "  in-review: In Review", "  done: Closed"].join("\n");
+const adoAdapter = adapter([["native", "read", "write"], ["label", "read", "write"], ["comment", "read", "write"]], adoDefaults);
+const adoColumns = { backlog: "New", todo: "Todo", "in-progress": "Active", "in-review": "In Review", done: "Closed" };
+
+function adoConfig(ado: Record<string, string>, statuses?: unknown) {
+  return { tracker: "ado", vcs: "ado", ado: { org: "acme", project: "Shop", ...ado }, ...(statuses === undefined ? {} : { statuses }) };
+}
+
+test("ado: accepts native columns with the team and board named", () => {
+  const ado = { team: "Shop Team", board: "Stories", workItemType: "User Story" };
+  assert.deepEqual(validatePlatformConfig(adoConfig(ado, { strategy: "native", map: adoColumns }), adoVocabulary, adoAdapter), []);
+});
+
+test("ado: rejects native columns without the team and board that own them", () => {
+  const errors = validatePlatformConfig(adoConfig({}, { strategy: "native", map: adoColumns }), adoVocabulary, adoAdapter);
+  assert.equal(errors.length, 2);
+  assert.match(errors[0], /ado\.team/);
+  assert.match(errors[1], /ado\.board/);
+});
+
+test("ado: the adapter default native strategy needs the board too", () => {
+  const errors = validatePlatformConfig(adoConfig({ team: "Shop Team" }), adoVocabulary, adoAdapter);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /ado\.board/);
+});
+
+test("ado: label and comment need no board", () => {
+  assert.deepEqual(validatePlatformConfig(adoConfig({}, { strategy: "label", map: labelMap }), adoVocabulary, adoAdapter), []);
+});
+
+test("ado: rejects a team, board or work item type carrying shell quoting characters", () => {
+  const errors = validatePlatformConfig(adoConfig({ team: 'Shop "A"', board: "Stories", workItemType: "$(id)" }, { strategy: "native", map: adoColumns }), adoVocabulary, adoAdapter);
+  assert.equal(errors.length, 2);
+  assert.match(errors[0], /ado\.team/);
+  assert.match(errors[1], /ado\.workItemType/);
+});

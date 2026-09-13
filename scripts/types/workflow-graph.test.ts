@@ -1072,3 +1072,18 @@ test("rule 25: a missing Status strategies section is reported once, by the sect
   assert.equal(errors.length, 1);
   assert.match(errors[0], /missing required section ## Status strategies/);
 });
+
+test("rule 25: rejects a strategy row with empty or missing recipe cells", () => {
+  const source = `${adapterSource()}\n\n## Status strategies\n\n| Strategy | Read | Write |\n|---|---|---|\n| \`native\` | read it | write it |\n| \`label\` |\n| \`comment\` | | |`;
+  const errors = validateStrategies([adapterFile({ source })]);
+  assert.equal(errors.length, 2);
+  assert.ok(errors.some((error) => /label/.test(error)));
+  assert.ok(errors.some((error) => /comment/.test(error)));
+});
+
+test("rule 25: an escaped pipe inside a recipe does not shift the columns", () => {
+  const source = strategiesSource([["native", "read it", "write it"], ["label", "gh issue view --json labels \\| jq .", "—"], ["comment", "—", "—"]]);
+  const errors = validateStrategies([adapterFile({ source })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /label needs both/);
+});

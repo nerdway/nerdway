@@ -1,8 +1,9 @@
 ---
 name: issue-workflow
 description: >-
-  Mandatory status-driven workflow for Linear issues when the user provides an
-  issue ID (e.g. KAM-145, ENG-123) to plan or implement. Dispatches on the
+  Mandatory status-driven workflow for tracker issues (Linear, GitHub Issues)
+  when the user provides an issue ID (e.g. KAM-145, ENG-123; #123 or
+  owner/repo#123 in a GitHub Issues project) to plan or implement. Dispatches on the
   issue's workflow phase, read through the tracker's status strategy:
   backlog/todo → plan; in-progress (set manually by the user) → implement
   (branch, empty commit, draft PR with magic words); in-review → code-review
@@ -12,7 +13,7 @@ description: >-
   the platform adapters.
 ---
 
-# Linear issue workflow
+# Issue workflow
 
 ## Platform and adapters
 
@@ -75,8 +76,9 @@ lists as `—` → stop and ask the user to run `/bind-statuses`.
 
 ## When this skill applies
 
-The user gave a **Linear issue identifier** (`TEAM-123`) — in a fresh session or
-mid-conversation — with intent to plan or implement (including Polish:
+The user gave an **issue identifier** — `TEAM-123` on Linear; `#123` or
+`owner/repo#123` when the platform config says `tracker: github` (elsewhere
+`#123` is only a number, often a PR) — in a fresh session or mid-conversation — with intent to plan or implement (including Polish:
 *zaplanuj*, *zrealizuj*, *zrób*, *weź*, *napraw*, *wdroż*), or any message
 arrives in a session already working an issue.
 
@@ -249,7 +251,7 @@ with, and mark any deviation as `Odstępstwo od decyzji YYYY-MM-DD — powód`.
 
 ### 3. End the turn
 
-Report briefly that the plan is in Linear — and stop. Do **not** tell the user
+Report briefly that the plan is on the tracker — and stop. Do **not** tell the user
 to approve, confirm, or set any status. The user signals approval by moving the
 issue to **`in-progress`** on the tracker (or by asking you to implement in
 chat).
@@ -280,8 +282,8 @@ here first:
      (b) branch from main/master, (c) stay. After (b), `git checkout main &&
      git pull` (or `master`), then delegate as above. After (a) or (c) the
      chain's precondition does not hold — run its steps by hand: for (a)
-     `git checkout -b <branchName>` (value from `issue.read-branch`), then on
-     the resulting branch:
+     `issue.create-branch` with `<branchName>` from `issue.read-branch` and
+     the current branch as `<base>`, then on the resulting branch:
 
      ```bash
      git commit --allow-empty -m "Rozpoczęcie prac nad <ID>"
@@ -369,7 +371,7 @@ and must still review.
 
 Rejected findings stay out of the result, but every drop is counted:
 `stats { mapped, verified, rejected, unverifiedOverflow }` is required in
-`ReviewFindings`, and the counters go into the Linear comment (the node
+`ReviewFindings`, and the counters go into the tracker comment (the node
 reports as `tracker-comment`) — degradation is visible, never silent. Run
 failures (a dead mapper, missing votes) arrive in `gaps` beside the payload.
 
@@ -416,7 +418,7 @@ start with `## Session summary` and include:
 - open questions / next steps,
 - metrics, whenever an island ran this session.
 
-The summary must be enough to resume from Linear alone. The `metrics` section is
+The summary must be enough to resume from the tracker alone. The `metrics` section is
 where a run's `PlanContext.stats` and `gaps` become durable — the comment is the
 only place they are stored, so a session that ran the plan island and omits them
 loses the figure for good.
@@ -433,7 +435,7 @@ nerdbrain entity page, following `nerdbrain-wiki`'s **Prepend, capped** mode
 It is the same logical wiki write as any other entity-page update from this
 session, so bump `updated:` once and add one log line. Skip it silently when
 the vault is unreachable (`tier=none`) or the project has no entity page —
-the Linear comment already holds the full summary. This entry is what
+the tracker comment already holds the full summary. This entry is what
 `project-continue` reads back when the user asks "where were we" on this or
 another machine, so the branch and hash must be the real values after the
 session's last push.

@@ -2,19 +2,20 @@
 name: issue-start
 model: haiku
 description: >-
-  Mechanically start work on a Linear issue already in the in-progress phase: read
-  the issue's native branch name, create the branch from a clean main/master
+  Mechanically start work on a tracker issue (Linear, GitHub Issues) already in
+  the in-progress phase: read the issue's branch name, create the branch from a clean main/master
   checkout, make the empty start-of-work commit, push with upstream, and open a
   draft PR (GitHub, Azure DevOps) or MR (GitLab) carrying the `Fixes <ID>`
   magic word. Purely
   procedural with explicit commands and no multi-step reasoning — pinned to
   Haiku (the `model` frontmatter above) to keep it cheap. Invoked by
   issue-workflow's Start step, or directly when the user asks to start an
-  issue ("zacznij", "rozpocznij", "start DEMO-123", "open the PR for").
+  issue ("zacznij", "rozpocznij", "start DEMO-123", "start #123", "open the PR
+  for").
   Tracker and VCS commands come from the platform adapters.
 ---
 
-# Linear issue start
+# Issue start
 
 A deterministic, mechanical Start. Every step is an explicit command — run
 them in order, stop and report on the first error. **Do not ask the user
@@ -58,12 +59,15 @@ phase. A strategy whose `## Status strategies` row is `—` → stop and report
 "strategy not supported — run `/bind-statuses`".
 
 The tracker adapter is used for two reads (`issue.read-status`,
-`issue.read-branch`) and no writes. `branchName` is the branch name the
-tracker derives from the issue (already safe for git).
+`issue.read-branch`) and one branch operation (`issue.create-branch`), and
+writes no status. `branchName` is the branch name the tracker derives from
+the issue (already safe for git).
 
 ## Inputs
 
-- `<ID>` — the Linear issue identifier passed by the caller (e.g. `DEMO-123`).
+- `<ID>` — the issue identifier passed by the caller, in the form the tracker
+  adapter's `## Issue ID` section gives (`DEMO-123` on Linear, `#123` on GitHub
+  Issues).
   If none was passed, stop and ask for it — never guess it.
 - `<summary>` — an optional one-paragraph summary for the PR/MR body, passed
   by the caller. When absent, use the issue title.
@@ -97,11 +101,10 @@ Then run `issue.read-branch` and call its values `<ID>`, `<title>`,
 
 ## Step 1 — Branch
 
-```bash
-git checkout -b <branchName>
-```
+Run `issue.create-branch` with `<ID>`, `<branchName>` and `<base>` — the
+branch checked in precondition 2. It leaves the new branch checked out.
 
-If the branch already exists, the command fails — stop and report: the
+If the branch already exists, the operation fails — stop and report: the
 issue was started before, and `issue-workflow` skips Start in that case.
 
 ## Step 2 — Empty start commit and push

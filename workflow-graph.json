@@ -16,7 +16,7 @@
         },
         {
           "node": "statuses-bind",
-          "scope": "The `statuses` key inside the `## Platform` section of the repo `CLAUDE.md`, replaced idempotently and nothing else in the repo.",
+          "scope": "The `statuses` key inside the `## Platform` section of the repo `CLAUDE.md` — and, when the tracker is Azure DevOps Boards, the `team`, `board` and `workItemType` keys of its `ado` block, which name the board those statuses live on — replaced idempotently and nothing else in the repo.",
           "reason": "The status binding decides how the in-progress gate itself is read, so it has to exist before the gate can hold — it cannot wait for an issue to pass that gate."
         }
       ]

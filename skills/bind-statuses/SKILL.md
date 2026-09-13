@@ -23,7 +23,8 @@ What each strategy means lives in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`
 
 This skill may run at any issue status: the `no-repo-change-before-in-progress`
 rule exempts writing the `statuses` key of the `## Platform` section in the
-repo `CLAUDE.md`. Touch nothing else in the repo.
+repo `CLAUDE.md` (and, on Azure DevOps Boards, the `team`, `board` and
+`workItemType` keys of its `ado` block). Touch nothing else in the repo.
 
 ## Adapters
 
@@ -53,6 +54,18 @@ Note the current `statuses` block, if any, and the adapter's `## Statuses`
 default and `## Status strategies` table (a strategy whose read and write are
 `—` is unsupported).
 
+**Azure DevOps Boards (`tracker: ado`) — pick the board first.** Its `native`
+values are the columns of one team's board, so settle `ado.team`, `ado.board`
+and `ado.workItemType` before Step 2, keeping values the block already holds:
+
+1. `team.list`; one team → take it, several → ask which one.
+2. The team's boards (the board recipe of the adapter, without `id`); ask
+   which one when there are several, recommending the lowest backlog level
+   (`Stories`, `Backlog items`, `Issues`).
+3. The board recipe with `id`: the keys of the columns' `stateMappings` are
+   the types the board carries; one → take it, several → ask which one new
+   issues are created as.
+
 ## Step 2 — Propose a strategy
 
 Pick the recommendation by the first rule that holds:
@@ -70,7 +83,7 @@ rights, or no wish to add labels). Never offer a strategy the adapter lists as
 
 | Strategy | Operation | Use |
 |----------|-----------|-----|
-| `native` | `status.list` | the tracker's state names |
+| `native` | `status.list` | the tracker's state names (on Azure DevOps: the board's columns) |
 | `label` | `label.list` | existing labels, to reuse before creating |
 | `comment` | — | nothing to list; markers need no setup |
 
@@ -82,7 +95,11 @@ propose the adapter default map instead.
 Build the recommended map:
 
 - `native` — the existing map, else the adapter default, adjusted to the names
-  `status.list` returned when it ran.
+  `status.list` returned when it ran. On Azure DevOps a board with fewer than
+  five columns cannot hold the map: propose the missing columns in the same
+  question — each with the state it maps (a `todo` column maps the `Proposed`
+  state, an `in-review` column an `InProgress` one) and its place on the
+  board — e.g. `Todo` after `New`, `Resolved` renamed `In Review`.
 - `label` — `backlog: open`, `todo: status::todo`,
   `in-progress: status::in-progress`, `in-review: status::in-review`,
   `done: closed`; reuse an existing label that clearly means the same phase.
@@ -119,12 +136,25 @@ List the confirmed label values that `label.list` did not return (never
 yes run `label.create` once per label. On no, stop: the map cannot be written
 while its labels do not exist — offer `comment` instead.
 
+When `label.create` is `—` because the tracker creates a label on first use
+(Azure DevOps tags), ask the same question; the yes lets the map be written,
+and the first `issue.set-status` of each phase creates its tag.
+
+**Missing board columns (`native` on Azure DevOps, with consent).** List the
+confirmed columns the board does not have and ask, naming each with its state
+and place: *"Add these columns to board `<board>` of `<team>`: `Todo` (state
+New, after `New`), …?"* Only on an explicit yes run the adapter's add-columns
+recipe, all changes in one `PUT`. On no, or when the `PUT` fails with HTTP 403
+(not a team admin), stop and offer `label` on tags instead.
+
 This is the `no-tracker-label-without-consent` rule: nothing is created on the
 tracker without that yes.
 
 ## Step 6 — Write both places
 
-**Repo `CLAUDE.md`** — edit the YAML block of the `## Platform` section:
+**Repo `CLAUDE.md`** — edit the YAML block of the `## Platform` section
+(on Azure DevOps also set `team`, `board` and `workItemType` inside the `ado`
+block the same way, every other key byte-for-byte):
 
 1. Find the heading `## Platform` **at the start of a line**; never splice on
    a bare substring search.
@@ -150,7 +180,7 @@ tracker without that yes.
 Running the skill twice with the same answers must leave `git diff` empty.
 
 **Entity page** — only when the vault is reachable (`tier=file`) and the page
-exists: set `platform.statuses` in the frontmatter to the same object,
+exists: set `platform.statuses` (and `platform.ado`'s three keys) in the frontmatter to the same object,
 following `nerd4rent:nerdbrain-wiki` (filesystem only, `updated:` bump, one
 `log.md` line). Nothing else on the page changes. Skip silently otherwise.
 
@@ -170,10 +200,12 @@ takes the statuses from this output.
 
 ## Boundaries
 
-- The only repo change is the `statuses` key of `## Platform`. Never commit or
+- The only repo change is the `statuses` key of `## Platform` (plus
+  `ado.team`, `ado.board`, `ado.workItemType` on Azure DevOps). Never commit or
   push it; the change stays in the working tree for the user or the calling
   skill.
-- The only tracker writes are `label.create`, each after an explicit yes.
+- The only tracker writes are `label.create` and, on Azure DevOps, the one
+  add-columns `PUT`, each after an explicit yes.
   Never change an issue's state, labels or comments here.
 - Vault access is filesystem-only — no Obsidian or Linear MCP, no Local REST
   API, no git against the vault.

@@ -251,3 +251,17 @@ result already lands — a Linear comment. The repo has no CI and no telemetry,
 so a metric that needs a new collection channel, a log file or a clock is not
 measured at all: it is rejected, not deferred.
 _Avoid_: telemetry, instrumentation (both imply a channel this repo does not have)
+
+**Agent Plugin**:
+A client that loads the repo-root `plugin.json` under the
+[Agent Plugins 1.0.0](https://agent-plugins.org/schemas/1.0.0/plugin.schema.json)
+schema (closed fields; skills discovered from `skills/`, not a manifest key).
+Claude Code is not this client — it reads `.claude-plugin/`.
+_Avoid_: plugin.json (ambiguous — four manifests carry that filename)
+
+**Cursor Plugin**:
+The Cursor-native packaging at `.cursor-plugin/plugin.json`, which points at
+the existing `skills/`, `agents/` and `hooks/` trees. Distinct from an Agent
+Plugin and from Claude Code's `.claude-plugin/`.
+_Avoid_: Cursor extension, marketplace plugin (a marketplace card is how
+Cursor *pins* a plugin, not the packaging)

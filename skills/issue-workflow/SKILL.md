@@ -133,7 +133,7 @@ the phase and do what it says — do not restart planning for an issue already
 
 When the `Workflow` tool is available, gather the planning context through the
 island instead of reading sequentially: run `workflows/plan-context-fanout.js`
-(as `/nerd4rent:plan-context-fanout`, or directly via
+(as `/plan-context-fanout` / `/nerd4rent:plan-context-fanout`, or directly via
 `Workflow({name: "nerd4rent:plan-context-fanout", args: {issueId: "<ID>", spec: <IssueSpec>, platform: <platform>}})`
 — pass `args` as a real JSON object, never as a JSON-encoded string). One
 script realises both contract nodes (`wiki-recall` + `plan-context-fanout`):
@@ -141,6 +141,12 @@ five gatherers run concurrently, a deterministic reducer (plain code, not an
 agent) dedupes, drops empties and trims to the `nerdbrain-wiki` limits (≤ 3
 related pages, ≤ 5 search results), and the island returns typed
 `PlanContext` + `ProjectContext` plus a `gaps` list.
+
+When `Workflow` is absent (Cursor and other Agent Skills clients), do not
+invent a `nerd4rent:<agent>` invoke. Gather sequentially (path a below), or
+spawn the island agents with `Task` and `subagent_type` matching `agents/`
+— `plan-gatherer` for each of the five sources. The reducer stays plain code
+in the main agent.
 
 | Source | What it contributes | Schema field |
 |---|---|---|
@@ -176,8 +182,11 @@ per project).
 If the SessionStart inject for this project contains an `[omitted: ...
 Decisions ...]` marker, `Read` the full entity page at the path given in that
 marker and extract `## Decisions` (per `nerdbrain-wiki`'s lazy-section
-contract). Skip this step silently — no error — if no entity page was
-injected (stub / `tier=none`) or the section is missing/empty.
+contract). Cursor `sessionStart` is fire-and-forget — the inject may arrive
+after the first turn. If no inject is present, infer `<slug>` from the repo
+and `Read` `~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md` when
+that file exists. Skip this step silently — no error — if the vault is
+unreachable (`tier=none`), the page is a stub, or the section is missing/empty.
 
 Treat any decisions found as constraints while drafting the plan: the
 Technical Approach must not contradict one without flagging it.
@@ -356,7 +365,10 @@ and must still review.
 **Run the island.** With the `Workflow` tool available, run
 `workflows/review-verify.js` via
 `Workflow({name: "nerd4rent:review-verify", args: {issueId: "<ID>", request: {axes: [...], range: "..."}, platform: <platform>}})`
-— `args` as a real JSON object, never a JSON-encoded string. The island does:
+— `args` as a real JSON object, never a JSON-encoded string. When
+`Workflow` is absent, spawn the same agents with `Task` and `subagent_type`
+`review-mapper` / `review-sceptic` / `review-synthesizer` (never
+`nerd4rent:<agent>`), or run the sequential fallback (path a below). The island does:
 
 1. **Map** — one mapper per axis, all four concurrent, each confined to its
    axis.

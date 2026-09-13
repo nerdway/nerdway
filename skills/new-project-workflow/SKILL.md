@@ -1,6 +1,6 @@
 ---
 name: new-project-workflow
-description: Bootstrap a new development project end-to-end — resolve the target directory, initialize git, scaffold README.md, create a GitHub repo via gh, create a matching Linear project, optionally record the project in a nerdbrain wiki, then route the user to a spec-creating skill of their choice. Use whenever the user wants to "start a new project", "bootstrap a project", "kick off a new repo", "set up a new project the nerd4rent way", or invokes /nerd4rent:new-project-workflow. Also use proactively when the user is sitting in an empty or near-empty directory and signals they're about to begin fresh work (e.g. "let's build X", "new idea I want to start on"), even if they don't say "workflow" explicitly.
+description: Bootstrap a new development project end-to-end — resolve the target directory, initialize git, scaffold README.md, create a GitHub repo via gh, create a matching Linear project, optionally record the project in a nerdbrain wiki, then route the user to a spec-creating skill of their choice. Use whenever the user wants to "start a new project", "bootstrap a project", "kick off a new repo", "set up a new project the nerd4rent way", or invokes /new-project-workflow / /nerd4rent:new-project-workflow. Also use proactively when the user is sitting in an empty or near-empty directory and signals they're about to begin fresh work (e.g. "let's build X", "new idea I want to start on"), even if they don't say "workflow" explicitly.
 ---
 
 # new-project-workflow
@@ -48,10 +48,10 @@ The skill accepts an argument string with the following forms (all optional):
 | `--name=<name>` | Override the project name (otherwise = directory basename). |
 
 Examples:
-- `/nerd4rent:new-project-workflow`
-- `/nerd4rent:new-project-workflow ~/src/my-thing`
-- `/nerd4rent:new-project-workflow ~/src/my-thing --private`
-- `/nerd4rent:new-project-workflow ~/src/scratch-1234 --name=cool-app --public`
+- `/new-project-workflow` / `/nerd4rent:new-project-workflow`
+- `/new-project-workflow ~/src/my-thing`
+- `/new-project-workflow ~/src/my-thing --private`
+- `/new-project-workflow ~/src/scratch-1234 --name=cool-app --public`
 
 Parse leniently — accept arguments in any order. If the resolved directory doesn't exist yet, ask the user whether to create it before continuing.
 
@@ -265,7 +265,7 @@ Do **not** hardcode the menu. The set of installed skills varies per user and gr
    Pick [1-N] or 'skip':
    ```
 
-4. **Invoke the chosen skill.** Inline grilling → run the interview yourself per the rules in item 3. An agent-invocable skill → invoke it via the Skill tool; do not summarize what it will do — just hand off cleanly. A manual-only wrapper → tell the user to type the slash command themselves; no handoff via the Skill tool. `skip` → exit with the summary from Step 4.7.
+4. **Invoke the chosen skill.** Inline grilling → run the interview yourself per the rules in item 3. An agent-invocable skill → invoke it via the Skill tool when that tool exists; if it does not (Cursor and other Agent Skills clients), `Read` the skill's `SKILL.md` and follow it — the same degradation as ADR-0003. Do not summarize what it will do — hand off or follow through. A manual-only wrapper → tell the user to type the slash command themselves; no Skill-tool handoff. `skip` → exit with the summary from Step 4.7.
 
 ### Why dynamic discovery
 

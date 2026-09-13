@@ -19,7 +19,7 @@ Bootstraps a new project end-to-end in a single approval:
 5. Creates a matching Linear project via the `linearis` CLI (team picked at runtime) — or, when you pick **GitHub Issues** as the tracker, skips it: the repo is the container.
 6. Lets you pick a spec-creating skill: an always-available **inline grilling** interview run by the agent itself, plus whatever external spec skills are installed (e.g. `/to-prd`, `/office-hours`; wrappers like `/grill-me` are marked manual-only).
 
-Trigger phrases: *"new project workflow"*, *"bootstrap project"*, *"start a new project the nerd4rent way"*, or `/nerd4rent:new-project-workflow`.
+Trigger phrases: *"new project workflow"*, *"bootstrap project"*, *"start a new project the nerd4rent way"*, or `/new-project-workflow` / `/nerd4rent:new-project-workflow`.
 
 ### `nerd4rent:determine-platform`
 
@@ -137,7 +137,7 @@ Brings this machine to the CLI state the skills in this repo require:
 2. Installs or updates whatever is missing or outdated — download with checksum verification, or `npm install --global` for entries declaring the `npm` method.
 3. Hands back the authentication steps only a human can complete — it never runs `auth login` flows itself.
 
-Trigger: `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a skill fails because a command like `linearis`, `gh`, or `rg` is missing or too old.
+Trigger: `/bootstrap-clis` / `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a skill fails because a command like `linearis`, `gh`, or `rg` is missing or too old.
 
 ## Platform config and adapters
 
@@ -273,7 +273,7 @@ precondition: a session without the workflow runtime fills the same generated
 template in prose, exactly as before.
 
 Two islands are real. `workflows/plan-context-fanout.js` runs the plan-phase
-fan-out (trigger `/nerd4rent:plan-context-fanout`, or `Workflow({name: "nerd4rent:plan-context-fanout", args})`
+fan-out (trigger `/plan-context-fanout` / `/nerd4rent:plan-context-fanout`, or `Workflow({name: "nerd4rent:plan-context-fanout", args})`
 during development). One script realises both plan-phase workflow nodes — the
 contract's `script` binding on `wiki-recall` and `plan-context-fanout` points at
 the same file — spawning five concurrent gatherers (repo layout, conventions,
@@ -383,9 +383,24 @@ Add this marketplace and install the plugin:
 /plugin install nerd4rent@nerd4rent-claude-plugin
 ```
 
-### Other agents (Cursor, Copilot, Windsurf, Cline, …)
+### Cursor
 
-The skills follow the shared [Agent Skills specification](https://github.com/vercel-labs/skills), so the [`skills` CLI](https://github.com/vercel-labs/skills) can install them into 70+ coding agents:
+Install from this repo as a local plugin (skills, agents, and hooks):
+
+```bash
+mkdir -p ~/.cursor/plugins/local
+ln -s /path/to/nerd4rent-claude-plugin ~/.cursor/plugins/local/nerd4rent
+```
+
+Then **Reload Window** and open **Customize**. The `nerd4rent` card should list the skills under `skills/`, the four agents, and the SessionStart / vault-MCP deny hooks.
+
+A Cursor marketplace card with the same `name: nerd4rent` wins over the local symlink. If you previously added this repo with `/add-plugin` (a personal GitHub pin), disable that card first — the pin freezes a cloud `gitRef` and `update` will not move it. Do not re-enable it while the local plugin is active.
+
+`npx skills add` (below) remains a fallback if you only want the skill files.
+
+### Other agents (Copilot, Windsurf, Cline, …)
+
+The skills follow the shared [Agent Skills specification](https://github.com/vercel-labs/skills), so the [`skills` CLI](https://github.com/vercel-labs/skills) can install them into 70+ coding agents — including Cursor, if you prefer not to use the native plugin:
 
 ```bash
 # Install all skills globally into your detected agent(s)
@@ -398,7 +413,7 @@ npx skills add nerd4rent/nerd4rent-claude-plugin -g -a cursor -s '*'
 npx skills update
 ```
 
-Cursor reads global skills from `~/.agents/skills/` (and `~/.cursor/skills/`); the CLI installs there automatically. Restart the agent after installing.
+Those agents read global skills from `~/.agents/skills/` (Cursor also reads `~/.cursor/skills/`); the CLI installs there automatically. Restart the agent after installing. This path ships skills only — no Cursor agents or hooks.
 
 ## Requirements
 
@@ -412,12 +427,14 @@ Cursor reads global skills from `~/.agents/skills/` (and `~/.cursor/skills/`); t
 
 ## Releasing
 
-Two manifests carry a version, and they move together:
+Four manifests carry a version, and they move together:
 
 - `.claude-plugin/plugin.json` → `version`
 - `.claude-plugin/marketplace.json` → `metadata.version`
+- `plugin.json` (Agent Plugins 1.0.0) → `version`
+- `.cursor-plugin/plugin.json` → `version`
 
-The installed plugin version comes from `plugin.json`. Bumping it is what forces Claude Code to refresh its `cache/<marketplace>/<plugin>/<version>/` copy — an unchanged number makes `/plugin update` a no-op even when `main` has moved on. `marketplace.json` versions the marketplace itself and does not drive that cache, but the two numbers have matched for every release; a mismatch publishes an inconsistent manifest. Keep them equal — `node scripts/validate-manifests.ts` checks it and exits non-zero when they drift.
+The Claude Code installed version comes from `.claude-plugin/plugin.json`. Bumping it is what forces Claude Code to refresh its `cache/<marketplace>/<plugin>/<version>/` copy — an unchanged number makes `/plugin update` a no-op even when `main` has moved on. `marketplace.json` versions the marketplace itself and does not drive that cache. The root and Cursor manifests must stay on the same string so a client loading any one of the four sees one release. Keep them equal — `node scripts/validate-manifests.ts` checks all four and the two closed schemas, and exits non-zero when they drift.
 
 Merging to `main` does not update anyone's install on its own: the local marketplace clone is only refreshed by `/plugin marketplace update <marketplace>`, followed by `/plugin update <plugin>@<marketplace>`.
 

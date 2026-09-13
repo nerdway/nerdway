@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "./hooks/session-start.sh"
+      }
+    ],
+    "beforeMCPExecution": [
+      {
+        "command": "./hooks/deny-vault-mcp.sh",
+        "failClosed": true
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "./hooks/deny-vault-mcp.sh",
+        "failClosed": true
+      }
+    ]
+  }
+}

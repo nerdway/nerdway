@@ -844,3 +844,136 @@ test("rule 23: rejects an exemption that is not an object instead of throwing", 
   assert.equal(errors.length, 1);
   assert.match(errors[0], /exemption/);
 });
+
+const platformSchema = {
+  id: "PlatformConfig",
+  description: "which tracker the project uses",
+  schema: schemaBody({
+    title: "Platform config",
+    properties: {
+      tracker: { type: "string", title: "Tracker", description: "where issues live", enum: ["linear", "github"] },
+    },
+    required: ["tracker"],
+  }),
+};
+
+const trackersAxis = {
+  config: "PlatformConfig.tracker",
+  sections: ["CLI", "Operations"],
+  operations: ["issue.read", "issue.set-status"],
+};
+
+function adapterSource(rows: string[] = ["issue.read", "issue.set-status"], sections: string[] = ["CLI", "Operations"]) {
+  return sections
+    .map((section) =>
+      section === "Operations"
+        ? ["## Operations", "", "| Operation | Command |", "|---|---|", ...rows.map((row) => `| \`${row}\` | run it |`)].join("\n")
+        : `## ${section}\n\nprose`,
+    )
+    .join("\n\n");
+}
+
+function adapterContract(adapters: unknown = { trackers: trackersAxis }) {
+  return contract(undefined, {
+    schemas: [...contract().schemas, platformSchema],
+    adapters,
+  });
+}
+
+function adapterFile(overrides: Record<string, unknown> = {}) {
+  return { axis: "trackers", name: "linear", source: adapterSource(), ...overrides };
+}
+
+function validateAdapters(adapters: unknown, files: unknown[]) {
+  return validateContract(adapterContract(adapters), skillDirs, [], [], files as never);
+}
+
+test("rule 24: accepts an adapter carrying every section and operation of its axis", () => {
+  assert.deepEqual(validateAdapters({ trackers: trackersAxis }, [adapterFile()]), []);
+});
+
+test("rule 24: accepts an axis enum value that has no adapter file yet", () => {
+  assert.deepEqual(validateAdapters({ trackers: trackersAxis }, []), []);
+});
+
+test("rule 24: rejects an adapters block that is not an object", () => {
+  const errors = validateAdapters(["trackers"], []);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /adapters/);
+});
+
+test("rule 24: rejects an axis whose config names no enum property of a registry schema", () => {
+  const errors = validateAdapters({ trackers: { ...trackersAxis, config: "PlatformConfig.ghost" } }, []);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /PlatformConfig\.ghost/);
+});
+
+test("rule 24: rejects an axis that does not require an Operations section", () => {
+  const errors = validateAdapters({ trackers: { ...trackersAxis, sections: ["CLI"] } }, []);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /Operations/);
+});
+
+test("rule 24: rejects an axis declaring a duplicate operation id", () => {
+  const errors = validateAdapters({ trackers: { ...trackersAxis, operations: ["issue.read", "issue.read"] } }, []);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /issue\.read/);
+});
+
+test("rule 24: rejects an axis with no operations", () => {
+  const errors = validateAdapters({ trackers: { ...trackersAxis, operations: [] } }, []);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /operations/);
+});
+
+test("rule 24: rejects an adapter file in a directory no axis declares", () => {
+  const errors = validateAdapters({ trackers: trackersAxis }, [adapterFile({ axis: "boards" })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /boards/);
+});
+
+test("rule 24: rejects an adapter file named outside the axis enum", () => {
+  const errors = validateAdapters({ trackers: trackersAxis }, [adapterFile({ name: "jira" })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /jira/);
+});
+
+test("rule 24: rejects an adapter missing a required section", () => {
+  const errors = validateAdapters({ trackers: trackersAxis }, [adapterFile({ source: adapterSource(undefined, ["Operations"]) })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /CLI/);
+});
+
+test("rule 24: a section heading counts only at the start of a line", () => {
+  const source = `Mentions ## CLI in prose.\n\n${adapterSource(undefined, ["Operations"])}`;
+  const errors = validateAdapters({ trackers: trackersAxis }, [adapterFile({ source })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /CLI/);
+});
+
+test("rule 24: rejects an adapter missing an operation of its axis", () => {
+  const errors = validateAdapters({ trackers: trackersAxis }, [adapterFile({ source: adapterSource(["issue.read"]) })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /issue\.set-status/);
+});
+
+test("rule 24: rejects an adapter listing an operation twice", () => {
+  const source = adapterSource(["issue.read", "issue.set-status", "issue.read"]);
+  const errors = validateAdapters({ trackers: trackersAxis }, [adapterFile({ source })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /issue\.read/);
+});
+
+test("rule 24: rejects an adapter listing an operation its axis does not declare", () => {
+  const source = adapterSource(["issue.read", "issue.set-status", "issue.delete"]);
+  const errors = validateAdapters({ trackers: trackersAxis }, [adapterFile({ source })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /issue\.delete/);
+});
+
+test("rule 24: reads operation ids only from the Operations section", () => {
+  const source = `${adapterSource(["issue.read"])}\n\n## Notes\n\n| Operation | Command |\n|---|---|\n| issue.set-status | elsewhere |`;
+  const errors = validateAdapters({ trackers: trackersAxis }, [adapterFile({ source })]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /issue\.set-status/);
+});

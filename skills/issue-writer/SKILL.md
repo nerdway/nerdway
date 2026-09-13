@@ -1,7 +1,7 @@
 ---
 name: issue-writer
 description: >-
-  Create a NEW tracker issue (Linear, GitHub Issues or GitLab Issues) for the current
+  Create a NEW tracker issue (Linear, GitHub Issues, GitLab Issues or Azure DevOps Boards) for the current
   repo/project with clearly specified goals, so the planning agent can build an implementation plan from it. Use when
   the user wants to file/create/open a new issue or task ("utwórz/stwórz/dodaj/zgłoś
   issue/zadanie", "create issue", "new task") and does NOT yet have an issue ID.
@@ -41,7 +41,7 @@ task* and English *create / open / file / new issue / task*.
 
 **Disambiguation:** if the user gives an existing issue ID (`TEAM-123`, or
 `#123` / `owner/repo#123` on GitHub Issues, `#123` / `group/project#123` on
-GitLab Issues) and asks to plan or implement it → that is `nerd4rent:issue-workflow`, not this skill. This skill
+GitLab Issues, `#123` / `AB#123` on Azure DevOps Boards) and asks to plan or implement it → that is `nerd4rent:issue-workflow`, not this skill. This skill
 *ends* by pointing at that one's status-driven flow.
 
 ## Hard gate (do not skip)
@@ -99,6 +99,13 @@ When the adapter lists `team.*` and `project.*` as `—` (GitHub Issues,
 GitLab Issues), the repo is the container: take it from the config's `github`
 block (`owner/repo`) or `gitlab` block (`group/project`), skip the team and
 project questions, and confirm the repo instead.
+
+On Azure DevOps Boards (`tracker: ado`) the project is the container and the
+issue is a work item of type `ado.workItemType`, created on `ado.team`'s board:
+take all of them from the `ado` block and confirm project + type. When the
+block has no `workItemType`, stop and run `nerd4rent:bind-statuses` first — it
+picks the team, board and type — never guess a type. Sub-issues are the same
+type with a parent link, so they land on the same board.
 
 ### 2. Assess complexity (adaptive threshold)
 

@@ -19,15 +19,20 @@ This applies to git init, README, GitHub repo, Linear project, and the nerdbrain
 
 ## Platform and adapters
 
-This skill bootstraps a **Linear + GitHub** project — the only combination it
-supports. Tracker and VCS commands live in adapter files at the plugin root,
-never in this skill; run each operation by its ID from the adapter's
-`## Operations` table:
+This skill bootstraps a **Linear + GitHub** or a **GitHub Issues + GitHub**
+project — the only combinations it supports; `<tracker>` is `linear` or
+`github`, chosen in Step 2. Tracker and VCS commands live in adapter files at
+the plugin root, never in this skill; run each operation by its ID from the
+adapter's `## Operations` table:
 
 ```
-${CLAUDE_PLUGIN_ROOT}/adapters/trackers/linear.md
+${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
 ${CLAUDE_PLUGIN_ROOT}/adapters/vcs/github.md
 ```
+
+With `tracker: github` the adapter lists `team.*` and `project.*` as `—`: the
+GitHub repo is the container, so every team and project step below is skipped
+for it.
 
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory.
@@ -97,7 +102,9 @@ If they pick option 2, take the new name and use it everywhere downstream. Do **
 Ask for whatever is still undecided after parsing flags:
 
 1. **Repo visibility** — only if neither `--public` nor `--private` was supplied. Default: `public`.
-2. **Linear team** — always ask. Run `team.list` (tracker adapter); user picks one. Why ask: teams vary across users; silent defaults land projects in the wrong workspace.
+2. **Tracker** — always ask: Linear (default) or GitHub Issues. With GitHub
+   Issues skip the rest of this step: no team, no project check.
+3. **Linear team** — always ask. Run `team.list` (tracker adapter); user picks one. Why ask: teams vary across users; silent defaults land projects in the wrong workspace.
 
 After the team is chosen, run the **Linear project existence check**: `project.list` (tracker adapter) — match `name` **and** the chosen team key client-side, as the adapter describes. If found, capture its `id` (UUID) and `url` — this turns Linear's plan-step into a skip.
 
@@ -112,7 +119,7 @@ Plan for new project: <name>
 ────────────────────────────────
   Directory:   <absolute-path>
   Visibility:  public | private
-  Linear team: <team-name>
+  Tracker:     Linear team <team-name> | GitHub Issues
   Nerdbrain:   <enabled | disabled — vault not detected>
 
   1. git init + branch main          [run] | [skip — already a repo on main]
@@ -121,7 +128,7 @@ Plan for new project: <name>
   4. GitHub repo <name> --<vis>, \
        remote origin, push            [run] | [skip — exists: <url>]
   5. Linear project '<name>' in <team>
-                                      [run] | [skip — exists: <uuid>]
+                                      [run] | [skip — exists: <uuid>] | [skip — GitHub Issues]
   6. Nerdbrain wiki entity page      [run] | [skip — disabled]
   7. Pick spec skill from menu
 
@@ -193,7 +200,8 @@ response JSON already carries everything needed: take `.id` (UUID) and `.url`
 straight from the output. Step 4.6 needs that
 UUID for the entity-page frontmatter; surface the `url` to the user. If the
 existence check in Step 2 already found a matching project, skip creation and
-reuse the UUID it captured.
+reuse the UUID it captured. With GitHub Issues this step is skipped: the repo
+from step 4.4 is the container.
 
 ### 4.6 — Nerdbrain entity page (conditional)
 
@@ -206,8 +214,10 @@ Only run if inspection confirmed nerdbrain is reachable. Create `~/obsidian/nerd
   `nerd4rent:determine-platform` writes:
   `{tracker: linear, vcs: github, linear: {team: <team>, project: <uuid-from-step-4.5>}, github: {owner: <owner>, repo: <name>}}`.
   Both Linear fields are REQUIRED; prefill them directly from step 4.5 (the
-  project was just created or found there, so the UUID is known). If step 4.5
-  was skipped (no working Linear CLI), omit the `platform:` block — the
+  project was just created or found there, so the UUID is known). With GitHub Issues write
+  `{tracker: github, vcs: github, github: {owner: <owner>, repo: <name>}}`
+  instead — no `statuses` block, so the adapter's `label` default applies. If
+  step 4.5 was skipped (no working Linear CLI), omit the `platform:` block — the
   tracker was not checked, and `tracker: none` means a confirmed "no tracker";
   backfill in a later session with `/determine-platform`. Never write the
   legacy `linear:` key.
@@ -225,7 +235,7 @@ After execution, print a compact summary:
 Created:
   Directory: <path>
   GitHub:    <url>
-  Linear:    <team>/<name> (<uuid>)
+  Linear:    <team>/<name> (<uuid>)   (or 'GitHub Issues — run /bind-statuses to create the status labels')
   Wiki:      <vault-path> (or 'disabled')
 Now picking spec skill...
 ```

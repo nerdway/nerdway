@@ -57,15 +57,18 @@ candidate resolves, stop and ask the user for the ID — never guess it.
 | `project.create` | `linearis projects create "<name>" --team <KEY> --description "<one-line description>" --fields id,name,url` | take `.id` (UUID) and `.url` straight from the output |
 | `issue.read` | `linearis issues read <ID> --with-comments` | state, full description and every comment in one JSON |
 | `issue.read-relations` | `linearis issues read <ID> --fields identifier,title,state.name,parent,children,relations,inverseRelations` | parent, sub-issues and linked issues without the comments; run it again on the parent to reach the siblings |
-| `issue.read-status` | `linearis issues read <ID> --fields identifier,title,state.name` | cheap enough to run every turn; exits non-zero for an ID that does not exist |
+| `issue.read-status` | the read recipe of the resolved strategy in `## Status strategies` | the issue's canonical phase; cheap enough to run every turn |
 | `issue.read-branch` | `linearis issues read <ID> --fields identifier,title,branchName,state.name,url` | `branchName` is already safe for git |
 | `issue.resolve-from-branch` | the loop below | prints the first candidate that resolves, nothing when none does |
 | `issue.list-active` | `linearis issues list --team <KEY> --project <PROJECT> --status 'Todo,In Progress,In Review' --fields nodes.identifier,nodes.title,nodes.state.name` | the project's active board |
 | `issue.create` | `linearis issues create "<title>" --team <KEY> --project "<PROJECT>" --status Backlog --description "$(cat body.md)"` | pass the state explicitly so the team default cannot override it; the JSON carries `.identifier`, no URL |
 | `issue.create-child` | `linearis issues create "<title>" --team <KEY> --project "<PROJECT>" --parent-ticket <PARENT-ID> --status Backlog --description "$(cat body.md)"` | create the parent first and read its `.identifier` |
 | `issue.update-description` | `linearis issues update <ID> --description "$(cat body.md)"` | replaces the whole description |
-| `issue.set-status` | `linearis issues update <ID> --status '<state name>'` | state names from `## Statuses` |
+| `issue.set-status` | the write recipe of the resolved strategy in `## Status strategies` | writes a canonical phase; never `in-progress` on the agent's own initiative |
 | `issue.comment` | `linearis issues discuss <ID> --body "$(cat body.md)"` | markdown body |
+| `status.list` | — | `linearis` has no state-listing command; a wrong state name fails loudly on write |
+| `label.list` | `linearis labels list --team <KEY> --limit 250 --fields nodes.name` | the team's own labels |
+| `label.create` | `linearis labels create "<name>" --team <KEY>` | team-scoped label; only with the user's consent |
 
 `issue.resolve-from-branch`:
 
@@ -86,14 +89,31 @@ from the project's `url` (`project.list`).
 
 States are the team's own **names**, not state types — `Backlog`, not
 `backlog`; `In Progress`, not `started`. Spaces are fine
-(`--status 'In Progress'`). There is no state-listing command: a wrong name
-fails loudly with `Status "X" for team ... not found`, naming nothing else —
-fix the name and retry.
+(`--status 'In Progress'`). A wrong name fails loudly with
+`Status "X" for team ... not found`, naming nothing else — fix the name and
+retry.
 
-| Workflow phase | State name |
-|----------------|------------|
-| New issue | `Backlog` |
-| Planned | `Todo` |
-| Implementation (set by the human) | `In Progress` |
-| Code review | `In Review` |
-| Closed | `Done` |
+Default strategy and map, used when the platform config has no `statuses`
+block (semantics in `adapters/statuses.md`):
+
+```yaml
+strategy: native
+map:
+  backlog: Backlog
+  todo: Todo
+  in-progress: In Progress
+  in-review: In Review
+  done: Done
+```
+
+## Status strategies
+
+Linear has no open/closed flag separate from its states, so `label` is not
+supported. `<value>` is `map[<phase>]`; the value read back is looked up in
+the map.
+
+| Strategy | Read | Write |
+|----------|------|-------|
+| `native` | `linearis issues read <ID> --fields identifier,title,state.name` — the value is `state.name`; exits non-zero for an ID that does not exist | `linearis issues update <ID> --status '<value>'` |
+| `label` | — | — |
+| `comment` | `linearis issues read <ID> --with-comments --fields identifier,title,comments.nodes.createdAt,comments.nodes.body` — sort by `createdAt`, take the newest body whose first line is `Status: <value>` | `linearis issues discuss <ID> --body "Status: <value>"` |

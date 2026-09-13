@@ -10,9 +10,10 @@ export const meta = {
 }
 
 // The island behind the `review-verify` contract node: map → reduce → verify → synthesize.
-// Input arrives as args: { issueId: "TEAM-123", request: <ReviewRequest> } — the ReviewRequest
-// edge payload plus the issue id the spec-compliance mapper queries by (same convention as
-// plan-context-fanout).
+// Input arrives as args: { issueId: "TEAM-123", request: <ReviewRequest>, platform: <PlatformConfig> }
+// — the ReviewRequest edge payload, the issue id the spec-compliance mapper queries by, and the
+// platform with `adapters: { tracker, vcs }` holding absolute adapter file paths, null when
+// unavailable (same convention as plan-context-fanout).
 
 // Verbatim copy of the registry body in workflow-graph.json — the script cannot read the
 // contract at runtime, so the drift check (validator rules 17-18) holds this literal
@@ -140,10 +141,32 @@ const issueId = input && input.issueId ? String(input.issueId) : ''
 const request = input && input.request ? input.request : {}
 const range = typeof request.range === 'string' && request.range.length > 0 ? request.range : 'main...HEAD'
 const requestedAxes = Array.isArray(request.axes) ? request.axes : []
+const platform = input && input.platform ? input.platform : {}
+const adapters = platform.adapters || {}
+const trackerAdapter = typeof adapters.tracker === 'string' && adapters.tracker.length > 0 ? adapters.tracker : null
+const vcsAdapter = typeof adapters.vcs === 'string' && adapters.vcs.length > 0 ? adapters.vcs : null
+
+function adapterInstruction(path, operation) {
+  return `Platform commands come from the adapter file \`${path}\`: read its "## CLI" and "## Operations" sections and run operation \`${operation}\` exactly as its table gives it. If that operation's command is \`—\`, skip it and say so.`
+}
 
 const gaps = []
 if (issueId === '') {
-  gaps.push('spec-compliance axis ran without an issue id — acceptance criteria not read from Linear')
+  gaps.push('spec-compliance axis ran without an issue id — acceptance criteria not read from the tracker')
+} else if (trackerAdapter === null) {
+  gaps.push(`tracker adapter unavailable (${platform.tracker || 'no platform'}) — acceptance criteria not read from the tracker`)
+}
+if (vcsAdapter === null) {
+  gaps.push(`vcs adapter unavailable (${platform.vcs || 'no platform'}) — the pull request is not readable, the change is read through git only`)
+}
+
+let specSource
+if (issueId !== '' && trackerAdapter !== null) {
+  specSource = `Read the issue's acceptance criteria first: run the read-only operation \`issue.read\` on ${issueId} and use its description. ${adapterInstruction(trackerAdapter, 'issue.read')} `
+} else if (vcsAdapter !== null) {
+  specSource = `Acceptance criteria are not readable from the tracker: read the pull request description and review the change against the intent stated there. ${adapterInstruction(vcsAdapter, 'pr.view')} `
+} else {
+  specSource = `Neither the tracker nor the pull request is readable: review the change against the intent stated in its commit messages (\`git log ${range}\`). `
 }
 
 // The engine is a prompt hint, never a hard invocation: the subagent may lack the skill,
@@ -165,9 +188,7 @@ function engineFor(axisId) {
 const AXIS_PROMPTS = {
   'spec-compliance':
     `Review ONLY for spec compliance: does the change do what the issue asked, no more and no less? ` +
-    (issueId === ''
-      ? `No issue id was provided, so acceptance criteria are not readable from Linear: read the pull request description (\`gh pr view\`) and review the change against the intent stated there. `
-      : `Read the issue's acceptance criteria first: run \`linearis issues read ${issueId}\` (read-only) and use its description. `) +
+    specSource +
     `Report each unmet or violated acceptance criterion as a finding anchored to the diff line that misses it.`,
   'repo-standards':
     'Review ONLY against the repo coding standards: read the "## Standards" section of CONTEXT.md and check the diff against those rules alone. ' +
@@ -223,8 +244,11 @@ const summaryShape = {
 }
 
 const diffInstruction =
-  `Change range under review: \`${range}\`. Read the diff yourself: \`git diff ${range}\` ` +
-  `(or \`gh pr diff\` when the range points at a pull request). Anchor every finding to a file and line in that diff.`
+  `Change range under review: \`${range}\`. Read the diff yourself: \`git diff ${range}\`` +
+  (vcsAdapter === null
+    ? '. '
+    : ` (or, when the range points at a pull request, the read-only operation \`pr.diff\` — ${adapterInstruction(vcsAdapter, 'pr.diff')}). `) +
+  `Anchor every finding to a file and line in that diff.`
 
 phase('Map')
 log(`Mapping 4 review axes over ${range}`)

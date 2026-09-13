@@ -96,7 +96,7 @@ Reading order if you want to go deeper: [`README.md` "Workflow topology"](../REA
 
 ## Prerequisites
 
-You need [Claude Code](https://claude.com/claude-code) (or another coding agent — see [Other agents](#other-agents)) and these CLIs on your `PATH`:
+You need [Claude Code](https://claude.com/claude-code), [Cursor](#cursor) (native plugin), or another coding agent — see [Other agents](#other-agents) — and these CLIs on your `PATH`:
 
 | CLI | Minimum version | Install | Authentication |
 |---|---|---|---|
@@ -111,7 +111,7 @@ You need [Claude Code](https://claude.com/claude-code) (or another coding agent 
 
 To authenticate `linearis`, create a personal API key in Linear under **Settings → Security & access → API → Personal API keys**, then either set it as the `LINEAR_API_TOKEN` environment variable or run `linearis auth login`. The key does not expire.
 
-You don't have to set this up by hand: once the plugin is installed, run `/nerd4rent:bootstrap-clis` and the agent will probe every dependency, install or update what's missing, and hand you back only the authentication steps a human has to complete.
+You don't have to set this up by hand: once the plugin is installed, run `/bootstrap-clis` / `/nerd4rent:bootstrap-clis` and the agent will probe every dependency, install or update what's missing, and hand you back only the authentication steps a human has to complete.
 
 The Linear-based skills degrade gracefully — if `linearis` is missing or unauthenticated, the rest of the plugin still works.
 
@@ -135,16 +135,31 @@ Merges to `main` don't update your install on their own — the two commands abo
 
 The parallel islands need Claude Code ≥ 2.1.154 on a plan that includes dynamic workflows. In the default permission mode each island run asks for consent first; answer "don't ask again" to silence the prompt for that workflow in that project. Without workflows everything still runs — sequentially (see [degradation](#degradation-is-part-of-the-design)).
 
+### Cursor
+
+Symlink this repo into Cursor's local plugin directory, then reload:
+
+```bash
+mkdir -p ~/.cursor/plugins/local
+ln -s /path/to/nerd4rent-claude-plugin ~/.cursor/plugins/local/nerd4rent
+```
+
+**Reload Window**, then open **Customize**. The `nerd4rent` card should show the skills, the four agents, and the SessionStart / vault-MCP deny hooks.
+
+If you previously imported the GitHub repo with `/add-plugin`, disable that marketplace card first. The pin is a cloud `gitRef` on the Cursor account — `update` will not move it, and a card with the same `name` hides the local symlink.
+
+Cursor runs the sequential path (no `Workflow` islands). `sessionStart` is fire-and-forget: if the entity page is missing from the first turn, the agent reads it from disk.
+
 ### Other agents
 
-The skills follow the shared [Agent Skills specification](https://github.com/vercel-labs/skills), so you can install them into Cursor, Copilot, Windsurf, Cline and 70+ other agents:
+The skills follow the shared [Agent Skills specification](https://github.com/vercel-labs/skills), so you can install them into Copilot, Windsurf, Cline and 70+ other agents — and into Cursor as a skills-only fallback:
 
 ```bash
 npx skills add nerd4rent/nerd4rent-claude-plugin -g   # all skills, detected agents
 npx skills update                                     # keep them current
 ```
 
-Restart the agent after installing. These agents run the sequential degradation path — same topology, read as prose.
+Restart the agent after installing. These agents run the sequential degradation path — same topology, read as prose. This path does not install Cursor agents or hooks.
 
 ## Telling the plugin which platform a project uses
 
@@ -186,7 +201,7 @@ The table uses Linear's default names. On GitHub Issues and GitLab Issues the sa
 
 ## Skills reference
 
-How to trigger each skill and what to expect. All of them also respond to the slash form `/nerd4rent:<skill-name>`.
+How to trigger each skill and what to expect. All of them also respond to `/<skill-name>` and `/nerd4rent:<skill-name>`.
 
 ### `determine-platform` — record the tracker and host
 
@@ -225,12 +240,12 @@ How to trigger each skill and what to expect. All of them also respond to the sl
 
 ### `bootstrap-clis` — set up a machine
 
-- **Say:** `/nerd4rent:bootstrap-clis`, or just let a skill fail because a CLI is missing.
+- **Say:** `/bootstrap-clis` / `/nerd4rent:bootstrap-clis`, or just let a skill fail because a CLI is missing.
 - **What happens:** every dependency from the table above is probed, installed, or updated (with checksum verification for downloads). Authentication is never done for you — the skill ends with the exact steps you need to run yourself.
 
 ### `nerdbrain-wiki` / `nerdbrain-search` — personal second brain (optional)
 
-These maintain a personal Obsidian vault with one entity page per project — the plan-phase island reads it as one of its five context sources, and decisions made during work are written back. They assume a specific vault layout under `~/obsidian/nerdbrain/` and matching rules in your global `~/.claude/CLAUDE.md`; without that setup they simply stay inactive.
+These maintain a personal Obsidian vault with one entity page per project — the plan-phase island reads it as one of its five context sources, and decisions made during work are written back. They assume a specific vault layout under `~/obsidian/nerdbrain/` and matching rules in your user rules / `AGENTS.md` / `~/.claude/CLAUDE.md`; without that setup they simply stay inactive.
 
 ## Troubleshooting
 
@@ -239,5 +254,5 @@ These maintain a personal Obsidian vault with one entity page per project — th
 - **"phase unknown"** — the issue shows a state, label or marker the status map doesn't hold; move the issue to a mapped status, or extend the map with `/bind-statuses`.
 - **`linearis` errors about authentication** — set `LINEAR_API_TOKEN` or run `linearis auth login` (see [Prerequisites](#prerequisites)).
 - **`/plugin update` says nothing changed** — run `/plugin marketplace update nerd4rent-claude-plugin` first; if it still reports no change, no new version has been released yet.
-- **A skill doesn't trigger** — invoke it explicitly with the slash form, e.g. `/nerd4rent:issue-workflow DEMO-123`.
+- **A skill doesn't trigger** — invoke it explicitly with the slash form, e.g. `/issue-workflow DEMO-123` or `/nerd4rent:issue-workflow DEMO-123`.
 - **The plan or review runs sequentially and slowly** — dynamic workflows are unavailable or disabled; see [Installation](#installation). The result is the same, only slower.

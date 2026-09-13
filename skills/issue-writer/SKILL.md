@@ -1,21 +1,21 @@
 ---
 name: issue-writer
 description: >-
-  Create a NEW Linear issue for the current repo/project with clearly specified
-  goals, so the planning agent can build an implementation plan from it. Use when
+  Create a NEW tracker issue (Linear or GitHub Issues) for the current
+  repo/project with clearly specified goals, so the planning agent can build an implementation plan from it. Use when
   the user wants to file/create/open a new issue or task ("utwórz/stwórz/dodaj/zgłoś
   issue/zadanie", "create issue", "new task") and does NOT yet have an issue ID.
-  Adaptively interviews for missing goals, drafts the issue, gates the Linear write
-  on approval, creates the issue in Backlog, and offers an optional inline
+  Adaptively interviews for missing goals, drafts the issue, gates the tracker
+  write on approval, creates the issue in the backlog phase, and offers an optional inline
   grilling session that can split the topic into sub-issues. Distinct
   from issue-workflow (which plans/implements an EXISTING issue ID).
   Delegates to determine-platform when no platform is configured; tracker
   commands come from the platform adapter.
 ---
 
-# Linear issue writer
+# Issue writer
 
-Create well-formed Linear issues whose goals are specified clearly enough that
+Create well-formed tracker issues whose goals are specified clearly enough that
 `nerd4rent:issue-workflow` can plan implementation directly from them.
 
 ## Platform and adapters
@@ -39,13 +39,13 @@ The user wants to **create a new issue/task** and has **no existing issue ID**.
 Triggers include Polish *utwórz / stwórz / dodaj / zgłoś / załóż issue / zadanie /
 task* and English *create / open / file / new issue / task*.
 
-**Disambiguation:** if the user gives an existing `TEAM-123` and asks to plan or
-implement it → that is `nerd4rent:issue-workflow`, not this skill. This skill
+**Disambiguation:** if the user gives an existing issue ID (`TEAM-123`, or
+`#123` / `owner/repo#123` on GitHub Issues) and asks to plan or implement it → that is `nerd4rent:issue-workflow`, not this skill. This skill
 *ends* by pointing at that one's status-driven flow.
 
 ## Hard gate (do not skip)
 
-**No write to Linear** (`issue.create`, sub-issues, labels) until the user has seen
+**No write to the tracker** (`issue.create`, sub-issues, labels) until the user has seen
 the drafted issue body and approved it. Allowed before approval: tracker read
 operations, reading the repo/entity-page for context, asking clarifying questions,
 drafting the issue text. The same gate applies to sub-issues proposed by a
@@ -94,6 +94,11 @@ fall back to another tracker.
 `team.check`. Show the resolved `team` + `project` and get a quick
 confirmation **before writing**.
 
+When the adapter lists `team.*` and `project.*` as `—` (GitHub Issues), the
+repo is the container: take it from the config's `github` block
+(`owner/repo`), skip the team and project questions, and confirm the repo
+instead.
+
 ### 2. Assess complexity (adaptive threshold)
 
 Pick the path the same way every later adaptive choice is made:
@@ -139,14 +144,15 @@ or the user for JSON.
 
 Write the body to a temp file and **show it to the user**. Wait for approval.
 
-### 5. Create in Linear (always in Backlog)
+### 5. Create on the tracker (always in the backlog phase)
 
-New issues start in **Backlog** — run `issue.create` with the title, the
-config's team and project, and the approved body file; the adapter passes the
-state explicitly so the team's default state cannot override it.
+New issues start in the **`backlog`** phase — run `issue.create` with the
+title, the resolved container and the approved body file; the adapter's notes
+say how the backlog phase is written (on Linear the state is passed
+explicitly so the team's default cannot override it).
 
 For a parent + sub-issues, create the parent first with `issue.create`,
-capture its `TEAM-123` ID from the output, then create each child with
+capture its ID (`TEAM-123`, `#123`) as the operation's notes describe, then create each child with
 `issue.create-child`, passing that ID as the parent.
 
 Add labels, priority or estimate only when the user specified them — don't
@@ -170,14 +176,14 @@ Skip the offer for a small, clear task — same adaptive threshold as step 2.
 
 ### 7. Output + handoff
 
-Print the created issue ID(s) — `.identifier` from step 5's JSON — and, when a
+Print the created issue ID(s) — as step 5 captured them — and, when a
 link helps, build the URL per the adapter's `## URL` section. Then point at
 the status-driven flow — do **not** offer to plan it yourself in this session:
 
 > *Issue utworzone (DEMO-123) — w Backlogu. Wpisz ID issue w nowej sesji lub
 > wiadomości, aby rozpocząć planowanie.*
 
-Planning, implementation, and review are driven by the issue's Linear status in
+Planning, implementation, and review are driven by the issue's phase on the tracker in
 `nerd4rent:issue-workflow` — keep creation and planning as separate,
 deliberate steps.
 

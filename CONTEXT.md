@@ -103,6 +103,14 @@ input to run as one `Workflow` script. Islands sit inside a conversational
 backbone; the axis as a whole is never one graph.
 _Avoid_: the graph, parallel phase
 
+**Island host**:
+The client machinery that realises an island: the `Workflow` tool running a
+`workflows/*.js` script (Claude Code), or the main agent orchestrating `Task`
+subagents over the same island agents plus `node scripts/island-reduce.ts` as
+the reducer (Cursor). One topology, two hosts — the payloads and stats are
+identical by construction.
+_Avoid_: runtime backend, executor (both suggest more than one topology)
+
 **Gate**:
 A point where progress waits on something outside the agent. `decision` gates
 carry a human choice and can only sit between islands, never inside one;

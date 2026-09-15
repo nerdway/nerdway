@@ -4,6 +4,8 @@
 
 *Amended by ADR-0005 (DEMO-301): the contract gains `exemptions` on a frozen rule (rule 23 — a validated exception naming a node, its scope and reason) and a top-level `adapters` block declaring each platform axis's required sections and operation IDs (rule 24); `platform-determine` replaces `issue-write` as the axis entry.*
 
+*Amended by DEMO-331: the contract describes island topology, not the orchestrating host. An island is realisable as a Workflow script — Claude Code, the `script` binding and the drift check — or as Task + subagent orchestration over the same agents with `node scripts/island-reduce.ts` as the deterministic reducer — Cursor — emitting the same typed payloads. Runtime mentions below that read Claude-Code-only are scoped to the Workflow realisation; `workflows/*.js` stays that realisation, held verbatim by the drift check.*
+
 The issue lifecycle axis (`linear-issue-writer` → `linear-issue-workflow` →
 `linear-issue-close` → `nerdbrain-wiki`/`nerdbrain-search`) was described only in
 prose spread across `SKILL.md` files, so its edges carried status ("hands off

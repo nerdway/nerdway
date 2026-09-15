@@ -205,6 +205,11 @@ export interface MappedReduceResult {
   gaps: string[];
 }
 
+export interface VerdictsReduceInput {
+  mappedCount: number;
+  overflowCount: number;
+}
+
 export interface VerdictsReduceResult {
   verified: VerifiedFinding[];
   stats: { mapped: number; verified: number; rejected: number; unverifiedOverflow: number };
@@ -281,12 +286,13 @@ export function reduceMappedFindings(
 export function reduceVerdicts(
   candidates: CandidateFinding[],
   votes: Array<Vote | null>,
+  input: VerdictsReduceInput,
   limits: ReviewLimits,
 ): VerdictsReduceResult {
   const gaps: string[] = [];
   const verified: VerifiedFinding[] = [];
   let rejected = 0;
-  let unverifiedOverflow = 0;
+  let unverifiedOverflow = input.overflowCount;
 
   for (let findingIndex = 0; findingIndex < candidates.length; findingIndex++) {
     const cast = votes
@@ -310,7 +316,7 @@ export function reduceVerdicts(
   return {
     verified,
     stats: {
-      mapped: candidates.length,
+      mapped: input.mappedCount,
       verified: verified.length,
       rejected,
       unverifiedOverflow,

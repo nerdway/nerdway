@@ -415,8 +415,10 @@ source of the prompts and shapes:
    the script's sceptic prompt verbatim, in batches of at most 8, collecting
    one `{refuted, justification}` vote per sceptic (same parse/re-ask/null
    rule).
-4. **Reduce** — pipe `{candidates, votes}` through
-   `node scripts/island-reduce.ts review verdicts`.
+4. **Reduce** — add the `mappedCount` and `overflowCount` fields from the
+   candidates-stage output (an integer edit of the join payload, not a
+   hand-edit of findings) and pipe `{candidates, votes, mappedCount,
+   overflowCount}` through `node scripts/island-reduce.ts review verdicts`.
 5. **Synthesize** — one `review-synthesizer` Task with the script's summary
    prompt and the verified findings + stats. Assemble `ReviewFindings`
    (`summary`, `findings`, `stats`) verbatim from the runner output — findings
@@ -425,21 +427,6 @@ source of the prompts and shapes:
 A non-zero runner exit becomes a `gaps` entry, and the runner's `stats` +
 `gaps` go into the session summary's metrics section exactly as after a
 `Workflow` run. Never reduce in chat.
-
-1. **Map** — one mapper per axis, all four concurrent, each confined to its
-   axis.
-2. **Reduce** — plain code, no model: schema-invalid records dropped, dedup by
-   `file:line` (the most severe finding wins the anchor), grouped by axis,
-   sorted by severity, capped at 12 findings.
-3. **Verify** — 3 independent sceptics per finding, each prompted to *refute*
-   it (the opposite goal to the reviewer's). **Rejection rule: 2 or more
-   refutations out of 3.** A finding with fewer than 2 cast votes is dropped
-   as unverified — it never passes because verification failed. Sceptic pairs
-   run in batches of at most 8, honouring the node's `maxWidth: 8` budget by
-   construction.
-4. **Synthesize** — the agent writes *only* the summary; the findings list is
-   assembled verbatim by the reducer, so no model can mutate or add a finding
-   after verification.
 
 Rejected findings stay out of the result, but every drop is counted:
 `stats { mapped, verified, rejected, unverifiedOverflow }` is required in

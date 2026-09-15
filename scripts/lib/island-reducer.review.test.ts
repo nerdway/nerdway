@@ -112,7 +112,7 @@ test("reduceVerdicts rejects at 2 of 3, stamps confidence, and counts unverified
     { refuted: false, justification: "stands" },
   ];
 
-  const result = reduceVerdicts(candidates, votes, REVIEW_LIMITS);
+  const result = reduceVerdicts(candidates, votes, { mappedCount: 9, overflowCount: 0 }, REVIEW_LIMITS);
 
   assert.deepEqual(
     result.verified.map((f) => [f.file, f.line, f.confidence]),
@@ -121,7 +121,7 @@ test("reduceVerdicts rejects at 2 of 3, stamps confidence, and counts unverified
       ["x.ts", 4, "high"],
     ],
   );
-  assert.deepEqual(result.stats, { mapped: 4, verified: 2, rejected: 1, unverifiedOverflow: 1 });
+  assert.deepEqual(result.stats, { mapped: 9, verified: 2, rejected: 1, unverifiedOverflow: 1 });
   assert.deepEqual(result.gaps, [
     "finding x.ts:3 got 1 of 3 votes — dropped unverified, never passed by default",
   ]);
@@ -143,11 +143,12 @@ test("reduceVerdicts treats fewer than rejectAt cast votes as unverified with a 
       { refuted: false, justification: "stands" },
       { refuted: false, justification: "stands" },
     ],
+    { mappedCount: 5, overflowCount: 2 },
     REVIEW_LIMITS,
   );
 
   assert.deepEqual(result.verified.map((f) => f.file), ["y.ts"]);
-  assert.deepEqual(result.stats, { mapped: 2, verified: 1, rejected: 0, unverifiedOverflow: 1 });
+  assert.deepEqual(result.stats, { mapped: 5, verified: 1, rejected: 0, unverifiedOverflow: 3 });
   assert.deepEqual(result.gaps, [
     "finding y.ts:1 got 1 of 3 votes — dropped unverified, never passed by default",
   ]);
@@ -161,11 +162,12 @@ test("reduceVerdicts tolerates empty votes and malformed vote objects", () => {
   const result = reduceVerdicts(
     candidates,
     [{ refuted: "yes", justification: 42 } as unknown as Vote, null, null],
+    { mappedCount: 4, overflowCount: 0 },
     REVIEW_LIMITS,
   );
 
   assert.deepEqual(result.verified, []);
-  assert.deepEqual(result.stats, { mapped: 1, verified: 0, rejected: 0, unverifiedOverflow: 1 });
+  assert.deepEqual(result.stats, { mapped: 4, verified: 0, rejected: 0, unverifiedOverflow: 1 });
   assert.deepEqual(result.gaps, [
     "finding z.ts:1 got 0 of 3 votes — dropped unverified, never passed by default",
   ]);

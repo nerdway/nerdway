@@ -73,14 +73,30 @@ if (subcommand === "plan") {
   });
   console.log(JSON.stringify(result));
 } else {
-  const { candidates, votes } = input as { candidates?: unknown; votes?: unknown };
+  const { candidates, votes, mappedCount, overflowCount } = input as {
+    candidates?: unknown;
+    votes?: unknown;
+    mappedCount?: unknown;
+    overflowCount?: unknown;
+  };
   if (!Array.isArray(candidates) || !Array.isArray(votes)) {
-    fail("review verdicts expects { candidates: [...], votes: [...] }");
+    fail("review verdicts expects { candidates: [...], votes: [...], mappedCount: <n>, overflowCount: <n> }");
   }
-  const result = reduceVerdicts(candidates as CandidateFinding[], votes as Array<Vote | null>, {
-    votes: numberFlag("votes", VOTES),
-    rejectAt: numberFlag("reject-at", REJECT_AT),
-    maxVerifiedFindings: numberFlag("max-verified-findings", MAX_VERIFIED_FINDINGS),
-  });
+  if (typeof mappedCount !== "number" || !Number.isInteger(mappedCount) || mappedCount < 0) {
+    fail("review verdicts expects integer mappedCount >= 0 — take it from the review candidates output");
+  }
+  if (typeof overflowCount !== "number" || !Number.isInteger(overflowCount) || overflowCount < 0) {
+    fail("review verdicts expects integer overflowCount >= 0 — take it from the review candidates output");
+  }
+  const result = reduceVerdicts(
+    candidates as CandidateFinding[],
+    votes as Array<Vote | null>,
+    { mappedCount, overflowCount },
+    {
+      votes: numberFlag("votes", VOTES),
+      rejectAt: numberFlag("reject-at", REJECT_AT),
+      maxVerifiedFindings: numberFlag("max-verified-findings", MAX_VERIFIED_FINDINGS),
+    },
+  );
   console.log(JSON.stringify(result));
 }

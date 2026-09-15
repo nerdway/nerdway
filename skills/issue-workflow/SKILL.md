@@ -142,11 +142,28 @@ agent) dedupes, drops empties and trims to the `nerdbrain-wiki` limits (≤ 3
 related pages, ≤ 5 search results), and the island returns typed
 `PlanContext` + `ProjectContext` plus a `gaps` list.
 
-When `Workflow` is absent (Cursor and other Agent Skills clients), do not
-invent a `nerd4rent:<agent>` invoke. Gather sequentially (path a below), or
-spawn the island agents with `Task` and `subagent_type` matching `agents/`
-— `plan-gatherer` for each of the five sources. The reducer stays plain code
-in the main agent.
+When `Workflow` is absent but `Task` is available (Cursor), run the island
+manually — the script is the single source of its prompts and shapes:
+
+1. Read `workflows/plan-context-fanout.js` and take the five gatherer prompts
+   verbatim from it (issue header, adapter instructions and shapes included —
+   do not paraphrase them into this skill).
+2. Spawn five `Task` calls concurrently with `subagent_type: plan-gatherer`,
+   one per gatherer, in the script's fixed order: repo-layout, conventions,
+   prior-plans, tracker-relations, vault. The subagent's final message must be
+   strict JSON matching the script's per-gatherer shape.
+3. Parse each return. On a parse failure re-ask once; still unparsable → treat
+   that gatherer as failed (`null`). A dead gatherer takes the same `null` —
+   never a silent skip.
+4. Assemble the five outputs into one JSON object
+   (`{repoFacts, conventions, priorPlans, trackerRelations, vault}`) and pipe
+   it through `node scripts/island-reduce.ts plan`. A non-zero exit becomes a
+   `gaps` entry, not a guess.
+5. Use the runner's typed `PlanContext` + `ProjectContext` + `gaps` exactly as
+   the island's return above.
+
+Never reduce these outputs in chat — the reducer is code, so the same
+gatherer output always reduces to the same context and the same stats.
 
 | Source | What it contributes | Schema field |
 |---|---|---|
@@ -163,9 +180,11 @@ them and draft from the returned context, reading sequentially only what the
 
 **Degradation — two explicit paths, both land on the sequential steps 0/0b/1:**
 
-- **(a) Agent without the `Workflow` tool** (Agent Skills portability): the
-  topology is readable as prose here and in `workflow-graph.json`; gather the
-  same sources sequentially.
+- **(a) Agent without the `Workflow` and `Task` tools** (Agent Skills
+  portability): the topology is readable as prose here and in
+  `workflow-graph.json`; gather the same sources sequentially. The degraded
+  run is flagged in the session summary's metrics (no island stats), never
+  silent.
 - **(b) Claude Code with dynamic workflows unavailable or off**: workflows
   need v2.1.154+ and a paid plan (on Pro additionally enabling them in
   `/config`), and they can be disabled via `disableWorkflows` in settings, the
@@ -365,10 +384,47 @@ and must still review.
 **Run the island.** With the `Workflow` tool available, run
 `workflows/review-verify.js` via
 `Workflow({name: "nerd4rent:review-verify", args: {issueId: "<ID>", request: {axes: [...], range: "..."}, platform: <platform>}})`
-— `args` as a real JSON object, never a JSON-encoded string. When
-`Workflow` is absent, spawn the same agents with `Task` and `subagent_type`
-`review-mapper` / `review-sceptic` / `review-synthesizer` (never
-`nerd4rent:<agent>`), or run the sequential fallback (path a below). The island does:
+— `args` as a real JSON object, never a JSON-encoded string. The island does:
+
+1. **Map** — one mapper per axis, all four concurrent, each confined to its
+   axis.
+2. **Reduce** — plain code, no model: schema-invalid records dropped, dedup by
+   `file:line` (the most severe finding wins the anchor), grouped by axis,
+   sorted by severity, capped at 12 findings.
+3. **Verify** — 3 independent sceptics per finding, each prompted to *refute*
+   it (the opposite goal to the reviewer's). **Rejection rule: 2 or more
+   refutations out of 3.** A finding with fewer than 2 cast votes is dropped
+   as unverified — it never passes because verification failed. Sceptic pairs
+   run in batches of at most 8, honouring the node's `maxWidth: 8` budget by
+   construction.
+4. **Synthesize** — the agent writes *only* the summary; the findings list is
+   assembled verbatim by the reducer, so no model can mutate or add a finding
+   after verification.
+
+**When `Workflow` is absent but `Task` is available (Cursor), run the island
+manually, stage by stage** — `workflows/review-verify.js` remains the single
+source of the prompts and shapes:
+
+1. **Map** — read the four axis prompts from the script verbatim (spec source,
+   engine hints, diff instruction included) and spawn four `Task` calls
+   concurrently with `subagent_type: review-mapper`. Parse each strict-JSON
+   return; re-ask once on failure, then treat the mapper as failed (`null`).
+2. **Reduce** — pipe the four mapper returns (a JSON array, axis order
+   preserved) through `node scripts/island-reduce.ts review candidates`.
+3. **Verify** — for each candidate, spawn three `review-sceptic` Tasks with
+   the script's sceptic prompt verbatim, in batches of at most 8, collecting
+   one `{refuted, justification}` vote per sceptic (same parse/re-ask/null
+   rule).
+4. **Reduce** — pipe `{candidates, votes}` through
+   `node scripts/island-reduce.ts review verdicts`.
+5. **Synthesize** — one `review-synthesizer` Task with the script's summary
+   prompt and the verified findings + stats. Assemble `ReviewFindings`
+   (`summary`, `findings`, `stats`) verbatim from the runner output — findings
+   are never hand-edited after verification.
+
+A non-zero runner exit becomes a `gaps` entry, and the runner's `stats` +
+`gaps` go into the session summary's metrics section exactly as after a
+`Workflow` run. Never reduce in chat.
 
 1. **Map** — one mapper per axis, all four concurrent, each confined to its
    axis.
@@ -395,11 +451,12 @@ Address the verified findings, push fixes to the PR branch.
 
 **Degradation — same two paths as the plan-phase island:**
 
-- **(a) Agent without the `Workflow` tool**: run the axes sequentially in the
-  main agent — one review pass per axis with the same prompts and rule
-  sources, then dedup and present the findings; offer the engines as the old
-  menu (superpowers / Matt Pocock / manual) when the user prefers a single
-  reviewer.
+- **(a) Agent without the `Workflow` and `Task` tools**: run the axes
+  sequentially in the main agent — one review pass per axis with the same
+  prompts and rule sources, then dedup and present the findings; offer the
+  engines as the old menu (superpowers / Matt Pocock / manual) when the user
+  prefers a single reviewer. The degraded run is flagged in the session
+  summary's metrics (no island stats), never silent.
 - **(b) Claude Code with dynamic workflows unavailable or off** (below
   v2.1.154, plan without workflows, `disableWorkflows`, the */config* toggle,
   `CLAUDE_CODE_DISABLE_WORKFLOWS=1`, managed settings): same sequential

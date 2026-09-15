@@ -300,6 +300,14 @@ synthesizer as `nerd4rent:review-synthesizer` (see
 overflow are counted in the required `ReviewFindings.stats`, so degradation is
 visible, never silent.
 
+Both islands have a **second host**: on Cursor (no `Workflow` tool) the main
+agent runs the same topology manually — the island agents spawn through `Task`
+with `subagent_type`, `workflows/*.js` is read verbatim for prompts and shapes,
+and `node scripts/island-reduce.ts` replaces the inlined reducer, emitting the
+same typed payloads (`PlanContext` + `ProjectContext` + `gaps`,
+`ReviewFindings` with `stats`). Claude Code keeps the `Workflow` scripts; the
+contract stays host-agnostic (ADR-0003, amended).
+
 The axis measures itself **passively**: a figure is collected only when it is a
 by-product of a run that happens anyway, and it is stored only where that run's
 result already lands — a Linear comment. Three of them. The **verifier
@@ -364,13 +372,18 @@ gate, and a separate node would only duplicate that gate.
 Degradation runs on two tracks, and both end in the same place — the sequence
 the skills already describe in prose:
 
-- **Other agents** (Cursor, Copilot, …) have no `Workflow` tool at all; they
-  read the topology as documentation and run the axis sequentially.
+- **Cursor** has no `Workflow` tool but has `Task`: the islands run manually —
+  the same agents via `subagent_type`, prompts and shapes taken verbatim from
+  `workflows/*.js`, and `node scripts/island-reduce.ts` as the deterministic
+  reducer. The payloads and stats match the `Workflow` run.
+- **Other agents** (Copilot, Windsurf, …) have neither `Workflow` nor `Task`;
+  they read the topology as documentation and run the axis sequentially.
 - **Claude Code with workflows unavailable** — below v2.1.154, on a plan that
   does not include them, or switched off via `"disableWorkflows": true`, the
   *Dynamic workflows* toggle in `/config`, or `CLAUDE_CODE_DISABLE_WORKFLOWS=1`
   — falls back the same way, so an island is always an optimization, never a
-  precondition.
+  precondition. A degraded run is flagged in the session summary's metrics,
+  never silent.
 
 ## Installation
 

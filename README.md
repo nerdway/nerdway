@@ -139,6 +139,18 @@ Brings this machine to the CLI state the skills in this repo require:
 
 Trigger: `/bootstrap-clis` / `/nerd4rent:bootstrap-clis`, on a freshly set up machine, or when a skill fails because a command like `linearis`, `gh`, or `rg` is missing or too old.
 
+### `nerd4rent:nerd-documentation-write`
+
+Style rules for documentation aimed at readers outside your own tooling stack (a client's engineers, open-source users), covering what to cut from a draft and how to phrase what stays:
+
+1. A doc states the fact the reader needs, never the investigation trail that produced it. A repair log solves the writer's problem, not the reader's; if the investigation has lasting value it belongs in a wiki page or a commit message.
+2. No internal issue-tracker IDs in reader-facing prose, since the reader has no account in your tracker. Issue tracking stays in commit messages, PR descriptions and tracker comments.
+3. Sentences open with a real word rather than an inline-code identifier, and headings are noun phrases rather than conjugated "we do X" sentences.
+4. Plain hyphens instead of em dashes, no emoji, and bold or italic reserved for phrases that name a scenario, a scope boundary, or a tool the reader must recognise later.
+5. One runnable command per fenced code block, described in prose above it, never labelled with `#`-comments inside the fence.
+
+The rules are general-purpose, scoped to no project or language, and the skill is a living document: a review that surfaces a new generalizable convention adds a rule. Trigger: writing or revising a tutorial, README, or step-by-step guide for an audience outside your own tooling.
+
 ## Platform config and adapters
 
 Every skill that talks to a tracker or a VCS host reads the project's **platform config** first — one YAML object kept as a `## Platform` section in the repo's committed `CLAUDE.md` (so it travels with the repo into every worktree) and mirrored as `platform:` on the nerdbrain entity page:

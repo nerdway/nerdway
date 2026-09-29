@@ -78,7 +78,7 @@ Run `issue.read` and `issue.read-status`, then dispatch on the phase:
 
 | Phase | Continue at |
 |---|---|
-| `backlog` / `todo` | stage 1 (start) |
+| `backlog` / `todo` | stage 1 (start), then stage 2 — or stage 3 when a comment starting with `## Implementation plan` is already present (`todo` means `issue-workflow` posted one) |
 | `in-progress`, no comment starting with `## Implementation plan` | stage 2 (plan) — stage 1 first when the issue has no branch or PR/MR yet |
 | `in-progress`, plan comment present | stage 3 (implementation) |
 | `in-review` | stage 4 (review) |

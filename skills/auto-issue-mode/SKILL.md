@@ -145,7 +145,7 @@ not track. Put this rule in the stage 3 and 4 prompts.
 Stop the run, never force it, when:
 
 - the tracker or VCS CLI returns an error, or an adapter or operation is
-  missing (`—`);
+  missing (`—`; a missing `pr.mark-ready` is only skipped);
 - `issue-start` or `issue-close` stops early (a dirty tree, a checkout off
   `main`/`master`, an existing branch);
 - tests are red after stage 4 and its subagent could not fix them;

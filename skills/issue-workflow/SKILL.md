@@ -523,6 +523,8 @@ session's last push.
   map) this skill reads and writes.
 - `nerd4rent:issue-close` — the close-out chain (commit, push, merge,
   switch to base, write `done`).
+- `nerd4rent:auto-issue-mode` — user-invoked autonomous run of the same
+  lifecycle; the one place the agent writes `in-progress` itself.
 - `nerd4rent:nerdbrain-search` — rg recipes underlying `nerdbrain-wiki`'s
   Graph recall step (used by 0b above).
 - `nerd4rent:project-continue` — reads the checkpoint this skill writes and

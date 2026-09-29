@@ -201,6 +201,8 @@ deliberate steps.
   implementation of an issue ID produced here.
 - `nerd4rent:determine-platform` — upstream: records the platform this skill
   files issues on; invoked from step 1 when none is configured.
+- `nerd4rent:auto-issue-mode` — runs this skill's creation flow without
+  grilling, then carries the issue autonomously to merge and done.
 - `mattpocock-skills:grilling` (optional, `npx skills` / `~/.agents/skills`) —
   question formats for the inline grilling protocol; degrade gracefully when
   absent.

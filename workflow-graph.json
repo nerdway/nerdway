@@ -23,6 +23,11 @@
           "node": "auto-issue-mode",
           "scope": "The one issue the run was invoked for: the run writes its `in-progress` phase itself, then branches, commits, pushes and opens the PR/MR for it; every other issue keeps the rule.",
           "reason": "Invoking the skill is the user's explicit consent to the whole run, given in chat — it stands in for the human setting In Progress, and the rule holds unchanged outside that run."
+        },
+        {
+          "node": "issue-next-step",
+          "scope": "The `in-progress` phase of the one issue it diagnosed, written with `issue.set-status` only when the next step is implementation and only after the user agrees in chat; the skill itself changes nothing in the repo — branch, commits and PR/MR stay with the skill it hands off to, and every other issue keeps the rule.",
+          "reason": "The user's explicit yes in chat stands in for setting In Progress by hand — the same approval `issue-workflow` already accepts as an explicit request to implement — and a refusal writes nothing."
         }
       ]
     },
@@ -1037,6 +1042,30 @@
           "mechanism": "chat-approval",
           "rule": "no-merge-without-green-verification",
           "description": "Invoking the skill in chat is the user's decision to close, taken up front in place of asking to close or setting Done; the merge still runs only after tests and validators are green, and red verification stops the run."
+        }
+      ]
+    },
+    {
+      "id": "issue-next-step",
+      "skill": "issue-next-step",
+      "runtime": "conversational",
+      "phase": "orchestrate",
+      "in": ["PlatformConfig"],
+      "out": ["PlatformConfig"],
+      "dependsOn": ["platform-determine"],
+      "failure": {
+        "retries": 0,
+        "fallback": "stop and report the phase read, the evidence gathered and the exact error; nothing is written",
+        "killsRun": true,
+        "reporting": "chat"
+      },
+      "budget": { "maxWidth": 1 },
+      "gates": [
+        {
+          "kind": "decision",
+          "mechanism": "chat-approval",
+          "rule": "no-repo-change-before-in-progress",
+          "description": "The user agrees in chat to move the issue to In Progress when the next step is implementation; a refusal ends the skill with nothing written, and the repo change itself waits for the skill it hands off to."
         }
       ]
     }

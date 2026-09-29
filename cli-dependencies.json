@@ -15,7 +15,7 @@
       "minVersion": "2026.7.0",
       "versionCommand": ["linearis", "--version"],
       "versionRegex": "(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-writer", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform", "bind-statuses", "auto-issue-mode"],
+      "requiredBy": ["issue-workflow", "issue-writer", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform", "bind-statuses", "auto-issue-mode", "issue-next-step"],
       "npm": "linearis",
       "auth": {
         "check": ["linearis", "teams", "list", "--limit", "1"],
@@ -27,7 +27,7 @@
       "minVersion": "2.97.0",
       "versionCommand": ["gh", "--version"],
       "versionRegex": "gh version (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-close", "new-project-workflow", "issue-start", "issue-writer", "bind-statuses", "project-continue", "determine-platform", "auto-issue-mode"],
+      "requiredBy": ["issue-workflow", "issue-close", "new-project-workflow", "issue-start", "issue-writer", "bind-statuses", "project-continue", "determine-platform", "auto-issue-mode", "issue-next-step"],
       "manualInstall": "winget install GitHub.cli | brew install gh | see https://github.com/cli/cli#installation",
       "auth": {
         "check": ["gh", "auth", "status"],
@@ -39,7 +39,7 @@
       "minVersion": "1.117.0",
       "versionCommand": ["glab", "--version"],
       "versionRegex": "glab(?: version)? (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-close", "issue-start", "issue-workflow", "issue-writer", "bind-statuses", "project-continue", "auto-issue-mode"],
+      "requiredBy": ["issue-close", "issue-start", "issue-workflow", "issue-writer", "bind-statuses", "project-continue", "auto-issue-mode", "issue-next-step"],
       "manualInstall": "winget install GLab.GLab | brew install glab | see https://gitlab.com/gitlab-org/cli#installation",
       "auth": {
         "check": ["glab", "auth", "status"],
@@ -52,7 +52,7 @@
       "minVersion": "1.6.0",
       "versionCommand": ["jq", "--version"],
       "versionRegex": "jq-(\\d+\\.\\d+(?:\\.\\d+)?)",
-      "requiredBy": ["issue-workflow", "issue-writer", "issue-start", "issue-close", "bind-statuses", "project-continue", "auto-issue-mode"],
+      "requiredBy": ["issue-workflow", "issue-writer", "issue-start", "issue-close", "bind-statuses", "project-continue", "auto-issue-mode", "issue-next-step"],
       "manualInstall": "winget install jqlang.jq | brew install jq | apt install jq"
     },
     {
@@ -61,7 +61,7 @@
       "minVersion": "2.90.0",
       "versionCommand": ["az", "--version"],
       "versionRegex": "azure-cli\\s+(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-close", "issue-start", "issue-workflow", "issue-writer", "bind-statuses", "project-continue", "auto-issue-mode"],
+      "requiredBy": ["issue-close", "issue-start", "issue-workflow", "issue-writer", "bind-statuses", "project-continue", "auto-issue-mode", "issue-next-step"],
       "manualInstall": "winget install Microsoft.AzureCLI | brew install azure-cli | see https://learn.microsoft.com/cli/azure/install-azure-cli",
       "auth": {
         "check": ["az", "extension", "show", "--name", "azure-devops"],
@@ -81,7 +81,7 @@
       "minVersion": "2.40.0",
       "versionCommand": ["git", "--version"],
       "versionRegex": "git version (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform", "bind-statuses", "auto-issue-mode"],
+      "requiredBy": ["issue-workflow", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform", "bind-statuses", "auto-issue-mode", "issue-next-step"],
       "manualInstall": "Install git before running this script; it is a prerequisite, not a target."
     }
   ]

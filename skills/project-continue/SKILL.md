@@ -230,3 +230,5 @@ If the page has `## Decisions` and `## Active context` but no
   issue ID from the report to enter it.
 - `nerdway:nerdbrain-search` — `rg` recipes if the page has to be found by
   content rather than by slug.
+- `nerdway:issue-next-step` — takes the issue ID this report hints at,
+  names its next step and hands off to the flow the user picks.

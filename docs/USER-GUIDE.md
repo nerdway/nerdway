@@ -195,7 +195,7 @@ The issue's status in Linear is the single source of truth for what the agent do
 | **In Review** | runs the adversarial review island and pushes fixes |
 | **Done** (with the PR still open) | closes out: merges the PR, syncs your checkout |
 
-Only you can move an issue to **In Progress** — the agent never does it by itself to unlock implementation (an explicit request to implement in chat counts as approval, and the agent then sets the status to reflect it). The one exception is a run you start with `/nerd4rent:auto-issue-mode`, where invoking the skill is the approval.
+Only you can move an issue to **In Progress** — the agent never does it by itself to unlock implementation (an explicit request to implement in chat counts as approval, and the agent then sets the status to reflect it). The exceptions are a run you start with `/nerd4rent:auto-issue-mode`, where invoking the skill is the approval, and `issue-next-step`, which moves the issue to In Progress only after you say yes to it in chat.
 
 The table uses Linear's default names. On GitHub Issues and GitLab Issues the same steps are labels: **Backlog** is an open issue with no status label, then `status::todo`, `status::in-progress`, `status::in-review`, and **Done** is a closed issue — so merging the PR or MR with `Fixes #123` finishes it. On Azure DevOps Boards the steps are the columns of your team's board — `New`, `Todo`, `Active`, `In Review`, `Closed` by default — and `/bind-statuses` offers to add the columns your board lacks; you steer by dragging the card, and completing the PR with `Fixes #123` moves it to Closed. Under the hood the agent works with five phases and reads them through the project's status strategy, so the same steering works with labels (`status::in-progress`) or with a comment whose first line is `Status: in-progress` — whatever `/bind-statuses` recorded. A status the map doesn't know (say, *Canceled*) makes the agent report it and do nothing.
 
@@ -237,6 +237,11 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 
 - **Say:** `/nerd4rent:auto-issue-mode <task description>` or `/nerd4rent:auto-issue-mode DEMO-123` — only by typing it; the agent never picks this skill on its own.
 - **What happens:** from a description, the agent drafts the issue and asks for your approval once; from an ID, it picks up at the issue's current status. Everything after that runs without questions, each stage on its own subagent: start, a plan posted as a comment on the issue, implementation, review, merge and Done, plus a nerdbrain update. Invoking it is your approval, so here the agent moves the issue to In Progress and In Review itself. On an error, a merge conflict or tests it cannot fix it stops and tells you how to resume with the issue ID.
+
+### `issue-next-step` — take the next step
+
+- **Say:** *"what's next for DEMO-123"*, *"co dalej z DEMO-123"*, *"następny krok"*, or `/nerd4rent:issue-next-step DEMO-123`.
+- **What happens:** the agent reads the issue's status and what already exists for it — the plan comment, the branch, the PR, recent commits — and names one next step: plan, implement, review, or close out. It then asks one question: continue step by step with `issue-workflow`, run it autonomously with `auto-issue-mode`, or stop. When the next step is implementation and the issue isn't In Progress yet, choosing to continue moves it there; saying no writes nothing. Whatever you pick starts right away with the same issue ID.
 
 ### `new-project-workflow` — bootstrap a project
 

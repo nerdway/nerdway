@@ -28,6 +28,9 @@ a rule that cannot be verified from the diff does not belong here.
 6. **Changes are surgical** — every changed line traces to the issue being
    implemented; refactoring or improving adjacent code it did not need to
    touch is a violation.
+7. **Line endings are LF** — `.gitattributes` (`* text=auto eol=lf`) enforces
+   it and `scripts/line-endings.test.ts` guards it; a file committed with CRLF
+   or mixed endings is a violation.
 
 ## Language
 

@@ -22,8 +22,12 @@ stage belong to its subagent; you edit no file yourself.
 Invoking this skill is the user's consent to the whole run. In this mode the
 agent writes **every** phase itself — `in-progress` and `in-review` included —
 which `issue-workflow` and `adapters/statuses.md` otherwise reserve for the
-human. The exception lives only inside this run; outside it the
-`issue-workflow` rule stands unchanged.
+human. The exception is data, not prose: `workflow-graph.json` registers this
+skill as the `auto-issue-mode` node, exempted from the frozen rule
+`no-repo-change-before-in-progress` for the one issue of the run. Its
+`no-merge-without-green-verification` gate is a `chat-approval` decision taken
+at invocation — the user decides to close up front — so the merge still waits
+for green tests and validators. Outside the run both rules stand unchanged.
 
 The single human stop is the drafted issue (entry A). After its approval the
 run asks nothing and stops only on a **stop condition** (below).

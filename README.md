@@ -96,7 +96,7 @@ On any error (e.g. merge conflict, missing `gh`/`glab`/`az`) it stops and report
 
 ### `nerd4rent:auto-issue-mode`
 
-Runs one issue **autonomously** from a task description or an existing issue ID to a merged PR/MR and the `done` phase. User-invoked only (`disable-model-invocation: true`): typing it is the consent that lets the agent write every phase itself, `in-progress` included — the one exception to `issue-workflow`'s status gate, valid only inside the run.
+Runs one issue **autonomously** from a task description or an existing issue ID to a merged PR/MR and the `done` phase. User-invoked only (`disable-model-invocation: true`): typing it is the consent that lets the agent write every phase itself, `in-progress` included — the one exception to `issue-workflow`'s status gate, valid only inside the run and registered in `workflow-graph.json` as an exemption from `no-repo-change-before-in-progress`.
 
 1. **Task description** → drafts the issue per `issue-writer` (no grilling, no sub-issues, full template) and waits for **one** approval of the draft — the run's only human stop.
 2. **Issue ID** → skips creation, reads the phase and resumes at the matching stage (`backlog`/`todo` → start, `in-progress` → plan or implementation, `in-review` → review, `done` → verify close-out).
@@ -268,7 +268,7 @@ the runtime are two different artifacts.
 Gates and frozen rules are data, not prose. Every **irreversible** action on
 the axis — creating tracker labels (`statuses-bind`), writing the issue to Linear (`issue-write`), pushing commits
 (`implement`), merging and setting Done (`close`), writing the vault
-(`wiki-write`) — is marked `irreversible: true` and must sit behind a gate.
+(`wiki-write`), running one issue end to end (`auto-issue-mode`) — is marked `irreversible: true` and must sit behind a gate.
 A gate is one of two kinds with a closed mechanism vocabulary the validator
 enforces: a `decision` gate is the human's call (`tracker-status` or
 `chat-approval` — the Linear status is the only carrier of acceptance), a
@@ -279,7 +279,9 @@ enforce one, and a rule no gate points to is rejected — so a dangerous
 transition is unreachable, not merely "usually asked about". A rule's rare
 legitimate exception is data too: `exemptions` names the node, the narrow scope
 and the reason (today `platform-determine` writing the `## Platform`
-section of `CLAUDE.md`, and `statuses-bind` writing its `statuses` key). Human gates sit
+section of `CLAUDE.md`, `statuses-bind` writing its `statuses` key, and
+`auto-issue-mode` setting In Progress itself for the one issue it was invoked
+for). Human gates sit
 on the boundaries between workflows, never inside them.
 
 Every registry entry carries its **schema body** — the JSON Schema the payload on
@@ -391,6 +393,7 @@ gate, and a separate node would only duplicate that gate.
 | `review-verify` | `issue-workflow` | review | **workflow** | `ReviewRequest` → `ReviewFindings` |
 | `close` | `issue-close` | close | chain | `ReviewFindings` → `MergedBranch` |
 | `wiki-write` | `nerdbrain-wiki` | wiki | chain | `SessionSummary` → `EntityPageUpdate` |
+| `auto-issue-mode` | `auto-issue-mode` | orchestrate | conversational | `PlatformConfig` → `MergedBranch` |
 
 Degradation runs on two tracks, and both end in the same place — the sequence
 the skills already describe in prose:

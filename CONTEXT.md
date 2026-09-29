@@ -186,10 +186,12 @@ _Avoid_: status mapping table, state aliases
 
 **Exemption**:
 A validated exception on a frozen rule: the node allowed to act despite it,
-the narrow scope it may touch, and the reason. Two exist today, both on
+the narrow scope it may touch, and the reason. Three exist today, all on
 `no-repo-change-before-in-progress`: `platform-determine` replaces the
-`## Platform` section of `CLAUDE.md`, and `statuses-bind` writes its
-`statuses` key, before any issue is In Progress.
+`## Platform` section of `CLAUDE.md` and `statuses-bind` writes its
+`statuses` key, both before any issue is In Progress; `auto-issue-mode` sets
+In Progress itself for the one issue it runs, invoking the skill being the
+user's consent.
 _Avoid_: override, bypass (both imply the rule stops holding)
 
 **Frozen rule**:

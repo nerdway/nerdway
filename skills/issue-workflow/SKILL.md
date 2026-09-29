@@ -525,6 +525,9 @@ session's last push.
   switch to base, write `done`).
 - `nerd4rent:auto-issue-mode` — user-invoked autonomous run of the same
   lifecycle; the one place the agent writes `in-progress` itself.
+- `nerd4rent:issue-next-step` — diagnoses an issue's phase, names the next
+  step and hands off here (or to `auto-issue-mode`) without retyping the ID;
+  it may write `in-progress` after the user agrees in chat.
 - `nerd4rent:nerdbrain-search` — rg recipes underlying `nerdbrain-wiki`'s
   Graph recall step (used by 0b above).
 - `nerd4rent:project-continue` — reads the checkpoint this skill writes and

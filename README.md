@@ -105,6 +105,17 @@ Runs one issue **autonomously** from a task description or an existing issue ID 
 
 Ends with the issue link, PR/MR number, merge commit, test results (pre-existing unrelated failures listed apart) and what went to nerdbrain. Trigger: `/nerd4rent:auto-issue-mode <task description | issue ID>`.
 
+### `nerd4rent:issue-next-step`
+
+Answers "what next" for **one issue** and starts it, so you don't have to check the status, change it by hand and retype the ID:
+
+1. **Diagnoses** — reads the phase through the status strategy and the evidence: the `## Implementation plan` comment, the issue branch (local and on `origin`), the PR/MR, the newest commits.
+2. **Names one next step**, following `issue-workflow`'s dispatch table — planning (`backlog`, or `todo` without a plan), implementation (`todo` with a plan, `in-progress`), review (`in-review`), close-out (`done` with an open PR/MR), or nothing left (`done`, merged).
+3. **Asks once** — continue step by step with `issue-workflow`, run it autonomously with `auto-issue-mode`, or end. When the step is implementation and the issue is not In Progress yet, the step-by-step choice also moves it there: the skill writes `in-progress` only after that yes in chat, registered in `workflow-graph.json` as an exemption from `no-repo-change-before-in-progress`. Any other answer writes nothing.
+4. **Hands off** with the same ID — `issue-workflow` through the `Skill` tool, `auto-issue-mode` from its issue-ID entry (the skill reads it, since `auto-issue-mode` is user-invoked only).
+
+Stops and reports, writing nothing, on an unknown phase, a missing adapter, an unbound status strategy or a CLI error. Trigger: *"następny krok"*, *"co dalej z DEMO-123"*, *"next step"*, *"what's next for #123"*, or `/nerd4rent:issue-next-step <issue ID>`.
+
 ### `nerd4rent:project-continue`
 
 Answers "where are we" for the current project in one step, after you switch to it — on this machine or another one — instead of re-investigating issues and the repo from scratch:
@@ -279,9 +290,10 @@ enforce one, and a rule no gate points to is rejected — so a dangerous
 transition is unreachable, not merely "usually asked about". A rule's rare
 legitimate exception is data too: `exemptions` names the node, the narrow scope
 and the reason (today `platform-determine` writing the `## Platform`
-section of `CLAUDE.md`, `statuses-bind` writing its `statuses` key, and
+section of `CLAUDE.md`, `statuses-bind` writing its `statuses` key,
 `auto-issue-mode` setting In Progress itself for the one issue it was invoked
-for). Human gates sit
+for, and `issue-next-step` setting In Progress for the one issue it diagnosed
+after the user agrees in chat). Human gates sit
 on the boundaries between workflows, never inside them.
 
 Every registry entry carries its **schema body** — the JSON Schema the payload on
@@ -394,6 +406,7 @@ gate, and a separate node would only duplicate that gate.
 | `close` | `issue-close` | close | chain | `ReviewFindings` → `MergedBranch` |
 | `wiki-write` | `nerdbrain-wiki` | wiki | chain | `SessionSummary` → `EntityPageUpdate` |
 | `auto-issue-mode` | `auto-issue-mode` | orchestrate | conversational | `PlatformConfig` → `MergedBranch` |
+| `issue-next-step` | `issue-next-step` | orchestrate | conversational | `PlatformConfig` → `PlatformConfig` |
 
 Degradation runs on two tracks, and both end in the same place — the sequence
 the skills already describe in prose:

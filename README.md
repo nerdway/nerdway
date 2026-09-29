@@ -94,6 +94,17 @@ A deliberately **mechanical, lightweight** close-out for a finished issue — pu
 
 On any error (e.g. merge conflict, missing `gh`/`glab`/`az`) it stops and reports rather than improvising. Uses the `linearis` CLI. Trigger: intent to close/merge/finish an issue — *"domknij"*, *"zamknij"*, *"zmerguj i zamknij"*, *"close out"*, *"merge and close"*.
 
+### `nerd4rent:auto-issue-mode`
+
+Runs one issue **autonomously** from a task description or an existing issue ID to a merged PR/MR and the `done` phase. User-invoked only (`disable-model-invocation: true`): typing it is the consent that lets the agent write every phase itself, `in-progress` included — the one exception to `issue-workflow`'s status gate, valid only inside the run.
+
+1. **Task description** → drafts the issue per `issue-writer` (no grilling, no sub-issues, full template) and waits for **one** approval of the draft — the run's only human stop.
+2. **Issue ID** → skips creation, reads the phase and resumes at the matching stage (`backlog`/`todo` → start, `in-progress` → plan or implementation, `in-review` → review, `done` → verify close-out).
+3. Each stage runs on its own subagent — start (`issue-start`), plan (posted as a `## Implementation plan` comment, no approval gate), implementation (baseline and final tests, atomic commits), review (acceptance criteria, plan and repo standards; fixes committed; PR/MR marked ready), then close-out (`issue-close`) in parallel with a nerdbrain update when a write trigger fired. The orchestrator edits no code and prints a short progress line after each stage.
+4. Stops and reports — never forces — on a tracker/CLI error, red tests the review cannot fix, a merge conflict or a blocked tool, with the command to resume.
+
+Ends with the issue link, PR/MR number, merge commit, test results (pre-existing unrelated failures listed apart) and what went to nerdbrain. Trigger: `/nerd4rent:auto-issue-mode <task description | issue ID>`.
+
 ### `nerd4rent:project-continue`
 
 Answers "where are we" for the current project in one step, after you switch to it — on this machine or another one — instead of re-investigating issues and the repo from scratch:

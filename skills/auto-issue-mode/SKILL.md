@@ -176,3 +176,5 @@ pre-existing unrelated failures listed apart), and what went to nerdbrain.
   and 5.
 - `nerd4rent:plan-context-fanout` — optional context island for stage 2.
 - `nerd4rent:nerdbrain-wiki` — the write path of stage 6.
+- `nerd4rent:issue-next-step` — may start a run at entry B for an issue ID
+  once the user picks the autonomous mode in chat.

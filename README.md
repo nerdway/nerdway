@@ -437,16 +437,19 @@ Add this marketplace and install the plugin:
 
 ### Cursor
 
-Install from this repo as a local plugin (skills, agents, and hooks):
+**Recommended — team marketplace (updates follow `main`).** In the Cursor dashboard → **Plugins & MCPs** → **Team Marketplaces** → **Add Marketplace** → **Import from Repo**, paste `https://github.com/nerd4rent/nerd4rent-claude-plugin`. Cursor reads `.cursor-plugin/marketplace.json`. Install the [Cursor GitHub App](https://github.com/apps/cursor) on this repository, then turn on **Enable Auto Refresh** under Marketplace Settings. Each push to `main` is re-indexed within about 10 minutes, and clients pick it up on their next restart or window focus. **Refresh** forces a re-index. Install `nerd4rent` from that marketplace in **Customize**.
+
+**Do not use `/add-plugin <this repo URL>`** (the personal GitHub import). Cursor pins that install to the commit it resolved on first import. Update, Reinstall and running `/add-plugin` again all reuse that snapshot ([forum #163895](https://forum.cursor.com/t/add-plugin-github-imports-can-get-stuck-on-stale-plugin-versions/163895)). If you already have that card, uninstall it and remove its marketplace in **Customize** before you install from the team marketplace.
+
+**Local development (no marketplace).** Clone directly into Cursor's local plugin folder. Cursor skips a symlink in `~/.cursor/plugins/local` whose target is outside that folder, so a symlink to a checkout elsewhere does not load:
 
 ```bash
 mkdir -p ~/.cursor/plugins/local
-ln -s /path/to/nerd4rent-claude-plugin ~/.cursor/plugins/local/nerd4rent
+git clone https://github.com/nerd4rent/nerd4rent-claude-plugin ~/.cursor/plugins/local/nerd4rent
+# later: git -C ~/.cursor/plugins/local/nerd4rent pull, then Developer: Reload Window
 ```
 
-Then **Reload Window** and open **Customize**. The `nerd4rent` card should list the skills under `skills/`, the four agents, and the SessionStart / vault-MCP deny hooks.
-
-A Cursor marketplace card with the same `name: nerd4rent` wins over the local symlink. If you previously added this repo with `/add-plugin` (a personal GitHub pin), disable that card first — the pin freezes a cloud `gitRef` and `update` will not move it. Do not re-enable it while the local plugin is active.
+Then **Reload Window** and open **Customize**. The `nerd4rent` card should list the skills under `skills/`, the four agents, and the SessionStart / vault-MCP deny hooks. If a marketplace plugin with the same `name: nerd4rent` is installed, it takes precedence over the local copy. Uninstall it first.
 
 `npx skills add` (below) remains a fallback if you only want the skill files.
 

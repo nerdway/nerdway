@@ -19,8 +19,12 @@ Root `plugin.json` takes no field outside the Agent Plugins 1.0.0 schema
 clients discover `skills/`. `.cursor-plugin/plugin.json` names
 `name: nerd4rent` and explicit `./skills/`, `./agents/`,
 `./hooks/hooks.json` paths (an explicit field *replaces* auto-discovery).
-There is no `.cursor-plugin/marketplace.json`: a single-plugin repo, and a
-personal Cursor `/add-plugin` GitHub pin freezes `gitRef`.
+`.cursor-plugin/marketplace.json` lists the single plugin (`source: "./"`)
+under Cursor's closed marketplace schema, so Cursor's GitHub import and a
+team marketplace "Import from Repo" do not rely on the fallback read of
+`.claude-plugin/marketplace.json`, whose `strict` key Cursor's schema rejects.
+It does not unpin a personal `/add-plugin` install, because that pin is a
+server-side `gitRef` on the Cursor account.
 
 SessionStart is a **separate script per runtime**. Claude Code stays on
 `~/.claude/hooks/nerdbrain-load.sh` (`hookSpecificOutput.SessionStart`).
@@ -51,9 +55,10 @@ model IDs are not substituted in.
 - **Substitute Cursor model IDs in `agents/`** — rejected: that would break
   the Haiku/Sonnet pins Claude Code islands rely on. Cursor docs require
   only `name` + `description`; extra keys are ignored.
-- **Ship `.cursor-plugin/marketplace.json`** — rejected: a personal
-  `/add-plugin` GitHub pin freezes `gitRef`; a marketplace file does not
-  unstick it, and this repo is one plugin.
+- **No `.cursor-plugin/marketplace.json`** — reversed (DEMO-345): the file does
+  not unstick a personal `/add-plugin` pin. But Cursor documents it as required
+  for GitHub imports, and a team marketplace imported from the repo with
+  Auto Refresh follows `main`. That is the only path that stays current.
 
 ## Consequences
 
@@ -68,7 +73,8 @@ model IDs are not substituted in.
   the first turn. Skills already know to `Read` the entity page from disk
   when the inject is missing (nerdbrain-wiki lazy-section contract).
 - A Cursor marketplace card with `name: nerd4rent` wins over a local
-  symlink. Local install is `ln -s` the repo into
-  `~/.cursor/plugins/local/nerd4rent` with that card disabled.
+  copy. Local install is a `git clone` straight into
+  `~/.cursor/plugins/local/nerd4rent`, not a symlink. Cursor skips symlinks
+  that point outside that folder. Uninstall the marketplace card first.
 - `~/.claude/hooks/nerdbrain-load.sh` and the Claude Code vault-MCP deny
   in `~/.claude/settings.json` stay outside this repo.

@@ -94,6 +94,10 @@ git -C ~/.cursor/plugins/local/nerd4rent pull
 
 **Third-Party Imports.** Keep **Cursor Settings → Agents → Third-Party Imports** ("Include Third-Party Plugins, Skills, and Other Configs") on, which is the default. Cursor then loads the repo `CLAUDE.md` into context as an always-applied rule, so the project's general instructions apply in Cursor too. The plugin's workflow does not depend on it: every skill reads the project's platform settings from `CLAUDE.md` on disk, so they resolve the same way with the setting off.
 
+**Plugin agents in Customize.** The agents from `agents/` show on the `nerd4rent` card and in the `/` menu, and the main agent spawns them through `Task` with `subagent_type`. **Customize → Subagents** does not list plugin agents. It shows only the subagents you configure yourself, globally in `~/.cursor/agents/` or per project in `.cursor/agents/`, plus their `.claude/` and `.codex/` counterparts. An empty list there is expected and does not mean the plugin agents are missing.
+
+**Claude Code install on the same machine.** With Third-Party Imports on, Cursor also imports `nerd4rent@nerd4rent-claude-plugin` from `~/.claude/plugins` as a second card. Skills and agents with the same name then load from that copy, not from the local clone in `~/.cursor/plugins/local/nerd4rent`, so an outdated Claude Code install hides a fresh `git pull`. Keep it current with `claude plugin marketplace update nerd4rent-claude-plugin` and `claude plugin update nerd4rent@nerd4rent-claude-plugin`, or uninstall it from Claude Code on a machine where you only use Cursor. The Uninstall button on the imported card only leads to the Third-Party Imports setting.
+
 ### Other agents
 
 The skills follow the shared [Agent Skills specification](https://github.com/vercel-labs/skills), so the [`skills` CLI](https://github.com/vercel-labs/skills) can install them into Copilot, Windsurf, Cline and 70+ other coding agents, and into Cursor as a skills-only alternative to the plugin.

@@ -39,7 +39,9 @@ for (const file of readdirSync(trackersDir).filter((name) => name.endsWith(".md"
 // `--print` is the read step of adapters/platform.md: it prints the parsed
 // platform config as JSON on stdout. Exit 0 = found and valid, 3 = absent (no
 // file or no line-start ## Platform section; the caller moves on to its next
-// source), 1 = invalid (the caller stops and reports the errors).
+// source), 4 = invalid (the caller stops and reports the errors). Exit 1 is
+// left to Node itself (e.g. ERR_UNKNOWN_FILE_EXTENSION on Node < 22), so a
+// caller never mistakes a runtime failure for a broken section.
 const args = process.argv.slice(2);
 const print = args.includes("--print");
 const target = resolve(args.find((arg) => arg !== "--print") ?? join(repoRoot, "CLAUDE.md"));
@@ -57,7 +59,7 @@ if (print) {
   }
   console.error(`${target}: ${read.status === "absent" ? "no platform config" : "invalid platform config"}`);
   for (const error of read.errors) console.error(`  - ${error}`);
-  process.exit(read.status === "absent" ? 3 : 1);
+  process.exit(read.status === "absent" ? 3 : 4);
 }
 
 let summary = "";

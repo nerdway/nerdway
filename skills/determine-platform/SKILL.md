@@ -68,7 +68,7 @@ Check the sources in this order and keep the first one that yields a config:
 1. **Repo `CLAUDE.md`** at `git rev-parse --show-toplevel`, read from disk as
    `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes: the section from the
    line-start heading `## Platform` to the next line-start `## ` (or EOF),
-   holding one fenced `yaml` block. A broken section (exit code `1` there)
+   holding one fenced `yaml` block. A broken section (exit code `4` there)
    yields no config here: this skill is the one that rewrites it, so note
    what was wrong, report it in Step 6 and go on to source 2.
 2. **Entity page frontmatter** (`~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md`,

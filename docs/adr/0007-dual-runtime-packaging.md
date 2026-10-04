@@ -82,8 +82,9 @@ entity page or stopped with "no platform configured".
 Decision: every skill reads the section **from disk** with one recipe,
 `adapters/platform.md`. The script path is
 `node scripts/validate-platform-config.ts --print <repo>/CLAUDE.md` (JSON on
-stdout; exit `0` found, `3` absent, `1` broken), and a manual read of the
-line-start section is the fallback without Node 22. A `CLAUDE.md` in the
+stdout; exit `0` found, `3` absent, `4` broken; `1` stays Node's own
+failure), and a manual read of the line-start section is the fallback
+without Node 22. A `CLAUDE.md` in the
 context is never a source: Claude Code does not reload it after
 `determine-platform` or `bind-statuses` writes it, and Cursor may not have
 loaded it at all. `scripts/validate-platform-references.ts` (and its test)

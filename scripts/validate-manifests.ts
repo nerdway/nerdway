@@ -1,7 +1,8 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { validateComponentsForClaudeAi, validatePluginForClaudeAi, type ComponentFile } from "./types/claude-ai.ts";
 import { validateClaudeCodeIsolation, validateManifests } from "./types/manifests.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -42,6 +43,31 @@ for (const entry of entries as Record<string, unknown>[]) {
   }
 }
 
+errors.push(
+  ...validatePluginForClaudeAi({
+    claudePlugin: readJson(".claude-plugin/plugin.json"),
+    marketplace: readJson(".claude-plugin/marketplace.json"),
+    cursorPlugin: readJson(".cursor-plugin/plugin.json"),
+    cursorMarketplace,
+  }),
+);
+
+function componentFile(rel: string): ComponentFile {
+  return { path: rel, text: readFileSync(join(repoRoot, rel), "utf8") };
+}
+
+const skills = readdirSync(join(repoRoot, "skills"), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => `skills/${entry.name}/SKILL.md`)
+  .filter((rel) => existsSync(join(repoRoot, rel)))
+  .sort()
+  .map(componentFile);
+const agents = readdirSync(join(repoRoot, "agents"))
+  .filter((name) => name.endsWith(".md"))
+  .sort()
+  .map((name) => componentFile(`agents/${name}`));
+errors.push(...validateComponentsForClaudeAi(skills, agents));
+
 if (errors.length > 0) {
   console.error("manifest validation failed:");
   for (const error of errors) console.error(`  - ${error}`);
@@ -49,4 +75,7 @@ if (errors.length > 0) {
 }
 
 const version = readJson(".claude-plugin/plugin.json").version;
-console.log(`OK: all three manifests are at ${version}; Claude Code sees no Cursor-only file`);
+console.log(
+  `OK: all three manifests are at ${version}; Claude Code sees no Cursor-only file; ` +
+    `${skills.length} skills and ${agents.length} agents meet the claude.ai upload rules`,
+);

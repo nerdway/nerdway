@@ -5,20 +5,21 @@ without changing Claude Code behaviour and without making `npx skills add`
 the only Cursor path. Cursor and Claude Code speak different manifest and
 hook JSON contracts; one shared `nerdbrain-load.sh` cannot emit both.
 
-We keep **three manifests, one `skills/` and one `agents/`**:
+We keep **two runtime manifests, one `skills/` and one `agents/`**:
 
 | Runtime | Manifest | Loads |
 |---------|----------|-------|
 | Claude Code | `.claude-plugin/plugin.json` + `marketplace.json` | skills, agents, `workflows/*.js` islands, `/nerd4rent:` slashes |
-| Agent Plugins / other clients | root `plugin.json` (`$schema` 1.0.0, closed fields) | skills discovered from `skills/` |
-| Cursor | `.cursor-plugin/plugin.json` | `skills/`, `agents/`, `hooks/` |
+| Cursor | `.cursor-plugin/plugin.json` | `skills/`, `agents/`, `hooks/cursor.hooks.json` |
 
-Root `plugin.json` takes no field outside the Agent Plugins 1.0.0 schema
-(`name`, `version`, `description`, `author`, `homepage`, `repository`,
-`license`, `keywords`, `extensions`). Skills are not a manifest field —
-clients discover `skills/`. `.cursor-plugin/plugin.json` names
-`name: nerd4rent` and explicit `./skills/`, `./agents/`,
-`./hooks/hooks.json` paths (an explicit field *replaces* auto-discovery).
+**Claude Code must never see a file in another runtime's format.** Claude
+Code reads some paths by convention, whatever `.claude-plugin/plugin.json`
+declares: `hooks/hooks.json` is auto-discovered and merged with the
+manifest's `hooks`, and a root `plugin.json` is its fallback manifest.
+Those paths stay empty of Cursor files. `.cursor-plugin/plugin.json` names
+`name: nerd4rent` and explicit `./skills/`, `./agents/` and
+`./hooks/cursor.hooks.json` paths (an explicit field *replaces* Cursor's
+auto-discovery, so Cursor never falls back to `hooks/hooks.json`).
 `.cursor-plugin/marketplace.json` lists the single plugin (`source: "./"`)
 under Cursor's closed marketplace schema, so Cursor's GitHub import and a
 team marketplace "Import from Repo" do not rely on the fallback read of
@@ -33,7 +34,39 @@ The plugin ships `hooks/session-start.sh` that prints
 lazy-sections contract (whitelist, 8192-byte budget, slug, kill-switch,
 no-op inside the vault). They do not share a file: the JSON I/O contracts
 differ. Vault-MCP deny (`beforeMCPExecution` / `preToolUse`, `failClosed`)
-lives next to the Cursor hook.
+lives next to the Cursor hook, in `hooks/cursor.hooks.json`. Hook commands
+are relative to the plugin root, so the file's name does not change them.
+
+## Correction (DEMO-364)
+
+The first version of this ADR (DEMO-311, 0.30.0) shipped Cursor's hooks as
+`hooks/hooks.json` and an Agent Plugins manifest as root `plugin.json`,
+assuming Claude Code would not look at either. That was wrong:
+
+- `.claude-plugin/plugin.json` has no `hooks` field, so Claude Code loaded
+  `hooks/hooks.json` by convention. `claude plugin validate` only warned
+  (`hooks.sessionStart: unknown hook event; entry ignored at runtime`, the
+  same for `beforeMCPExecution` and `preToolUse`) and a local install still
+  worked, so nothing looked broken.
+- The claude.ai marketplace sync validates plugins server-side, stricter
+  than the CLI: a hook entry the approval UI cannot display fails the sync
+  (`failed_content`). A failed sync keeps the account on the last synced
+  version, so claude.ai stayed on 0.29.0 — the last release before DEMO-311
+  — from 0.30.0 to 0.35.0.
+- Claude Code reads a root `plugin.json` as its manifest when
+  `.claude-plugin/plugin.json` is missing, so that file was Claude
+  Code-visible too.
+
+Fix: the Cursor hooks moved to `hooks/cursor.hooks.json`, named in
+`.cursor-plugin/plugin.json`, and the root `plugin.json` is gone. Two
+guards keep it that way: `scripts/validate-manifests.ts` fails when
+anything sits at `hooks/hooks.json` or root `plugin.json` or when the Cursor
+manifest points at them, and `scripts/validate-claude-plugin.ts` fails on
+any `claude plugin validate` warning. Both run locally before a release
+(the repo has no CI yet).
+Should the plugin ever ship Claude Code hooks, they go to
+`hooks/hooks.json` in Claude Code's format, with the isolation guard
+updated in the same change.
 
 `npx skills add` remains the fallback for agents without a native plugin
 loader. Agent frontmatter keeps Claude Code keys (`tools:`, `model:`
@@ -45,6 +78,12 @@ model IDs are not substituted in.
 - **Agent Plugins only (skills, no Cursor Plugin)** — rejected: SessionStart
   and agents are acceptance criteria; Agent Plugins 1.0.0 does not load
   Cursor hooks or `agents/`.
+- **Root `plugin.json` (Agent Plugins 1.0.0) next to the Cursor manifest** —
+  reversed (DEMO-364): Claude Code reads it as a fallback manifest, Cursor
+  prefers `.cursor-plugin/plugin.json`, and agents without a native loader
+  use `npx skills add`. It added Claude Code exposure and no reach.
+- **Cursor hooks at the conventional `hooks/hooks.json`** — reversed
+  (DEMO-364): Claude Code auto-discovers that path; see Correction above.
 - **One SessionStart script, two JSON envelopes** — rejected: Claude Code
   and Cursor disagree on the output shape, and a shared file would couple
   plugin releases to `~/.claude` machine infra (ADR-0001 / DEMO-205).
@@ -62,11 +101,14 @@ model IDs are not substituted in.
 
 ## Consequences
 
-- Four version strings move in lockstep:
+- Three version strings move in lockstep:
   `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`
-  (`metadata.version`), root `plugin.json`, `.cursor-plugin/plugin.json`.
-  `scripts/validate-manifests.ts` checks the four and the two closed
-  schemas; drift exits non-zero.
+  (`metadata.version`), `.cursor-plugin/plugin.json`.
+  `scripts/validate-manifests.ts` checks the three, Cursor's closed
+  schemas and the Claude Code isolation above; drift exits non-zero.
+- `node scripts/validate-claude-plugin.ts` (Claude Code CLI required) must
+  report no warnings before a release; the only allowlisted one is the
+  root `CLAUDE.md` notice.
 - `.claude-plugin/` is edited only for that lockstep version. Islands
   (`workflows/*.js`) and `/nerd4rent:` slashes stay Claude Code's runtime.
 - Cursor `sessionStart` is fire-and-forget; the inject may arrive after

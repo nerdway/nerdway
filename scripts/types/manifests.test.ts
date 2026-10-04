@@ -28,7 +28,7 @@ function cursorPlugin(overrides: Record<string, unknown> = {}) {
     version: "0.29.0",
     skills: "./skills/",
     agents: "./agents/",
-    hooks: "./hooks/hooks.json",
+    hooks: "./hooks/cursor.hooks.json",
     ...overrides,
   };
 }

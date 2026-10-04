@@ -109,7 +109,14 @@ model IDs are not substituted in.
 - `node scripts/validate-claude-plugin.ts` (Claude Code CLI required) must
   report no warnings before a release; the only allowlisted one is the
   root `CLAUDE.md` notice.
-- `.claude-plugin/` is edited only for that lockstep version. Islands
+- The claude.ai sync validates the plugin against claude.ai's upload
+  rules, which `claude plugin validate` does not check, and reports a
+  breach as a sync warning (DEMO-365): plugin `description` at most 500
+  characters, skill and agent `name`/`description` without `<` or `>`.
+  `scripts/validate-manifests.ts` enforces them and keeps the plugin
+  description identical in all four manifests.
+- `.claude-plugin/` is edited only for that lockstep version and the
+  shared plugin description. Islands
   (`workflows/*.js`) and `/nerd4rent:` slashes stay Claude Code's runtime.
 - Cursor `sessionStart` is fire-and-forget; the inject may arrive after
   the first turn. Skills already know to `Read` the entity page from disk

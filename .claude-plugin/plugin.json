@@ -1,7 +1,7 @@
 {
   "name": "nerd4rent",
-  "version": "0.35.1",
-  "description": "Daily developer workflow automation — bootstrap new projects with git init, README scaffold, GitHub remote via gh, matching Linear project, and routing to a spec-creating skill of choice; write well-specified Linear issues (with checklist or sub-issue decomposition); drive a Linear issue through a status-driven plan-implement-review workflow; mechanically start an issue (branch, empty commit, draft PR/MR with the Fixes magic word) and mechanically close out an issue (commit, push, merge PR/MR on GitHub or GitLab, set Done); resume a project from its last checkpoint on the nerdbrain entity page, verified against git and Linear; bootstrap the CLIs those skills require on a fresh machine.",
+  "version": "0.36.0",
+  "description": "Daily developer workflow automation — bootstrap new projects with git, GitHub, Linear, and spec-creating skills; write well-specified Linear issues and drive them through a status-driven plan-implement-review workflow; mechanically start an issue (branch, empty commit, draft PR/MR with the Fixes magic word) and close it out (commit, push, merge PR/MR, set Done); resume a project from its last nerdbrain checkpoint, verified against git and Linear; bootstrap the CLIs those skills require.",
   "author": {
     "name": "Paweł Wlazło",
     "email": "pawel@nerd4rent.io"

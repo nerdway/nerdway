@@ -35,11 +35,13 @@ node "<plugin root>/scripts/validate-platform-config.ts" --print "$(git rev-pars
 |-----------|---------|---------------------|
 | `0` | stdout is the platform config as JSON, already validated | use it as the platform |
 | `3` | no repo `CLAUDE.md`, or no line-start `## Platform` section in it | move on to the skill's next source |
-| `1` | the section exists but is broken; stderr lists why | stop and report the errors with "fix the platform config — run `/determine-platform`"; never fall through to another source |
+| `4` | the section exists but is broken; stderr lists why | stop and report the errors with "fix the platform config — run `/determine-platform`"; never fall through to another source |
 
-Any other failure (no `node`, Node older than 22, not inside a git repo) →
-use the manual read below; outside a git repo there is no repo `CLAUDE.md`,
-so move on to the skill's next source.
+Any other exit code or failure → use the manual read below. That includes
+`1`, which comes from Node itself, not from the script (for example
+`ERR_UNKNOWN_FILE_EXTENSION` on Node older than 22), and a missing `node`.
+Outside a git repo there is no repo `CLAUDE.md`, so move on to the skill's
+next source.
 
 **2. Manual read (fallback).** Read the repo `CLAUDE.md` with the file-read
 tool, then:
@@ -54,7 +56,7 @@ tool, then:
 
 No file or no such heading → move on to the skill's next source. A heading
 without exactly one `yaml` block, or YAML that does not parse → stop and
-report it, as for exit code `1`.
+report it, as for exit code `4`.
 
 ## Writes
 

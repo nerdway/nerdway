@@ -1,8 +1,8 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { validateManifests } from "./types/manifests.ts";
+import { validateClaudeCodeIsolation, validateManifests } from "./types/manifests.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..");
@@ -14,9 +14,12 @@ function readJson(rel: string): Record<string, unknown> {
 const errors = validateManifests({
   claudePlugin: readJson(".claude-plugin/plugin.json"),
   marketplace: readJson(".claude-plugin/marketplace.json"),
-  agentPlugin: readJson("plugin.json"),
   cursorPlugin: readJson(".cursor-plugin/plugin.json"),
 });
+
+errors.push(
+  ...validateClaudeCodeIsolation(readJson(".cursor-plugin/plugin.json"), (path) => existsSync(join(repoRoot, path))),
+);
 
 const cursorMarketplace = readJson(".cursor-plugin/marketplace.json");
 const cursorPluginName = readJson(".cursor-plugin/plugin.json").name;
@@ -46,4 +49,4 @@ if (errors.length > 0) {
 }
 
 const version = readJson(".claude-plugin/plugin.json").version;
-console.log(`OK: all four manifests are at ${version}`);
+console.log(`OK: all three manifests are at ${version}; Claude Code sees no Cursor-only file`);

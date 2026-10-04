@@ -267,16 +267,12 @@ so a metric that needs a new collection channel, a log file or a clock is not
 measured at all: it is rejected, not deferred.
 _Avoid_: telemetry, instrumentation (both imply a channel this repo does not have)
 
-**Agent Plugin**:
-A client that loads the repo-root `plugin.json` under the
-[Agent Plugins 1.0.0](https://agent-plugins.org/schemas/1.0.0/plugin.schema.json)
-schema (closed fields; skills discovered from `skills/`, not a manifest key).
-Claude Code is not this client — it reads `.claude-plugin/`.
-_Avoid_: plugin.json (ambiguous — four manifests carry that filename)
-
 **Cursor Plugin**:
 The Cursor-native packaging at `.cursor-plugin/plugin.json`, which points at
-the existing `skills/`, `agents/` and `hooks/` trees. Distinct from an Agent
-Plugin and from Claude Code's `.claude-plugin/`.
+the existing `skills/` and `agents/` trees and at `hooks/cursor.hooks.json`.
+Distinct from Claude Code's `.claude-plugin/`. The repo ships no root
+`plugin.json` (Agent Plugins): Claude Code reads that path as a fallback
+manifest, so it stays empty (ADR 0007, DEMO-364).
 _Avoid_: Cursor extension, marketplace plugin (a marketplace card is how
-Cursor *pins* a plugin, not the packaging)
+Cursor *pins* a plugin, not the packaging); bare plugin.json (ambiguous —
+the Claude Code and Cursor manifests both carry that filename)

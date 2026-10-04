@@ -6,8 +6,8 @@ description: >-
   Issues, Azure DevOps Boards) already in
   the in-progress phase: read the issue's branch name, create the branch from a clean main/master
   checkout, make the empty start-of-work commit, push with upstream, and open a
-  draft PR (GitHub, Azure DevOps) or MR (GitLab) carrying the `Fixes <ID>`
-  magic word. Purely
+  draft PR (GitHub, Azure DevOps) or MR (GitLab) carrying the `Fixes`
+  magic word followed by the issue ID. Purely
   procedural with explicit commands and no multi-step reasoning — pinned to
   Haiku (the `model` frontmatter above) to keep it cheap. Invoked by
   issue-workflow's Start step, or directly when the user asks to start an

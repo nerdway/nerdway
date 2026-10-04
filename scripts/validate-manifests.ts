@@ -14,7 +14,6 @@ function readJson(rel: string): Record<string, unknown> {
 const errors = validateManifests({
   claudePlugin: readJson(".claude-plugin/plugin.json"),
   marketplace: readJson(".claude-plugin/marketplace.json"),
-  agentPlugin: readJson("plugin.json"),
   cursorPlugin: readJson(".cursor-plugin/plugin.json"),
 });
 
@@ -46,4 +45,4 @@ if (errors.length > 0) {
 }
 
 const version = readJson(".claude-plugin/plugin.json").version;
-console.log(`OK: all four manifests are at ${version}`);
+console.log(`OK: all three manifests are at ${version}`);

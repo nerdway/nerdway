@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   parseYaml,
   platformYaml,
+  readPlatform,
   supportedStrategies,
   validateAdapterDefaults,
   validatePlatformConfig,
@@ -297,4 +298,28 @@ test("ado: rejects a team, board or work item type carrying shell quoting charac
   assert.equal(errors.length, 2);
   assert.match(errors[0], /ado\.team/);
   assert.match(errors[1], /ado\.workItemType/);
+});
+
+test("readPlatform: a valid section is found, with the parsed object", () => {
+  const markdown = "# Repo\n\n## Platform\n\n```yaml\ntracker: linear\nvcs: github\nlinear:\n  team: DEMO\n```\n\n## Other\n";
+  assert.deepEqual(readPlatform(markdown, vocabulary, new Map([["linear", adapter()]])), {
+    status: "found",
+    value: { tracker: "linear", vcs: "github", linear: { team: "DEMO" } },
+    errors: [],
+  });
+});
+
+test("readPlatform: no file or no line-start section is absent, so the caller moves to its next source", () => {
+  assert.equal(readPlatform(undefined, vocabulary, new Map()).status, "absent");
+  assert.equal(readPlatform("# Repo\n\nProse naming ## Platform inline.\n", vocabulary, new Map()).status, "absent");
+  assert.equal(readPlatform("## Platform and adapters\n\n```yaml\ntracker: linear\n```\n", vocabulary, new Map()).status, "absent");
+});
+
+test("readPlatform: a broken section is invalid, never absent, so the caller stops instead of guessing", () => {
+  const noBlock = readPlatform("## Platform\n\nprose only\n", vocabulary, new Map());
+  assert.equal(noBlock.status, "invalid");
+  assert.match(noBlock.errors[0], /yaml/);
+  const badValue = readPlatform("## Platform\n\n```yaml\ntracker: jira\nvcs: github\n```\n", vocabulary, new Map());
+  assert.equal(badValue.status, "invalid");
+  assert.match(badValue.errors[0], /jira/);
 });

@@ -22,6 +22,13 @@ const CURSOR_PLUGIN_KEYS = new Set([
   "mcpServers",
 ]);
 
+// Paths Claude Code reads by convention, whatever `.claude-plugin/plugin.json`
+// declares: `hooks/hooks.json` is auto-discovered and merged with the
+// manifest's `hooks`, and a root `plugin.json` is Claude Code's fallback
+// manifest. Neither may hold another runtime's format, or the claude.ai
+// marketplace sync rejects the plugin (DEMO-364).
+export const CLAUDE_CODE_CONVENTION_PATHS = ["hooks/hooks.json", "plugin.json"] as const;
+
 export type ManifestSet = {
   claudePlugin: Record<string, unknown>;
   marketplace: Record<string, unknown>;
@@ -39,6 +46,10 @@ function extraKeys(value: Record<string, unknown>, allowed: Set<string>, label: 
   return Object.keys(value)
     .filter((key) => !allowed.has(key))
     .map((key) => `${label}: unknown field "${key}"`);
+}
+
+function normalise(path: string): string {
+  return path.replace(/^\.\//, "");
 }
 
 export function validateManifests(set: ManifestSet): string[] {
@@ -70,6 +81,41 @@ export function validateManifests(set: ManifestSet): string[] {
     errors.push(".cursor-plugin/plugin.json (cursor plugin): name is missing");
   }
   errors.push(...extraKeys(set.cursorPlugin, CURSOR_PLUGIN_KEYS, ".cursor-plugin/plugin.json (cursor plugin)"));
+
+  return errors;
+}
+
+// Claude Code must never see a Cursor-only file. `exists` answers for a path
+// relative to the repo root.
+export function validateClaudeCodeIsolation(
+  cursorPlugin: Record<string, unknown>,
+  exists: (path: string) => boolean,
+): string[] {
+  const errors: string[] = [];
+
+  for (const path of CLAUDE_CODE_CONVENTION_PATHS) {
+    if (exists(path)) {
+      errors.push(
+        `${path}: Claude Code reads this path by convention — keep Cursor and other runtimes' files out of it`,
+      );
+    }
+  }
+
+  const hooks = cursorPlugin.hooks;
+  if (typeof hooks !== "string" || hooks.length === 0) {
+    errors.push(
+      ".cursor-plugin/plugin.json: hooks must name the Cursor hooks file explicitly, or Cursor falls back to hooks/hooks.json",
+    );
+  } else if ((CLAUDE_CODE_CONVENTION_PATHS as readonly string[]).includes(normalise(hooks))) {
+    errors.push(`.cursor-plugin/plugin.json: hooks "${hooks}" is a path Claude Code auto-discovers`);
+  }
+
+  for (const key of ["skills", "agents", "hooks"] as const) {
+    const value = cursorPlugin[key];
+    if (typeof value === "string" && value.length > 0 && !exists(normalise(value))) {
+      errors.push(`.cursor-plugin/plugin.json: ${key} path "${value}" does not exist`);
+    }
+  }
 
   return errors;
 }

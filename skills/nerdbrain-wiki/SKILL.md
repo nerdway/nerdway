@@ -2,7 +2,7 @@
 name: nerdbrain-wiki
 description: >-
   HOW to create or update a nerdbrain second-brain entity page at
-  5-wiki/entities/projects/<slug>.md in the user's Obsidian vault. Invoke when
+  5-wiki/entities/projects/{slug}.md in the user's Obsidian vault. Invoke when
   about to write such a wiki page — a write trigger fired, you need section
   update modes (Edit/Append/Prepend-capped), the checkpoint entry format for
   `## Checkpoints`, the filesystem write pattern, the frontmatter

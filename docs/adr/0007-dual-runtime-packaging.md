@@ -68,6 +68,31 @@ Should the plugin ever ship Claude Code hooks, they go to
 `hooks/hooks.json` in Claude Code's format, with the isolation guard
 updated in the same change.
 
+## Repo `CLAUDE.md` and `## Platform` in Cursor (DEMO-366)
+
+Every nerd-workflow project records its platform as the `## Platform`
+section of the repo `CLAUDE.md`. Skills were written against Claude Code,
+which always puts that file into context, so most of them named the section
+without saying to read the file. Cursor puts the repo `CLAUDE.md` into
+context only while **Settings → Agents → Third-Party Imports** is on (the
+default; in Cursor CLI 2026.09.28 the loader is gated on that switch, while
+`AGENTS.md` loads regardless). With it off, those skills fell through to the
+entity page or stopped with "no platform configured".
+
+Decision: every skill reads the section **from disk** with one recipe,
+`adapters/platform.md`. The script path is
+`node scripts/validate-platform-config.ts --print <repo>/CLAUDE.md` (JSON on
+stdout; exit `0` found, `3` absent, `1` broken), and a manual read of the
+line-start section is the fallback without Node 22. A `CLAUDE.md` in the
+context is never a source: Claude Code does not reload it after
+`determine-platform` or `bind-statuses` writes it, and Cursor may not have
+loaded it at all. `scripts/validate-platform-references.ts` (and its test)
+fail when a skill, agent or adapter mentions `## Platform` without pointing
+at the recipe. Third-Party Imports stays recommended in the README for the
+rest of the project instructions, but nothing depends on it. The root
+`CLAUDE.md` of this repo keeps its `## Platform`; Claude Code reports it as
+"not loaded as project context", which is expected and allowlisted.
+
 `npx skills add` remains the fallback for agents without a native plugin
 loader. Agent frontmatter keeps Claude Code keys (`tools:`, `model:`
 aliases, `skills:` on the gatherer) and adds `readonly: true`; Cursor
@@ -94,6 +119,12 @@ model IDs are not substituted in.
 - **Substitute Cursor model IDs in `agents/`** — rejected: that would break
   the Haiku/Sonnet pins Claude Code islands rely on. Cursor docs require
   only `name` + `description`; extra keys are ignored.
+- **Inject `## Platform` from the repo `CLAUDE.md` in Cursor's
+  sessionStart** — rejected (DEMO-366): skills read the file from disk
+  anyway, a second copy in context could drift from it, and Cursor runs the
+  hook fire-and-forget.
+- **Require Third-Party Imports for the nerd workflow in Cursor** — rejected
+  (DEMO-366): a user setting is not a contract; the recipe works either way.
 - **No `.cursor-plugin/marketplace.json`** — reversed (DEMO-345): the file does
   not unstick a personal `/add-plugin` pin. But Cursor documents it as required
   for GitHub imports, and a team marketplace imported from the repo with
@@ -127,3 +158,7 @@ model IDs are not substituted in.
   that point outside that folder. Uninstall the marketplace card first.
 - `~/.claude/hooks/nerdbrain-load.sh` and the Claude Code vault-MCP deny
   in `~/.claude/settings.json` stay outside this repo.
+- A skill that needs the platform reads the repo `CLAUDE.md` through
+  `adapters/platform.md`; `scripts/validate-platform-references.ts` must
+  pass before a release. How the global `~/.claude/CLAUDE.md` rules reach
+  Cursor is open (DEMO-368).

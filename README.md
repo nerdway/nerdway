@@ -482,14 +482,20 @@ Those agents read global skills from `~/.agents/skills/` (Cursor also reads `~/.
 
 ## Releasing
 
-Four manifests carry a version, and they move together:
+Three manifests carry a version, and they move together:
 
 - `.claude-plugin/plugin.json` → `version`
 - `.claude-plugin/marketplace.json` → `metadata.version`
-- `plugin.json` (Agent Plugins 1.0.0) → `version`
 - `.cursor-plugin/plugin.json` → `version`
 
-The Claude Code installed version comes from `.claude-plugin/plugin.json`. Bumping it is what forces Claude Code to refresh its `cache/<marketplace>/<plugin>/<version>/` copy — an unchanged number makes `/plugin update` a no-op even when `main` has moved on. `marketplace.json` versions the marketplace itself and does not drive that cache. The root and Cursor manifests must stay on the same string so a client loading any one of the four sees one release. Keep them equal — `node scripts/validate-manifests.ts` checks all four and the two closed schemas, and exits non-zero when they drift.
+The Claude Code installed version comes from `.claude-plugin/plugin.json`. Bumping it is what forces Claude Code to refresh its `cache/<marketplace>/<plugin>/<version>/` copy — an unchanged number makes `/plugin update` a no-op even when `main` has moved on. `marketplace.json` versions the marketplace itself and does not drive that cache. The Cursor manifest must stay on the same string so both runtimes see one release. Keep them equal — `node scripts/validate-manifests.ts` checks all three and Cursor's closed schemas, and exits non-zero when they drift.
+
+Claude Code must never see a Cursor file: it reads `hooks/hooks.json` and a root `plugin.json` by convention, whatever its manifest says, and the claude.ai marketplace sync rejects what the CLI only warns about (ADR 0007, DEMO-364). Cursor's hooks therefore live in `hooks/cursor.hooks.json`, named in `.cursor-plugin/plugin.json`. Before every release run both guards:
+
+```bash
+node scripts/validate-manifests.ts      # versions, Cursor schema, nothing Cursor-only at Claude Code's paths
+node scripts/validate-claude-plugin.ts  # `claude plugin validate`; any warning fails (needs the Claude Code CLI)
+```
 
 Merging to `main` does not update anyone's install on its own: the local marketplace clone is only refreshed by `/plugin marketplace update <marketplace>`, followed by `/plugin update <plugin>@<marketplace>`.
 

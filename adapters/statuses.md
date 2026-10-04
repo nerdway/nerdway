@@ -19,7 +19,8 @@ Core skills dispatch on five phases, never on a tracker's own state names:
 ## Resolving the strategy and map
 
 1. The `statuses` block of the platform config (`## Platform` in the repo
-   `CLAUDE.md`, else `platform:` on the entity page), when present.
+   `CLAUDE.md`, read from disk as `adapters/platform.md` describes, else
+   `platform:` on the entity page), when present.
 2. Otherwise the tracker adapter's `## Statuses` default.
 
 Both hold the same shape:

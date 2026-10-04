@@ -43,7 +43,9 @@ cannot do it — skip that step, never improvise a command.
 Take the platform from the caller when one was passed (the
 `determine-platform` chain passes its result), else read it exactly as
 `determine-platform` Step 1 does: the line-start `## Platform` section of the
-repo `CLAUDE.md`, else `platform:` on the entity page.
+repo `CLAUDE.md`, read from disk as
+`${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes, else `platform:` on the
+entity page.
 
 - No platform → stop: "no platform configured — run `/determine-platform`".
 - `tracker: none` → stop: "no tracker, nothing to bind".
@@ -195,8 +197,11 @@ Non-zero exit → show the errors, fix the block with the user, write again.
 ## Step 8 — Return the result
 
 Print the full `## Platform` YAML and where it was written (or that nothing
-changed). The repo `CLAUDE.md` is not reloaded mid-session, so a calling skill
-takes the statuses from this output.
+changed). A calling skill takes the statuses from this output, or reads the
+file again as `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes. A
+`CLAUDE.md` that is part of the conversation context is no source: Claude
+Code loaded it before this write and never reloads it, and Cursor loads it
+only with Third-Party Imports on.
 
 ## Boundaries
 

@@ -194,6 +194,8 @@ github:
 
 `tracker` is one of `linear`, `github`, `gitlab`, `ado`, `none`; `vcs` one of `github`, `gitlab`, `ado`. The shape is the `PlatformConfig` schema in `workflow-graph.json`. `determine-platform` writes it; an entity page with only the older `linear: {team, project}` block keeps working as an alias.
 
+Skills read the section from disk at the moment they need it, with one shared recipe in [`adapters/platform.md`](adapters/platform.md): `node scripts/validate-platform-config.ts --print "$(git rev-parse --show-toplevel)/CLAUDE.md"` prints it as JSON (exit `0` found, `3` absent so the skill moves on to its next source, `1` broken so it stops), with a manual read of the section as the fallback without Node 22. No skill takes the platform from a `CLAUDE.md` that happens to be in context: Claude Code never reloads it mid-session, and Cursor loads it only with Third-Party Imports on (see [Cursor](#cursor)). `node scripts/validate-platform-references.ts` fails when a skill, agent or adapter mentions `## Platform` without pointing at the recipe.
+
 An optional `statuses` key, written by `bind-statuses`, binds the workflow's canonical phases to the tracker:
 
 ```yaml
@@ -451,6 +453,8 @@ git clone https://github.com/nerd4rent/nerd4rent-claude-plugin ~/.cursor/plugins
 
 Then **Reload Window** and open **Customize**. The `nerd4rent` card should list the skills under `skills/`, the four agents, and the SessionStart / vault-MCP deny hooks. If a marketplace plugin with the same `name: nerd4rent` is installed, it takes precedence over the local copy. Uninstall it first.
 
+**Third-Party Imports and `## Platform`.** Keep **Cursor Settings → Agents → Third-Party Imports** ("Include Third-Party Plugins, Skills, and Other Configs") on, which is the default. Cursor then loads the repo `CLAUDE.md` into context as an always-applied rule, so the project's general instructions apply in Cursor too. The nerd workflow does not depend on it: every skill reads `## Platform` from the repo `CLAUDE.md` on disk through [`adapters/platform.md`](adapters/platform.md), so the platform resolves the same way with the setting off. The SessionStart hook deliberately does not inject `## Platform`: a second copy could drift from the file, and Cursor runs that hook fire-and-forget. Rules from the global `~/.claude/CLAUDE.md` are a separate open question (DEMO-368).
+
 `npx skills add` (below) remains a fallback if you only want the skill files.
 
 ### Other agents (Copilot, Windsurf, Cline, …)
@@ -490,11 +494,12 @@ Three manifests carry a version, and they move together:
 
 The Claude Code installed version comes from `.claude-plugin/plugin.json`. Bumping it is what forces Claude Code to refresh its `cache/<marketplace>/<plugin>/<version>/` copy — an unchanged number makes `/plugin update` a no-op even when `main` has moved on. `marketplace.json` versions the marketplace itself and does not drive that cache. The Cursor manifest must stay on the same string so both runtimes see one release. Keep them equal — `node scripts/validate-manifests.ts` checks all three and Cursor's closed schemas, and exits non-zero when they drift.
 
-Claude Code must never see a Cursor file: it reads `hooks/hooks.json` and a root `plugin.json` by convention, whatever its manifest says, and the claude.ai marketplace sync rejects what the CLI only warns about (ADR 0007, DEMO-364). Cursor's hooks therefore live in `hooks/cursor.hooks.json`, named in `.cursor-plugin/plugin.json`. The sync also checks claude.ai's upload rules, which the CLI does not, and reports a breach as a warning (DEMO-365): the plugin description is at most 500 characters (one text in all four manifests), and a skill or agent `name` or `description` holds no `<` or `>` (write `{slug}`, not `<slug>`). Before every release run both guards:
+Claude Code must never see a Cursor file: it reads `hooks/hooks.json` and a root `plugin.json` by convention, whatever its manifest says, and the claude.ai marketplace sync rejects what the CLI only warns about (ADR 0007, DEMO-364). Cursor's hooks therefore live in `hooks/cursor.hooks.json`, named in `.cursor-plugin/plugin.json`. The sync also checks claude.ai's upload rules, which the CLI does not, and reports a breach as a warning (DEMO-365): the plugin description is at most 500 characters (one text in all four manifests), and a skill or agent `name` or `description` holds no `<` or `>` (write `{slug}`, not `<slug>`). Before every release run the guards:
 
 ```bash
-node scripts/validate-manifests.ts      # versions, Cursor schema, nothing Cursor-only at Claude Code's paths, claude.ai upload rules
-node scripts/validate-claude-plugin.ts  # `claude plugin validate`; any warning fails (needs the Claude Code CLI)
+node scripts/validate-manifests.ts            # versions, Cursor schema, nothing Cursor-only at Claude Code's paths, claude.ai upload rules
+node scripts/validate-claude-plugin.ts        # `claude plugin validate`; any warning fails (needs the Claude Code CLI)
+node scripts/validate-platform-references.ts  # every `## Platform` mention reads CLAUDE.md through adapters/platform.md
 ```
 
 Merging to `main` does not update anyone's install on its own: the local marketplace clone is only refreshed by `/plugin marketplace update <marketplace>`, followed by `/plugin update <plugin>@<marketplace>`.

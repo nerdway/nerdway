@@ -140,6 +140,8 @@ host (`github`, `gitlab`, `ado`) plus the identifiers each needs — schema
 mirrored as `platform:` on the entity page, and is established by
 `determine-platform`; a legacy `linear:` block on an entity page is read as its
 alias. An optional `statuses` block binds the canonical phases to the tracker.
+Skills read it from disk through `adapters/platform.md`, never from a
+`CLAUDE.md` in context.
 _Avoid_: platform settings, integration (both hide that it is one YAML object in two places)
 
 **Adapter**:

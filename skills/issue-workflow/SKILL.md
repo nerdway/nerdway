@@ -76,6 +76,23 @@ Linear: `native`, `Backlog / Todo / In Progress / In Review / Done`).
 unknown**: report the raw value and dispatch nothing. A strategy the adapter
 lists as `—` → stop and ask the user to run `/bind-statuses`.
 
+## Where the spec and the plan live
+
+The tracker carries the spec (ADR-0008); the repository holds code only — no
+spec or plan files, ever.
+
+- **The issue description is the current spec**: WHAT and WHY, in the
+  sections of `issue-writer/issue-template.md`, with a checklist of acceptance
+  criteria, each naming how it is checked (`— check: <test or command>`).
+- **The `## Implementation plan` comment is the plan**: HOW, including the
+  files it will change.
+- **`## Spec change` comments are the spec's history**: each says what changed
+  in the description after work started, and why.
+
+Read the spec from the description and its history from the `## Spec change`
+comments. Every write uses existing adapter operations only:
+`issue.update-description`, `issue.comment`, `issue.set-status`.
+
 ## When this skill applies
 
 The user gave an **issue identifier** — `TEAM-123` on Linear; `#123` or
@@ -118,7 +135,7 @@ marker is in those comments), then:
 | Phase | What to do |
 |-------|------------|
 | `backlog` / `todo` | **Planning** — draft and post a plan (or refine the existing one); write phase **`todo`**; end the turn with no instructions for the user |
-| `in-progress` | **Implementation** — rebuild context from the `## Implementation plan` comment and later comments; if branch/PR missing, run the Start step first |
+| `in-progress` | **Implementation** — rebuild context from the description (the spec), the `## Implementation plan` comment and later comments (`## Spec change`, plan extensions); if branch/PR missing, run the Start step first |
 | `in-review` | **Code review** — present the code-review menu |
 | `done` (set manually, PR unmerged) | **Close-out** — push, merge PR, ask about switching to main/master |
 | unknown | report the raw value read from the tracker and stop |
@@ -219,13 +236,39 @@ patterns before drafting the Technical Approach — same triggers and limits,
 not duplicated here. Skip silently otherwise; don't read the graph
 speculatively.
 
+### 0c. Refine the spec (complex issues only)
+
+A small, clear issue skips this step — the same threshold `issue-writer`
+step 2 uses to pick the minimal template. For a complex issue, before the
+plan:
+
+1. Compare the description with the **full** variant of
+   `issue-writer/issue-template.md`.
+2. Settle every missing or vague section in a grilling session (1a). A section
+   nobody discussed stays empty: capture what was said, never invent a
+   criterion, a constraint or a scope line.
+3. End each acceptance criterion with how it is checked —
+   `— check: <test or command>`. A criterion that cannot name a check is too
+   vague: settle it in the session or leave it as an open question.
+4. Extend the user's text, never drop it: `issue.update-description` replaces
+   the whole description.
+5. Show the full new description in chat and write it with
+   `issue.update-description` only after the user accepts it (gate
+   `no-tracker-write-before-approval` on `plan-draft`).
+
 ### 1. Draft plan
 
 Use the bundled `plan-template.md` sections (Polish or English — match the
 issue language):
 
 - **Objective**, **Scope** (in/out), **Technical Approach**,
-  **Implementation Steps**, **Acceptance Criteria**, **Risks**, **Dependencies**
+  **Affected Files**, **Implementation Steps**, **Acceptance Criteria**,
+  **Risks**, **Dependencies**
+
+**Affected Files** lists every file or directory the implementation will
+change; it is what the scope stop in step 6 checks against. Each acceptance
+criterion names its check (`— check: <test or command>`), copied from the spec
+or added here for a small issue.
 
 `plan-template.md` and `session-summary-template.md` are **generated** from the
 `ImplementationPlan` and `SessionSummary` schemas in `workflow-graph.json`
@@ -351,9 +394,30 @@ one-option menu.
 Follow project conventions. Prefer minimal scope. Run relevant tests/builds.
 Commit and push to the PR branch as work lands.
 
+**Stay inside the plan's Affected Files** (frozen rule
+`no-change-outside-plan`). Before changing any other file, stop, name the
+file and the reason, and continue only after the user's yes in chat; then
+post an `issue.comment` that extends the plan with that file. A no means
+finding a way inside the list, or a spec change.
+
+**A spec change after work started** — a criterion turns out wrong, the scope
+has to move — is never applied silently. Show the new description in chat;
+after the user accepts it, write it with `issue.update-description` and post
+an `issue.comment` that starts with `## Spec change` (never with `Status:`)
+and says what changed and why. The thread then reads as the spec's history.
+
+### 6a. Verify the criteria
+
+Before leaving implementation, run the check of every acceptance criterion in
+the spec (the plan's, when the spec has none) and fill the
+**Criteria verification** table: criterion, check, result (`pass` / `fail`),
+evidence. Any `fail` blocks the move to review — fix it, or settle a spec
+change with the user. The table goes into the session summary.
+
 ### 7. After implementation: offer code review — never closure
 
-Do **not** offer to merge the PR or close the issue. Enter the review phase
+Only with every criterion at `pass` (6a). Do **not** offer to merge the PR or
+close the issue. Enter the review phase
 (same as the `in-review` phase below): confirm the axes and engines, then run
 the review island.
 
@@ -475,6 +539,7 @@ start with `## Session summary` and include:
 - scope completed vs remaining,
 - current status,
 - validation / test results,
+- the criteria verification table, once implementation is complete,
 - open questions / next steps,
 - metrics, whenever an island ran this session.
 

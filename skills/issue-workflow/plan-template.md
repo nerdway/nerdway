@@ -31,6 +31,16 @@
 
 <!-- Architecture / strategy, and why this one over the alternatives. -->
 
+### Affected Files
+
+<!-- Every file or directory the implementation will change. Changing anything
+     outside this list needs the user's consent in chat, and the file is then
+     added in a comment that extends the plan. -->
+
+| File | Change |
+|------|--------|
+| | |
+
 ### Implementation Steps
 
 <!-- Ordered steps, each one an atomic commit. -->
@@ -40,7 +50,8 @@
 
 ### Acceptance Criteria
 
-<!-- Each item independently verifiable — this is what closes the issue. -->
+<!-- Each item independently verifiable and ending with how it is checked — a
+     test name or a command. This is what closes the issue. -->
 
 - [ ]
 - [ ]

@@ -36,6 +36,10 @@
       "rule": "No label, tag or board column is created on the tracker without the user's explicit consent in chat."
     },
     {
+      "id": "no-change-outside-plan",
+      "rule": "No file outside the plan's affected files is changed without the user's consent in chat; after consent the file is added in a comment that extends the plan."
+    },
+    {
       "id": "no-merge-without-green-verification",
       "rule": "No merge without green verification: tests and validators pass before close runs."
     },
@@ -981,7 +985,14 @@
       "dependsOn": ["plan-context-fanout", "wiki-recall"],
       "failure": { "retries": 0, "fallback": "stop and ask the user", "killsRun": true, "reporting": "chat" },
       "budget": { "maxWidth": 1 },
-      "gates": []
+      "gates": [
+        {
+          "kind": "decision",
+          "mechanism": "chat-approval",
+          "rule": "no-tracker-write-before-approval",
+          "description": "For a complex issue the planner refines the description to the full IssueSpec variant; the user accepts the new text in chat before `issue.update-description` writes it."
+        }
+      ]
     },
     {
       "id": "implement",
@@ -1000,6 +1011,18 @@
           "mechanism": "tracker-status",
           "rule": "no-repo-change-before-in-progress",
           "description": "The human sets the issue to In Progress in Linear; no repo change happens before that."
+        },
+        {
+          "kind": "decision",
+          "mechanism": "chat-approval",
+          "rule": "no-change-outside-plan",
+          "description": "Before changing a file outside the plan's affected files the agent stops, names the file and the reason, and continues only after the user's yes in chat."
+        },
+        {
+          "kind": "decision",
+          "mechanism": "chat-approval",
+          "rule": "no-tracker-write-before-approval",
+          "description": "A spec change after work has started: the user accepts the new description in chat before it is written, together with a `## Spec change` comment saying what changed and why."
         }
       ]
     },

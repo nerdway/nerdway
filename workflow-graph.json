@@ -36,6 +36,17 @@
       "rule": "No label, tag or board column is created on the tracker without the user's explicit consent in chat."
     },
     {
+      "id": "no-change-outside-plan",
+      "rule": "No file outside the plan's affected files is changed without the user's consent in chat; after consent the file is added in a comment that extends the plan.",
+      "exemptions": [
+        {
+          "node": "auto-issue-mode",
+          "scope": "Files outside the plan's affected files of the one issue the run was invoked for, each added first in a comment that extends the plan with the reason; every other issue keeps the rule.",
+          "reason": "The run asks nothing after the drafted issue is approved; invoking it is the user's consent to the whole run, and the extending comment keeps the change visible on the tracker."
+        }
+      ]
+    },
+    {
       "id": "no-merge-without-green-verification",
       "rule": "No merge without green verification: tests and validators pass before close runs."
     },
@@ -256,7 +267,7 @@
           "acceptanceCriteria": {
             "type": "array",
             "title": "Acceptance criteria",
-            "description": "Each item independently verifiable. This is what \"done\" means.",
+            "description": "Each item independently verifiable and ending with how it is checked — a test name or a command, written as `— check: <test or command>`. A criterion that cannot name its check is too vague and goes back to the spec. This is what \"done\" means.",
             "x-render": "checklist",
             "items": { "type": "string" }
           },
@@ -457,6 +468,29 @@
             "title": "Technical Approach",
             "description": "Architecture / strategy, and why this one over the alternatives."
           },
+          "affectedFiles": {
+            "type": "array",
+            "title": "Affected Files",
+            "description": "Every file or directory the implementation will change. Changing anything outside this list needs the user's consent in chat, and the file is then added in a comment that extends the plan.",
+            "items": {
+              "type": "object",
+              "title": "Affected file",
+              "description": "A file or directory and what happens to it.",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "title": "File",
+                  "description": "Repo-relative path of a file or directory."
+                },
+                "change": {
+                  "type": "string",
+                  "title": "Change",
+                  "description": "What the plan does to it: new, edited, regenerated, removed."
+                }
+              },
+              "required": ["file", "change"]
+            }
+          },
           "implementationSteps": {
             "type": "array",
             "title": "Implementation Steps",
@@ -467,7 +501,7 @@
           "acceptanceCriteria": {
             "type": "array",
             "title": "Acceptance Criteria",
-            "description": "Each item independently verifiable — this is what closes the issue.",
+            "description": "Each item independently verifiable and ending with how it is checked — a test name or a command. This is what closes the issue.",
             "x-render": "checklist",
             "items": { "type": "string" }
           },
@@ -505,6 +539,7 @@
           "objective",
           "scope",
           "technicalApproach",
+          "affectedFiles",
           "implementationSteps",
           "acceptanceCriteria",
           "risks",
@@ -540,6 +575,40 @@
             "title": "Validation",
             "description": "Commands run against the change and what they reported.",
             "items": { "type": "string" }
+          },
+          "criteriaVerification": {
+            "type": "array",
+            "title": "Criteria verification",
+            "description": "One row per acceptance criterion of the spec, filled before the move to review. A single `fail` blocks that move.",
+            "items": {
+              "type": "object",
+              "title": "Criterion check",
+              "description": "One acceptance criterion and the evidence that it holds.",
+              "properties": {
+                "criterion": {
+                  "type": "string",
+                  "title": "Criterion",
+                  "description": "The acceptance criterion as the spec states it."
+                },
+                "check": {
+                  "type": "string",
+                  "title": "Check",
+                  "description": "The test or command that was run for it."
+                },
+                "result": {
+                  "type": "string",
+                  "title": "Result",
+                  "description": "Whether the check passed.",
+                  "enum": ["pass", "fail"]
+                },
+                "evidence": {
+                  "type": "string",
+                  "title": "Evidence",
+                  "description": "What the check reported: a test count, an exit code, the line that proves it."
+                }
+              },
+              "required": ["criterion", "check", "result", "evidence"]
+            }
           }
         },
         "required": ["branch", "commits", "pullRequest"]
@@ -718,6 +787,40 @@
             "description": "Commands run and what they reported — evidence, not assertions.",
             "items": { "type": "string" }
           },
+          "criteriaVerification": {
+            "type": "array",
+            "title": "Criteria verification",
+            "description": "The criteria table from the change set, once implementation is complete: one row per acceptance criterion, check, result and evidence. Omit while implementation is still in progress.",
+            "items": {
+              "type": "object",
+              "title": "Criterion check",
+              "description": "One acceptance criterion and the evidence that it holds.",
+              "properties": {
+                "criterion": {
+                  "type": "string",
+                  "title": "Criterion",
+                  "description": "The acceptance criterion as the spec states it."
+                },
+                "check": {
+                  "type": "string",
+                  "title": "Check",
+                  "description": "The test or command that was run for it."
+                },
+                "result": {
+                  "type": "string",
+                  "title": "Result",
+                  "description": "Whether the check passed.",
+                  "enum": ["pass", "fail"]
+                },
+                "evidence": {
+                  "type": "string",
+                  "title": "Evidence",
+                  "description": "What the check reported: a test count, an exit code, the line that proves it."
+                }
+              },
+              "required": ["criterion", "check", "result", "evidence"]
+            }
+          },
           "nextSteps": {
             "type": "array",
             "title": "Open questions / next steps",
@@ -889,7 +992,14 @@
       "dependsOn": ["plan-context-fanout", "wiki-recall"],
       "failure": { "retries": 0, "fallback": "stop and ask the user", "killsRun": true, "reporting": "chat" },
       "budget": { "maxWidth": 1 },
-      "gates": []
+      "gates": [
+        {
+          "kind": "decision",
+          "mechanism": "chat-approval",
+          "rule": "no-tracker-write-before-approval",
+          "description": "For a complex issue the planner refines the description to the full IssueSpec variant; the user accepts the new text in chat before `issue.update-description` writes it."
+        }
+      ]
     },
     {
       "id": "implement",
@@ -908,6 +1018,18 @@
           "mechanism": "tracker-status",
           "rule": "no-repo-change-before-in-progress",
           "description": "The human sets the issue to In Progress in Linear; no repo change happens before that."
+        },
+        {
+          "kind": "decision",
+          "mechanism": "chat-approval",
+          "rule": "no-change-outside-plan",
+          "description": "Before changing a file outside the plan's affected files the agent stops, names the file and the reason, and continues only after the user's yes in chat."
+        },
+        {
+          "kind": "decision",
+          "mechanism": "chat-approval",
+          "rule": "no-tracker-write-before-approval",
+          "description": "A spec change after work has started: the user accepts the new description in chat before it is written, together with a `## Spec change` comment saying what changed and why."
         }
       ]
     },

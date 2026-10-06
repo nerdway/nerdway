@@ -23,7 +23,10 @@
 
 ### Acceptance criteria
 
-<!-- Each item independently verifiable. This is what "done" means. -->
+<!-- Each item independently verifiable and ending with how it is checked — a
+     test name or a command, written as `— check: <test or command>`. A
+     criterion that cannot name its check is too vague and goes back to the
+     spec. This is what "done" means. -->
 
 - [ ]
 - [ ]
@@ -90,7 +93,10 @@
 
 ### Acceptance criteria
 
-<!-- Each item independently verifiable. This is what "done" means. -->
+<!-- Each item independently verifiable and ending with how it is checked — a
+     test name or a command, written as `— check: <test or command>`. A
+     criterion that cannot name its check is too vague and goes back to the
+     spec. This is what "done" means. -->
 
 - [ ]
 - [ ]
@@ -108,7 +114,10 @@
 
 ### Acceptance criteria
 
-<!-- Each item independently verifiable. This is what "done" means. -->
+<!-- Each item independently verifiable and ending with how it is checked — a
+     test name or a command, written as `— check: <test or command>`. A
+     criterion that cannot name its check is too vague and goes back to the
+     spec. This is what "done" means. -->
 
 - [ ]
 - [ ]

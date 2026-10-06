@@ -2,6 +2,12 @@
 
 Checked on 2026-10-06.
 
+*Amended 2026-10-06 by ADR-0008: the spec and the plan live on the tracker, not
+in the repository. The issue description is the spec, the `## Implementation
+plan` comment is the plan, and the repository holds code only. The rows and
+sections below that placed the spec and the plan in files are updated and
+marked.*
+
 ## Why this document exists
 
 The plugin covers the issue lifecycle (issue, plan, implement, review, close),
@@ -167,7 +173,7 @@ because the same idea tends to resurface later.
 | Full traceability chain requirement to column to endpoint to test | pspt | Reject | Needs artifacts we do not have. The useful core is kept separately below. |
 | Each acceptance criterion maps to a test or an explicit check | pspt, groundwork | Adopt | The narrow form of traceability: it makes "done" checkable and feeds the review's spec axis. |
 | One ADR per hard-to-reverse decision, decisions tagged as scope, ADR or term during the interview | groundwork | Adopt | Matches the docs discipline the plugin already states; tagging at the moment of decision avoids reconstructing it later. |
-| Plan skeleton validated by a script | pstack | Adopt | The plugin already validates its contracts with scripts; a plan with a fixed shape is checked the same way. |
+| Plan skeleton validated by a script | pstack | Adopt, narrowed (ADR-0008) | The plan's shape comes from the template generated from its schema; with no plan file in the repository there is nothing for a script to check. |
 | Plan prose rules (sentence length, banned punctuation), ten parallel haiku verification lanes, per-PR review gates with video | pstack | Reject | Style preferences and an expensive live-verification regime built for UI products. |
 | Vertical tracer-bullet slices with dependency graph and a human or unattended tag | groundwork | Adopt | Maps directly onto sub-issues in the tracker; the tag tells the workflow which slices may be built without the user. |
 | Stop for approval, and stop again when a file outside the plan must change | pspt | Adopt | Extends the existing in-progress gate to scope drift during implementation. |
@@ -187,7 +193,8 @@ because the same idea tends to resurface later.
 | Guard the context window: agents return pointers and findings, not dumps | pstack | Adopt | The reducers in the existing islands already work this way; it becomes an explicit rule. |
 | Arena: N competing candidates, pick a base, graft | pstack | Reject | High cost for every non-trivial artifact; kept only as an optional move inside grilling when a decision is one-way. |
 | Remote cloud workers, per-role model and effort config file | pstack | Reject | Machine-specific configuration and a runtime we cannot assume across Claude Code, Cursor and other agents. |
-| File-based handoff folder per feature | claude-sdd | Reject | The tracker holds status and comments, the repo holds the spec and plan; a third location duplicates both. |
+| File-based handoff folder per feature | claude-sdd | Reject | The tracker holds the spec, the plan and the history; a folder of files duplicates it. |
+| Spec and plan as files in the repository | claude-sdd, groundwork, pspt | Reject (ADR-0008, replaces the first decision) | Those frameworks have no tracker as the source of truth; this plugin does, so the issue description is the spec and the plan stays a comment. |
 | Orchestrator that does no work itself | claude-sdd | Reject | `issue-workflow` is already the orchestrator and also works; a pure router adds a layer. |
 | Review axes with different lenses, because the same prompt run N times finds the same things | pstack | Adopt as rationale | Our four axes already differ by rule source; this is the argument for keeping them independent. |
 | Model diversity per seat | pstack | Reject | Depends on named models and cost; independence by rule source is enough. |
@@ -208,7 +215,7 @@ because the same idea tends to resurface later.
 ### Shape
 
 One path, owned by `issue-workflow`, with the tracker as the source of truth
-for status and the repository as the home of the spec and the plan:
+for status, the spec and the plan (amended by ADR-0008):
 
 ```
 issue (tracker)
@@ -220,9 +227,11 @@ issue (tracker)
   -> close
 ```
 
-The phases and the human gate do not change. In todo the spec is posted as an
-issue comment; after the user moves the issue to in-progress the spec is the
-first commit on the branch and the plan points at it.
+The phases and the human gate do not change. The spec is the issue
+description, refined during planning for a complex issue and written after the
+user accepts it in chat; a change after work has started updates the
+description and adds a `## Spec change` comment. Nothing of the spec or the
+plan is committed.
 
 ### Skills
 
@@ -238,8 +247,8 @@ Five practice skills, small, with narrow triggers, called from the nodes of
 | `model-domain` | groundwork glossary tagging | grilling, spec |
 
 The spec layer is not a sixth practice skill: it is a step of `issue-workflow`
-with its own template, generated from a schema in `workflow-graph.json` like the
-other three templates, so it stays out of hand editing.
+that fills the full variant of the generated issue template, so it stays out
+of hand editing.
 
 ### Review
 
@@ -257,7 +266,7 @@ and their reducers, and the manifest lockstep.
 
 | Stage | Content from this document |
 |---|---|
-| Spec layer (DEMO-373) | The spec step and its generated template; adaptive threshold; the plan skeleton with its validator; scope-drift stop; the spec as first commit on the branch; migration of `docs/superpowers/{plans,specs}` paths read by `plan-context-fanout`. |
+| Spec layer (DEMO-373) | Amended by ADR-0008: the spec refinement step on the issue description with the adaptive threshold; a check per acceptance criterion; the affected-files list and scope-drift stop; the criteria verification table before review; `## Spec change` comments. No spec or plan files and no path migration. |
 | Practice skills (DEMO-374) | `grill`, `tdd`, `debug`, `dispatch-agents`, `model-domain`, written from scratch from the adopted patterns above, with narrow triggers. |
 | Review (DEMO-375) | Own instructions per axis, removal of the engine concept, judge on axis contradiction, update of `review-verify` and its contract. |
 | Refactor and cleanup (DEMO-376) | Replace every `superpowers:*` and `mattpocock-skills:*` reference, a validator that fails on any such reference, README and `CONTEXT.md` updates, lockstep manifest bump. |

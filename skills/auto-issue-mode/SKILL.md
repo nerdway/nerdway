@@ -70,7 +70,9 @@ Follow `nerd4rent:issue-writer` steps 1, 4 and 5 with these fixed choices:
 - no interview and no grilling session: draft from the description, and
   resolve gaps by reading the repo yourself;
 - one issue with an implementation checklist in the body, never sub-issues;
-- the **full** variant of `issue-writer/issue-template.md`.
+- the **full** variant of `issue-writer/issue-template.md`, every acceptance
+  criterion ending with its check (`— check: <test or command>`) — the
+  description is the spec (ADR-0008).
 
 Show the draft together with the resolved container and wait for **one**
 approval; it covers the container and the body. Then run `issue.create` and
@@ -104,16 +106,24 @@ number that proves it — before dispatching the next.
    `issue-workflow/plan-template.md` (banner and guidance comments removed; the
    body starts with `## Implementation plan`). For context use
    `nerd4rent:plan-context-fanout` when the `Workflow` tool is available to the
-   subagent, otherwise `issue-workflow`'s sequential steps 0 and 0b. Post the
-   plan with `issue.comment`; the phase stays `in-progress`. Report: the plan's
-   objective and steps in brief, the comment link.
+   subagent, otherwise `issue-workflow`'s sequential steps 0 and 0b. The
+   description is the spec and is not refined here (that needs the user); a
+   criterion without a check gets one in the plan. The plan lists its
+   Affected Files. Post the plan with `issue.comment`; the phase stays
+   `in-progress`. Report: the plan's objective and steps in brief, the comment
+   link.
 3. **Implementation.** Read the plan comment with `issue.read` and implement
    against it on the issue branch. Run the repo's tests and validators
    **before** touching code (baseline) and after; commit atomically per the
    repo's conventions (`CLAUDE.md`, `CONTEXT.md`, the entity page); push.
+   A file outside the plan's Affected Files may be changed without asking —
+   the run's consent covers it (an exemption on `no-change-outside-plan`) —
+   but first post an `issue.comment` that extends the plan with the file and
+   the reason. Finally fill `issue-workflow`'s **Criteria verification** table
+   (step 6a): one row per criterion of the spec, check, result, evidence.
    Report: commits, baseline vs final test results with pre-existing failures
-   unrelated to the change named separately, and every decision, gotcha or
-   command learned on the way.
+   unrelated to the change named separately, the criteria table, and every
+   decision, gotcha or command learned on the way.
 4. **Review.** Write phase `in-review`. Review `main...HEAD` (or the PR/MR
    base) along `issue-workflow`'s four axes — spec compliance against the
    acceptance criteria **and** the plan comment, repo standards
@@ -152,6 +162,9 @@ Stop the run, never force it, when:
   missing (`—`; a missing `pr.mark-ready` is only skipped);
 - `issue-start` or `issue-close` stops early (a dirty tree, a checkout off
   `main`/`master`, an existing branch);
+- the spec turns out wrong and would have to change — a spec change needs
+  the user's acceptance, which the run cannot ask for;
+- a criterion stays `fail` after stage 3 and its subagent could not fix it;
 - tests are red after stage 4 and its subagent could not fix them;
 - the merge has a conflict or a branch policy blocks it;
 - a permission or classifier denial blocks a tool a stage needs;

@@ -37,7 +37,14 @@
     },
     {
       "id": "no-change-outside-plan",
-      "rule": "No file outside the plan's affected files is changed without the user's consent in chat; after consent the file is added in a comment that extends the plan."
+      "rule": "No file outside the plan's affected files is changed without the user's consent in chat; after consent the file is added in a comment that extends the plan.",
+      "exemptions": [
+        {
+          "node": "auto-issue-mode",
+          "scope": "Files outside the plan's affected files of the one issue the run was invoked for, each added first in a comment that extends the plan with the reason; every other issue keeps the rule.",
+          "reason": "The run asks nothing after the drafted issue is approved; invoking it is the user's consent to the whole run, and the extending comment keeps the change visible on the tracker."
+        }
+      ]
     },
     {
       "id": "no-merge-without-green-verification",

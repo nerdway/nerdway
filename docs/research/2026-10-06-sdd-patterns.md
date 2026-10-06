@@ -27,13 +27,13 @@ a claim that the project never does it.
 
 ## Sources
 
-| Source | Link | Revision checked | Licence |
-|---|---|---|---|
-| pstack (upstream, Cursor plugin by Lauren Tan) | https://github.com/cursor/plugins/tree/main/pstack | `df581122c` | MIT (`pstack/LICENSE`) |
-| pstack-claude (Claude Code port of pstack, by lifeofladi) | https://github.com/lifeofladi/pstack-claude | `de39d5ba0` | MIT |
-| groundwork (mauriciovieira) | https://github.com/mauriciovieira/groundwork | `78c673d42` | MIT |
-| claude-sdd (Francisco-Donadio) | https://github.com/Francisco-Donadio/claude-sdd | `931459414` | MIT |
-| pspt (meQlause) | https://github.com/meQlause/pspt | `dea183c4e` | MIT |
+| Source | Link | Checked | Revision | Licence |
+|---|---|---|---|---|
+| pstack (upstream, Cursor plugin by Lauren Tan) | https://github.com/cursor/plugins/tree/main/pstack | 2026-10-06 | `df581122c` | MIT (`pstack/LICENSE`) |
+| pstack-claude (Claude Code port of pstack, by lifeofladi) | https://github.com/lifeofladi/pstack-claude | 2026-10-06 | `de39d5ba0` | MIT |
+| groundwork (mauriciovieira) | https://github.com/mauriciovieira/groundwork | 2026-10-06 | `78c673d42` | MIT |
+| claude-sdd (Francisco-Donadio) | https://github.com/Francisco-Donadio/claude-sdd | 2026-10-06 | `931459414` | MIT |
+| pspt (meQlause) | https://github.com/meQlause/pspt | 2026-10-06 | `dea183c4e` | MIT |
 
 Notes on identification:
 
@@ -159,7 +159,7 @@ because the same idea tends to resurface later.
 ## Decisions
 
 | Pattern | Source | Decision | Reason |
-|---|---|---|---|
+|---|---|---|---|---|
 | Spec states WHAT and WHY only; HOW is decided afterwards | claude-sdd, groundwork | Adopt | Keeps the spec stable while the plan changes, and gives the plan a fixed thing to be checked against. |
 | Spec is captured from what was said, sections that were never discussed stay empty | groundwork, pspt | Adopt | An invented acceptance criterion is worse than a visible gap; this is the failure the spec layer must not have. |
 | Spec required only for complex issues | (our grilling decision) | Adopt | None of the sources scale the spec to the task; the plugin does, with the threshold `issue-writer` already uses. |

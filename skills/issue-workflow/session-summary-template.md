@@ -33,6 +33,16 @@
 -
 -
 
+### Criteria verification
+
+<!-- The criteria table from the change set, once implementation is complete:
+     one row per acceptance criterion, check, result and evidence. Omit while
+     implementation is still in progress. -->
+
+| Criterion | Check | Result | Evidence |
+|-----------|-------|--------|----------|
+| | | | |
+
 ### Open questions / next steps
 
 <!-- What the next session should pick up, and what is still undecided. -->

@@ -100,6 +100,32 @@ A skill template file rendered from a schema body rather than written by hand â€
 with `node scripts/render-templates.ts`; a hand edit reddens the drift test.
 _Avoid_: example, boilerplate (both imply it may be edited in place)
 
+**Spec**:
+The issue description on the tracker: WHAT and WHY, in the sections of the
+`IssueSpec` schema, with acceptance criteria that each name their check. The
+tracker carries it (ADR-0008); the repository never holds a spec or plan file.
+For a complex issue the planner refines it to the full variant before the plan,
+writing it only after the user accepts it in chat.
+_Avoid_: PRD, spec file, requirements doc (all imply a file in the repo)
+
+**Spec change**:
+A change to the spec after work has started: the description is updated after
+the user accepts it in chat, and an issue comment opening with `## Spec change`
+records what changed and why. These comments are the spec's history.
+_Avoid_: spec edit (an edit alone loses the reason)
+
+**Affected files**:
+The section of the plan listing every file or directory the implementation will
+change. Changing anything else needs the user's yes in chat (frozen rule
+`no-change-outside-plan`), after which a comment extends the plan.
+_Avoid_: touched files (says what happened, not what was agreed)
+
+**Criteria verification**:
+The table filled before the move to review: one row per acceptance criterion
+with its check, `pass` or `fail`, and the evidence. A `fail` blocks review; the
+table goes into the session summary.
+_Avoid_: test results (covers only the tests, not every criterion)
+
 **Workflow island**:
 A stretch of the axis wide enough, independent enough and free enough of human
 input to run as one `Workflow` script. Islands sit inside a conversational

@@ -184,6 +184,19 @@ A typical feature, from idea to merged PR — with the graph moments marked:
 
 After every working session the agent posts a `## Session summary` comment (generated from the `SessionSummary` schema), so any future session — or any other agent — can resume from Linear alone.
 
+## The spec lives in the issue
+
+Spec-driven frameworks keep the specification and the plan as files in the repository, because they have nowhere else to put them. This plugin does: the tracker. The issue description is the spec — what to build and why, with acceptance criteria that each name the test or command that proves them. The `## Implementation plan` comment is the plan — how, including the list of files it will change. The repository holds code only.
+
+That keeps everything about one piece of work in one thread, dated and next to its status, readable by anyone with access to the tracker and without the code. In a client repository, developers who don't use your tracker see clean code and a PR description, with no spec files written for readers who don't need them.
+
+The path, spec → plan → build → verify:
+
+1. **Spec.** For a complex issue the agent compares the description with the full issue template, settles the gaps with you, and leaves anything nobody discussed empty instead of making it up. It shows you the new description and updates the issue only after you accept it. Small, clear issues skip this.
+2. **Plan.** The plan lists its affected files. If the agent later needs to change a file outside that list, it stops and asks; after your yes it adds the file in a comment extending the plan.
+3. **Build.** If the spec turns out wrong mid-work, the agent proposes the change, and after your yes updates the description and posts a `## Spec change` comment saying what changed and why — the issue thread stays the full history.
+4. **Verify.** Before review, the agent runs the check of every acceptance criterion and reports a table — criterion, check, pass or fail, evidence. A single fail keeps the issue out of review.
+
 ## Steering with Linear statuses
 
 The issue's status in Linear is the single source of truth for what the agent does next. You steer by moving the issue; the agent re-reads the status every turn.

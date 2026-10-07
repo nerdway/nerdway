@@ -358,7 +358,7 @@ export function applyJudgments(
       );
       return;
     }
-    const losers =prevails === "both" ? [] : collision.findings.filter((f) => f.axis !== prevails);
+    const losers = prevails === "both" ? [] : collision.findings.filter((f) => f.axis !== prevails);
     for (const loser of losers) overruled.add(loser);
     conflicts.push({
       file: collision.file,

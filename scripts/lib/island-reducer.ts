@@ -352,6 +352,12 @@ export function applyJudgments(
       );
       return;
     }
+    if (axes.includes("security") && prevails !== "security" && prevails !== "both") {
+      gaps.push(
+        `conflict at ${collision.file}:${collision.line}: verdict ${prevails} would overrule a security finding — all ${collision.findings.length} findings kept`,
+      );
+      return;
+    }
     const losers = prevails === "both" ? [] : collision.findings.filter((f) => f.axis !== prevails);
     for (const loser of losers) overruled.add(loser);
     conflicts.push({

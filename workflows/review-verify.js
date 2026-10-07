@@ -105,7 +105,7 @@ const SCHEMA_ReviewFindings = {
         "prevails": {
           "type": "string",
           "title": "Prevails",
-          "description": "The axis whose finding takes precedence, or both when the findings do not contradict each other and all stay.",
+          "description": "The axis whose finding takes precedence, or both when the findings do not contradict each other and all stay. A security finding is never overruled: when security is among the axes, any verdict other than security or both is invalid, so every finding stays and the conflict becomes a gap.",
           "enum": ["spec-compliance", "repo-standards", "correctness-regressions", "security", "both"]
         },
         "reason": {
@@ -447,7 +447,10 @@ if (collisions.length > 0) {
             `These findings survived adversarial verification on different axes and share the anchor ${collision.file}:${collision.line}:\n` +
             `${JSON.stringify(collision.findings, null, 2)}\n\n` +
             `Decide whether they ask for contradictory changes. Answer prevails with one of ${axes.join(', ')} when that finding takes precedence and the others are set aside, ` +
-            `or with both when the findings are compatible and every one of them stays.`,
+            `or with both when the findings are compatible and every one of them stays.` +
+            (axes.includes('security')
+              ? ` A security finding is never set aside: answer security or both — any other verdict is discarded and every finding stays.`
+              : ''),
           {
             label: `judge:${collision.file}:${collision.line}`,
             phase: 'Judge',
@@ -478,6 +481,10 @@ collisions.forEach((collision, index) => {
   const validVerdict = prevails === 'both' || axes.includes(prevails)
   if (!validVerdict || typeof reason !== 'string' || reason.trim().length === 0) {
     gaps.push(`conflict at ${collision.file}:${collision.line} got no valid judge verdict — all ${collision.findings.length} findings kept, nothing resolved silently`)
+    return
+  }
+  if (axes.includes('security') && prevails !== 'security' && prevails !== 'both') {
+    gaps.push(`conflict at ${collision.file}:${collision.line}: verdict ${prevails} would overrule a security finding — all ${collision.findings.length} findings kept`)
     return
   }
   const losers = prevails === 'both' ? [] : collision.findings.filter((f) => f.axis !== prevails)

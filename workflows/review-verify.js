@@ -487,7 +487,7 @@ collisions.forEach((collision, index) => {
     gaps.push(`conflict at ${collision.file}:${collision.line}: verdict ${prevails} would overrule a security finding — all ${collision.findings.length} findings kept`)
     return
   }
-  const losers =prevails === 'both' ? [] : collision.findings.filter((f) => f.axis !== prevails)
+  const losers = prevails === 'both' ? [] : collision.findings.filter((f) => f.axis !== prevails)
   for (const loser of losers) overruled.add(loser)
   conflicts.push({ file: collision.file, line: collision.line, axes, prevails, reason: reason.trim(), overruled: losers })
 })

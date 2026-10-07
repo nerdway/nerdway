@@ -1,31 +1,32 @@
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { SkillEvalsFile } from "./types/evals.ts";
-import { validateEvalsFile } from "./types/evals.ts";
+import { findEvalsFiles, validateEvalsFile } from "./types/evals.ts";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const evalsPath = join(
-  here,
-  "..",
-  "skills",
-  "new-project-workflow",
-  "evals",
-  "evals.json",
-);
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+let failed = false;
 
-const raw = JSON.parse(readFileSync(evalsPath, "utf8")) as SkillEvalsFile;
-const errors = validateEvalsFile(raw);
+for (const evalsPath of findEvalsFiles(repoRoot)) {
+  const path = relative(repoRoot, evalsPath);
+  const raw = JSON.parse(readFileSync(evalsPath, "utf8")) as SkillEvalsFile;
+  const errors = validateEvalsFile(raw);
 
-if (errors.length > 0) {
-  console.error("evals.json validation failed:");
-  for (const error of errors) {
-    console.error(`  - ${error}`);
+  if (errors.length > 0) {
+    failed = true;
+    console.error(`${path} validation failed:`);
+    for (const error of errors) {
+      console.error(`  - ${error}`);
+    }
+    continue;
   }
-  process.exit(1);
+
+  console.log(
+    `OK: ${raw.skill_name} has ${raw.evals.length} eval case(s) with assertions (${path})`,
+  );
 }
 
-console.log(
-  `OK: ${raw.skill_name} has ${raw.evals.length} eval case(s) with assertions`,
-);
+if (failed) {
+  process.exit(1);
+}

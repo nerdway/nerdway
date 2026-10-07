@@ -1,4 +1,6 @@
-/** Shape of skills/new-project-workflow/evals/evals.json */
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+
 export interface SkillEval {
   id: string;
   prompt: string;
@@ -36,4 +38,13 @@ export function validateEvalsFile(data: SkillEvalsFile): string[] {
   }
 
   return errors;
+}
+
+export function findEvalsFiles(repoRoot: string): string[] {
+  const skillsDir = join(repoRoot, "skills");
+  return readdirSync(skillsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(skillsDir, entry.name, "evals", "evals.json"))
+    .filter((path) => existsSync(path))
+    .sort();
 }

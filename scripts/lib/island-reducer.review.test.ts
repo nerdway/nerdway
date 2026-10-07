@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  applyJudgments,
   findAxisConflicts,
   reduceMappedFindings,
   reduceVerdicts,
@@ -244,6 +245,89 @@ test("findAxisConflicts ignores two findings of one axis on one anchor", () => {
   ];
 
   assert.deepEqual(findAxisConflicts(verified), []);
+});
+
+const VERDICT_STATS = { mapped: 7, verified: 4, rejected: 1, unverifiedOverflow: 0 };
+
+function collidingVerified() {
+  return [
+    verifiedAt("spec-compliance", "h.ts", 3, "add the flag"),
+    verifiedAt("security", "i.ts", 1, "unrelated"),
+    verifiedAt("security", "h.ts", 3, "drop the flag"),
+    verifiedAt("correctness-regressions", "j.ts", 8, "off by one"),
+  ];
+}
+
+test("applyJudgments without conflicts passes the findings through and counts zero overruled", () => {
+  const verified = [verifiedAt("security", "i.ts", 1, "unrelated")];
+
+  const result = applyJudgments(verified, [], { ...VERDICT_STATS, verified: 1 });
+
+  assert.deepEqual(result, {
+    findings: verified,
+    conflicts: [],
+    stats: { mapped: 7, verified: 1, rejected: 1, unverifiedOverflow: 0, overruled: 0 },
+    gaps: [],
+  });
+});
+
+test("applyJudgments drops the overruled finding and records it verbatim in conflicts", () => {
+  const verified = collidingVerified();
+
+  const result = applyJudgments(verified, [{ prevails: "security", reason: "the flag leaks a token" }], VERDICT_STATS);
+
+  assert.deepEqual(result.findings, [verified[1], verified[2], verified[3]]);
+  assert.deepEqual(result.conflicts, [
+    {
+      file: "h.ts",
+      line: 3,
+      axes: ["spec-compliance", "security"],
+      prevails: "security",
+      reason: "the flag leaks a token",
+      overruled: [verified[0]],
+    },
+  ]);
+  assert.deepEqual(result.stats, { mapped: 7, verified: 3, rejected: 1, unverifiedOverflow: 0, overruled: 1 });
+  assert.deepEqual(result.gaps, []);
+});
+
+test("applyJudgments with verdict both keeps every finding of the conflict", () => {
+  const verified = collidingVerified();
+
+  const result = applyJudgments(verified, [{ prevails: "both", reason: "they agree" }], VERDICT_STATS);
+
+  assert.deepEqual(result.findings, verified);
+  assert.deepEqual(result.conflicts, [
+    {
+      file: "h.ts",
+      line: 3,
+      axes: ["spec-compliance", "security"],
+      prevails: "both",
+      reason: "they agree",
+      overruled: [],
+    },
+  ]);
+  assert.equal(result.stats.overruled, 0);
+  assert.equal(result.stats.verified, 4);
+});
+
+test("applyJudgments never resolves a conflict silently when the verdict is missing or invalid", () => {
+  for (const judgment of [
+    null,
+    { prevails: "repo-standards", reason: "axis not in the conflict" },
+    { prevails: "security" },
+  ]) {
+    const verified = collidingVerified();
+
+    const result = applyJudgments(verified, [judgment], VERDICT_STATS);
+
+    assert.deepEqual(result.findings, verified);
+    assert.deepEqual(result.conflicts, []);
+    assert.equal(result.stats.overruled, 0);
+    assert.deepEqual(result.gaps, [
+      "conflict at h.ts:3 got no valid judge verdict — all 2 findings kept, nothing resolved silently",
+    ]);
+  }
 });
 
 test("severity helpers only accept the four axes and three severities", () => {

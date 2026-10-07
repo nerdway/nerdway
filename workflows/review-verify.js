@@ -105,7 +105,7 @@ const SCHEMA_ReviewFindings = {
         "prevails": {
           "type": "string",
           "title": "Prevails",
-          "description": "The axis whose finding takes precedence, or both when the findings do not contradict each other and all stay.",
+          "description": "The axis whose finding takes precedence, or both when the findings do not contradict each other and all stay. A security finding is never overruled: when security is among the axes, any verdict other than security or both is invalid, so every finding stays and the conflict becomes a gap.",
           "enum": ["spec-compliance", "repo-standards", "correctness-regressions", "security", "both"]
         },
         "reason": {

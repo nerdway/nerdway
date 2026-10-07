@@ -301,7 +301,9 @@ review has none. It answers which axis prevails, or `both` when the findings
 are compatible; the reducer then moves each overruled finding verbatim into
 `ReviewFindings.conflicts` and counts it in `stats.overruled`. A missing or
 invalid verdict keeps every finding and adds a gap — a conflict is never
-resolved silently.
+resolved silently. A `security` finding is never overruled: when `security`
+is in the conflict, only `security` or `both` is a valid verdict, and any
+other one is treated as invalid by the reducer, not by the judge's prompt.
 _Avoid_: arbiter, tie-breaker (it does not break vote ties between sceptics)
 
 **Rejection rate**:

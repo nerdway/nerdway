@@ -110,11 +110,16 @@ number that proves it — before dispatching the next.
    subagent, otherwise `issue-workflow`'s sequential steps 0 and 0b. The
    description is the spec and is not refined here (that needs the user); a
    criterion without a check gets one in the plan. The plan lists its
-   Affected Files. Post the plan with `issue.comment`; the phase stays
+   Affected Files and sets its **Test approach**: `TDD` with the seams, or
+   `no tests` only with a reason and the stand-in check. Post the plan with `issue.comment`; the phase stays
    `in-progress`. Report: the plan's objective and steps in brief, the comment
    link.
 3. **Implementation.** Read the plan comment with `issue.read` and implement
-   against it on the issue branch. Run the repo's tests and validators
+   against it on the issue branch, in the mode its **Test approach** sets,
+   without asking: `TDD` follows `nerd4rent:tdd` against the listed seams;
+   `no tests` is a plain implementation that runs the stand-in check the
+   reason names; a plan without a test approach is implemented with TDD and
+   the assumption is reported. Run the repo's tests and validators
    **before** touching code (baseline) and after; commit atomically per the
    repo's conventions (`CLAUDE.md`, `CONTEXT.md`, the entity page); push.
    A file outside the plan's Affected Files may be changed without asking —
@@ -123,7 +128,9 @@ number that proves it — before dispatching the next.
    the reason. Finally fill `issue-workflow`'s **Criteria verification** table
    (step 6a): one row per criterion of the spec, check, result, evidence.
    Report: commits, baseline vs final test results with pre-existing failures
-   unrelated to the change named separately, the criteria table, and every
+   unrelated to the change named separately, the criteria table, the test
+   approach (mode, and under `no tests` the reason and the stand-in check's
+   result), and every
    decision, gotcha or command learned on the way.
 4. **Review.** Write phase `in-review`. Review `main...HEAD` (or the PR/MR
    base) along `issue-workflow`'s four axes — spec compliance against the
@@ -179,7 +186,8 @@ picks the run up from the issue's phase.
 
 Close with the run's **evidence**: issue ID and link (per the tracker
 adapter's `## URL`), PR/MR number, merge commit, test results (final, with
-pre-existing unrelated failures listed apart), and what went to nerdbrain.
+pre-existing unrelated failures listed apart), the test approach with its
+reason whenever the run left TDD, and what went to nerdbrain.
 
 ## Related skills
 
@@ -189,6 +197,7 @@ pre-existing unrelated failures listed apart), and what went to nerdbrain.
 - `nerd4rent:issue-start` / `nerd4rent:issue-close` — the chains of stages 1
   and 5.
 - `nerd4rent:plan-context-fanout` — optional context island for stage 2.
+- `nerd4rent:tdd` — the implementation loop of stage 3 under `mode: TDD`.
 - `nerd4rent:nerdbrain-wiki` — the write path of stage 6.
 - `nerd4rent:issue-next-step` — may start a run at entry B for an issue ID
   once the user picks the autonomous mode in chat.

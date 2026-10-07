@@ -263,13 +263,18 @@ Use the bundled `plan-template.md` sections (Polish or English — match the
 issue language):
 
 - **Objective**, **Scope** (in/out), **Technical Approach**,
-  **Affected Files**, **Implementation Steps**, **Acceptance Criteria**,
-  **Risks**, **Dependencies**
+  **Affected Files**, **Implementation Steps**, **Test approach**,
+  **Acceptance Criteria**, **Risks**, **Dependencies**
 
 **Affected Files** lists every file or directory the implementation will
 change; it is what the scope stop in step 6 checks against. Each acceptance
 criterion names its check (`— check: <test or command>`), copied from the spec
 or added here for a small issue.
+
+**Test approach** is `TDD` by default, with the seams the tests will be written
+against. Choose `no tests` only with a reason and the nearest runnable check
+that stands in for a test — a change with no behaviour to drive, such as pure
+prose. The user approves the mode together with the plan; step 5 reads it.
 
 `plan-template.md` and `session-summary-template.md` are **generated** from the
 `ImplementationPlan` and `SessionSummary` schemas in `workflow-graph.json`
@@ -309,8 +314,7 @@ Run the session **inline** per this protocol:
 
 If `mattpocock-skills:grilling` / `domain-modeling` are available in the
 session, you may use them for question and CONTEXT/ADR formats — the inline
-rules above always work without them (same graceful degradation as the
-implementation modes). Never delegate to the `grill-me` / `grill-with-docs`
+rules above always work without them. Never delegate to the `grill-me` / `grill-with-docs`
 wrappers: they carry `disable-model-invocation: true` and only the user can
 run them, manually, as slash commands.
 
@@ -376,19 +380,23 @@ here first:
    branch already exists, missing VCS CLI), fix the reported cause or
    resolve it with the user — never re-run the chain blindly.
 
-### 5. Pick an implementation mode
+### 5. Take the test approach from the plan
 
-Offer the modes **actually available in the session** (check the available
-skills list; degrade gracefully — if a family is absent, omit it silently):
+There is no menu of implementation modes: the plan's **Test approach**,
+approved with the move to `in-progress`, already decided it.
 
-1. **Superpowers skills** (e.g. `superpowers:test-driven-development`,
-   `superpowers:subagent-driven-development`) — if any are available.
-2. **Matt Pocock skills** (installed via `npx skills` into `~/.agents/skills`)
-   — if any are available.
-3. **Plain agent** — no framework skill; always available.
+- `mode: TDD` → invoke `nerd4rent:tdd` and implement against the seams the
+  plan lists.
+- `mode: no tests` → implement plainly and run the stand-in check the plan's
+  reason names. A `no tests` plan without a reason is not approved for
+  implementation: ask for the reason and the check, and extend the plan with
+  an `issue.comment` before writing code.
+- No test approach (a plan written before the field existed) → ask the user
+  in chat which mode to use, with TDD as the recommendation, rather than
+  guessing.
 
-If only the plain agent is available, just proceed — don't present a
-one-option menu.
+Leaving TDD is never silent: the mode, and under `no tests` the reason and the
+stand-in check's result, go into the session summary's **Test approach**.
 
 ### 6. Implement
 
@@ -599,6 +607,8 @@ session's last push.
 - `nerd4rent:project-continue` — reads the checkpoint this skill writes and
   answers "where were we" for the project; it hints at the issue ID to type
   here, never enters this workflow by itself.
-- Superpowers / Matt Pocock skills — optional implementation and review modes;
-  detect availability per session, degrade gracefully when absent.
+- `nerd4rent:tdd` — the implementation loop step 5 hands off to under
+  `mode: TDD`.
+- Superpowers / Matt Pocock skills — optional review engines; detect
+  availability per session, degrade gracefully when absent.
 - `gitlab-to-linear` / `simgit` — GitLab → Linear import (separate flow).

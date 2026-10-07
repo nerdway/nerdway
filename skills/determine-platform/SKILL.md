@@ -65,9 +65,12 @@ github:
 
 Check the sources in this order and keep the first one that yields a config:
 
-1. **Repo `CLAUDE.md`** at `git rev-parse --show-toplevel`: the section from
-   the line-start heading `## Platform` to the next line-start `## ` (or EOF),
-   holding one fenced `yaml` block.
+1. **Repo `CLAUDE.md`** at `git rev-parse --show-toplevel`, read from disk as
+   `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes: the section from the
+   line-start heading `## Platform` to the next line-start `## ` (or EOF),
+   holding one fenced `yaml` block. A broken section (exit code `4` there)
+   yields no config here: this skill is the one that rewrites it, so note
+   what was wrong, report it in Step 6 and go on to source 2.
 2. **Entity page frontmatter** (`~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md`,
    slug from the SessionStart inject): the `platform:` key.
 3. **Legacy entity page alias**: a `linear:` block without `platform:` means
@@ -172,9 +175,12 @@ same section. When the user declines or it stops, carry on: without a
 ## Step 6 — Return the result
 
 Print the YAML block — including `statuses` when `bind-statuses` wrote it —
-and where it was written (or that nothing changed). The repo `CLAUDE.md` is
-not reloaded mid-session, so the calling skill takes the platform from this
-output, not from its own copy of `CLAUDE.md`.
+and where it was written (or that nothing changed). The calling skill takes
+the platform from this output, or reads the file again as
+`${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes. A `CLAUDE.md` that
+is part of the conversation context is no source: Claude Code loaded it
+before this write and never reloads it, and Cursor loads it only with
+Third-Party Imports on.
 
 ## Boundaries
 

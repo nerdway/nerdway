@@ -40,7 +40,8 @@ directories up from this skill's base directory.
 Pick `<tracker>` and `<vcs>` from the first source that has them:
 
 1. the platform the caller passed;
-2. the `## Platform` section of the repo `CLAUDE.md`;
+2. the `## Platform` section of the repo `CLAUDE.md`, read from disk as
+   `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes, never from context;
 3. the entity page frontmatter `platform:` — a legacy `linear:` block there
    means `tracker: linear`.
 

@@ -272,18 +272,11 @@ _Avoid_: implementation pointer, link (both hide the drift-check role)
 **Review axis**:
 One of the four fixed, mutually independent review dimensions —
 `spec-compliance`, `repo-standards`, `correctness-regressions`, `security` —
-each mapped by its own agent in the review island. An axis whose engine is
-missing degrades to plain-agent; it is never removed.
-_Avoid_: dimension, reviewer (a reviewer is who runs an axis, not the axis)
-
-**Engine**:
-The review path driving one axis — e.g. `superpowers`, `matt-pocock`,
-`code-review`, `plain-agent` — detected per session in `review-menu`,
-because only the main agent sees the session's skill list. A free string in
-the contract (a new engine never forces a contract bump; the island degrades
-unknown values to plain-agent) and a prompt hint for the axis mapper, never
-a hard invocation.
-_Avoid_: reviewer, tool (both suggest the island calls it directly)
+each mapped by its own agent in the review island from its own instructions
+and rule source. All four always run; the review request carries only the
+change range, never an axis list or an external review skill to drive one.
+_Avoid_: dimension, reviewer (a reviewer is who runs an axis, not the axis),
+engine (the removed notion of an external skill driving an axis)
 
 **Rejection rule**:
 The adversarial verification threshold: 3 independent sceptics each try to

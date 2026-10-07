@@ -8,6 +8,13 @@ plan` comment is the plan, and the repository holds code only. The rows and
 sections below that placed the spec and the plan in files are updated and
 marked.*
 
+*Amended 2026-10-07: three other projects, read only superficially, were
+dropped as sources. The decisions that cited them keep their
+verdict and reason, and now cite pstack, superpowers or Matt Pocock where those
+have the same pattern, or "own decision" where none does. The skills the plugin
+actually borrows, superpowers and Matt Pocock's, are read in full in their own
+section, with one decision per practice.*
+
 ## Why this document exists
 
 The plugin covers the issue lifecycle (issue, plan, implement, review, close),
@@ -16,13 +23,19 @@ code review and grilling come from `superpowers:*` and `mattpocock-skills:*`,
 and nothing leads from requirements to a specification that steers the plan.
 The goal of the follow-up work is a plugin that carries the whole path on its
 own. Before writing any skill, this document reads an existing agent-workflow
-system, pstack, decides pattern by pattern what to adopt and what to reject,
-and ends with the target architecture the next stages build.
+system, pstack, and the two skill libraries the plugin borrows from today,
+superpowers and Matt Pocock's skills. It decides pattern by pattern what to
+adopt and what to reject, decides per practice whether the plugin writes its
+own skill, and ends with the target architecture the next stages build.
 
-The project is read for patterns, not for text. Nothing here is copied, and
+The sources are read for patterns, not for text. Nothing here is copied, and
 the skills we write are written from scratch.
 
 ## How the sources were read
+
+This section and the next two describe pstack. superpowers and Matt Pocock
+were read differently, in full, and their sources and reading method are in
+their own section below.
 
 The repository was inspected through the GitHub API on the date above: file
 tree, licence, the skills and agents most relevant to the seven categories
@@ -480,7 +493,7 @@ because the same idea tends to resurface later.
 | Fourth beat "check": the repository's validators must be quiet, not only the tests | superpowers (`test-driven-development`: output pristine; `verification-before-completion`) | Adopt | In this repository that means the validators and the full test glob, already the stated definition of done. |
 | Verify the foundation is green before starting a slice | own decision | Adopt | Separates existing breakage from new breakage before any code is written. |
 | Failing repro committed before the fix | pstack | Adopt | The history shows the bug and the fix as two steps and fits atomic commits. |
-| Debugging: reproduce first, hypotheses eliminated with evidence, mechanism confirmed before the fix, smallest change the evidence justifies | pstack | Adopt | The only source with a real method; it becomes the debugging practice skill. |
+| Debugging: reproduce first, hypotheses eliminated with evidence, mechanism confirmed before the fix, smallest change the evidence justifies | pstack, superpowers (`systematic-debugging`), Matt Pocock (`diagnosing-bugs`) | Adopt | The sources agree on this core; it becomes the debugging practice skill, extended per the practice decisions below. |
 | Debugging: the author must always drive the real UI through a browser skill and never ask the user | pstack | Reject | Assumes a UI surface and a browser tool; replaced by "reproduce on the surface the bug lives on". |
 | Numbered regression register wired into specs | own decision | Reject | Bookkeeping we do not need; a fixed bug gets a regression test and a commit that says so. |
 | Fan-out: frame the done predicate, self-contained briefs, report as pass, issues or blocked with evidence, aggregate into a table with gaps | pstack | Adopt | Fits the existing workflow islands and makes dispatch a discipline instead of ad hoc. |
@@ -504,6 +517,57 @@ because the same idea tends to resurface later.
 | Verification asset: a project CLI plus a feature map to drive the running app | pstack | Reject for now | Valuable for applications; this repository has no running app. Revisit if the plugin gains one. |
 | Installing external MCP servers and toolchain files for the user | own decision | Reject | Contradicts the goal of no external dependencies. |
 | Project conventions read from a config section of `CLAUDE.md` | own decision | Reject | We already read `## Platform` and `CONTEXT.md`; a second config surface duplicates them. |
+
+### Practice decisions: superpowers and Matt Pocock
+
+Each of the nine practices read in the superpowers and Matt Pocock section gets
+one of three verdicts:
+
+- **own skill**: the practice is on the `issue-workflow` path and must work
+  without another plugin (in Cursor, for a user without superpowers, and in
+  Claude Code on this machine, where Matt Pocock's skills are not loaded);
+- **thin overlay**: the external skill is good as it is, and our part is a few
+  rules adding plugin context (tracker, phases, `## Platform`) around it;
+- **dependency stays**: the practice is off the plugin's path, or the user runs
+  the external skill by hand and the plugin never calls it.
+
+"Own" also covers a practice that becomes a section of an existing skill
+rather than a new one.
+
+| Practice | Decision | What we take | What we leave out | Reason |
+|---|---|---|---|---|
+| TDD | Own skill `tdd` (DEMO-374) | Verify red as a mandatory step; name the break each test catches; expected values from an independent source, the tautological test as a named defect; one test, one minimal implementation per cycle; behaviour not text; mock only at system boundaries | The superpowers iron law (delete code written before its test, no exit without the human's permission); confirming seams with the user during implementation, since the seams go into the plan's test approach; Matt Pocock's refactoring outside the loop | It is the default implementation mode, so it must exist on every host. Our exit with a recorded reason contradicts the superpowers law, so the external skill cannot be wrapped, only replaced |
+| Debugging | Own skill `debug` (DEMO-374) | pstack's method, plus Matt Pocock's feedback loop as the first phase (one command, already run, red on this bug), minimising the repro, 3 to 5 ranked falsifiable hypotheses shown to the user without blocking, tagged debug logs, the regression test only at a correct seam, the confirmed hypothesis in the commit; superpowers' stop after three failed fixes and backward tracing | Validation at every layer (defense in depth), which breaks our rule against handling impossible cases; the hand-off to an architecture skill we do not ship; the long pressure-test framing | Called from implementation whenever a test or check fails unexpectedly; the two external skills disagree (one hypothesis against several), and our skill has to pick one: several, ranked |
+| Subagent dispatch | Own skill `dispatch-agents` (DEMO-374) | The independence test before parallel dispatch; a self-contained prompt with an explicit output shape; the diff, not the agent's report, as evidence; never two writers at once; a hard cap on fix rounds; artifacts handed over as files or pointers | `subagent-driven-development` as a whole: its plan file, the `.superpowers/sdd/` workspace, the mandatory worktree and the model chosen per role | The islands and the implementation already fan out; the superpowers execution loop is built around a plan file that ADR-0008 removed |
+| Grilling | Own skill `grill` (DEMO-374) | Matt Pocock's four rules, already restated as the inline protocol; from `brainstorming`, 2 to 3 approaches with a recommendation for one-way decisions only, and the scope check that splits an oversized request before refining it (it matches the sub-issue split in `issue-writer`) | `brainstorming`'s gate on every task, its spec file and its hand-off to `writing-plans`; the user-only `grill-me` and `grill-with-docs` wrappers | Called from `issue-writer` and planning. Today the inline protocol is what actually runs, because the Matt Pocock skill is not loaded; one skill replaces the two inline copies |
+| Domain modelling | Own skill `model-domain` (DEMO-374) | Challenge terms against the glossary, sharpen fuzzy words, test with invented scenarios, cross-check claims against the code; update `CONTEXT.md` inline with an `_Avoid_` line; the three-condition ADR test; a one-paragraph ADR is enough | A glossary-only `CONTEXT.md` (ours keeps `## Standards`); the multi-context `CONTEXT-MAP.md`, which this repository does not need | Feeds the grilling and the spec; the plugin already follows the same ADR and glossary layout, so writing it down costs little |
+| Review | Own, inside `review-verify` (DEMO-375), not a practice skill | The twelve-smell baseline as default rules of the `repo-standards` axis where a repository documents nothing, always as judgement calls the repository overrides; `receiving-code-review`'s rule to verify a finding before acting on it, when addressing verified findings | One generalist reviewer; "never merge across axes", since the judge on contradiction stays; the engine hints | The four axes, the reducer and the sceptics are already ours; DEMO-375 removes the engines |
+| Planning | Own, stays in `issue-workflow` planning | "No placeholders" as a plan failure; global constraints copied into every step that needs them; a self-review mapping every acceptance criterion to a step; slices with blocking edges and the HITL or AFK tag (already adopted above) | The plan file, full code inside the plan, the zero-context reader, the long list of user stories | ADR-0008 keeps the plan on the tracker and its shape comes from the generated template |
+| Verification before completion | Own, folded into the `tdd` check beat and the per-criterion verification table before review | "The command, its output, then the claim"; an agent's report is a claim, not evidence | A separate always-on skill | ADR-0008 already requires the verification table; a sixth skill would duplicate it |
+| Finishing a branch | Own, already `issue-close` | Running the full suite on the tree being integrated, as an open point for `issue-close` | The local merge option, the integration menu right after implementation, worktree clean-up | `issue-close` merges through the PR with a merge commit, and the workflow never offers closure by itself |
+
+**No practice is a thin overlay.** An overlay keeps a reference to the external
+skill, which the independence validator planned for DEMO-376 forbids, and it
+works only where that plugin is loaded: Matt Pocock's skills are not loaded in
+Claude Code here, and superpowers is absent from any host where the user did
+not install it.
+
+**No practice stays a dependency.** All nine sit on the plugin's own path, or
+are already covered by a skill the plugin ships. A user may keep either library
+installed for work outside the plugin (`writing-skills`, worktrees, `teach`,
+`prototype` and the rest); the plugin neither refers to nor needs them. One
+side effect stays the user's to manage: with superpowers installed, its
+SessionStart hook keeps steering every session towards `brainstorming` and its
+own TDD before the plugin's gates run.
+
+**Licence.** Both libraries are MIT. The skills take patterns and are written
+in our own words, so no copyright notice is required. The inline grilling
+protocol in `issue-workflow` follows Matt Pocock's `grilling` closely; the
+`grill` skill rewrites it rather than moving it, and like `model-domain` (the
+three-condition ADR test) credits Matt Pocock where the skill is documented. The smell baseline is
+Fowler's (*Refactoring*, chapter 3) as Matt Pocock lists it, and is credited
+that way. A skill that ends up reproducing a list close to its original
+carries the MIT copyright line of that source.
 
 ## Recommended target architecture
 
@@ -535,10 +599,10 @@ Five practice skills, small, with narrow triggers, called from the nodes of
 
 | Skill | Takes from | Called from |
 |---|---|---|
-| `grill` | Matt Pocock grilling loop, the code-first rule | issue-writer, planning, spec |
-| `tdd` | per-criterion loop, superpowers never-weaken rules and pristine output, the check beat | implementation |
-| `debug` | pstack bug-fix method, failing repro before the fix | implementation, when a test or check fails unexpectedly |
-| `dispatch-agents` | pstack swarm framing and reporting, superpowers opt-in isolation | any node that fans out |
+| `grill` | Matt Pocock grilling loop, the code-first rule, approaches with a recommendation for one-way decisions | issue-writer, planning, spec |
+| `tdd` | per-criterion loop, superpowers verify red and never-weaken rules, Matt Pocock tautology and slicing rules, the check beat with evidence | implementation |
+| `debug` | pstack bug-fix method, Matt Pocock feedback loop and ranked hypotheses, superpowers three-fix breaker, failing repro before the fix | implementation, when a test or check fails unexpectedly |
+| `dispatch-agents` | pstack swarm framing and reporting, superpowers independence test, opt-in isolation and diff-over-report | any node that fans out |
 | `model-domain` | Matt Pocock glossary and ADR discipline | grilling, spec |
 
 The spec layer is not a sixth practice skill: it is a step of `issue-workflow`
@@ -562,9 +626,9 @@ and their reducers, and the manifest lockstep.
 | Stage | Content from this document |
 |---|---|
 | Spec layer (DEMO-373) | Amended by ADR-0008: the spec refinement step on the issue description with the adaptive threshold; a check per acceptance criterion; the affected-files list and scope-drift stop; the criteria verification table before review; `## Spec change` comments. No spec or plan files and no path migration. |
-| Practice skills (DEMO-374) | `grill`, `tdd`, `debug`, `dispatch-agents`, `model-domain`, written from scratch from the adopted patterns above, with narrow triggers. |
-| Review (DEMO-375) | Own instructions per axis, removal of the engine concept, judge on axis contradiction, update of `review-verify` and its contract. |
-| Refactor and cleanup (DEMO-376) | Replace every `superpowers:*` and `mattpocock-skills:*` reference, a validator that fails on any such reference, README and `CONTEXT.md` updates, lockstep manifest bump. |
+| Practice skills (DEMO-374) | `grill`, `tdd`, `debug`, `dispatch-agents`, `model-domain`, written from scratch from the adopted patterns above and the practice decisions (take and leave-out columns), with narrow triggers. Verification before completion folds into `tdd`; no thin overlay and no remaining dependency. |
+| Review (DEMO-375) | Own instructions per axis, removal of the engine concept, judge on axis contradiction, update of `review-verify` and its contract; the smell baseline as default `repo-standards` rules and verify-before-acting when addressing findings. |
+| Refactor and cleanup (DEMO-376) | Replace every `superpowers:*` and `mattpocock-skills:*` reference, a validator that fails on any such reference, README and `CONTEXT.md` updates, lockstep manifest bump. The practice decisions leave no reference to keep, so "every reference" holds without exceptions. |
 
 ## Open points left to the later stages
 
@@ -575,3 +639,6 @@ and their reducers, and the manifest lockstep.
 - Whether the judge for contradicting axes is a seventh agent or a role of the
   existing synthesizer; this is a decision for the review stage with its own
   trade-off.
+- Whether `issue-close` runs the full test suite on the tree it is about to
+  merge, the one part of superpowers' `finishing-a-development-branch` worth
+  taking; it would add a check to a deliberately mechanical chain.

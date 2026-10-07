@@ -47,9 +47,11 @@ test("the real ReviewFindings schema keeps its table intact when a finding carri
         confidence: "high",
       },
     ],
-    stats: { mapped: 1, verified: 1, rejected: 0, unverifiedOverflow: 0 },
+    stats: { mapped: 1, verified: 1, rejected: 0, unverifiedOverflow: 0, overruled: 0 },
+    conflicts: [],
   });
-  const rows = rendered.split("\n").filter((line) => line.startsWith("|"));
+  const findingsSection = rendered.split("### Findings")[1].split("###")[0];
+  const rows = findingsSection.split("\n").filter((line) => line.startsWith("|"));
   assert.equal(rows.length, 3, "header, separator and exactly one data row");
   assert.equal(
     rows[2],

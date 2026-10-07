@@ -285,8 +285,28 @@ with fewer than 2 cast votes is dropped as unverified and counted — it never
 passes because verification failed.
 _Avoid_: majority vote (hides that the sceptics' goal is to refute), veto
 
+**Axis conflict**:
+Two or more verified findings from different review axes on the same
+`file:line` anchor, detected by the reducer in plain code. Deduplication keeps
+the most severe finding per anchor only within one axis, so a collision across
+axes survives to verification instead of silently losing one side. Findings on
+neighbouring lines are not a conflict: the criterion is the exact anchor, by
+design, so detection stays deterministic and free of an arbitrary window.
+_Avoid_: contradiction (the reducer cannot tell whether the findings disagree;
+only the judge can), duplicate
+
+**Review judge**:
+The `review-judge` agent called once per axis conflict, and never when a
+review has none. It answers which axis prevails, or `both` when the findings
+are compatible; the reducer then moves each overruled finding verbatim into
+`ReviewFindings.conflicts` and counts it in `stats.overruled`. A missing or
+invalid verdict keeps every finding and adds a gap — a conflict is never
+resolved silently.
+_Avoid_: arbiter, tie-breaker (it does not break vote ties between sceptics)
+
 **Rejection rate**:
-`rejected / (verified + rejected)` from `ReviewFindings.stats`, read over the
+`rejected / (verified + overruled + rejected)` from `ReviewFindings.stats`
+(an overruled finding passed verification; the judge set it aside later), read over the
 last ~5 review runs — a single run capped at 12 findings has a granularity of
 roughly 8%, too coarse to judge. Below **10%** the verifier is decoration:
 the sceptics refute nothing, so the stage buys latency instead of signal.

@@ -212,7 +212,7 @@ export interface VerdictsReduceInput {
 
 export interface VerdictsReduceResult {
   verified: VerifiedFinding[];
-  stats: { mapped: number; verified: number; rejected: number; unverifiedOverflow: number };
+  stats: ReviewStats;
   gaps: string[];
 }
 
@@ -253,7 +253,7 @@ export function reduceMappedFindings(
     mappedCount += findings.length;
     for (const finding of findings as MappedFinding[]) {
       if (!isWellFormed(finding)) continue;
-      const anchor = `${finding.file.trim()}:${finding.line}`;
+      const anchor = `${axis}|${finding.file.trim()}:${finding.line}`;
       const entry: CandidateFinding = {
         axis,
         file: finding.file.trim(),
@@ -281,6 +281,96 @@ export function reduceMappedFindings(
   const overflow = ordered.slice(limits.maxVerifiedFindings);
 
   return { candidates, overflow, mappedCount, gaps };
+}
+
+export interface AnchorCollision {
+  file: string;
+  line: number;
+  findings: VerifiedFinding[];
+}
+
+export function findAxisConflicts(verified: VerifiedFinding[]): AnchorCollision[] {
+  const byAnchor = new Map<string, AnchorCollision>();
+  for (const finding of verified) {
+    const anchor = `${finding.file}:${finding.line}`;
+    const group = byAnchor.get(anchor);
+    if (group === undefined) {
+      byAnchor.set(anchor, { file: finding.file, line: finding.line, findings: [finding] });
+    } else {
+      group.findings.push(finding);
+    }
+  }
+  return [...byAnchor.values()].filter((group) => new Set(group.findings.map((f) => f.axis)).size > 1);
+}
+
+export interface Judgment {
+  prevails?: unknown;
+  reason?: unknown;
+}
+
+export interface AxisConflict {
+  file: string;
+  line: number;
+  axes: ReviewAxis[];
+  prevails: ReviewAxis | "both";
+  reason: string;
+  overruled: VerifiedFinding[];
+}
+
+export interface ReviewStats {
+  mapped: number;
+  verified: number;
+  rejected: number;
+  unverifiedOverflow: number;
+}
+
+export interface JudgmentsReduceResult {
+  findings: VerifiedFinding[];
+  conflicts: AxisConflict[];
+  stats: ReviewStats & { overruled: number };
+  gaps: string[];
+}
+
+export function applyJudgments(
+  verified: VerifiedFinding[],
+  judgments: Array<Judgment | null>,
+  stats: ReviewStats,
+): JudgmentsReduceResult {
+  const gaps: string[] = [];
+  const conflicts: AxisConflict[] = [];
+  const overruled = new Set<VerifiedFinding>();
+
+  findAxisConflicts(verified).forEach((collision, index) => {
+    const axes = collision.findings.map((f) => f.axis);
+    const judgment = judgments[index];
+    const prevails = judgment?.prevails;
+    const reason = judgment?.reason;
+    const validVerdict = prevails === "both" || axes.includes(prevails as ReviewAxis);
+    if (!validVerdict || typeof reason !== "string" || reason.trim().length === 0) {
+      gaps.push(
+        `conflict at ${collision.file}:${collision.line} got no valid judge verdict — all ${collision.findings.length} findings kept, nothing resolved silently`,
+      );
+      return;
+    }
+    const losers = prevails === "both" ? [] : collision.findings.filter((f) => f.axis !== prevails);
+    for (const loser of losers) overruled.add(loser);
+    conflicts.push({
+      file: collision.file,
+      line: collision.line,
+      axes,
+      prevails: prevails as ReviewAxis | "both",
+      reason: reason.trim(),
+      overruled: losers,
+    });
+  });
+
+  const findings = verified.filter((f) => !overruled.has(f));
+  return {
+    findings,
+    conflicts,
+    stats: { ...stats, verified: findings.length, overruled: overruled.size },
+    gaps,
+  };
 }
 
 export function reduceVerdicts(

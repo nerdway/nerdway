@@ -434,7 +434,7 @@ the review island.
 
 The review is not a menu of one reviewer: it runs along **four fixed,
 mutually independent axes**, mapped in parallel, reduced deterministically,
-verified adversarially and only then synthesized. Each axis carries its own
+verified adversarially, judged where axes collide, and only then synthesized. Each axis carries its own
 instructions in `workflows/review-verify.js`; no external review skill drives
 an axis, and `/code-review` stays outside this flow.
 
@@ -457,17 +457,25 @@ is nothing else to choose.
 1. **Map** — one mapper per axis, all four concurrent, each confined to its
    axis.
 2. **Reduce** — plain code, no model: schema-invalid records dropped, dedup by
-   `file:line` (the most severe finding wins the anchor), grouped by axis,
-   sorted by severity, capped at 12 findings.
+   `file:line` within one axis (the most severe finding of that axis wins the
+   anchor; findings of different axes on one anchor all go on to
+   verification), sorted by severity, capped at 12 findings.
 3. **Verify** — 3 independent sceptics per finding, each prompted to *refute*
    it (the opposite goal to the reviewer's). **Rejection rule: 2 or more
    refutations out of 3.** A finding with fewer than 2 cast votes is dropped
    as unverified — it never passes because verification failed. Sceptic pairs
    run in batches of at most 8, honouring the node's `maxWidth: 8` budget by
    construction.
-4. **Synthesize** — the agent writes *only* the summary; the findings list is
-   assembled verbatim by the reducer, so no model can mutate or add a finding
-   after verification.
+4. **Judge** — only when verified findings from different axes share one
+   `file:line` anchor (an **axis conflict**, detected by plain code). One
+   `review-judge` per conflict, in batches of at most 8, answers which axis
+   prevails, or `both` when the findings are compatible. The reducer applies
+   the verdict: an overruled finding leaves `findings` and stays verbatim in
+   `conflicts`; a missing or invalid verdict keeps every finding and adds a
+   `gaps` entry. A review without conflicts runs no judge at all.
+5. **Synthesize** — the agent writes *only* the summary; the findings list is
+   assembled verbatim by the reducer, so no model can add a finding after
+   verification, and the judge can only set one aside with a recorded reason.
 
 **When `Workflow` is absent but `Task` is available (Cursor), run the island
 manually, stage by stage** — `workflows/review-verify.js` remains the single
@@ -487,18 +495,27 @@ source of the prompts and shapes:
    candidates-stage output (an integer edit of the join payload, not a
    hand-edit of findings) and pipe `{candidates, votes, mappedCount,
    overflowCount}` through `node scripts/island-reduce.ts review verdicts`.
-5. **Synthesize** — one `review-synthesizer` Task with the script's summary
-   prompt and the verified findings + stats. Assemble `ReviewFindings`
-   (`summary`, `findings`, `stats`) verbatim from the runner output — findings
-   are never hand-edited after verification.
+5. **Judge** — pipe the verdicts output through `node scripts/island-reduce.ts
+   review conflicts`. For each listed conflict, in order, spawn one
+   `review-judge` Task with the script's judge prompt verbatim (batches of at
+   most 8), collecting one `{prevails, reason}` verdict (same
+   parse/re-ask/null rule). With no conflicts, spawn nothing and pass an empty
+   list. Then pipe `{verified, stats, judgments}` (`verified` and `stats` from
+   the verdicts output, `judgments` in the conflicts order) through
+   `node scripts/island-reduce.ts review judgments` — always, since it stamps
+   `stats.overruled`.
+6. **Synthesize** — one `review-synthesizer` Task with the script's summary
+   prompt and the judged findings + stats. Assemble `ReviewFindings`
+   (`summary`, `findings`, `stats`, `conflicts`) verbatim from the runner
+   output — findings are never hand-edited after verification.
 
 A non-zero runner exit becomes a `gaps` entry, and the runner's `stats` +
 `gaps` go into the session summary's metrics section exactly as after a
 `Workflow` run. Never reduce in chat.
 
 Rejected findings stay out of the result, but every drop is counted:
-`stats { mapped, verified, rejected, unverifiedOverflow }` is required in
-`ReviewFindings`, and the counters go into the tracker comment (the node
+`stats { mapped, verified, rejected, unverifiedOverflow, overruled }` is
+required in `ReviewFindings`, and the counters go into the tracker comment (the node
 reports as `tracker-comment`) — degradation is visible, never silent. Run
 failures (a dead mapper, missing votes) arrive in `gaps` beside the payload.
 

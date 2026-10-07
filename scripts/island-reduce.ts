@@ -2,11 +2,16 @@ import { stdin } from "node:process";
 
 import {
   REVIEW_AXES,
+  applyJudgments,
+  findAxisConflicts,
   reduceMappedFindings,
   reducePlanContext,
   reduceVerdicts,
   type CandidateFinding,
+  type Judgment,
   type PlanGathererOutput,
+  type ReviewStats,
+  type VerifiedFinding,
   type Vote,
 } from "./lib/island-reducer.ts";
 
@@ -20,6 +25,8 @@ const USAGE = `usage:
   node scripts/island-reduce.ts plan < gatherers.json
   node scripts/island-reduce.ts review candidates < mapped.json
   node scripts/island-reduce.ts review verdicts < candidates-and-votes.json
+  node scripts/island-reduce.ts review conflicts < verdicts-output.json
+  node scripts/island-reduce.ts review judgments < verified-stats-and-judgments.json
 flags: --max-related-pages <n> --max-prior-art <n> --votes <n> --reject-at <n> --max-verified-findings <n>
 stdin holds exactly one JSON document per invocation`;
 
@@ -43,7 +50,15 @@ function numberFlag(name: string, fallback: number): number {
 
 const [subcommand, stage] = process.argv.slice(2);
 if (subcommand !== "plan" && subcommand !== "review") usage();
-if (subcommand === "review" && stage !== "candidates" && stage !== "verdicts") usage();
+if (
+  subcommand === "review" &&
+  stage !== "candidates" &&
+  stage !== "verdicts" &&
+  stage !== "conflicts" &&
+  stage !== "judgments"
+) {
+  usage();
+}
 
 const chunks: Buffer[] = [];
 for await (const chunk of stdin) chunks.push(chunk as Buffer);
@@ -71,6 +86,17 @@ if (subcommand === "plan") {
     rejectAt: numberFlag("reject-at", REJECT_AT),
     maxVerifiedFindings: numberFlag("max-verified-findings", MAX_VERIFIED_FINDINGS),
   });
+  console.log(JSON.stringify(result));
+} else if (stage === "conflicts") {
+  const { verified } = input as { verified?: unknown };
+  if (!Array.isArray(verified)) fail("review conflicts expects the review verdicts output: { verified: [...], ... }");
+  console.log(JSON.stringify({ conflicts: findAxisConflicts(verified as VerifiedFinding[]) }));
+} else if (stage === "judgments") {
+  const { verified, stats, judgments } = input as { verified?: unknown; stats?: unknown; judgments?: unknown };
+  if (!Array.isArray(verified) || !Array.isArray(judgments) || stats === null || typeof stats !== "object") {
+    fail("review judgments expects { verified: [...], stats: {...}, judgments: [...] } — verified and stats from review verdicts, judgments in review conflicts order");
+  }
+  const result = applyJudgments(verified as VerifiedFinding[], judgments as Array<Judgment | null>, stats as ReviewStats);
   console.log(JSON.stringify(result));
 } else {
   const { candidates, votes, mappedCount, overflowCount } = input as {

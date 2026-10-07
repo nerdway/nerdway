@@ -230,7 +230,7 @@ Skills never quote a command: they name an **operation ID** (`issue.set-status`,
 
 ## Plugin agents
 
-Four read-only agents ship in `agents/` and register as `nerdway:<name>`
+Five read-only agents ship in `agents/` and register as `nerdway:<name>`
 in the same registry the Agent tool uses. They exist for the islands' mechanical
 roles — reading a diff or a source and returning data under a schema — so those
 roles run with a structural tool whitelist (no Edit, Write or NotebookEdit; no
@@ -243,6 +243,7 @@ agent runs a role is an execution parameter, not topology.
 |---|---|---|---|
 | `nerdway:review-mapper` | Sonnet | Read, Grep, Glob, Bash, Skill | the four axis mappers of `review-verify` |
 | `nerdway:review-sceptic` | `inherit` (the session model) | Read, Grep, Glob, Bash, Skill | the three sceptics per finding of `review-verify` |
+| `nerdway:review-judge` | `inherit` (the session model) | Read | one judge per axis conflict of `review-verify`, only when one occurs |
 | `nerdway:review-synthesizer` | Haiku | Read | the summary writer of `review-verify` |
 | `nerdway:plan-gatherer` | Sonnet | Read, Grep, Glob, Bash, Skill; preloads `nerdway:nerdbrain-search` | the five gatherers of `plan-context-fanout` |
 
@@ -327,16 +328,20 @@ must be inlined in its script (rule 17) and every inline body must be a
 strict-JSON literal deep-equal to the registry body (rule 18).
 
 The second island, `workflows/review-verify.js`, runs the review phase as
-map → reduce → verify → synthesize: one mapper per review axis
+map → reduce → verify → judge → synthesize: one mapper per review axis
 (spec-compliance, repo-standards, correctness-regressions, security), a
 deterministic reducer (schema-invalid records dropped, dedup by `file:line`
-with the most severe finding winning the anchor, severity sort, cap 12), then
+within one axis with the most severe finding winning the anchor, severity
+sort, cap 12), then
 adversarial verification — 3 sceptics per
 finding, each prompted to refute it, 2 or more refutations out of 3 reject it
-— and a synthesizer that writes only the summary while the reducer assembles
-the findings verbatim. The mappers run as `nerdway:review-mapper`, the
-sceptics as `nerdway:review-sceptic` on the session model, and the
-synthesizer as `nerdway:review-synthesizer` (see
+— then, only when verified findings from different axes share one anchor, a
+judge per such conflict deciding which axis prevails (the overruled finding
+moves verbatim to `ReviewFindings.conflicts`), and a synthesizer that writes
+only the summary while the reducer assembles the findings verbatim. The
+mappers run as `nerdway:review-mapper`, the sceptics as
+`nerdway:review-sceptic` and the judge as `nerdway:review-judge` on the
+session model, and the synthesizer as `nerdway:review-synthesizer` (see
 [Plugin agents](#plugin-agents)). Rejections and
 overflow are counted in the required `ReviewFindings.stats`, so degradation is
 visible, never silent.
@@ -346,13 +351,13 @@ agent runs the same topology manually — the island agents spawn through `Task`
 with `subagent_type`, `workflows/*.js` is read verbatim for prompts and shapes,
 and `node scripts/island-reduce.ts` replaces the inlined reducer, emitting the
 same typed payloads (`PlanContext` + `ProjectContext` + `gaps`,
-`ReviewFindings` with `stats`). Claude Code keeps the `Workflow` scripts; the
+`ReviewFindings` with `stats` and `conflicts`). Claude Code keeps the `Workflow` scripts; the
 contract stays host-agnostic (ADR-0003, amended).
 
 The axis measures itself **passively**: a figure is collected only when it is a
 by-product of a run that happens anyway, and it is stored only where that run's
 result already lands — a Linear comment. Three of them. The **verifier
-rejection rate** (`rejected / (verified + rejected)` from `ReviewFindings.stats`)
+rejection rate** (`rejected / (verified + overruled + rejected)` from `ReviewFindings.stats`)
 says whether adversarial verification earns its latency: read over the last ~5
 runs, below 10% the verifier is decoration and above 50% the reviewers are
 ill-defined — the thresholds live in [`CONTEXT.md`](CONTEXT.md). The **node
@@ -453,7 +458,7 @@ git clone https://github.com/nerdway/nerdway ~/.cursor/plugins/local/nerdway
 # later: git -C ~/.cursor/plugins/local/nerdway pull, then Developer: Reload Window
 ```
 
-Then **Reload Window** and open **Customize**. The `nerdway` card should list the skills under `skills/`, the four agents, and the SessionStart / vault-MCP deny hooks. If a marketplace plugin with the same `name: nerdway` is installed, it takes precedence over the local copy. Uninstall it first.
+Then **Reload Window** and open **Customize**. The `nerdway` card should list the skills under `skills/`, the five agents, and the SessionStart / vault-MCP deny hooks. If a marketplace plugin with the same `name: nerdway` is installed, it takes precedence over the local copy. Uninstall it first.
 
 **Third-Party Imports and `## Platform`.** Keep **Cursor Settings → Agents → Third-Party Imports** ("Include Third-Party Plugins, Skills, and Other Configs") on, which is the default. Cursor then loads the repo `CLAUDE.md` into context as an always-applied rule, so the project's general instructions apply in Cursor too. The nerd workflow does not depend on it: every skill reads `## Platform` from the repo `CLAUDE.md` on disk through [`adapters/platform.md`](adapters/platform.md), so the platform resolves the same way with the setting off. The SessionStart hook deliberately does not inject `## Platform`: a second copy could drift from the file, and Cursor runs that hook fire-and-forget. Rules from the global `~/.claude/CLAUDE.md` are a separate open question (DEMO-368).
 

@@ -1,9 +1,10 @@
 # The tracker carries the spec
 
 Spec-driven frameworks keep the specification (WHAT and WHY) and the plan
-(HOW) as files: claude-sdd hands a feature through a per-feature folder,
-groundwork writes a `prd.md`, pspt derives a document set into the repository.
-They do it because they have nothing else to hold that knowledge. This plugin
+(HOW) as files: superpowers writes a design spec under `docs/superpowers/specs/`
+and a plan under `docs/superpowers/plans/`, and hands each task through a
+per-plan workspace folder. They do it because they have nothing else to hold
+that knowledge. This plugin
 has: every piece of work already lives as an issue on a tracker, and the
 workflow reads its phase, plan and history from there.
 
@@ -53,10 +54,11 @@ without access to the code.
 4. **Verified** criterion by criterion before review, and closed with the
    issue.
 
-The ideas come from the sources compared in
-`docs/research/2026-10-06-sdd-patterns.md`: the split of WHAT and WHY from HOW
-from claude-sdd, capturing only what was said from groundwork, a check per
-criterion and the stop on a file outside the plan from pspt.
+The ideas are weighed in `docs/research/2026-10-06-sdd-patterns.md`:
+capturing only what was said follows Matt Pocock's `to-spec`, a check per
+criterion follows superpowers' `verification-before-completion`, and the split
+of WHAT and WHY from HOW and the stop on a file outside the plan are our own
+decisions.
 
 ## Considered Options
 

@@ -102,6 +102,345 @@ Notes on identification:
 |---|---|
 | pstack | No grilling skill found. A rule instead: classify a question before asking it, and when the answer is a fact observable by running something, run a throwaway prototype rather than ask the human. |
 
+## superpowers and Matt Pocock: the skills the plugin borrows
+
+pstack is a project we read from the outside. superpowers and Matt Pocock's
+skills are different: they are installed on this machine, the plugin's skills
+point at them, and sessions run them. Replacing them without reading them would
+mean dropping things that work without knowing it. This section reads both
+libraries for the nine practices the plugin borrows and ends with one decision
+per practice.
+
+### Sources
+
+| Source | Link | Checked | Revision | Licence |
+|---|---|---|---|---|
+| superpowers (Jesse Vincent), Claude Code plugin | https://github.com/obra/superpowers | 2026-10-07 | 6.2.0, `3dcbd5c4b` | MIT (`LICENSE`, © 2025 Jesse Vincent) |
+| mattpocock-skills (Matt Pocock), Claude Code plugin | https://github.com/mattpocock/skills | 2026-10-07 | 1.2.0, `ed37663cc` | MIT (`LICENSE`, © 2026 Matt Pocock) |
+| Matt Pocock's skills installed with `npx skills` into `~/.agents/skills` | https://github.com/mattpocock/skills | 2026-10-07 | per-skill folder hashes in `~/.agents/.skill-lock.json`, updated 2026-07-09 (older skills 2026-05-15) | MIT |
+
+Notes on identification:
+
+- The revisions are the `gitCommitSha` values Claude Code recorded when it
+  installed each plugin (`~/.claude/plugins/installed_plugins.json`).
+- Matt Pocock's skills exist in two copies. The `~/.agents/skills` copy matches
+  plugin 1.2.0 for every skill read here except `grilling` (wording: "plan" and
+  "codebase" in place of "this" and "environment") and `to-tickets` (one local
+  `tickets.md` in place of one file per ticket). It also still holds `diagnose`,
+  `to-issues` and `to-prd`, which 1.2.0 renamed or dropped (`diagnosing-bugs`,
+  `to-tickets`, `to-spec`). Both copies were read.
+- Which copy a session actually loads matters. In Claude Code the superpowers
+  plugin is enabled, but the mattpocock-skills plugin is installed without being
+  enabled, and Claude Code does not read `~/.agents/skills`. A Claude Code
+  session on this machine therefore sees no Matt Pocock skill at all; the
+  `~/.agents/skills` copy serves the other agents that read that directory.
+
+### How these two sources were read
+
+Unlike pstack, both libraries were read **in full** from the installed copies:
+every line of each `SKILL.md` below and of the supporting files it links to.
+
+- superpowers: `test-driven-development` (+ `writing-good-tests.md`),
+  `systematic-debugging` (+ `root-cause-tracing.md`, `defense-in-depth.md`,
+  `condition-based-waiting.md` and its example, `find-polluter.sh`,
+  `CREATION-LOG.md` and the four pressure-test scenarios),
+  `dispatching-parallel-agents`, `subagent-driven-development` (+
+  `implementer-prompt.md`, `task-reviewer-prompt.md`, `re-review-prompt.md` and
+  the three scripts), `brainstorming` (+ `spec-document-reviewer-prompt.md`),
+  `requesting-code-review` (+ `code-reviewer.md`), `receiving-code-review`,
+  `writing-plans` (+ `plan-document-reviewer-prompt.md`), `executing-plans`,
+  `verification-before-completion`, `finishing-a-development-branch`.
+- Matt Pocock: `tdd` (+ `tests.md`, `mocking.md`), `diagnosing-bugs` and the
+  older `diagnose`, `implement`, `grilling`, `grill-me`, `grill-with-docs`,
+  `domain-modeling` (+ `ADR-FORMAT.md`, `CONTEXT-FORMAT.md`), `code-review`,
+  `to-spec`, `to-tickets`, and the older `to-issues` and `to-prd`.
+
+One exception: the brainstorming *visual companion* (`visual-companion.md`
+and the browser server under `scripts/`) was read only far enough to place it.
+It serves UI mockups in a browser tab, which no practice here needs.
+
+Skills of either library outside the nine practices (`writing-skills`,
+`using-git-worktrees`, `using-superpowers`; `teach`, `prototype`, `triage`,
+`wayfinder`, `handoff`, `codebase-design` and the rest) were not analysed.
+
+### Where the plugin uses them
+
+References in the repository (`skills/`, `agents/`, `workflows/`):
+
+| Reference | Where | Role |
+|---|---|---|
+| `mattpocock-skills:grilling` | `issue-workflow` (grilling session), `issue-writer` (twice) | optional question format; the inline protocol works without it |
+| `grill-me` / `grill-with-docs` | `issue-workflow`, `issue-writer`, `new-project-workflow` | named only to forbid delegating to them (`disable-model-invocation: true`), and offered as a manual slash command |
+| `mattpocock-skills:code-review`, `superpowers` code-review | `workflows/review-verify.js` engine hints, `issue-workflow` axis table | an engine hint per review axis |
+| `superpowers:test-driven-development`, `superpowers:subagent-driven-development` | `issue-workflow` step 5 | implementation modes on offer |
+| `superpowers:systematic-debugging` | `nerdbrain-wiki` | an example of a debugging flow worth a wiki write |
+| `docs/superpowers/plans/` | `plan-context-fanout`, `issue-workflow` | prior-art path read by the plan island |
+
+Use in sessions, measured from what this machine keeps:
+
+- Claude Code transcripts (`~/.claude/projects/*/*.jsonl`, 125 sessions from
+  2026-09-08 to 2026-10-07; Claude Code prunes older ones): the `Skill` tool was
+  called with `superpowers:test-driven-development` 3 times. No other skill of
+  either library was invoked through the tool in that window.
+- Claude Code prompt history (`~/.claude/history.jsonl`, 2026-04-10 to
+  2026-10-07): `/grill-me` once, `/grill-with-docs` once,
+  `/setup-matt-pocock-skills` once, `/code-review` once (the name is also a
+  built-in Claude Code command, so this one may not be Matt Pocock's).
+- The repository itself: `docs/superpowers/specs/` and `docs/superpowers/plans/`
+  hold two specs and two plans from 2026-08-05 and 2026-08-06, written by
+  `brainstorming` and `writing-plans` before the plugin's own planning took over.
+- Not covered: Cursor sessions, and Claude Code sessions older than the
+  transcript window. superpowers also loads into every Claude Code session on
+  its own: its SessionStart hook injects `using-superpowers`, which tells the
+  agent to invoke `brainstorming` before any creative work and TDD before any
+  code.
+
+### Practice by practice
+
+#### TDD
+
+- **superpowers** (`test-driven-development`): an iron law, "no production
+  code without a failing test first"; code written before its test is deleted,
+  not kept as reference. Red, verify red, green, verify green, refactor. A table
+  of rationalisations and red flags blocks the usual excuses. Exceptions only
+  with the human's permission. `writing-good-tests.md` adds "name the break the
+  test catches", literal expected values, no change detectors, behaviour not
+  text ("documents that instruct agents are tested by the consuming agent's
+  behaviour"), mock only the slow or external level, and a mutation check.
+- **Matt Pocock** (`tdd`): a reference for tests worth keeping. Tests sit at
+  *seams*, public boundaries agreed with the user before any test is written.
+  Anti-patterns: implementation-coupled, tautological, horizontal slicing (all
+  tests first). One seam, one test, one minimal implementation per cycle.
+  Refactoring is not part of the loop; it belongs to review. `mocking.md`: mock
+  at system boundaries only.
+- **Overlap and difference:** both demand red before green, minimal code,
+  behaviour over implementation and independent expected values. They differ on
+  refactoring (in the loop for superpowers, out of it for Matt Pocock), on who
+  picks what to test (Matt Pocock asks the user; superpowers tests every new
+  function), and on strictness (superpowers allows no exit without the human;
+  Matt Pocock does not discuss exits).
+- **How we use them:** `issue-workflow` offers
+  `superpowers:test-driven-development` as an implementation mode; it is the only
+  practice skill the transcripts show being invoked (3 times). Our decision of
+  2026-10-06 makes TDD the default mode, with a recorded reason to leave it.
+- **What works:** verify red as a mandatory step; "name the break";
+  tautological tests named as a defect; vertical slices; "behaviour not text",
+  which fits a repository of markdown skills where grepping a skill's text
+  proves nothing.
+- **What gets in the way:** the superpowers iron law ("delete means delete",
+  no exit without permission) contradicts our recorded-reason exit and treats a
+  documentation-only change as a violation. Matt Pocock's seam confirmation
+  puts a human question inside implementation, where `issue-workflow` keeps
+  none; in our flow the seams belong in the plan's test approach.
+
+#### Debugging
+
+- **superpowers** (`systematic-debugging`): "no fixes without root cause
+  investigation first". Four phases: root cause (read errors, reproduce, recent
+  changes, instrument component boundaries, trace data flow backwards), pattern
+  analysis against working code, one hypothesis tested with the smallest
+  change, then a failing test, one fix and verification. After three failed
+  fixes, stop and question the architecture with the human. Supporting files:
+  backward root-cause tracing, validation at every layer (defense in depth),
+  condition-based waiting instead of sleeps, a script that bisects which test
+  pollutes state.
+- **Matt Pocock** (`diagnosing-bugs`, older `diagnose`): building a feedback
+  loop *is* the skill. Phase 1 ends only with one red-capable, deterministic,
+  fast, agent-runnable command that has already been run. Then reproduce and
+  minimise until every element is load-bearing, write 3 to 5 ranked falsifiable
+  hypotheses and show them to the user (without blocking on the answer),
+  instrument one variable at a time with tagged debug logs, write the regression
+  test before the fix only at a correct seam ("no correct seam is itself the
+  finding"), clean up and state the confirmed hypothesis in the commit.
+- **Overlap and difference:** both forbid fixing before understanding and both
+  want a failing test before the fix. superpowers anchors on root cause and one
+  hypothesis at a time; Matt Pocock anchors on the feedback loop and several
+  ranked hypotheses up front, explicitly to avoid anchoring on the first idea.
+- **How we use them:** referenced only as an example in `nerdbrain-wiki`; no
+  invocation in the transcripts. The adopted method so far comes from pstack.
+- **What works:** Matt Pocock's loop-first completion criterion (one command,
+  already run, red on this bug); tagged debug logs that a single grep removes;
+  the correct-seam rule; the confirmed hypothesis in the commit message. From
+  superpowers: the three-failed-fixes breaker and backward tracing.
+- **What gets in the way:** superpowers' defense in depth ("validate at every
+  layer") collides with our rule against error handling for impossible
+  scenarios; its pressure-test framing is long. Matt Pocock's hand-off to
+  `/improve-codebase-architecture` points at a skill we do not ship.
+
+#### Subagent dispatch
+
+- **superpowers** (`dispatching-parallel-agents`): one agent per independent
+  problem domain, all dispatched in one message; each prompt is focused,
+  self-contained and specific about its output; after return, check for
+  conflicts, run the full suite, spot-check. Not for related failures or shared
+  state. (`subagent-driven-development`): a controller runs a written plan task
+  by task with a fresh implementer per task, a task review for spec and quality,
+  a fix loop capped at five rounds, a ledger file that survives compaction, an
+  explicit model per role, artifacts handed over as files, never parallel
+  implementers, and a final whole-branch review.
+- **Matt Pocock:** no dispatch skill. `implement` runs `tdd` and `code-review`
+  in one agent; `code-review` spawns its two axes as parallel subagents.
+- **Overlap and difference:** only superpowers has a practice here. Its two
+  skills split the cases the plugin already distinguishes: read-only fan-out
+  (our islands) and sequential writers.
+- **How we use them:** `issue-workflow` offers
+  `superpowers:subagent-driven-development` as an implementation mode; no
+  invocation in the transcripts. The islands already fan out with
+  self-contained prompts and reduce in code.
+- **What works:** the independence test before parallel dispatch; "never trust
+  the agent's report, check the diff"; never two writers at once; a hard cap on
+  fix rounds; handing artifacts over as files so the controller's context stays
+  small.
+- **What gets in the way:** `subagent-driven-development` needs a plan file
+  and a git-ignored workspace (`.superpowers/sdd/<plan>/`); ADR-0008 keeps the
+  plan on the tracker and no plan file in the repository. It also requires a
+  worktree and a per-role model choice, both machine- and host-specific.
+
+#### Grilling
+
+- **superpowers** (`brainstorming`): a hard gate before *every* project,
+  however simple: explore context, ask one question at a time (multiple choice
+  preferred), propose 2 to 3 approaches with a recommendation, present the design
+  section by section for approval, write and commit a spec file, self-review it,
+  have the user review the file, then hand off to `writing-plans` and nothing
+  else.
+- **Matt Pocock** (`grilling`): four rules. Interview relentlessly down each
+  branch of the decision tree; one question at a time with a recommended answer;
+  look facts up in the environment, put decisions to the user; act only after
+  the user confirms shared understanding. `grill-me` and `grill-with-docs` are
+  user-only wrappers (`disable-model-invocation: true`) around it, the second
+  adding `domain-modeling`.
+- **Overlap and difference:** both ask one question at a time. superpowers
+  converges on a written design and a spec file; Matt Pocock converges on
+  shared understanding and writes nothing by itself.
+- **How we use them:** the inline grilling protocol in `issue-workflow` is
+  Matt Pocock's four rules restated, plus the ADR test from `domain-modeling`;
+  `issue-writer` names `mattpocock-skills:grilling` as optional;
+  `new-project-workflow` offers `/grill-me` as a manual command. History shows
+  `/grill-me` and `/grill-with-docs` once each; in Claude Code the plugin copy is
+  not enabled, so the inline protocol is what actually runs.
+- **What works:** Matt Pocock's rules are short enough to restate, and the
+  recommended answer with every question speeds the session up; the
+  fact-versus-decision split.
+- **What gets in the way:** `brainstorming` applies to every task regardless of
+  size, against our adaptive threshold; it writes spec files, which ADR-0008
+  rejects; it hands off to `writing-plans`, competing with `issue-workflow` for
+  the plan; and the superpowers SessionStart hook pushes it into every session,
+  including this plugin's own issue sessions. The Matt Pocock wrappers cannot be
+  called by the model at all.
+
+#### Domain modelling
+
+- **superpowers:** none.
+- **Matt Pocock** (`domain-modeling`): the active discipline of changing the
+  model while designing: challenge a term against the glossary, sharpen fuzzy
+  words into canonical ones, stress relationships with invented scenarios,
+  cross-check claims against the code, update `CONTEXT.md` the moment a term is
+  resolved, and offer an ADR only when a decision is hard to reverse, surprising
+  without context and the result of a real trade-off. `CONTEXT-FORMAT.md`: tight
+  definitions with an `_Avoid_` line; `ADR-FORMAT.md`: an ADR can be one
+  paragraph.
+- **How we use them:** `issue-workflow` names `domain-modeling` as optional and
+  already restates its three-condition ADR test and the glossary habit in its
+  docs discipline. This repository's `CONTEXT.md` and `docs/adr/` follow the same
+  layout.
+- **What works:** the three-condition ADR test; capturing terms inline instead
+  of reconstructing them later; the `_Avoid_` line, which records the rejected
+  synonyms.
+- **What gets in the way:** Matt Pocock's `CONTEXT.md` is "a glossary and
+  nothing else", while ours opens with `## Standards`, the rule source of the
+  `repo-standards` review axis, before its `## Language` glossary. A native
+  skill must confine itself to the glossary section.
+
+#### Review
+
+- **superpowers** (`requesting-code-review`): dispatch one reviewer subagent
+  with crafted context, never the session history; the reviewer template checks
+  plan alignment, quality, architecture, tests and production readiness and
+  grades issues Critical, Important or Minor, with a ready-to-merge verdict.
+  (`receiving-code-review`): verify each finding against the codebase before
+  implementing, clarify every unclear item first, push back with technical
+  reasons, check YAGNI by grepping for real usage, no performative agreement.
+- **Matt Pocock** (`code-review`): two axes, Standards and Spec, run as
+  parallel subagents so they do not contaminate each other. Standards carries a
+  fixed baseline of twelve Fowler code smells, always reported as judgement
+  calls, which documented repo standards override. The two reports are
+  presented side by side and never merged or reranked across axes.
+- **Overlap and difference:** both isolate the reviewer's context. superpowers
+  runs one generalist reviewer; Matt Pocock separates spec from standards.
+  Neither verifies findings adversarially; our island does.
+- **How we use them:** both appear only as engine hints for an axis in
+  `review-verify`; the four axes, the reducer and the sceptic votes are already
+  ours. DEMO-375 removes the engine notion.
+- **What works:** spec and standards as separate axes (we already have them);
+  the smell baseline as a default for the standards axis where a repository
+  documents nothing; `receiving-code-review`'s rule to verify a finding before
+  acting on it, which matches what our sceptics do for the reviewer.
+- **What gets in the way:** Matt Pocock's "never merge across axes" leaves no
+  answer when two axes demand opposite changes, which is why our judge on
+  contradiction stays an own decision. superpowers' single reviewer would
+  collapse our axes into one.
+
+#### Planning
+
+- **superpowers** (`writing-plans`): a plan file for an engineer "with zero
+  context and questionable taste": a header with global constraints, a file
+  structure, tasks with exact paths, interfaces between tasks, and 2 to 5 minute
+  steps that carry the actual code and commands; no placeholders; a self-review
+  against the spec; then a choice between subagent-driven and inline execution.
+  (`executing-plans`): review the plan critically, execute, stop on blockers.
+- **Matt Pocock** (`to-spec`, `to-tickets`; older `to-prd`, `to-issues`): turn
+  the conversation into a spec on the tracker without interviewing (problem,
+  solution, a long list of user stories, implementation and testing decisions,
+  out of scope), then cut it into tracer-bullet tickets with blocking edges,
+  quizzing the user on granularity; wide refactors go expand, migrate,
+  contract. The older `to-issues` tags each slice as HITL or AFK.
+- **Overlap and difference:** superpowers plans *how* in great detail inside
+  one file; Matt Pocock plans *what* and the order of slices on the tracker.
+- **How we use them:** `issue-workflow` has its own planning (the
+  `ImplementationPlan` schema, the plan as a tracker comment); the two
+  superpowers plans in the repository are read by the plan island as prior art.
+- **What works:** "no placeholders" as a plan failure; global constraints copied
+  verbatim into every task; a self-review that maps every requirement to a
+  step; Matt Pocock's slices with blocking edges and the HITL or AFK tag.
+- **What gets in the way:** a plan file with full code contradicts ADR-0008 and
+  the generated plan template, and the zero-context reader makes plans long
+  enough to duplicate the diff.
+
+#### Verification before completion
+
+- **superpowers** (`verification-before-completion`): "no completion claims
+  without fresh verification evidence". Before any claim: identify the command
+  that proves it, run it in full, read the output and exit code, and only then
+  state the result with the evidence. An agent's success report is not evidence;
+  check the diff. "Requirements met" means re-reading the plan and checking it
+  line by line.
+- **Matt Pocock:** no separate skill; `diagnosing-bugs` asks for the command
+  and its output before Phase 2.
+- **How we use them:** not referenced in the repository and not invoked. The
+  plugin already requires a per-criterion verification table before review
+  (ADR-0008) and states the full test glob and validators as the definition of
+  done.
+- **What works:** "the command, its output, then the claim" as one rule; agent
+  reports are claims, not evidence.
+- **What gets in the way:** nothing in substance; as a separate always-on skill
+  it would duplicate the verification table and the check beat of TDD.
+
+#### Finishing a branch
+
+- **superpowers** (`finishing-a-development-branch`): run the full suite on the
+  tree being integrated, detect a worktree, present exactly three options (merge
+  locally, push and open a PR, keep the branch), discard only on a typed
+  confirmation, clean up only worktrees it created.
+- **Matt Pocock:** none.
+- **How we use them:** not referenced and not invoked. `issue-close` merges the
+  PR with a merge commit, switches to the base branch and writes `done`, and
+  `issue-workflow` never offers closure on its own.
+- **What works:** "a green run only proves the tree it ran on".
+- **What gets in the way:** a local merge as a first-class option bypasses the
+  PR, its review and the tracker's magic words; the menu offers integration
+  right after implementation, which our workflow deliberately does not.
+
 ## Decision criteria
 
 A pattern is adopted only if all of these hold:

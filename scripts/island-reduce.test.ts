@@ -37,6 +37,22 @@ test("review judgments applies the verdicts and returns the final findings, conf
   assert.deepEqual(output.gaps, []);
 });
 
+test("review judgments keeps a security finding the verdict would overrule and reports it in gaps", () => {
+  const { status, output } = run(["review", "judgments"], {
+    verified: [spec, other, security],
+    stats,
+    judgments: [{ prevails: "spec-compliance", reason: "the flag was asked for" }],
+  });
+
+  assert.equal(status, 0);
+  assert.deepEqual(output.findings, [spec, other, security]);
+  assert.deepEqual(output.conflicts, []);
+  assert.deepEqual(output.stats, { ...stats, verified: 3, overruled: 0 });
+  assert.deepEqual(output.gaps, [
+    "conflict at h.ts:3: verdict spec-compliance would overrule a security finding — all 2 findings kept",
+  ]);
+});
+
 test("review judgments with no conflicts still stamps overruled zero", () => {
   const { status, output } = run(["review", "judgments"], { verified: [other], stats: { ...stats, verified: 1 }, judgments: [] });
 

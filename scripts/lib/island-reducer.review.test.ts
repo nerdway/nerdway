@@ -330,6 +330,50 @@ test("applyJudgments never resolves a conflict silently when the verdict is miss
   }
 });
 
+test("applyJudgments keeps every finding when the verdict would overrule a security finding", () => {
+  const verified = collidingVerified();
+
+  const result = applyJudgments(verified, [{ prevails: "spec-compliance", reason: "the flag was asked for" }], VERDICT_STATS);
+
+  assert.deepEqual(result.findings, verified);
+  assert.deepEqual(result.conflicts, []);
+  assert.deepEqual(result.stats, { mapped: 7, verified: 4, rejected: 1, unverifiedOverflow: 0, overruled: 0 });
+  assert.deepEqual(result.gaps, [
+    "conflict at h.ts:3: verdict spec-compliance would overrule a security finding — all 2 findings kept",
+  ]);
+});
+
+test("applyJudgments keeps every finding of a three-axis conflict when the verdict would overrule security", () => {
+  const verified = [
+    verifiedAt("spec-compliance", "h.ts", 3, "add the flag"),
+    verifiedAt("security", "h.ts", 3, "drop the flag"),
+    verifiedAt("repo-standards", "h.ts", 3, "rename the flag"),
+  ];
+
+  const result = applyJudgments(verified, [{ prevails: "repo-standards", reason: "naming wins" }], VERDICT_STATS);
+
+  assert.deepEqual(result.findings, verified);
+  assert.deepEqual(result.conflicts, []);
+  assert.equal(result.stats.overruled, 0);
+  assert.deepEqual(result.gaps, [
+    "conflict at h.ts:3: verdict repo-standards would overrule a security finding — all 3 findings kept",
+  ]);
+});
+
+test("applyJudgments still overrules a finding in a conflict without the security axis", () => {
+  const verified = [
+    verifiedAt("spec-compliance", "h.ts", 3, "add the flag"),
+    verifiedAt("repo-standards", "h.ts", 3, "rename the flag"),
+  ];
+
+  const result = applyJudgments(verified, [{ prevails: "spec-compliance", reason: "the flag was asked for" }], VERDICT_STATS);
+
+  assert.deepEqual(result.findings, [verified[0]]);
+  assert.equal(result.conflicts.length, 1);
+  assert.equal(result.stats.overruled, 1);
+  assert.deepEqual(result.gaps, []);
+});
+
 test("severity helpers only accept the four axes and three severities", () => {
   assert.deepEqual([...SEVERITIES], ["critical", "major", "minor"]);
   assert.deepEqual([...AXES].length, 4);

@@ -216,3 +216,25 @@ export function validateAdapterDefaults(name: string, adapterSource: string, voc
   if (parsed.value === undefined) return parsed.errors.map((error) => `${where}: ${error}`);
   return validateStatuses(where, parsed.value, vocabulary, supportedStrategies(source));
 }
+
+export type PlatformRead =
+  | { status: "found"; value: Record<string, unknown>; errors: [] }
+  | { status: "absent"; errors: string[] }
+  | { status: "invalid"; errors: string[] };
+
+export function readPlatform(
+  markdown: string | undefined,
+  vocabulary: PlatformVocabulary,
+  trackerAdapters: ReadonlyMap<string, string>,
+): PlatformRead {
+  if (markdown === undefined) return { status: "absent", errors: ["file not found"] };
+  if (sectionBody(normalizeNewlines(markdown), "Platform") === undefined) {
+    return { status: "absent", errors: ["no line-start ## Platform section"] };
+  }
+  const section = platformYaml(markdown);
+  const parsed = section.yaml === undefined ? { value: undefined, errors: section.errors } : parseYaml(section.yaml);
+  if (parsed.value === undefined) return { status: "invalid", errors: parsed.errors };
+  const errors = validatePlatformConfig(parsed.value, vocabulary, trackerAdapters.get(String(parsed.value.tracker)));
+  if (errors.length > 0) return { status: "invalid", errors };
+  return { status: "found", value: parsed.value, errors: [] };
+}

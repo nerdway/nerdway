@@ -33,8 +33,9 @@ If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory.
 
 Resolve the platform exactly as `nerdway:issue-writer` step 1 does (repo
-`CLAUDE.md` `## Platform` → entity page `platform:` / legacy `linear:` →
-`nerdway:determine-platform`), and the status strategy and map as
+`CLAUDE.md` `## Platform`, read from disk as
+`${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes → entity page
+`platform:` / legacy `linear:` → `nerdway:determine-platform`), and the status strategy and map as
 `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` describes. The argument is an
 issue ID in the form the tracker adapter's `## Issue ID` section gives.
 

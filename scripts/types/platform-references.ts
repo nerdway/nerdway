@@ -1,13 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-/**
- * DEMO-366: every skill, agent or adapter that takes the platform from the
- * repo `CLAUDE.md` must read it from disk with the shared recipe. Cursor
- * puts `CLAUDE.md` into context only with Third-Party Imports on, and Claude
- * Code never reloads it mid-session, so "the `## Platform` section" without
- * the recipe can silently fall back to a stale or missing copy.
- */
 export const PLATFORM_RECIPE = "adapters/platform.md";
 
 export interface SourceFile {
@@ -19,17 +12,12 @@ const FENCE = /^\s*(```|~~~)/;
 const HEADING = /^## /;
 const MENTION = /## Platform(?!\s+and adapters)\b/;
 
-/** Wording that assumes the repo `CLAUDE.md` is (or stays) in the context. */
 export const CONTEXT_ASSUMPTIONS: { pattern: RegExp; why: string }[] = [
   { pattern: /own copy of `?CLAUDE\.md/i, why: "assumes a copy of CLAUDE.md in context" },
   { pattern: /CLAUDE\.md`? is (?:already )?(?:loaded )?in(?:to)? (?:the )?context/i, why: "assumes CLAUDE.md is in context" },
   { pattern: /CLAUDE\.md`? is\s+not reloaded mid-session, so/i, why: "reasons from Claude Code's context model only" },
 ];
 
-/**
- * A mention is `## Platform` anywhere except a line-start heading outside a
- * code fence (a skill's own `## Platform and adapters` heading is not one).
- */
 export function mentionsPlatform(source: string): boolean {
   let fenced = false;
   for (const line of source.replace(/\r\n/g, "\n").split("\n")) {
@@ -71,7 +59,6 @@ function markdownUnder(root: string, dir: string, keep: (name: string) => boolea
     .sort((a, b) => a.path.localeCompare(b.path));
 }
 
-/** The files the guard covers: every SKILL.md, every agent, every adapter. */
 export function platformReaders(repoRoot: string): SourceFile[] {
   return [
     ...markdownUnder(repoRoot, "skills", (name) => name === "SKILL.md"),

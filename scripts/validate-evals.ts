@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { SkillEvalsFile } from "./types/evals.js";
-import { validateEvalsFile } from "./types/evals.js";
+import type { SkillEvalsFile } from "./types/evals.ts";
+import { validateEvalsFile } from "./types/evals.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const evalsPath = join(
@@ -26,7 +26,6 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-// Deliberate typo: LSP should flag `eval_cases` — the field is `evals`
 console.log(
-  `OK: ${raw.skill_name} has ${raw.eval_cases.length} eval case(s) with assertions`,
+  `OK: ${raw.skill_name} has ${raw.evals.length} eval case(s) with assertions`,
 );

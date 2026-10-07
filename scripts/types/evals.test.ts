@@ -1,8 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import type { SkillEval, SkillEvalsFile } from "./evals.ts";
-import { validateEvalsFile } from "./evals.ts";
+import { findEvalsFiles, validateEvalsFile } from "./evals.ts";
 
 function evalCase(overrides: Partial<SkillEval> = {}): SkillEval {
   return {
@@ -50,5 +53,20 @@ test("an eval without a prompt is rejected", () => {
 test("an eval without assertions is rejected", () => {
   assert.deepEqual(validateEvalsFile(evalsFile({ evals: [evalCase({ assertions: [] })] })), [
     "eval 'bootstrap-empty-dir' must have assertions",
+  ]);
+});
+
+test("findEvalsFiles returns every skills/*/evals/evals.json, sorted, and skips skills without evals", () => {
+  const root = mkdtempSync(join(tmpdir(), "evals-find-"));
+  for (const skill of ["zeta", "alpha"]) {
+    mkdirSync(join(root, "skills", skill, "evals"), { recursive: true });
+    writeFileSync(join(root, "skills", skill, "evals", "evals.json"), "{}");
+  }
+  mkdirSync(join(root, "skills", "no-evals"), { recursive: true });
+  writeFileSync(join(root, "skills", "no-evals", "SKILL.md"), "");
+
+  assert.deepEqual(findEvalsFiles(root), [
+    join(root, "skills", "alpha", "evals", "evals.json"),
+    join(root, "skills", "zeta", "evals", "evals.json"),
   ]);
 });

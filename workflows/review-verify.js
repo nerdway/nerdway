@@ -175,7 +175,21 @@ const AXIS_PROMPTS = {
     `Report each unmet or violated acceptance criterion as a finding anchored to the diff line that misses it.`,
   'repo-standards':
     'Review ONLY against the repo coding standards: read the "## Standards" section of CONTEXT.md and check the diff against those rules alone. ' +
-    'Report each rule violation as a finding citing the violated rule in the claim.',
+    'Report each rule violation as a finding citing the violated rule in the claim. ' +
+    'When CONTEXT.md is missing or has no "## Standards" section, check the diff against this baseline of code smells instead (Fowler, Refactoring, chapter 3): ' +
+    'Mysterious Name (a name that hides what the thing does or holds); ' +
+    'Duplicated Code (the same logic written twice within the change); ' +
+    'Feature Envy (a function working mostly on another module\'s data); ' +
+    'Data Clumps (the same group of values always passed around together); ' +
+    'Primitive Obsession (a bare string or number standing in for a domain concept); ' +
+    'Repeated Switches (the same branching on the same value in several places); ' +
+    'Shotgun Surgery (one logical change spread over many small edits across files); ' +
+    'Divergent Change (one module edited for several unrelated reasons); ' +
+    'Speculative Generality (parameters, hooks or abstractions no requirement asks for); ' +
+    'Message Chains (a caller walking a long chain of objects to reach what it needs); ' +
+    'Middle Man (a function or class that only forwards to another); ' +
+    'Refused Bequest (an implementer that ignores or overrides most of what it inherits). ' +
+    'A smell is always a judgement call, never a hard violation: name the smell in the claim and give it severity minor, never higher.',
   'correctness-regressions':
     'Review ONLY for correctness bugs and regressions: logic errors, broken edge cases, behaviour the change silently alters. ' +
     'Report only defects the diff introduces, each with concrete failing inputs or state as evidence.',

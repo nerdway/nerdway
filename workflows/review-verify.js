@@ -59,13 +59,68 @@ const SCHEMA_ReviewFindings = {
           "type": "integer",
           "title": "Unverified overflow",
           "description": "Findings that never got a verdict: past the verification cap, or with fewer than 2 votes cast."
+        },
+        "overruled": {
+          "type": "integer",
+          "title": "Overruled",
+          "description": "Verified findings the judge set aside in favour of another axis on the same anchor; each one is kept verbatim in conflicts."
         }
       },
-      "required": ["mapped", "verified", "rejected", "unverifiedOverflow"]
+      "required": ["mapped", "verified", "rejected", "unverifiedOverflow", "overruled"]
+    },
+    "conflicts": {
+      "type": "array",
+      "title": "Conflicts",
+      "description": "One row per anchor where verified findings from different axes collided and the judge gave a valid verdict; empty when no axes collided.",
+      "items": { "$ref": "#/$defs/AxisConflict" }
     }
   },
-  "required": ["summary", "findings", "stats"],
+  "required": ["summary", "findings", "stats", "conflicts"],
   "$defs": {
+    "AxisConflict": {
+      "type": "object",
+      "title": "Axis conflict",
+      "description": "Verified findings from different axes on one file:line, and the judge's verdict on which takes precedence.",
+      "properties": {
+        "file": {
+          "type": "string",
+          "title": "File",
+          "description": "Repo-relative path of the shared anchor."
+        },
+        "line": {
+          "type": "integer",
+          "title": "Line",
+          "description": "1-indexed line of the shared anchor."
+        },
+        "axes": {
+          "type": "array",
+          "title": "Axes",
+          "description": "The axes whose findings collided, in arrival order.",
+          "items": {
+            "type": "string",
+            "enum": ["spec-compliance", "repo-standards", "correctness-regressions", "security"]
+          }
+        },
+        "prevails": {
+          "type": "string",
+          "title": "Prevails",
+          "description": "The axis whose finding takes precedence, or both when the findings do not contradict each other and all stay.",
+          "enum": ["spec-compliance", "repo-standards", "correctness-regressions", "security", "both"]
+        },
+        "reason": {
+          "type": "string",
+          "title": "Reason",
+          "description": "The judge's one- or two-sentence justification."
+        },
+        "overruled": {
+          "type": "array",
+          "title": "Overruled",
+          "description": "The findings set aside, verbatim; empty when the verdict is both.",
+          "items": { "$ref": "#/$defs/ReviewFinding" }
+        }
+      },
+      "required": ["file", "line", "axes", "prevails", "reason", "overruled"]
+    },
     "ReviewFinding": {
       "type": "object",
       "title": "Finding",

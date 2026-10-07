@@ -32,7 +32,7 @@ function mappedFixture() {
   ] as Array<unknown>;
 }
 
-test("reduceMappedFindings filters, dedups by anchor keeping the most severe, sorts and caps", () => {
+test("reduceMappedFindings filters, sorts and caps", () => {
   const { candidates, overflow, mappedCount, gaps } = reduceMappedFindings(
     mappedFixture(),
     [...AXES],
@@ -64,6 +64,14 @@ test("reduceMappedFindings filters, dedups by anchor keeping the most severe, so
   assert.deepEqual(overflow, [
     {
       axis: "repo-standards",
+      file: "b.ts",
+      line: 5,
+      claim: "null check missing (standards view)",
+      evidence: "same anchor",
+      severity: "minor",
+    },
+    {
+      axis: "repo-standards",
       file: "f.ts",
       line: 2,
       claim: "fmt deviation",
@@ -84,9 +92,32 @@ test("reduceMappedFindings with a wide cap keeps every well-formed finding sorte
   assert.deepEqual(gaps, ["correctness-regressions mapper failed: the axis is missing from this run"]);
   assert.deepEqual(
     candidates.map((f) => `${f.file}:${f.line}@${f.severity}`),
-    ["b.ts:5@critical", "a.ts:1@major", "f.ts:2@minor"],
+    ["b.ts:5@critical", "a.ts:1@major", "b.ts:5@minor", "f.ts:2@minor"],
   );
   assert.deepEqual(overflow, []);
+});
+
+test("reduceMappedFindings dedups an anchor within one axis but keeps a collision across axes", () => {
+  const { candidates } = reduceMappedFindings(
+    [
+      {
+        findings: [
+          { file: "g.ts", line: 4, claim: "weak", evidence: "e", severity: "minor" },
+          { file: "g.ts", line: 4, claim: "strong", evidence: "e", severity: "major" },
+        ],
+      },
+      { findings: [] },
+      { findings: [{ file: "g.ts", line: 4, claim: "opposite", evidence: "e", severity: "minor" }] },
+      { findings: [] },
+    ],
+    [...AXES],
+    REVIEW_LIMITS,
+  );
+
+  assert.deepEqual(
+    candidates.map((f) => `${f.axis}|${f.claim}`),
+    ["spec-compliance|strong", "correctness-regressions|opposite"],
+  );
 });
 
 test("reduceVerdicts rejects at 2 of 3, stamps confidence, and counts unverified", () => {

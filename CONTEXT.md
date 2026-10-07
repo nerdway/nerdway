@@ -120,6 +120,20 @@ change. Changing anything else needs the user's yes in chat (frozen rule
 `no-change-outside-plan`), after which a comment extends the plan.
 _Avoid_: touched files (says what happened, not what was agreed)
 
+**Test approach**:
+The section of the plan that sets how the implementation is driven: `TDD`
+(the default, run by `nerd4rent:tdd`) or `no tests`, which needs a reason and
+the runnable check standing in for a test. Approved with the plan; the mode and
+any reason are carried into the session summary. A recommendation, not a frozen
+rule.
+_Avoid_: implementation mode (the old menu of external skills)
+
+**Seam**:
+A public boundary a test is written against — an exported function, a CLI, a
+contract file. The plan's test approach lists the seams, so implementation does
+not stop to agree them.
+_Avoid_: unit (says nothing about where the boundary is)
+
 **Criteria verification**:
 The table filled before the move to review: one row per acceptance criterion
 with its check, `pass` or `fail`, and the evidence. A `fail` blocks review; the

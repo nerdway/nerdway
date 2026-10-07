@@ -33,6 +33,23 @@
 -
 -
 
+### Test approach
+
+<!-- The mode the session implemented in, taken from the plan. Omit when the
+     session implemented nothing. -->
+
+**Mode:**
+
+<!-- The mode from the plan's test approach. -->
+
+<!-- one of: TDD | no tests -->
+
+**Reason:**
+
+<!-- Under no tests: the plan's reason and the stand-in check that was actually
+     run, with its result. Also when the plan carried no test approach and the
+     mode was assumed. -->
+
 ### Criteria verification
 
 <!-- The criteria table from the change set, once implementation is complete:

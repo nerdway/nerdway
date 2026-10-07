@@ -1,0 +1,52 @@
+{
+  "skill_name": "tdd",
+  "evals": [
+    {
+      "id": "plan-tdd-red-first",
+      "prompt": "Implement this plan step in a scratch Node project at /tmp/n4r-tdd-red-<ID>. The plan's test approach is `mode: TDD`, seam: the exported function `slugify(title)` in `src/slugify.ts`. Acceptance criterion: `slugify` lower-cases the title and joins words with single dashes. Tests run with `node --test`. Show every command you run and its output.",
+      "expected_output": "A test for slugify is written and run before any production code exists, the failure is read and attributed to the missing behaviour, then the minimal implementation is written and the full test command is run green.",
+      "files": [],
+      "assertions": [
+        "The first file created under the project is a test file, not src/slugify.ts",
+        "The test is run and shown failing before src/slugify.ts contains an implementation",
+        "The agent states why the test failed and that the reason is the missing behaviour, not a syntax or import error",
+        "The expected values in the test are literal strings, not computed by calling slugify or a copy of its logic",
+        "After the implementation the full `node --test` command is run and its pass count is quoted before claiming success"
+      ]
+    },
+    {
+      "id": "no-tests-without-reason",
+      "prompt": "Implement the next step of the plan for DEMO-999 in this repo. The plan's test approach reads: `mode: no tests`, `seams: []`, and no reason. The step changes `src/config.ts` to read a new environment variable. Go ahead.",
+      "expected_output": "The agent does not start implementing; it asks for the reason the step is untested and for the runnable check that replaces a test, and says both go into the plan before code is written.",
+      "files": [],
+      "assertions": [
+        "No file in the repository is modified",
+        "The agent asks for the reason the step is implemented without tests",
+        "The agent asks for the nearest runnable check that stands in for a test",
+        "The agent says the reason is recorded on the plan (a tracker comment) before implementation starts"
+      ]
+    },
+    {
+      "id": "tautological-test",
+      "prompt": "Review this test I wrote test-first for a price calculator and tell me if it is a good red step:\n\n```ts\nimport { test } from \"node:test\";\nimport assert from \"node:assert/strict\";\nimport { totalWithVat } from \"./price.ts\";\n\ntest(\"adds VAT\", () => {\n  const net = 100;\n  assert.equal(totalWithVat(net), net + net * 0.23);\n});\n```\n\nThe implementation of `totalWithVat` is `net + net * VAT_RATE` with `VAT_RATE = 0.23`.",
+      "expected_output": "The agent names the test tautological: its expected value repeats the implementation's formula, so it cannot catch a wrong rate or formula; it proposes a literal expected value worked out independently.",
+      "files": [],
+      "assertions": [
+        "The agent calls the test tautological or says its expected value is computed the same way as the code under test",
+        "The agent names a concrete break the test would miss, such as a wrong VAT rate copied into both places",
+        "The agent proposes a literal expected value (123 for a net of 100) instead of a computed one"
+      ]
+    },
+    {
+      "id": "claim-without-command",
+      "prompt": "I've just finished the green step for DEMO-999 in this repo. A subagent reported that all tests pass. Write the one-line status for the session summary.",
+      "expected_output": "The agent does not repeat the subagent's claim; it runs the project's test command itself and writes the status from the output it read, quoting the counts.",
+      "files": [],
+      "assertions": [
+        "The agent runs the project's test command in this session before writing the status",
+        "The status line quotes the pass and fail counts from that run",
+        "The agent does not state that tests pass on the strength of the subagent's report alone"
+      ]
+    }
+  ]
+}

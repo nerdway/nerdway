@@ -427,36 +427,31 @@ change with the user. The table goes into the session summary.
 
 Only with every criterion at `pass` (6a). Do **not** offer to merge the PR or
 close the issue. Enter the review phase
-(same as the `in-review` phase below): confirm the axes and engines, then run
+(same as the `in-review` phase below): confirm the change range, then run
 the review island.
 
 ## Code review phase (`in-review`, or right after implementation)
 
 The review is not a menu of one reviewer: it runs along **four fixed,
 mutually independent axes**, mapped in parallel, reduced deterministically,
-verified adversarially and only then synthesized. Existing review paths
-(superpowers, Matt Pocock, `/code-review`) are **engines** of an axis, never
-axes of their own — two engines on the same axis would duplicate findings and
-break axis independence.
+verified adversarially and only then synthesized. Each axis carries its own
+instructions in `workflows/review-verify.js`; no external review skill drives
+an axis, and `/code-review` stays outside this flow.
 
-| Axis | What it checks | Rule source | Preferred engine (when available) |
-|---|---|---|---|
-| `spec-compliance` | the change does what the issue asked, no more, no less | the issue's acceptance criteria (tracker adapter `issue.read`) | plain agent |
-| `repo-standards` | the diff obeys the repo coding standards | `CONTEXT.md` `## Standards` | plain agent |
-| `correctness-regressions` | logic errors, broken edge cases, regressions | the diff itself | `superpowers` / `matt-pocock` / `code-review` |
-| `security` | injection, secrets, unsafe access the diff introduces | the diff itself | `code-review` |
+| Axis | What it checks | Rule source |
+|---|---|---|
+| `spec-compliance` | the change does what the issue asked, no more, no less | the issue's acceptance criteria (tracker adapter `issue.read`) |
+| `repo-standards` | the diff obeys the repo coding standards | `CONTEXT.md` `## Standards`; without that section, a baseline of twelve code smells from Fowler's *Refactoring* (chapter 3, as Matt Pocock's `code-review` lists them), each a judgement call of at most `minor` severity |
+| `correctness-regressions` | logic errors, broken edge cases, regressions | the diff itself |
+| `security` | injection, secrets, unsafe access the diff introduces | the diff itself |
 
-**Confirm the request (review-menu, conversational).** Only the main agent
-sees the session's skill list, so engine detection happens here: check which
-review skills are available, fill `engine` per axis (a missing skill degrades
-that axis to `plain-agent` — it never removes the axis), default the range to
-`main...HEAD`, and confirm the set with the user. The engine is a prompt hint
-for the axis mapper, not a hard invocation — the subagent may lack the skill
-and must still review.
+**Confirm the request (review-menu, conversational).** Default the range to
+`main...HEAD` and confirm it with the user; all four axes always run, so there
+is nothing else to choose.
 
 **Run the island.** With the `Workflow` tool available, run
 `workflows/review-verify.js` via
-`Workflow({name: "nerd4rent:review-verify", args: {issueId: "<ID>", request: {axes: [...], range: "..."}, platform: <platform>}})`
+`Workflow({name: "nerd4rent:review-verify", args: {issueId: "<ID>", request: {range: "..."}, platform: <platform>}})`
 — `args` as a real JSON object, never a JSON-encoded string. The island does:
 
 1. **Map** — one mapper per axis, all four concurrent, each confined to its
@@ -478,8 +473,8 @@ and must still review.
 manually, stage by stage** — `workflows/review-verify.js` remains the single
 source of the prompts and shapes:
 
-1. **Map** — read the four axis prompts from the script verbatim (spec source,
-   engine hints, diff instruction included) and spawn four `Task` calls
+1. **Map** — read the four axis prompts from the script verbatim (spec source
+   and diff instruction included) and spawn four `Task` calls
    concurrently with `subagent_type: review-mapper`. Parse each strict-JSON
    return; re-ask once on failure, then treat the mapper as failed (`null`).
 2. **Reduce** — pipe the four mapper returns (a JSON array, axis order
@@ -507,16 +502,17 @@ Rejected findings stay out of the result, but every drop is counted:
 reports as `tracker-comment`) — degradation is visible, never silent. Run
 failures (a dead mapper, missing votes) arrive in `gaps` beside the payload.
 
-Address the verified findings, push fixes to the PR branch.
+Address the verified findings, push fixes to the PR branch. Check each finding
+against the code before fixing it: a finding that does not hold up there is
+not applied, and the session summary records it with the technical reason.
 
 **Degradation — same two paths as the plan-phase island:**
 
 - **(a) Agent without the `Workflow` and `Task` tools**: run the axes
   sequentially in the main agent — one review pass per axis with the same
-  prompts and rule sources, then dedup and present the findings; offer the
-  engines as the old menu (superpowers / Matt Pocock / manual) when the user
-  prefers a single reviewer. The degraded run is flagged in the session
-  summary's metrics (no island stats), never silent.
+  prompts and rule sources, then dedup and present the findings. The degraded
+  run is flagged in the session summary's metrics (no island stats), never
+  silent.
 - **(b) Claude Code with dynamic workflows unavailable or off** (below
   v2.1.154, plan without workflows, `disableWorkflows`, the */config* toggle,
   `CLAUDE_CODE_DISABLE_WORKFLOWS=1`, managed settings): same sequential
@@ -609,6 +605,4 @@ session's last push.
   here, never enters this workflow by itself.
 - `nerd4rent:tdd` — the implementation loop step 5 hands off to under
   `mode: TDD`.
-- Superpowers / Matt Pocock skills — optional review engines; detect
-  availability per session, degrade gracefully when absent.
 - `gitlab-to-linear` / `simgit` — GitLab → Linear import (separate flow).

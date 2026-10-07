@@ -636,9 +636,11 @@ and their reducers, and the manifest lockstep.
   the `issue-writer` threshold and confirm it while building the spec layer.
 - Whether `dispatch-agents` needs different wording on hosts that lack the
   Workflow tool (Cursor), given the existing Task-based fallback.
-- Whether the judge for contradicting axes is a seventh agent or a role of the
-  existing synthesizer; this is a decision for the review stage with its own
-  trade-off.
+- ~~Whether the judge for contradicting axes is a seventh agent or a role of the
+  existing synthesizer.~~ Settled in the review stage: a separate read-only
+  `review-judge` agent, called once per conflict, so the synthesizer stays
+  summary-only. A conflict is two verified findings from different axes on the
+  same `file:line` anchor, detected by the reducer.
 - Whether `issue-close` runs the full test suite on the tree it is about to
   merge, the one part of superpowers' `finishing-a-development-branch` worth
   taking; it would add a check to a deliberately mechanical chain.

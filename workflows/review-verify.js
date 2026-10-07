@@ -447,7 +447,10 @@ if (collisions.length > 0) {
             `These findings survived adversarial verification on different axes and share the anchor ${collision.file}:${collision.line}:\n` +
             `${JSON.stringify(collision.findings, null, 2)}\n\n` +
             `Decide whether they ask for contradictory changes. Answer prevails with one of ${axes.join(', ')} when that finding takes precedence and the others are set aside, ` +
-            `or with both when the findings are compatible and every one of them stays.`,
+            `or with both when the findings are compatible and every one of them stays.` +
+            (axes.includes('security')
+              ? ` A security finding is never set aside: answer security or both — any other verdict is discarded and every finding stays.`
+              : ''),
           {
             label: `judge:${collision.file}:${collision.line}`,
             phase: 'Judge',
@@ -480,7 +483,11 @@ collisions.forEach((collision, index) => {
     gaps.push(`conflict at ${collision.file}:${collision.line} got no valid judge verdict — all ${collision.findings.length} findings kept, nothing resolved silently`)
     return
   }
-  const losers = prevails === 'both' ? [] : collision.findings.filter((f) => f.axis !== prevails)
+  if (axes.includes('security') && prevails !== 'security' && prevails !== 'both') {
+    gaps.push(`conflict at ${collision.file}:${collision.line}: verdict ${prevails} would overrule a security finding — all ${collision.findings.length} findings kept`)
+    return
+  }
+  const losers =prevails === 'both' ? [] : collision.findings.filter((f) => f.axis !== prevails)
   for (const loser of losers) overruled.add(loser)
   conflicts.push({ file: collision.file, line: collision.line, axes, prevails, reason: reason.trim(), overruled: losers })
 })

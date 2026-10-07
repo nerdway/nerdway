@@ -288,7 +288,7 @@ for (let i = 0; i < AXES.length; i++) {
   mappedCount += findings.length
   for (const finding of findings) {
     if (!isWellFormed(finding)) continue
-    const anchor = `${finding.file.trim()}:${finding.line}`
+    const anchor = `${AXES[i]}|${finding.file.trim()}:${finding.line}`
     const entry = {
       axis: AXES[i],
       file: finding.file.trim(),

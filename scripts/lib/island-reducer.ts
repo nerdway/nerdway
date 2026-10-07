@@ -253,7 +253,7 @@ export function reduceMappedFindings(
     mappedCount += findings.length;
     for (const finding of findings as MappedFinding[]) {
       if (!isWellFormed(finding)) continue;
-      const anchor = `${finding.file.trim()}:${finding.line}`;
+      const anchor = `${axis}|${finding.file.trim()}:${finding.line}`;
       const entry: CandidateFinding = {
         axis,
         file: finding.file.trim(),

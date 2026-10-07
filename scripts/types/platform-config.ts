@@ -222,12 +222,6 @@ export type PlatformRead =
   | { status: "absent"; errors: string[] }
   | { status: "invalid"; errors: string[] };
 
-/**
- * Reads the platform config of a repo `CLAUDE.md` the way `adapters/platform.md`
- * prescribes. `absent` (no file, or no line-start `## Platform` section) means
- * the caller moves on to its next source; `invalid` means the section exists
- * but is broken, so the caller stops and reports it.
- */
 export function readPlatform(
   markdown: string | undefined,
   vocabulary: PlatformVocabulary,

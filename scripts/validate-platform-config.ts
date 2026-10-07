@@ -36,12 +36,10 @@ for (const file of readdirSync(trackersDir).filter((name) => name.endsWith(".md"
   errors.push(...validateAdapterDefaults(name, source, vocabulary));
 }
 
-// `--print` is the read step of adapters/platform.md: it prints the parsed
-// platform config as JSON on stdout. Exit 0 = found and valid, 3 = absent (no
-// file or no line-start ## Platform section; the caller moves on to its next
-// source), 4 = invalid (the caller stops and reports the errors). Exit 1 is
-// left to Node itself (e.g. ERR_UNKNOWN_FILE_EXTENSION on Node < 22), so a
-// caller never mistakes a runtime failure for a broken section.
+const EXIT_FOUND = 0;
+const EXIT_ABSENT = 3;
+const EXIT_INVALID = 4;
+
 const args = process.argv.slice(2);
 const print = args.includes("--print");
 const target = resolve(args.find((arg) => arg !== "--print") ?? join(repoRoot, "CLAUDE.md"));
@@ -55,11 +53,11 @@ if (print) {
   }
   if (read.status === "found") {
     console.log(JSON.stringify(read.value, null, 2));
-    process.exit(0);
+    process.exit(EXIT_FOUND);
   }
   console.error(`${target}: ${read.status === "absent" ? "no platform config" : "invalid platform config"}`);
   for (const error of read.errors) console.error(`  - ${error}`);
-  process.exit(read.status === "absent" ? 3 : 4);
+  process.exit(read.status === "absent" ? EXIT_ABSENT : EXIT_INVALID);
 }
 
 let summary = "";

@@ -5,6 +5,7 @@ export const meta = {
   phases: [
     { title: 'Map', detail: 'one mapper per review axis, all four concurrent' },
     { title: 'Verify', detail: '3 sceptics per finding, batches of at most 8' },
+    { title: 'Judge', detail: 'one judge per axis conflict, only when verified findings from different axes share an anchor' },
     { title: 'Synthesize', detail: 'one agent writes the summary from the verified set' },
   ],
 }
@@ -59,13 +60,68 @@ const SCHEMA_ReviewFindings = {
           "type": "integer",
           "title": "Unverified overflow",
           "description": "Findings that never got a verdict: past the verification cap, or with fewer than 2 votes cast."
+        },
+        "overruled": {
+          "type": "integer",
+          "title": "Overruled",
+          "description": "Verified findings the judge set aside in favour of another axis on the same anchor; each one is kept verbatim in conflicts."
         }
       },
-      "required": ["mapped", "verified", "rejected", "unverifiedOverflow"]
+      "required": ["mapped", "verified", "rejected", "unverifiedOverflow", "overruled"]
+    },
+    "conflicts": {
+      "type": "array",
+      "title": "Conflicts",
+      "description": "One row per anchor where verified findings from different axes collided and the judge gave a valid verdict; empty when no axes collided.",
+      "items": { "$ref": "#/$defs/AxisConflict" }
     }
   },
-  "required": ["summary", "findings", "stats"],
+  "required": ["summary", "findings", "stats", "conflicts"],
   "$defs": {
+    "AxisConflict": {
+      "type": "object",
+      "title": "Axis conflict",
+      "description": "Verified findings from different axes on one file:line, and the judge's verdict on which takes precedence.",
+      "properties": {
+        "file": {
+          "type": "string",
+          "title": "File",
+          "description": "Repo-relative path of the shared anchor."
+        },
+        "line": {
+          "type": "integer",
+          "title": "Line",
+          "description": "1-indexed line of the shared anchor."
+        },
+        "axes": {
+          "type": "array",
+          "title": "Axes",
+          "description": "The axes whose findings collided, in arrival order.",
+          "items": {
+            "type": "string",
+            "enum": ["spec-compliance", "repo-standards", "correctness-regressions", "security"]
+          }
+        },
+        "prevails": {
+          "type": "string",
+          "title": "Prevails",
+          "description": "The axis whose finding takes precedence, or both when the findings do not contradict each other and all stay.",
+          "enum": ["spec-compliance", "repo-standards", "correctness-regressions", "security", "both"]
+        },
+        "reason": {
+          "type": "string",
+          "title": "Reason",
+          "description": "The judge's one- or two-sentence justification."
+        },
+        "overruled": {
+          "type": "array",
+          "title": "Overruled",
+          "description": "The findings set aside, verbatim; empty when the verdict is both.",
+          "items": { "$ref": "#/$defs/ReviewFinding" }
+        }
+      },
+      "required": ["file", "line", "axes", "prevails", "reason", "overruled"]
+    },
     "ReviewFinding": {
       "type": "object",
       "title": "Finding",
@@ -288,7 +344,7 @@ for (let i = 0; i < AXES.length; i++) {
   mappedCount += findings.length
   for (const finding of findings) {
     if (!isWellFormed(finding)) continue
-    const anchor = `${finding.file.trim()}:${finding.line}`
+    const anchor = `${AXES[i]}|${finding.file.trim()}:${finding.line}`
     const entry = {
       axis: AXES[i],
       file: finding.file.trim(),
@@ -363,8 +419,75 @@ for (let findingIndex = 0; findingIndex < candidates.length; findingIndex++) {
   verified.push({ ...candidates[findingIndex], confidence: refutations === 0 ? 'high' : 'medium' })
 }
 
-const stats = { mapped: mappedCount, verified: verified.length, rejected, unverifiedOverflow }
 log(`Verified: ${verified.length} stand, ${rejected} rejected, ${unverifiedOverflow} unverified`)
+
+const collisionsByAnchor = new Map()
+for (const finding of verified) {
+  const anchor = `${finding.file}:${finding.line}`
+  const group = collisionsByAnchor.get(anchor)
+  if (group === undefined) {
+    collisionsByAnchor.set(anchor, { file: finding.file, line: finding.line, findings: [finding] })
+  } else {
+    group.findings.push(finding)
+  }
+}
+const collisions = [...collisionsByAnchor.values()].filter((group) => new Set(group.findings.map((f) => f.axis)).size > 1)
+
+const judgments = []
+if (collisions.length > 0) {
+  phase('Judge')
+  log(`Judging ${collisions.length} axis conflicts`)
+  for (let start = 0; start < collisions.length; start += BATCH) {
+    const batch = collisions.slice(start, start + BATCH)
+    const results = await parallel(
+      batch.map((collision) => () => {
+        const axes = collision.findings.map((f) => f.axis)
+        return agent(
+          `You judge one axis conflict of a four-axis code review of \`${range}\`. ` +
+            `These findings survived adversarial verification on different axes and share the anchor ${collision.file}:${collision.line}:\n` +
+            `${JSON.stringify(collision.findings, null, 2)}\n\n` +
+            `Decide whether they ask for contradictory changes. Answer prevails with one of ${axes.join(', ')} when that finding takes precedence and the others are set aside, ` +
+            `or with both when the findings are compatible and every one of them stays.`,
+          {
+            label: `judge:${collision.file}:${collision.line}`,
+            phase: 'Judge',
+            schema: {
+              type: 'object',
+              properties: {
+                prevails: { type: 'string', enum: [...axes, 'both'], description: 'The axis whose finding takes precedence, or both' },
+                reason: { type: 'string', description: 'Why — one or two sentences a reader can check' },
+              },
+              required: ['prevails', 'reason'],
+            },
+            agentType: 'nerd4rent:review-judge',
+          },
+        )
+      }),
+    )
+    judgments.push(...results)
+  }
+}
+
+const conflicts = []
+const overruled = new Set()
+collisions.forEach((collision, index) => {
+  const axes = collision.findings.map((f) => f.axis)
+  const judgment = judgments[index]
+  const prevails = judgment ? judgment.prevails : undefined
+  const reason = judgment ? judgment.reason : undefined
+  const validVerdict = prevails === 'both' || axes.includes(prevails)
+  if (!validVerdict || typeof reason !== 'string' || reason.trim().length === 0) {
+    gaps.push(`conflict at ${collision.file}:${collision.line} got no valid judge verdict — all ${collision.findings.length} findings kept, nothing resolved silently`)
+    return
+  }
+  const losers = prevails === 'both' ? [] : collision.findings.filter((f) => f.axis !== prevails)
+  for (const loser of losers) overruled.add(loser)
+  conflicts.push({ file: collision.file, line: collision.line, axes, prevails, reason: reason.trim(), overruled: losers })
+})
+const findings = verified.filter((f) => !overruled.has(f))
+
+const stats = { mapped: mappedCount, verified: findings.length, rejected, unverifiedOverflow, overruled: overruled.size }
+if (collisions.length > 0) log(`Judged: ${conflicts.length} of ${collisions.length} conflicts resolved, ${overruled.size} findings overruled`)
 
 phase('Synthesize')
 
@@ -373,7 +496,7 @@ phase('Synthesize')
 const synthesis = await agent(
   `Write the one-paragraph summary of a four-axis code review of \`${range}\`. ` +
     `Say what was covered (axes: ${AXES.join(', ')}) and whether the change is ready to merge.\n\n` +
-    `Verified findings (the only ones that survived adversarial verification):\n${JSON.stringify(verified, null, 2)}\n\n` +
+    `Verified findings (the only ones that survived adversarial verification and, where axes collided, the judge):\n${JSON.stringify(findings, null, 2)}\n\n` +
     `Stats: ${JSON.stringify(stats)}\n\n` +
     `Do not restate the findings as a list — they travel separately. Judge readiness from their severity and the stats.`,
   { label: 'synthesize:summary', phase: 'Synthesize', schema: summaryShape, agentType: 'nerd4rent:review-synthesizer' },
@@ -387,7 +510,7 @@ if (synthesis === null) {
   summary = synthesis.summary
 }
 
-const reviewFindings = { summary, findings: verified, stats }
+const reviewFindings = { summary, findings, stats, conflicts }
 
 for (const field of SCHEMA_ReviewFindings.required) {
   const value = reviewFindings[field]
@@ -395,7 +518,7 @@ for (const field of SCHEMA_ReviewFindings.required) {
     gaps.push(`ReviewFindings.${field} is empty — the run is incomplete`)
   }
 }
-for (const finding of verified) {
+for (const finding of findings) {
   for (const field of FINDING_REQUIRED) {
     if (finding[field] === undefined || finding[field] === null) {
       gaps.push(`finding ${finding.file}:${finding.line} is missing ${field} — the run is incomplete`)

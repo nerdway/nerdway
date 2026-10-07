@@ -64,12 +64,14 @@ A mandatory **status-driven** workflow for working a tracker issue by ID (e.g. `
 
 1. Fetches the issue (`linearis issues read <ID>`) at the start of every turn and dispatches on its **phase**, read through the project's status strategy (on Linear by default: the state name) — also when a bare issue ID is typed into a fresh session.
 2. **Backlog/Todo** → drafts an implementation plan (for ambiguous requirements, first offers an inline grilling session with an ADR/glossary docs discipline), posts it as a `## Implementation plan` comment, sets the status to Todo, and ends the turn with no instructions.
-3. **In Progress** (set manually by you = plan approved) → starts implementation by delegating to **`nerd4rent:issue-start`** (below): branch from the Linear `branchName`, empty commit, push, **draft PR with magic words** (`Fixes TEAM-123`) so the Linear↔GitHub integration closes the issue on merge; then offers an implementation mode (superpowers / Matt Pocock skills / plain agent — whichever is available).
+3. **In Progress** (set manually by you = plan approved) → starts implementation by delegating to **`nerd4rent:issue-start`** (below): branch from the Linear `branchName`, empty commit, push, **draft PR with magic words** (`Fixes TEAM-123`) so the Linear↔GitHub integration closes the issue on merge; then implements the plan in the mode its **Test approach** sets (see *Tests first by default* below).
 4. After implementation or on **In Review** → offers a code-review menu (superpowers / Matt Pocock / review it yourself); never offers to merge or close on its own.
 5. Close-out on request: delegates to **`nerd4rent:issue-close`** (below) to merge and finish the issue.
 6. Posts a `## Session summary` comment after every working session, and in the same step records a one-line **checkpoint** (date, issue, status, branch, HEAD, next step) under `## Checkpoints` on the project's nerdbrain entity page — the entry `project-continue` reads back later; skipped silently when the vault is unreachable.
 
 Uses the tracker's CLI through its adapter (`linearis`, `gh` for GitHub Issues, `glab` for GitLab Issues, or `az` for Azure DevOps Boards). Trigger: any issue ID with intent to plan or implement (incl. Polish *zaplanuj*, *zrealizuj*, *napraw*).
+
+**Tests first by default.** Every implementation plan has a **Test approach** section. It defaults to TDD: the agent writes a failing test, watches it fail, then writes just enough code to pass, using the plugin's own `nerd4rent:tdd` skill — no other plugin needed. To skip tests for a change that has no behaviour to drive (documentation, a one-off migration), ask for `no tests` while the plan is drafted, or edit the plan before moving the issue to In Progress: the plan must then say why, and which runnable check replaces the test. Leaving TDD is never silent — the reason and the check's result also land in the session summary.
 
 ### `nerd4rent:issue-start`
 

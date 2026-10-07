@@ -283,6 +283,26 @@ export function reduceMappedFindings(
   return { candidates, overflow, mappedCount, gaps };
 }
 
+export interface AnchorCollision {
+  file: string;
+  line: number;
+  findings: VerifiedFinding[];
+}
+
+export function findAxisConflicts(verified: VerifiedFinding[]): AnchorCollision[] {
+  const byAnchor = new Map<string, AnchorCollision>();
+  for (const finding of verified) {
+    const anchor = `${finding.file}:${finding.line}`;
+    const group = byAnchor.get(anchor);
+    if (group === undefined) {
+      byAnchor.set(anchor, { file: finding.file, line: finding.line, findings: [finding] });
+    } else {
+      group.findings.push(finding);
+    }
+  }
+  return [...byAnchor.values()].filter((group) => new Set(group.findings.map((f) => f.axis)).size > 1);
+}
+
 export function reduceVerdicts(
   candidates: CandidateFinding[],
   votes: Array<Vote | null>,

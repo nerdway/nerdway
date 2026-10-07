@@ -1,7 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { reduceMappedFindings, reduceVerdicts, type CandidateFinding, type Vote } from "./island-reducer.ts";
+import {
+  findAxisConflicts,
+  reduceMappedFindings,
+  reduceVerdicts,
+  type CandidateFinding,
+  type VerifiedFinding,
+  type Vote,
+} from "./island-reducer.ts";
 
 const AXES = ["spec-compliance", "repo-standards", "correctness-regressions", "security"] as const;
 const SEVERITIES = ["critical", "major", "minor"] as const;
@@ -202,6 +209,41 @@ test("reduceVerdicts tolerates empty votes and malformed vote objects", () => {
   assert.deepEqual(result.gaps, [
     "finding z.ts:1 got 0 of 3 votes — dropped unverified, never passed by default",
   ]);
+});
+
+function verifiedAt(axis: (typeof AXES)[number], file: string, line: number, claim: string): VerifiedFinding {
+  return { axis, file, line, claim, evidence: "e", severity: "major", confidence: "high" };
+}
+
+test("findAxisConflicts groups verified findings from different axes on one anchor", () => {
+  const verified = [
+    verifiedAt("spec-compliance", "h.ts", 3, "add the flag"),
+    verifiedAt("security", "i.ts", 1, "unrelated"),
+    verifiedAt("security", "h.ts", 3, "drop the flag"),
+    verifiedAt("repo-standards", "h.ts", 3, "rename the flag"),
+  ];
+
+  assert.deepEqual(findAxisConflicts(verified), [
+    { file: "h.ts", line: 3, findings: [verified[0], verified[2], verified[3]] },
+  ]);
+});
+
+test("findAxisConflicts returns nothing when no anchor is shared", () => {
+  const verified = [
+    verifiedAt("spec-compliance", "h.ts", 3, "a"),
+    verifiedAt("security", "h.ts", 4, "b"),
+  ];
+
+  assert.deepEqual(findAxisConflicts(verified), []);
+});
+
+test("findAxisConflicts ignores two findings of one axis on one anchor", () => {
+  const verified = [
+    verifiedAt("security", "h.ts", 3, "a"),
+    verifiedAt("security", "h.ts", 3, "b"),
+  ];
+
+  assert.deepEqual(findAxisConflicts(verified), []);
 });
 
 test("severity helpers only accept the four axes and three severities", () => {

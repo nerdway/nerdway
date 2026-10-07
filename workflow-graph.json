@@ -642,42 +642,18 @@
     },
     {
       "id": "ReviewRequest",
-      "description": "The review request confirmed in review-menu: the four fixed axes, each with the engine detected for it, plus the change range to read. Only review-menu sees the session's skill list, so engine detection happens there, never inside the island.",
+      "description": "The review request confirmed in review-menu: the change range to read. The four review axes are fixed and always all run, so the request carries no axis list.",
       "schema": {
         "type": "object",
         "title": "Review request",
         "properties": {
-          "axes": {
-            "type": "array",
-            "title": "Axes",
-            "description": "All four review axes, always present — a missing engine degrades an axis to plain-agent, never removes it.",
-            "items": {
-              "type": "object",
-              "title": "Axis",
-              "description": "One review axis and the engine driving it.",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "title": "Axis id",
-                  "description": "Which of the four fixed, mutually independent review axes this is.",
-                  "enum": ["spec-compliance", "repo-standards", "correctness-regressions", "security"]
-                },
-                "engine": {
-                  "type": "string",
-                  "title": "Engine",
-                  "description": "The review path driving this axis — a prompt hint for the mapper, not a hard invocation. A free string, so a new engine never forces a contract bump; the island degrades unknown values to plain-agent."
-                }
-              },
-              "required": ["id", "engine"]
-            }
-          },
           "range": {
             "type": "string",
             "title": "Change range",
             "description": "The diff range to read, e.g. `main...HEAD`."
           }
         },
-        "required": ["axes", "range"]
+        "required": ["range"]
       }
     },
     {
@@ -1109,7 +1085,7 @@
         {
           "kind": "decision",
           "mechanism": "chat-approval",
-          "description": "The user confirms the axis set and the detected engines; the runtime takes no mid-run input, so this cannot move inside review-verify."
+          "description": "The user confirms the change range the four axes will review; the runtime takes no mid-run input, so this cannot move inside review-verify."
         }
       ]
     },

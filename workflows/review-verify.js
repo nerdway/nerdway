@@ -1,7 +1,7 @@
 export const meta = {
   name: 'review-verify',
   description: 'Review a change range along 4 independent axes, reduce deterministically, verify adversarially, synthesize a summary',
-  whenToUse: 'Review phase of issue-workflow, after review-menu confirmed the axes and engines',
+  whenToUse: 'Review phase of issue-workflow, after review-menu confirmed the change range',
   phases: [
     { title: 'Map', detail: 'one mapper per review axis, all four concurrent' },
     { title: 'Verify', detail: '3 sceptics per finding, batches of at most 8' },
@@ -140,7 +140,6 @@ if (typeof input === 'string') {
 const issueId = input && input.issueId ? String(input.issueId) : ''
 const request = input && input.request ? input.request : {}
 const range = typeof request.range === 'string' && request.range.length > 0 ? request.range : 'main...HEAD'
-const requestedAxes = Array.isArray(request.axes) ? request.axes : []
 const platform = input && input.platform ? input.platform : {}
 const adapters = platform.adapters || {}
 const trackerAdapter = typeof adapters.tracker === 'string' && adapters.tracker.length > 0 ? adapters.tracker : null
@@ -167,22 +166,6 @@ if (issueId !== '' && trackerAdapter !== null) {
   specSource = `Acceptance criteria are not readable from the tracker: read the pull request description and review the change against the intent stated there. ${adapterInstruction(vcsAdapter, 'pr.view')} `
 } else {
   specSource = `Neither the tracker nor the pull request is readable: review the change against the intent stated in its commit messages (\`git log ${range}\`). `
-}
-
-// The engine is a prompt hint, never a hard invocation: the subagent may lack the skill,
-// and the axis must still produce findings.
-const ENGINE_HINTS = {
-  'superpowers': 'If the superpowers code-review skills are available in your session, follow their review methodology; otherwise review directly.',
-  'matt-pocock': 'If mattpocock-skills:code-review is available in your session, follow its review methodology; otherwise review directly.',
-  'code-review': 'Follow the /code-review methodology: verified, high-confidence findings only.',
-  'plain-agent': 'Review directly, no framework skill.',
-}
-
-function engineFor(axisId) {
-  const declared = requestedAxes.find((axis) => axis && axis.id === axisId)
-  return declared && typeof declared.engine === 'string' && Object.hasOwn(ENGINE_HINTS, declared.engine)
-    ? declared.engine
-    : 'plain-agent'
 }
 
 const AXIS_PROMPTS = {
@@ -258,7 +241,6 @@ const mapped = await parallel(
     agent(
       `You are one review axis of a four-axis code review. ${AXIS_PROMPTS[axisId]}\n\n` +
         `${diffInstruction}\n\n` +
-        `Engine: ${ENGINE_HINTS[engineFor(axisId)]}\n\n` +
         `Stay strictly on your axis — the other three are covered by other reviewers. ` +
         `Return an empty findings list rather than padding with weak findings.`,
       { label: `map:${axisId}`, phase: 'Map', schema: findingListShape, agentType: 'nerd4rent:review-mapper' },

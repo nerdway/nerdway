@@ -48,6 +48,33 @@
 1.
 2.
 
+### Test approach
+
+<!-- How the implementation is driven. TDD is the default; leaving it is
+     allowed, never silent: the reason stands here, is approved together with
+     the move to In Progress, and is carried into the session summary. -->
+
+**Mode:**
+
+<!-- TDD runs nerd4rent:tdd; no tests is a plain implementation backed by the
+     reason below. -->
+
+<!-- one of: TDD | no tests -->
+
+**Seams:**
+
+<!-- The public boundaries the tests will be written against: a function, a CLI,
+     a contract. Decided here, not asked mid-implementation. -->
+
+-
+-
+
+**Reason:**
+
+<!-- Required when the mode is no tests: why, and the nearest runnable check
+     that stands in for a test. Under TDD, what is deliberately left untested,
+     if anything. -->
+
 ### Acceptance Criteria
 
 <!-- Each item independently verifiable and ending with how it is checked — a

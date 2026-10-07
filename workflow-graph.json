@@ -498,6 +498,31 @@
             "x-render": "numbered",
             "items": { "type": "string" }
           },
+          "testApproach": {
+            "type": "object",
+            "title": "Test approach",
+            "description": "How the implementation is driven. TDD is the default; leaving it is allowed, never silent: the reason stands here, is approved together with the move to In Progress, and is carried into the session summary.",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "title": "Mode",
+                "description": "TDD runs nerd4rent:tdd; no tests is a plain implementation backed by the reason below.",
+                "enum": ["TDD", "no tests"]
+              },
+              "seams": {
+                "type": "array",
+                "title": "Seams",
+                "description": "The public boundaries the tests will be written against: a function, a CLI, a contract. Decided here, not asked mid-implementation.",
+                "items": { "type": "string" }
+              },
+              "reason": {
+                "type": "string",
+                "title": "Reason",
+                "description": "Required when the mode is no tests: why, and the nearest runnable check that stands in for a test. Under TDD, what is deliberately left untested, if anything."
+              }
+            },
+            "required": ["mode", "seams"]
+          },
           "acceptanceCriteria": {
             "type": "array",
             "title": "Acceptance Criteria",
@@ -541,6 +566,7 @@
           "technicalApproach",
           "affectedFiles",
           "implementationSteps",
+          "testApproach",
           "acceptanceCriteria",
           "risks",
           "dependencies"
@@ -786,6 +812,25 @@
             "title": "Validation",
             "description": "Commands run and what they reported — evidence, not assertions.",
             "items": { "type": "string" }
+          },
+          "testApproach": {
+            "type": "object",
+            "title": "Test approach",
+            "description": "The mode the session implemented in, taken from the plan. Omit when the session implemented nothing.",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "title": "Mode",
+                "description": "The mode from the plan's test approach.",
+                "enum": ["TDD", "no tests"]
+              },
+              "reason": {
+                "type": "string",
+                "title": "Reason",
+                "description": "Under no tests: the plan's reason and the stand-in check that was actually run, with its result. Also when the plan carried no test approach and the mode was assumed."
+              }
+            },
+            "required": ["mode"]
           },
           "criteriaVerification": {
             "type": "array",

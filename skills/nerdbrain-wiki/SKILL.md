@@ -136,7 +136,8 @@ user asks something the wiki would have answered.
 
 `## Checkpoints` is the project's structured "where are we" history: one
 bullet per working session, newest first, written by `issue-workflow`'s
-session-summary step and by `project-continue` (which also reads it). It sits
+session-summary step, by `auto-issue-mode`'s Nerdbrain stage after the merge,
+and by `project-continue` (which also reads it). It sits
 between `## Decisions` and `## Active context`. `## Active context` stays the
 free-form narrative; a checkpoint is the one-line pointer that survives a
 machine switch.

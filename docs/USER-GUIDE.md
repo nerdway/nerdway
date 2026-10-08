@@ -1,6 +1,6 @@
 # User Guide
 
-This guide is for developers who install this plugin — but it is not only an installation manual. The plugin is a working implementation of **graph engineering**: a discipline for building agent workflows as explicit graphs with typed data on every edge, instead of prose chains held together by good intentions. This guide explains the discipline first, then shows how the plugin puts it into practice, and finally covers the practical matter of installing and driving it day to day.
+This guide is for developers who install this plugin - but it is not only an installation manual. The plugin is a working implementation of **graph engineering**: a discipline for building agent workflows as explicit graphs with typed data on every edge, instead of prose chains held together by good intentions. This guide explains the discipline first, then shows how the plugin puts it into practice, and finally covers the practical matter of installing and driving it day to day.
 
 Contents:
 
@@ -13,39 +13,39 @@ Contents:
 
 ## What is graph engineering?
 
-Most agent workflows are written as prose: "first plan, then implement, then review, then merge". One agent walks the chain top to bottom, handoffs are sentences like "hands off to the close skill", and every rule is a reminder the model may or may not honor. This fails in predictable ways — and graph engineering is the set of principles that name those failures and fix them structurally:
+Most agent workflows are written as prose: "first plan, then implement, then review, then merge". One agent walks the chain top to bottom, handoffs are sentences like "hands off to the close skill", and every rule is a reminder the model may or may not honor. This fails in predictable ways - and graph engineering is the set of principles that name those failures and fix them structurally:
 
-1. **Dependency is not order.** Only a real data dependency forces one step to wait for another. Prose workflows serialize everything out of habit: a planning phase that reads the repo, the docs, prior plans, and related issues *one after another* is a false sequence — none of those reads depends on any other. Independent work should fan out and run concurrently; that is also what keeps the critical path (the longest chain you actually have to wait for) short.
+1. **Dependency is not order.** Only a real data dependency forces one step to wait for another. Prose workflows serialize everything out of habit: a planning phase that reads the repo, the docs, prior plans, and related issues *one after another* is a false sequence - none of those reads depends on any other. Independent work should fan out and run concurrently; that is also what keeps the critical path (the longest chain you actually have to wait for) short.
 
-2. **State lives on edges, and it is typed.** What flows between two steps must be data with a declared schema, not a status. The test for every arrow in your workflow: *what data passes through it?* If the honest answer is "a signal that the previous step finished" — the edge is fake, and whatever the next step needs will be re-derived, half-remembered, or lost.
+2. **State lives on edges, and it is typed.** What flows between two steps must be data with a declared schema, not a status. The test for every arrow in your workflow: *what data passes through it?* If the honest answer is "a signal that the previous step finished" - the edge is fake, and whatever the next step needs will be re-derived, half-remembered, or lost.
 
 3. **Verification must be asymmetric.** The agent that produced a piece of work is the worst judge of it. A review step where the implementer picks one reviewer and accepts its verdict is decoration. Real verification is adversarial: independent verifiers whose *goal is to refute* the finding or the work, with genuine power to reject it.
 
-4. **Failure must be visible, never silent.** When one branch of a fan-out dies, the run should degrade — produce a result that says exactly what is missing — rather than either crash entirely or pretend nothing happened. Counters and gap lists beat both.
+4. **Failure must be visible, never silent.** When one branch of a fan-out dies, the run should degrade - produce a result that says exactly what is missing - rather than either crash entirely or pretend nothing happened. Counters and gap lists beat both.
 
-5. **Human gates are architecture, not conversation.** An approval that exists as a chat message lives inside the model's context, where it can be imagined, misremembered, or hallucinated. An approval that exists as *state outside the agent* — a status field in an external system that a human moved by hand — is a real gate: the agent can check it but cannot fake it.
+5. **Human gates are architecture, not conversation.** An approval that exists as a chat message lives inside the model's context, where it can be imagined, misremembered, or hallucinated. An approval that exists as *state outside the agent* - a status field in an external system that a human moved by hand - is a real gate: the agent can check it but cannot fake it.
 
 6. **Invariants deserve enforcement, not reminders.** "Remember to keep both versions in sync" is not a rule; it is a hope. A rule is something a validator fails on, a hook denies, or a gate makes unreachable.
 
-7. **Declare widths and budgets.** How wide a fan-out may go is part of the design, declared and bounded — not decided ad hoc at runtime.
+7. **Declare widths and budgets.** How wide a fan-out may go is part of the design, declared and bounded - not decided ad hoc at runtime.
 
-8. **Know when *not* to build a graph.** Work that is truly sequential and irreversible — open the branch and the PR, commit, push, merge, close — gains nothing from parallelism and everything from being a short, dumb, deterministic chain. Graphing it would only add failure modes.
+8. **Know when *not* to build a graph.** Work that is truly sequential and irreversible - open the branch and the PR, commit, push, merge, close - gains nothing from parallelism and everything from being a short, dumb, deterministic chain. Graphing it would only add failure modes.
 
 If you take one thing from this list: draw your workflow as a graph, write on every edge *what data* crosses it, and be suspicious of every edge where you can't.
 
 ## How the plugin practices it
 
-The plugin's skills form one **issue lifecycle axis** — from filing a Linear issue, through planning, implementation and review, to merge and close-out. Every principle above has a concrete, inspectable counterpart in this repo.
+The plugin's skills form one **issue lifecycle axis** - from filing a Linear issue, through planning, implementation and review, to merge and close-out. Every principle above has a concrete, inspectable counterpart in this repo.
 
 ### The contract: `workflow-graph.json`
 
-The topology is not documentation — it is data. [`workflow-graph.json`](../workflow-graph.json) in the repo root declares every node of the axis (which skill runs it, in which runtime), every edge (with a **named JSON Schema** for the payload that crosses it), every gate, failure policy and width budget. `node scripts/validate-workflow-graph.ts` enforces it offline: an edge without a schema is a contract error, an orphan node is a contract error, an irreversible action without a gate is a contract error. [ADR-0003](adr/0003-workflow-graph-contract.md) records why the contract and the runtime are deliberately two artifacts.
+The topology is not documentation - it is data. [`workflow-graph.json`](../workflow-graph.json) in the repo root declares every node of the axis (which skill runs it, in which runtime), every edge (with a **named JSON Schema** for the payload that crosses it), every gate, failure policy and width budget. `node scripts/validate-workflow-graph.ts` enforces it offline: an edge without a schema is a contract error, an orphan node is a contract error, an irreversible action without a gate is a contract error. [ADR-0003](adr/0003-workflow-graph-contract.md) records why the contract and the runtime are deliberately two artifacts.
 
-This is principle 2 made mechanical: the edge `plan-draft → implement` doesn't "hand off" — it carries an `ImplementationPlan`, and the schema for it is right there in the contract.
+This is principle 2 made mechanical: the edge `plan-draft → implement` doesn't "hand off" - it carries an `ImplementationPlan`, and the schema for it is right there in the contract.
 
 ### Islands, not one big graph
 
-The axis is not one graph end to end, because the workflow runtime takes no mid-run human input — and several steps *need* a human (approving a plan, choosing review scope). So the design is an **island graph**: a conversational backbone with exactly two parallel islands embedded where the work is wide, independent, and human-free:
+The axis is not one graph end to end, because the workflow runtime takes no mid-run human input - and several steps *need* a human (approving a plan, choosing review scope). So the design is an **island graph**: a conversational backbone with exactly two parallel islands embedded where the work is wide, independent, and human-free:
 
 ```
 [main agent, conversational, status-driven]
@@ -57,37 +57,37 @@ The axis is not one graph end to end, because the workflow runtime takes no mid-
   └─ close-out                                      (a chain, on purpose)
 ```
 
-**Island #1 — plan fan-out** (principle 1). When you ask for a plan, five gatherers launch *concurrently*, each reading one independent source: repo layout, in-repo conventions (ADRs, glossary), prior plans and merged PRs, related tracker issues, and the project's knowledge-base page. A **reducer** — plain deterministic code, not a model — dedupes, drops empties, and trims the result. What used to be five sequential reads is one fan-out bounded by the width budget the contract declares (principle 7). Each gatherer is the plugin's own read-only `plan-gatherer` agent — Sonnet, with the vault-search recipes preloaded — rather than the default subagent on your session model. Gatherers read the tracker and the VCS host through the project's platform adapters, so the fan-out works the same on Linear with GitHub, GitLab or Azure DevOps; a platform without an adapter shows up as a gap, not as a wrong command.
+**Island #1 - plan fan-out** (principle 1). When you ask for a plan, five gatherers launch *concurrently*, each reading one independent source: repo layout, in-repo conventions (ADRs, glossary), prior plans and merged PRs, related tracker issues, and the project's knowledge-base page. A **reducer** - plain deterministic code, not a model - dedupes, drops empties, and trims the result. What used to be five sequential reads is one fan-out bounded by the width budget the contract declares (principle 7). Each gatherer is the plugin's own read-only `plan-gatherer` agent - Sonnet, with the vault-search recipes preloaded - rather than the default subagent on your session model. Gatherers read the tracker and the VCS host through the project's platform adapters, so the fan-out works the same on Linear with GitHub, GitLab or Azure DevOps; a platform without an adapter shows up as a gap, not as a wrong command.
 
-**Island #2 — adversarial review** (principles 3 and 4). The review is not "pick a reviewer". Four fixed, mutually independent **axes** are mapped in parallel — does the change do what the issue asked (`spec-compliance`), does the diff obey the repo's written standards (`repo-standards`), is it correct (`correctness-regressions`), is it safe (`security`). A deterministic reducer dedupes and caps the findings. Then each surviving finding faces **three independent sceptics, each prompted to refute it** — two or more refutations out of three kill the finding; a finding that fails to collect enough votes is dropped *as unverified*, and counted. When verified findings from two axes land on the same line — say `spec-compliance` asks for a flag that `security` wants gone — a **judge** is called for that one conflict and decides which axis prevails; the overruled finding is kept verbatim in a `conflicts` list with the reason, and a review without such collisions never runs a judge. The final summary is written by an agent, but the findings list is assembled verbatim by the reducer — no model can add or soften a finding after verification, and the judge can only set one aside on the record. Every run reports `stats {mapped, verified, rejected, unverifiedOverflow, overruled}` and a `gaps` list, so degradation is visible in the review comment itself, never silent. The mappers, the sceptics, the judge and the summary writer are all dedicated read-only plugin agents — no Edit, Write or MCP tools, by construction — but only the mappers and the summary writer run on cheaper models (`review-mapper` on Sonnet, `review-synthesizer` on Haiku). The sceptics (`review-sceptic`) and the judge (`review-judge`) deliberately keep the session model: they are the quality gate, and "when uncertain, refute" on a weaker model would refute everything.
+**Island #2 - adversarial review** (principles 3 and 4). The review is not "pick a reviewer". Four fixed, mutually independent **axes** are mapped in parallel - does the change do what the issue asked (`spec-compliance`), does the diff obey the repo's written standards (`repo-standards`), is it correct (`correctness-regressions`), is it safe (`security`). A deterministic reducer dedupes and caps the findings. Then each surviving finding faces **three independent sceptics, each prompted to refute it** - two or more refutations out of three kill the finding; a finding that fails to collect enough votes is dropped *as unverified*, and counted. When verified findings from two axes land on the same line - say `spec-compliance` asks for a flag that `security` wants gone - a **judge** is called for that one conflict and decides which axis prevails; the overruled finding is kept verbatim in a `conflicts` list with the reason, and a review without such collisions never runs a judge. The final summary is written by an agent, but the findings list is assembled verbatim by the reducer - no model can add or soften a finding after verification, and the judge can only set one aside on the record. Every run reports `stats {mapped, verified, rejected, unverifiedOverflow, overruled}` and a `gaps` list, so degradation is visible in the review comment itself, never silent. The mappers, the sceptics, the judge and the summary writer are all dedicated read-only plugin agents - no Edit, Write or MCP tools, by construction - but only the mappers and the summary writer run on cheaper models (`review-mapper` on Sonnet, `review-synthesizer` on Haiku). The sceptics (`review-sceptic`) and the judge (`review-judge`) deliberately keep the session model: they are the quality gate, and "when uncertain, refute" on a weaker model would refute everything.
 
 This asymmetry is not theoretical. In this repo's own history the verifier has rejected plausible-but-wrong findings (including a convincing command-injection claim, refuted 3-of-3) and confirmed real defects the implementing agent had missed.
 
 ### Gates and frozen rules
 
-The approval that unlocks implementation is **you moving the issue to In Progress in Linear** (principle 5). The agent reads that status at the start of every turn; it never sets it itself to unlock work. The contract marks every irreversible action — writing an issue to Linear, pushing commits, merging, writing the knowledge base — as `irreversible: true`, and the validator rejects any such action that isn't behind a gate.
+The approval that unlocks implementation is **you moving the issue to In Progress in Linear** (principle 5). The agent reads that status at the start of every turn; it never sets it itself to unlock work. The contract marks every irreversible action - writing an issue to Linear, pushing commits, merging, writing the knowledge base - as `irreversible: true`, and the validator rejects any such action that isn't behind a gate.
 
-Invariants are **frozen rules** (principle 6) — a first-class registry in the contract: *no Linear write before approval*, *no repo change before In Progress*, *no merge without green verification*, *knowledge-base access via filesystem only*. Each rule is pointed at by a gate that enforces it — a `decision` gate (a human's call, carried by a Linear status or explicit chat approval) or a `deny` gate (a hard stop that never asks). A rule no gate enforces fails validation. Even repo housekeeping follows this: the old reminder "keep both manifest versions in sync" is now `node scripts/validate-manifests.ts`, which exits non-zero on drift — because the reminder was once forgotten and the validator cannot be.
+Invariants are **frozen rules** (principle 6) - a first-class registry in the contract: *no Linear write before approval*, *no repo change before In Progress*, *no merge without green verification*, *knowledge-base access via filesystem only*. Each rule is pointed at by a gate that enforces it - a `decision` gate (a human's call, carried by a Linear status or explicit chat approval) or a `deny` gate (a hard stop that never asks). A rule no gate enforces fails validation. Even repo housekeeping follows this: the old reminder "keep both manifest versions in sync" is now `node scripts/validate-manifests.ts`, which exits non-zero on drift - because the reminder was once forgotten and the validator cannot be.
 
 ### One schema, two consumers
 
-Each edge schema in the contract has its body — a JSON Schema literal — consumed twice: inside a workflow island it is what `agent({schema})` enforces at runtime, and outside it is what the skill templates are rendered from (`node scripts/render-templates.ts` generates `plan-template.md`, `issue-template.md`, `session-summary-template.md`). The plan you read as markdown in a Linear comment and the object an island validates at runtime have the same shape, defined once. A drift check keeps the runtime copies honest: every schema inlined in a `workflows/*.js` script must be deep-equal to the registry body, and a hand edit to a generated template turns a test red.
+Each edge schema in the contract has its body - a JSON Schema literal - consumed twice: inside a workflow island it is what `agent({schema})` enforces at runtime, and outside it is what the skill templates are rendered from (`node scripts/render-templates.ts` generates `plan-template.md`, `issue-template.md`, `session-summary-template.md`). The plan you read as markdown in a Linear comment and the object an island validates at runtime have the same shape, defined once. A drift check keeps the runtime copies honest: every schema inlined in a `workflows/*.js` script must be deep-equal to the registry body, and a hand edit to a generated template turns a test red.
 
 ### Chains where chains belong
 
-Chains sit at both ends of the axis. Start — branch from the issue, empty first commit, push, draft PR with the `Fixes` magic word — and close-out — commit leftovers, push, merge the PR, switch branches, set Done — are truly sequential and irreversible, so each is a **chain** (`issue-start`, `issue-close`), deliberately kept out of the graph and pinned to a small, cheap model (principle 8). Start is not even a node of its own: it is the first half of `implement`, behind the same In Progress gate, and a separate node would only duplicate that gate. The same principle picks the model inside the islands: the mechanical roles — axis mappers, summary writer, context gatherers — run as dedicated read-only plugin agents in `agents/` on Sonnet or Haiku, selected per call with `agentType`, while the sceptics run as the read-only `review-sceptic` agent on the session model because their judgement is the gate. Observability (metrics for the graph itself) is the one principle still open here — tracked as an explicit pending decision, where "we consciously don't collect" is an acceptable answer.
+Chains sit at both ends of the axis. Start - branch from the issue, empty first commit, push, draft PR with the `Fixes` magic word - and close-out - commit leftovers, push, merge the PR, switch branches, set Done - are truly sequential and irreversible, so each is a **chain** (`issue-start`, `issue-close`), deliberately kept out of the graph and pinned to a small, cheap model (principle 8). Start is not even a node of its own: it is the first half of `implement`, behind the same In Progress gate, and a separate node would only duplicate that gate. The same principle picks the model inside the islands: the mechanical roles - axis mappers, summary writer, context gatherers - run as dedicated read-only plugin agents in `agents/` on Sonnet or Haiku, selected per call with `agentType`, while the sceptics run as the read-only `review-sceptic` agent on the session model because their judgement is the gate. Observability (metrics for the graph itself) is the one principle still open here - tracked as an explicit pending decision, where "we consciously don't collect" is an acceptable answer.
 
 ### Degradation is part of the design
 
-None of the above is a precondition. In Claude Code without dynamic workflows (older version, disabled, or a plan without them) — and in any other agent (Cursor, Copilot, …) that has no workflow runtime at all — the same topology is read as prose and executed sequentially. An island is always an optimization, never a requirement. Slower, but the same steps, the same schemas, the same gates.
+None of the above is a precondition. In Claude Code without dynamic workflows (older version, disabled, or a plan without them) - and in any other agent (Cursor, Copilot, …) that has no workflow runtime at all - the same topology is read as prose and executed sequentially. An island is always an optimization, never a requirement. Slower, but the same steps, the same schemas, the same gates.
 
 ## Programming in this spirit yourself
 
 The repo doubles as a reference implementation you can copy from. If you want to build your own workflow this way:
 
-1. **Write the contract first.** Nodes, edges, gates — as data in your repo, not prose in a doc. Apply the edge test ruthlessly: every edge names the schema of what crosses it.
-2. **Validate it offline.** A small script that fails loudly on schema-less edges, orphan nodes, and ungated irreversible actions costs an afternoon and catches design rot forever. No CI required — this repo runs its validators locally.
-3. **Graph only the islands.** Look for stretches that are *wide* (several independent inputs), *independent* (no shared state between branches), and *human-free* (no mid-run decision needed). Everything else — especially anything irreversible — stays a conversational step or a plain chain.
+1. **Write the contract first.** Nodes, edges, gates - as data in your repo, not prose in a doc. Apply the edge test ruthlessly: every edge names the schema of what crosses it.
+2. **Validate it offline.** A small script that fails loudly on schema-less edges, orphan nodes, and ungated irreversible actions costs an afternoon and catches design rot forever. No CI required - this repo runs its validators locally.
+3. **Graph only the islands.** Look for stretches that are *wide* (several independent inputs), *independent* (no shared state between branches), and *human-free* (no mid-run decision needed). Everything else - especially anything irreversible - stays a conversational step or a plain chain.
 4. **Put humans between islands, as external state.** An approval should be a status in a system of record the agent polls, not a chat reply.
 5. **Make verification adversarial.** Separate the mapper from the judge; prompt the judges to refute; give them a real rejection threshold; count every rejection and every unverified drop in the output.
 6. **Budget the fan-out and surface the gaps.** Declare max widths; return `stats` and `gaps` with every run so a degraded result is distinguishable from a complete one.
@@ -100,30 +100,30 @@ Requirements, installation in Claude Code, Cursor and other agents, and updating
 
 ## Telling the plugin which platform a project uses
 
-Before the first issue, the plugin needs to know where the project's issues live (Linear, GitHub Issues, GitLab Issues or Azure DevOps Boards) and where its code lives (GitHub, GitLab or Azure DevOps). Run `/determine-platform` once per repo — or just file an issue and `issue-writer` runs it for you.
+Before the first issue, the plugin needs to know where the project's issues live (Linear, GitHub Issues, GitLab Issues or Azure DevOps Boards) and where its code lives (GitHub, GitLab or Azure DevOps). Run `/determine-platform` once per repo - or just file an issue and `issue-writer` runs it for you.
 
-It checks what is already recorded, infers the rest from the git remote and your Linear CLI, and asks you a single numbered question only when the answer is ambiguous. The result lands as a `## Platform` section in the repo's `CLAUDE.md` (commit it with the next change — it is meant to travel with the repo) and, if you use the nerdbrain vault, as `platform:` on the project's entity page. Running it again changes nothing.
+It checks what is already recorded, infers the rest from the git remote and your Linear CLI, and asks you a single numbered question only when the answer is ambiguous. The result lands as a `## Platform` section in the repo's `CLAUDE.md` (commit it with the next change - it is meant to travel with the repo) and, if you use the nerdbrain vault, as `platform:` on the project's entity page. Running it again changes nothing.
 
-At the end it runs `/bind-statuses`, which decides how the tracker shows the workflow's five phases — `backlog`, `todo`, `in-progress`, `in-review`, `done`. On Linear the recommendation is the team's own states (`native`), which is also what applies when you decline, so nothing changes for you. Where a tracker has no states, the phases become labels (`status::todo`, plus open/closed), or — if you can't or don't want to add labels — `Status: <phase>` marker comments. It asks one question, creates labels only after you say yes, and adds a `statuses` key to the same `## Platform` section. You can run `/bind-statuses` again at any time.
+At the end it runs `/bind-statuses`, which decides how the tracker shows the workflow's five phases - `backlog`, `todo`, `in-progress`, `in-review`, `done`. On Linear the recommendation is the team's own states (`native`), which is also what applies when you decline, so nothing changes for you. Where a tracker has no states, the phases become labels (`status::todo`, plus open/closed), or - if you can't or don't want to add labels - `Status: <phase>` marker comments. It asks one question, creates labels only after you say yes, and adds a `statuses` key to the same `## Platform` section. You can run `/bind-statuses` again at any time.
 
-The skills then read the matching adapter files — the one place the plugin keeps Linear, GitHub, GitLab and Azure DevOps commands. If you configure a platform whose adapter isn't in your plugin version yet, the skills tell you so instead of guessing.
+The skills then read the matching adapter files - the one place the plugin keeps Linear, GitHub, GitLab and Azure DevOps commands. If you configure a platform whose adapter isn't in your plugin version yet, the skills tell you so instead of guessing.
 
 ## A day with the plugin
 
-A typical feature, from idea to merged PR — with the graph moments marked:
+A typical feature, from idea to merged PR - with the graph moments marked:
 
-1. **File the issue.** Say *"create an issue: …"* and describe what you want. The agent interviews you if the goal is fuzzy, drafts the issue body, shows it to you, and — only after your approval (a decision gate guarding an irreversible write) — creates it in Linear, in **Backlog**. The body follows a template generated from the `IssueSpec` schema: the issue is the first typed edge of the axis.
-2. **Get a plan.** Type the issue ID (e.g. `DEMO-123`). *Island #1 fires*: five gatherers read your repo, conventions, prior art, related issues, and project knowledge in parallel, the reducer joins them, and the agent drafts a plan from the result. The plan lands as a `## Implementation plan` comment on the issue (shaped by the `ImplementationPlan` schema), status moves to **Todo**, and the agent stops — no "please confirm" in chat.
-3. **Approve by moving the status.** Read the plan in Linear. When you're happy, drag the issue to **In Progress**. That status change *is* the approval — a human gate stored outside the agent.
-4. **Implement.** Seeing In Progress, the agent hands the mechanical opening to the start chain — a branch named after the issue, an empty first commit, a **draft PR** wired to auto-close the issue on merge (`Fixes DEMO-123`) — and then implements the plan, committing atomically as it goes. Implementation is tests first by default (a failing test, then the code that makes it pass); the plan's **Test approach** can switch that to `no tests`, but only with a written reason and the check that replaces the test, which the session summary repeats.
-5. **Review.** *Island #2 fires*: four axis mappers in parallel, deterministic reduce, three sceptics per finding trying to refute it, and a summary the model cannot use to smuggle findings past the verifier. The review comment includes the `stats` counters — read them: `rejected` tells you how many plausible findings the adversarial pass killed, `gaps` whether anything degraded. Fixes get pushed to the same PR.
-6. **Close.** Say *"merge and close"*. The close-out chain commits leftovers, pushes, merges the PR, switches your checkout back to the base branch, and marks the issue Done. On any error it stops and reports — it never improvises, because this is the irreversible part.
+1. **File the issue.** Say *"create an issue: …"* and describe what you want. The agent interviews you if the goal is fuzzy, drafts the issue body, shows it to you, and - only after your approval (a decision gate guarding an irreversible write) - creates it in Linear, in **Backlog**. The body follows a template generated from the `IssueSpec` schema: the issue is the first typed edge of the axis.
+2. **Get a plan.** Type the issue ID (e.g. `DEMO-123`). *Island #1 fires*: five gatherers read your repo, conventions, prior art, related issues, and project knowledge in parallel, the reducer joins them, and the agent drafts a plan from the result. The plan lands as a `## Implementation plan` comment on the issue (shaped by the `ImplementationPlan` schema), status moves to **Todo**, and the agent stops - no "please confirm" in chat.
+3. **Approve by moving the status.** Read the plan in Linear. When you're happy, drag the issue to **In Progress**. That status change *is* the approval - a human gate stored outside the agent.
+4. **Implement.** Seeing In Progress, the agent hands the mechanical opening to the start chain - a branch named after the issue, an empty first commit, a **draft PR** wired to auto-close the issue on merge (`Fixes DEMO-123`) - and then implements the plan, committing atomically as it goes. Implementation is tests first by default (a failing test, then the code that makes it pass); the plan's **Test approach** can switch that to `no tests`, but only with a written reason and the check that replaces the test, which the session summary repeats.
+5. **Review.** *Island #2 fires*: four axis mappers in parallel, deterministic reduce, three sceptics per finding trying to refute it, and a summary the model cannot use to smuggle findings past the verifier. The review comment includes the `stats` counters - read them: `rejected` tells you how many plausible findings the adversarial pass killed, `gaps` whether anything degraded. Fixes get pushed to the same PR.
+6. **Close.** Say *"merge and close"*. The close-out chain commits leftovers, pushes, merges the PR, switches your checkout back to the base branch, and marks the issue Done. On any error it stops and reports - it never improvises, because this is the irreversible part.
 
-After every working session the agent posts a `## Session summary` comment (generated from the `SessionSummary` schema), so any future session — or any other agent — can resume from Linear alone.
+After every working session the agent posts a `## Session summary` comment (generated from the `SessionSummary` schema), so any future session - or any other agent - can resume from Linear alone.
 
 ## The spec lives in the issue
 
-Spec-driven frameworks keep the specification and the plan as files in the repository, because they have nowhere else to put them. This plugin does: the tracker. The issue description is the spec — what to build and why, with acceptance criteria that each name the test or command that proves them. The `## Implementation plan` comment is the plan — how, including the list of files it will change. The repository holds code only.
+Spec-driven frameworks keep the specification and the plan as files in the repository, because they have nowhere else to put them. This plugin does: the tracker. The issue description is the spec - what to build and why, with acceptance criteria that each name the test or command that proves them. The `## Implementation plan` comment is the plan - how, including the list of files it will change. The repository holds code only.
 
 That keeps everything about one piece of work in one thread, dated and next to its status, readable by anyone with access to the tracker and without the code. In a client repository, developers who don't use your tracker see clean code and a PR description, with no spec files written for readers who don't need them.
 
@@ -131,8 +131,8 @@ The path, spec → plan → build → verify:
 
 1. **Spec.** For a complex issue the agent compares the description with the full issue template, settles the gaps with you, and leaves anything nobody discussed empty instead of making it up. It shows you the new description and updates the issue only after you accept it. Small, clear issues skip this.
 2. **Plan.** The plan lists its affected files. If the agent later needs to change a file outside that list, it stops and asks; after your yes it adds the file in a comment extending the plan.
-3. **Build.** If the spec turns out wrong mid-work, the agent proposes the change, and after your yes updates the description and posts a `## Spec change` comment saying what changed and why — the issue thread stays the full history.
-4. **Verify.** Before review, the agent runs the check of every acceptance criterion and reports a table — criterion, check, pass or fail, evidence. A single fail keeps the issue out of review.
+3. **Build.** If the spec turns out wrong mid-work, the agent proposes the change, and after your yes updates the description and posts a `## Spec change` comment saying what changed and why - the issue thread stays the full history.
+4. **Verify.** Before review, the agent runs the check of every acceptance criterion and reports a table - criterion, check, pass or fail, evidence. A single fail keeps the issue out of review.
 
 ## Steering with Linear statuses
 
@@ -141,93 +141,93 @@ The issue's status in Linear is the single source of truth for what the agent do
 | You set the status to… | The agent… |
 |---|---|
 | **Backlog** / **Todo** | drafts or refines the implementation plan, posts it to Linear, stops |
-| **In Progress** | implements: branch, draft PR, code, commits — the only status that unlocks repo changes |
+| **In Progress** | implements: branch, draft PR, code, commits - the only status that unlocks repo changes |
 | **In Review** | runs the adversarial review island and pushes fixes |
 | **Done** (with the PR still open) | closes out: merges the PR, syncs your checkout |
 
-Only you can move an issue to **In Progress** — the agent never does it by itself to unlock implementation (an explicit request to implement in chat counts as approval, and the agent then sets the status to reflect it). The exceptions are a run you start with `/nerd4rent:auto-issue-mode`, where invoking the skill is the approval, and `issue-next-step`, which moves the issue to In Progress only after you say yes to it in chat.
+Only you can move an issue to **In Progress** - the agent never does it by itself to unlock implementation (an explicit request to implement in chat counts as approval, and the agent then sets the status to reflect it). The exceptions are a run you start with `/nerd4rent:auto-issue-mode`, where invoking the skill is the approval, and `issue-next-step`, which moves the issue to In Progress only after you say yes to it in chat.
 
-The table uses Linear's default names. On GitHub Issues and GitLab Issues the same steps are labels: **Backlog** is an open issue with no status label, then `status::todo`, `status::in-progress`, `status::in-review`, and **Done** is a closed issue — so merging the PR or MR with `Fixes #123` finishes it. On Azure DevOps Boards the steps are the columns of your team's board — `New`, `Todo`, `Active`, `In Review`, `Closed` by default — and `/bind-statuses` offers to add the columns your board lacks; you steer by dragging the card, and completing the PR with `Fixes #123` moves it to Closed. Under the hood the agent works with five phases and reads them through the project's status strategy, so the same steering works with labels (`status::in-progress`) or with a comment whose first line is `Status: in-progress` — whatever `/bind-statuses` recorded. A status the map doesn't know (say, *Canceled*) makes the agent report it and do nothing.
+The table uses Linear's default names. On GitHub Issues and GitLab Issues the same steps are labels: **Backlog** is an open issue with no status label, then `status::todo`, `status::in-progress`, `status::in-review`, and **Done** is a closed issue - so merging the PR or MR with `Fixes #123` finishes it. On Azure DevOps Boards the steps are the columns of your team's board - `New`, `Todo`, `Active`, `In Review`, `Closed` by default - and `/bind-statuses` offers to add the columns your board lacks; you steer by dragging the card, and completing the PR with `Fixes #123` moves it to Closed. Under the hood the agent works with five phases and reads them through the project's status strategy, so the same steering works with labels (`status::in-progress`) or with a comment whose first line is `Status: in-progress` - whatever `/bind-statuses` recorded. A status the map doesn't know (say, *Canceled*) makes the agent report it and do nothing.
 
 ## Skills reference
 
 How to trigger each skill and what to expect. All of them also respond to `/<skill-name>` and `/nerd4rent:<skill-name>`.
 
-### `determine-platform` — record the tracker and host
+### `determine-platform` - record the tracker and host
 
-- **Say:** `/determine-platform`, *"which tracker does this project use"* — or nothing: `issue-writer` calls it when no platform is configured.
+- **Say:** `/determine-platform`, *"which tracker does this project use"* - or nothing: `issue-writer` calls it when no platform is configured.
 - **What happens:** reads the `## Platform` section of `CLAUDE.md` and the entity page, infers from the git remote and the Linear CLI, asks one question only if still ambiguous, then writes the section (and the entity page mirror) and shows you the result. It is the only skill allowed to change the repo before an issue is In Progress, and it touches that one section alone.
 
-### `bind-statuses` — map workflow phases to the tracker
+### `bind-statuses` - map workflow phases to the tracker
 
-- **Say:** `/bind-statuses`, *"bind statuses"*, *"zmapuj statusy"* — or nothing: `determine-platform` ends with it.
+- **Say:** `/bind-statuses`, *"bind statuses"*, *"zmapuj statusy"* - or nothing: `determine-platform` ends with it.
 - **What happens:** proposes a status strategy (the tracker's states, labels, or marker comments) and a phase map in one question, creates missing labels only after you agree, writes the `statuses` key into `## Platform` (and the entity page mirror), and validates it. Running it twice with the same answers changes nothing.
 
-### `issue-writer` — file a new issue
+### `issue-writer` - file a new issue
 
-- **Say:** *"create an issue"*, *"new task"*, *"utwórz/zgłoś issue"* — intent to file new work, with no existing issue ID.
-- **What happens:** the agent resolves the platform (running `determine-platform` if none is recorded) and the target team/project — on GitHub Issues and GitLab Issues the repo, on Azure DevOps Boards the project and work item type — (and confirms it), interviews you only if the goal is unclear, shows you the drafted body, and creates the issue in Backlog only after you approve. For big topics it can split the work into real sub-issues, and optionally run a "grilling session" — a one-question-at-a-time interrogation that sharpens the requirements before planning starts.
+- **Say:** *"create an issue"*, *"new task"*, *"utwórz/zgłoś issue"* - intent to file new work, with no existing issue ID.
+- **What happens:** the agent resolves the platform (running `determine-platform` if none is recorded) and the target team/project - on GitHub Issues and GitLab Issues the repo, on Azure DevOps Boards the project and work item type - (and confirms it), interviews you only if the goal is unclear, shows you the drafted body, and creates the issue in Backlog only after you approve. For big topics it can split the work into real sub-issues, and optionally run a "grilling session" - a one-question-at-a-time interrogation that sharpens the requirements before planning starts.
 
-### `issue-workflow` — plan, implement, review
+### `issue-workflow` - plan, implement, review
 
-- **Say:** any issue ID (`DEMO-123` on Linear; `#123` or `owner/repo#123` in a GitHub Issues project; `#123` or `group/project#123` in a GitLab Issues project; `#123` or `AB#123` in an Azure DevOps Boards project) with intent to work on it — *"plan DEMO-123"*, *"zrealizuj DEMO-123"*, or just the bare ID.
+- **Say:** any issue ID (`DEMO-123` on Linear; `#123` or `owner/repo#123` in a GitHub Issues project; `#123` or `group/project#123` in a GitLab Issues project; `#123` or `AB#123` in an Azure DevOps Boards project) with intent to work on it - *"plan DEMO-123"*, *"zrealizuj DEMO-123"*, or just the bare ID.
 - **What happens:** the status-driven flow described [above](#steering-with-linear-statuses), including both islands. During implementation it offers whichever implementation-style skills you have installed (TDD, subagent-driven, or plain).
 
-### `issue-start` — open the branch and the PR
+### `issue-start` - open the branch and the PR
 
-- **Say:** *"start DEMO-123"*, *"zacznij DEMO-123"*, *"open the PR for DEMO-123"* — or nothing: `issue-workflow` calls it the moment it sees In Progress.
-- **What happens:** the mirror of the close-out chain — checks the issue is In Progress and the checkout is a clean `main`/`master`, creates the branch (from the Linear `branchName`, or with `gh issue develop` on GitHub Issues and `git checkout -b` on GitLab Issues and Azure DevOps Boards, named `<number>-<title>` in ASCII), makes the empty start commit, pushes, opens a draft PR (GitHub, Azure DevOps) or MR (GitLab) with `Fixes DEMO-123` in the body — on Azure DevOps followed by the issue link, since Linear doesn't track PRs there (with Azure DevOps Boards as the tracker the PR is linked to the work item instead). On any error it stops and reports.
+- **Say:** *"start DEMO-123"*, *"zacznij DEMO-123"*, *"open the PR for DEMO-123"* - or nothing: `issue-workflow` calls it the moment it sees In Progress.
+- **What happens:** the mirror of the close-out chain - checks the issue is In Progress and the checkout is a clean `main`/`master`, creates the branch (from the Linear `branchName`, or with `gh issue develop` on GitHub Issues and `git checkout -b` on GitLab Issues and Azure DevOps Boards, named `<number>-<title>` in ASCII), makes the empty start commit, pushes, opens a draft PR (GitHub, Azure DevOps) or MR (GitLab) with `Fixes DEMO-123` in the body - on Azure DevOps followed by the issue link, since Linear doesn't track PRs there (with Azure DevOps Boards as the tracker the PR is linked to the work item instead). On any error it stops and reports.
 
-### `issue-close` — merge and finish
+### `issue-close` - merge and finish
 
 - **Say:** *"merge and close"*, *"close out DEMO-123"*, *"domknij"*, *"zmerguj i zamknij"*.
-- **What happens:** the deliberately mechanical close-out chain — commit leftovers, push, merge the PR (GitHub, GitLab or Azure DevOps), switch your checkout to the base branch, set the issue to Done. On any error it stops and reports.
+- **What happens:** the deliberately mechanical close-out chain - commit leftovers, push, merge the PR (GitHub, GitLab or Azure DevOps), switch your checkout to the base branch, set the issue to Done. On any error it stops and reports.
 
-### `auto-issue-mode` — run an issue end to end
+### `auto-issue-mode` - run an issue end to end
 
-- **Say:** `/nerd4rent:auto-issue-mode <task description>` or `/nerd4rent:auto-issue-mode DEMO-123` — only by typing it; the agent never picks this skill on its own.
+- **Say:** `/nerd4rent:auto-issue-mode <task description>` or `/nerd4rent:auto-issue-mode DEMO-123` - only by typing it; the agent never picks this skill on its own.
 - **What happens:** from a description, the agent drafts the issue and asks for your approval once; from an ID, it picks up at the issue's current status. Everything after that runs without questions, each stage on its own subagent: start, a plan posted as a comment on the issue, implementation, review, merge and Done, plus a nerdbrain update. Invoking it is your approval, so here the agent moves the issue to In Progress and In Review itself. On an error, a merge conflict or tests it cannot fix it stops and tells you how to resume with the issue ID.
 
-### `issue-next-step` — take the next step
+### `issue-next-step` - take the next step
 
 - **Say:** *"what's next for DEMO-123"*, *"co dalej z DEMO-123"*, *"następny krok"*, or `/nerd4rent:issue-next-step DEMO-123`.
-- **What happens:** the agent reads the issue's status and what already exists for it — the plan comment, the branch, the PR, recent commits — and names one next step: plan, implement, review, or close out. It then asks one question: continue step by step with `issue-workflow`, run it autonomously with `auto-issue-mode`, or stop. When the next step is implementation and the issue isn't In Progress yet, choosing to continue moves it there; saying no writes nothing. Whatever you pick starts right away with the same issue ID.
+- **What happens:** the agent reads the issue's status and what already exists for it - the plan comment, the branch, the PR, recent commits - and names one next step: plan, implement, review, or close out. It then asks one question: continue step by step with `issue-workflow`, run it autonomously with `auto-issue-mode`, or stop. When the next step is implementation and the issue isn't In Progress yet, choosing to continue moves it there; saying no writes nothing. Whatever you pick starts right away with the same issue ID.
 
-### `new-project-workflow` — bootstrap a project
+### `new-project-workflow` - bootstrap a project
 
-- **Say:** *"start a new project"*, *"bootstrap this project"* — typically from an empty directory.
+- **Say:** *"start a new project"*, *"bootstrap this project"* - typically from an empty directory.
 - **What happens:** git init, `README.md` scaffold, GitHub repo via `gh`, a matching Linear project (skipped when you choose GitHub Issues as the tracker), and a hand-off to a spec-writing interview. One approval up front covers the whole sequence.
 
-### `bootstrap-clis` — set up a machine
+### `bootstrap-clis` - set up a machine
 
 - **Say:** `/bootstrap-clis` / `/nerd4rent:bootstrap-clis`, or just let a skill fail because a CLI is missing.
-- **What happens:** every dependency from the table above is probed, installed, or updated (with checksum verification for downloads). Authentication is never done for you — the skill ends with the exact steps you need to run yourself.
+- **What happens:** every dependency from the table above is probed, installed, or updated (with checksum verification for downloads). Authentication is never done for you - the skill ends with the exact steps you need to run yourself.
 
-### `project-continue` — pick up where you left off
+### `project-continue` - pick up where you left off
 
-- **Say:** *"where were we"*, *"continue"*, *"gdzie jesteśmy"*, *"na czym stanęliśmy"* — after switching to a project, on this machine or another one.
+- **Say:** *"where were we"*, *"continue"*, *"gdzie jesteśmy"*, *"na czym stanęliśmy"* - after switching to a project, on this machine or another one.
 - **What happens:** the agent reads the newest checkpoint from the project's nerdbrain entity page, checks it against git and the tracker (a commit never pushed, a branch gone, rewritten history, work done after the checkpoint), and reports the state, any drift and the project's active issues, ending with the issue ID to type to resume. It records a new checkpoint only after you agree, and never starts work on an issue by itself.
 
-### `tdd` — test first
+### `tdd` - test first
 
-- **Say:** *"TDD"*, *"test first"*, *"napisz najpierw test"* — or nothing: `issue-workflow` and `auto-issue-mode` use it when the plan's test approach is TDD.
+- **Say:** *"TDD"*, *"test first"*, *"napisz najpierw test"* - or nothing: `issue-workflow` and `auto-issue-mode` use it when the plan's test approach is TDD.
 - **What happens:** one cycle per behaviour: a failing test against a seam the plan names, a check that it fails for the right reason, the smallest change that makes it pass, a refactor, and a run of the suite. Not used for a plan whose test approach is `no tests` or for documentation-only changes.
 
-### `nerd-documentation-write` — documentation for outside readers
+### `nerd-documentation-write` - documentation for outside readers
 
-- **Say:** nothing special — the agent uses it when writing or revising a tutorial, README or step-by-step guide for readers outside your own tooling, such as a client's engineers or open-source users.
+- **Say:** nothing special - the agent uses it when writing or revising a tutorial, README or step-by-step guide for readers outside your own tooling, such as a client's engineers or open-source users.
 - **What happens:** the text states the facts the reader needs rather than the story of how they were found, drops internal issue IDs, opens sentences with words rather than code identifiers, uses noun-phrase headings, plain hyphens and no emoji, and gives each runnable command its own code block with its description above it.
 
-### `nerdbrain-wiki` / `nerdbrain-search` — personal second brain (optional)
+### `nerdbrain-wiki` / `nerdbrain-search` - personal second brain (optional)
 
-These maintain a personal Obsidian vault with one entity page per project — the plan-phase island reads it as one of its five context sources, and decisions made during work are written back. They assume a specific vault layout under `~/obsidian/nerdbrain/` and matching rules in your user rules / `AGENTS.md` / `~/.claude/CLAUDE.md`; without that setup they simply stay inactive.
+These maintain a personal Obsidian vault with one entity page per project - the plan-phase island reads it as one of its five context sources, and decisions made during work are written back. They assume a specific vault layout under `~/obsidian/nerdbrain/` and matching rules in your user rules / `AGENTS.md` / `~/.claude/CLAUDE.md`; without that setup they simply stay inactive.
 
 ## Troubleshooting
 
-- **`Issue with identifier "X" not found`** — wrong team prefix or workspace; check `linearis teams list`.
-- **`Status "X" for team ... not found`** — Linear statuses are your team's own names, spelled exactly (`In Progress`, not `in progress`); fix the map with `/bind-statuses` if you renamed them.
-- **"phase unknown"** — the issue shows a state, label or marker the status map doesn't hold; move the issue to a mapped status, or extend the map with `/bind-statuses`.
-- **`linearis` errors about authentication** — set `LINEAR_API_TOKEN` or run `linearis auth login` (see [Requirements](../README.md#requirements)).
-- **`/plugin update` says nothing changed** — run `/plugin marketplace update nerd4rent-claude-plugin` first; if it still reports no change, no new version has been released yet.
-- **A skill doesn't trigger** — invoke it explicitly with the slash form, e.g. `/issue-workflow DEMO-123` or `/nerd4rent:issue-workflow DEMO-123`.
-- **The plan or review runs sequentially and slowly** — dynamic workflows are unavailable or disabled; see [Installation](#installation). The result is the same, only slower.
+- **`Issue with identifier "X" not found`**: wrong team prefix or workspace; check `linearis teams list`.
+- **`Status "X" for team ... not found`**: Linear statuses are your team's own names, spelled exactly (`In Progress`, not `in progress`); fix the map with `/bind-statuses` if you renamed them.
+- **"phase unknown"**: the issue shows a state, label or marker the status map doesn't hold; move the issue to a mapped status, or extend the map with `/bind-statuses`.
+- **`linearis` errors about authentication**: set `LINEAR_API_TOKEN` or run `linearis auth login` (see [Requirements](../README.md#requirements)).
+- **`/plugin update` says nothing changed**: run `/plugin marketplace update nerd4rent-claude-plugin` first; if it still reports no change, no new version has been released yet.
+- **A skill doesn't trigger**: invoke it explicitly with the slash form, e.g. `/issue-workflow DEMO-123` or `/nerd4rent:issue-workflow DEMO-123`.
+- **The plan or review runs sequentially and slowly**: dynamic workflows are unavailable or disabled; see [Installation](#installation). The result is the same, only slower.

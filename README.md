@@ -507,6 +507,7 @@ Claude Code must never see a Cursor file: it reads `hooks/hooks.json` and a root
 node scripts/validate-manifests.ts            # versions, Cursor schema, nothing Cursor-only at Claude Code's paths, claude.ai upload rules
 node scripts/validate-claude-plugin.ts        # `claude plugin validate`; any warning fails (needs the Claude Code CLI)
 node scripts/validate-platform-references.ts  # every `## Platform` mention reads CLAUDE.md through adapters/platform.md
+node scripts/validate-external-references.ts  # no tracked file calls a superpowers or mattpocock-skills skill (ADR 0009)
 ```
 
 Merging to `main` does not update anyone's install on its own: the local marketplace clone is only refreshed by `/plugin marketplace update <marketplace>`, followed by `/plugin update <plugin>@<marketplace>`.

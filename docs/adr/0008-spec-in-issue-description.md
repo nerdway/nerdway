@@ -1,5 +1,7 @@
 # The tracker carries the spec
 
+*Amended by DEMO-376 (ADR-0009): the four files that predate this decision moved verbatim from `docs/superpowers/{plans,specs}` to `docs/plans/` and `docs/specs/`. Those directories are an archive, not a place for a spec or a plan: nothing new is added there, and the rule that the repository holds code only stands. The planning island reads `docs/plans/` as prior art when the directory exists.*
+
 Spec-driven frameworks keep the specification (WHAT and WHY) and the plan
 (HOW) as files: superpowers writes a design spec under `docs/superpowers/specs/`
 and a plan under `docs/superpowers/plans/`, and hands each task through a

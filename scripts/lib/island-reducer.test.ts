@@ -11,7 +11,7 @@ test("plan happy path reduces five gatherers into typed context with zero gaps",
         commands: ["node --test 'scripts/**/*.test.ts'"],
       },
       conventions: { items: ["ADR-0003: contract first", "CONTEXT.md: no code comments", "commits: Polish noun form"] },
-      priorPlans: { items: ["docs/superpowers/plans/demo-311.md — dual manifests"] },
+      priorPlans: { items: ["docs/plans/demo-311.md — dual manifests"] },
       trackerRelations: { items: ["DEMO-311 (Done): Cursor packaging — the base this builds on"] },
       vault: {
         slug: "nerd4rent-claude-plugin",
@@ -32,7 +32,7 @@ test("plan happy path reduces five gatherers into typed context with zero gaps",
     "commits: Polish noun form",
   ]);
   assert.deepEqual(result.planContext.priorArt, [
-    "docs/superpowers/plans/demo-311.md — dual manifests",
+    "docs/plans/demo-311.md — dual manifests",
     "DEMO-311 (Done): Cursor packaging — the base this builds on",
   ]);
   assert.deepEqual(result.planContext.stats, {

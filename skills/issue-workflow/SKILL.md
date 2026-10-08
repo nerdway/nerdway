@@ -187,7 +187,7 @@ gatherer output always reduces to the same context and the same stats.
 |---|---|---|
 | Repo code (layout, `README.md`, `CONTEXT.md`) | directories/files the change touches; test, build and validator commands | `PlanContext.repoLayout`, `.commands` |
 | ADRs (`docs/adr/*.md`) + `CONTEXT.md` terms + commit style | hard in-repo rules the plan must not break | `PlanContext.conventions` |
-| Prior plans (`docs/superpowers/plans/`) and merged PRs | precedents: how similar changes were cut and committed | `PlanContext.priorArt` |
+| Prior plans (`docs/plans/`) and merged PRs | precedents: how similar changes were cut and committed | `PlanContext.priorArt` |
 | Related tracker issues (parent, siblings, links) | parent AC, cross-issue agreements and dependencies | `PlanContext.priorArt` |
 | Entity page + 1-hop graph (`nerdbrain-search` recipes) | project decisions, active context, related pages | `ProjectContext.slug`, `.decisions`, `.activeContext`, `.relatedPages` |
 
@@ -311,12 +311,6 @@ Run the session **inline** per this protocol:
 - Project-level decisions → the existing `## Decisions` write-trigger on the
   nerdbrain entity page (see the integration section below) — do not duplicate
   the `nerdbrain-wiki` procedure here.
-
-If `mattpocock-skills:grilling` / `domain-modeling` are available in the
-session, you may use them for question and CONTEXT/ADR formats — the inline
-rules above always work without them. Never delegate to the `grill-me` / `grill-with-docs`
-wrappers: they carry `disable-model-invocation: true` and only the user can
-run them, manually, as slash commands.
 
 ### 2. Post plan to the tracker and write `todo`
 

@@ -196,8 +196,8 @@ const [repoFacts, conventions, priorPlans, trackerRelations, vault] = await para
     agent(
       issueHeader +
         (vcsAdapter === null
-          ? 'Collect prior art inside this repo: read every file under docs/superpowers/plans/ (if present). '
-          : `Collect prior art inside this repo: read every file under docs/superpowers/plans/ (if present) and the last few merged PRs. ${adapterInstruction(vcsAdapter, 'pr.list-merged')} `) +
+          ? 'Collect prior art inside this repo: read every file under docs/plans/ (if present). '
+          : `Collect prior art inside this repo: read every file under docs/plans/ (if present) and the last few merged PRs. ${adapterInstruction(vcsAdapter, 'pr.list-merged')} `) +
         'Return items: one string per precedent — what it was and what a planner should copy from it.',
       { label: 'gather:prior-plans', phase: 'Gather', schema: stringListShape, agentType: 'nerd4rent:plan-gatherer' },
     ),
@@ -262,7 +262,7 @@ function missingRequired(schema, value) {
 
 if (repoFacts === null) gaps.push('repo-layout gatherer failed: repoLayout and commands are missing')
 if (conventions === null) gaps.push('conventions gatherer failed: CONTEXT.md/ADR constraints are missing')
-if (priorPlans === null) gaps.push('prior-plans gatherer failed: docs/superpowers/plans precedents are missing')
+if (priorPlans === null) gaps.push('prior-plans gatherer failed: docs/plans precedents are missing')
 if (trackerRelations === null) gaps.push('tracker-relations gatherer failed: related issues are missing')
 
 const planContext = {

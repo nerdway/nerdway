@@ -139,16 +139,37 @@ number that proves it — before dispatching the next.
    regressions, security. Fix every real defect with its own commit, re-run the
    tests, push, then run `pr.mark-ready` (skipped when the adapter lists `—`).
    Report: findings with their fixes, final test results.
-5. **Close-out** and 6. **Nerdbrain** run concurrently — dispatch both
-   subagents in one message:
-   - Close-out runs `nerd4rent:issue-close` with the ID and platform (commit
-     leftovers, push, merge, switch to the base branch, phase `done`).
-     Report: merge commit, base branch.
-   - Nerdbrain applies the write triggers of the user's global `CLAUDE.md` to
-     the decisions, gotchas and commands the earlier reports carry, and when
-     any fires writes them with `nerd4rent:nerdbrain-wiki`. It is skipped when
-     the vault is unreachable (`tier=none`, directory missing). Report: what
-     was written, or why nothing was.
+5. **Close-out.** Run `nerd4rent:issue-close` with the ID and platform
+   (commit leftovers, push, merge, switch to the base branch, phase `done`).
+   `issue-close` does not print the merge hash, so once it finishes read it
+   with `git rev-parse --short HEAD` on the base branch (its `git pull` puts
+   the merge commit at HEAD). Report: merge commit (short), base branch.
+6. **Nerdbrain.** Dispatched only after stage 5's report arrives, so it knows
+   the merge; its prompt carries stage 5's merge commit and base branch. It
+   makes one logical wiki write with `nerd4rent:nerdbrain-wiki` (one
+   `updated:` bump, one `log.md` line, as `issue-workflow`'s session-summary
+   step does) that holds two things:
+   - the write triggers of the user's global `CLAUDE.md`, applied to the
+     decisions, gotchas and commands the earlier reports carry;
+   - one `## Checkpoints` entry, following `nerdbrain-wiki`'s **Prepend,
+     capped** mode (entry format, cap of 10, `updated:` bump and `log.md`
+     line live there), with the post-merge values:
+
+     ```
+     - YYYY-MM-DD — <ID> · done · <base branch> @ <short merge commit> — next: <one line, English>
+     ```
+
+     The branch and hash are the ones stage 5 reports (when the hash is
+     missing, `git rev-parse --short HEAD` on the base branch gives it), so
+     `project-continue` reads this entry back without drift. `next` is the
+     first follow-up the run's reports name (stage 3 and 4 decisions, gotchas,
+     remaining work); else the first issue `issue.list-active` returns other
+     than the run's own issue (ID and title); else `none`.
+
+   The whole stage, checkpoint included, is skipped when the vault is
+   unreachable (`tier=none`, directory missing); the checkpoint alone is
+   skipped when the project has no entity page. Report: what was written, the
+   checkpoint line (or why none was written), or why nothing was.
 
 A version bump is a stage only when the argument asks for one or the repo's
 conventions (`CLAUDE.md`, the entity page) require it on every change; it then
@@ -186,7 +207,8 @@ picks the run up from the issue's phase.
 
 Close with the run's **evidence**: issue ID and link (`issue.url`), PR/MR number, merge commit, test results (final, with
 pre-existing unrelated failures listed apart), the test approach with its
-reason whenever the run left TDD, and what went to nerdbrain.
+reason whenever the run left TDD, and what went to nerdbrain, including the
+checkpoint line stage 6 wrote (or why none was).
 
 ## Related skills
 
@@ -197,6 +219,6 @@ reason whenever the run left TDD, and what went to nerdbrain.
   and 5.
 - `nerd4rent:plan-context-fanout` — optional context island for stage 2.
 - `nerd4rent:tdd` — the implementation loop of stage 3 under `mode: TDD`.
-- `nerd4rent:nerdbrain-wiki` — the write path of stage 6.
+- `nerd4rent:nerdbrain-wiki` — the write path of stage 6, checkpoint included.
 - `nerd4rent:issue-next-step` — may start a run at entry B for an issue ID
   once the user picks the autonomous mode in chat.

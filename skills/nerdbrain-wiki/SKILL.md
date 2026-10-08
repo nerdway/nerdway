@@ -136,7 +136,8 @@ user asks something the wiki would have answered.
 
 `## Checkpoints` is the project's structured "where are we" history: one
 bullet per working session, newest first, written by `issue-workflow`'s
-session-summary step and by `project-continue` (which also reads it). It sits
+session-summary step, by `auto-issue-mode`'s Nerdbrain stage after the merge,
+and by `project-continue` (which also reads it). It sits
 between `## Decisions` and `## Active context`. `## Active context` stays the
 free-form narrative; a checkpoint is the one-line pointer that survives a
 machine switch.
@@ -152,9 +153,9 @@ machine switch.
 | date | day the entry was written |
 | issue ID | the issue the session worked on (one entry = one issue) |
 | phase | the issue's canonical phase at the time of writing (`in-progress`, `in-review`, …), read through the status strategy; older entries hold the tracker's state name (`In Progress`), which `project-continue` maps back |
-| branch | the git branch the session worked on |
-| HEAD | `git rev-parse --short HEAD` after the last commit of the session |
-| next | the first item of the session summary's next steps, trimmed to one line |
+| branch | the git branch the session worked on; after a merge (`auto-issue-mode`), the base branch |
+| HEAD | `git rev-parse --short HEAD` after the last commit of the session; after a merge, the merge commit on the base branch |
+| next | the first item of the session summary's next steps, trimmed to one line; `auto-issue-mode` takes the run's first follow-up, else the next active issue |
 
 The branch and hash are what make drift detectable later: `project-continue`
 checks that the hash is still an ancestor of the branch tip and that the

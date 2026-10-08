@@ -186,7 +186,7 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 ### `auto-issue-mode` - run an issue end to end
 
 - **Say:** `/nerd4rent:auto-issue-mode <task description>` or `/nerd4rent:auto-issue-mode DEMO-123` - only by typing it; the agent never picks this skill on its own.
-- **What happens:** from a description, the agent drafts the issue and asks for your approval once; from an ID, it picks up at the issue's current status. Everything after that runs without questions, each stage on its own subagent: start, a plan posted as a comment on the issue, implementation, review, merge and Done, plus a nerdbrain update. Invoking it is your approval, so here the agent moves the issue to In Progress and In Review itself. On an error, a merge conflict or tests it cannot fix it stops and tells you how to resume with the issue ID.
+- **What happens:** from a description, the agent drafts the issue and asks for your approval once; from an ID, it picks up at the issue's current status. Everything after that runs without questions, each stage on its own subagent: start, a plan posted as a comment on the issue, implementation, review, merge and Done, then a nerdbrain update. That update runs after the merge and records a checkpoint with the merge commit on the base branch, so `project-continue` shows the real state of the project afterwards. Invoking it is your approval, so here the agent moves the issue to In Progress and In Review itself. On an error, a merge conflict or tests it cannot fix it stops and tells you how to resume with the issue ID.
 
 ### `issue-next-step` - take the next step
 

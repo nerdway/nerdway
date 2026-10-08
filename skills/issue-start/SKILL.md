@@ -61,8 +61,8 @@ phase. A strategy whose `## Status strategies` row is `—` → stop and report
 "strategy not supported — run `/bind-statuses`".
 
 The tracker adapter is used for two reads (`issue.read-status`,
-`issue.read-branch`) and one branch operation (`issue.create-branch`), and
-writes no status. `branchName` is the branch name the tracker derives from
+`issue.read-branch`), one branch operation (`issue.create-branch`) and the
+issue link (`issue.url`), and writes no status. `branchName` is the branch name the tracker derives from
 the issue (already safe for git).
 
 ## Inputs
@@ -80,7 +80,9 @@ the issue (already safe for git).
    look the value up in the status map; it must be `in-progress`. Any other
    phase, or a value the map does not hold → stop and report it: this is the
    same approval gate `issue-workflow` enforces, and only the user moves the
-   issue there.
+   issue there. Run `issue.url` and ask for that move in the shape
+   *Asking the human to move a phase* in
+   `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives.
 2. **The checkout is on `main` or `master`:**
 
    ```bash
@@ -127,7 +129,7 @@ Run `pr.create-draft` from the VCS adapter with the title `<ID>: <title>` and
 the body exactly as its `## Magic words` section prescribes — it starts with
 the line `Fixes <ID>` (one line per issue if the PR closes several) and ends
 with `<summary>`; a host without a tracker integration adds the issue
-`<url>`, obtained as the tracker adapter's `## URL` section describes. Pass the body in the argument
+`<url>` from `issue.url`. Pass the body in the argument
 form the operation's notes give. Print the PR/MR URL as the VCS adapter's
 `## URL` section describes.
 

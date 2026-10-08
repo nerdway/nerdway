@@ -9,8 +9,8 @@ description: >-
   issue's workflow phase, read through the tracker's status strategy:
   backlog/todo → plan; in-progress (set manually by the user) → implement
   (branch, empty commit, draft PR with magic words); in-review → code-review
-  menu; done → close-out. Never prints "confirm the plan" instructions — the
-  user steers by changing the issue's status on the tracker.
+  menu; done → close-out. The user steers by changing the issue's status on
+  the tracker; the agent asks for that move and prints the issue link.
   Invoke this skill FIRST; the tracker and VCS commands it needs come from
   the platform adapters.
 ---
@@ -61,7 +61,7 @@ island turns a `null` adapter into a `gaps` entry and runs no command of
 another platform.
 
 The tracker adapter's `## CLI` section carries the command gotchas (field
-paths, multi-line bodies), `## URL` how to build an issue link, and
+paths, multi-line bodies), `## URL` the recipe behind `issue.url`, and
 `## Status strategies` the read and write recipe per status strategy.
 
 ## Phases and status strategy
@@ -135,11 +135,11 @@ marker is in those comments), then:
 
 | Phase | What to do |
 |-------|------------|
-| `backlog` / `todo` | **Planning** — draft and post a plan (or refine the existing one); write phase **`todo`**; end the turn with no instructions for the user |
+| `backlog` / `todo` | **Planning** — draft and post a plan (or refine the existing one); write phase **`todo`**; end the turn asking for `in-progress` (step 3) |
 | `in-progress` | **Implementation** — rebuild context from the description (the spec), the `## Implementation plan` comment and later comments (`## Spec change`, plan extensions); if branch/PR missing, run the Start step first |
-| `in-review` | **Code review** — present the code-review menu |
+| `in-review` | **Code review** — present the code-review menu with the issue link (`issue.url`) |
 | `done` (set manually, PR unmerged) | **Close-out** — push, merge PR, ask about switching to main/master |
-| unknown | report the raw value read from the tracker and stop |
+| unknown | report the raw value read from the tracker with the issue link (`issue.url`) and stop |
 
 This table also governs a bare issue ID typed into a **fresh session**: check
 the phase and do what it says — do not restart planning for an issue already
@@ -331,10 +331,11 @@ with, and mark any deviation as `Odstępstwo od decyzji YYYY-MM-DD — powód`.
 
 ### 3. End the turn
 
-Report briefly that the plan is on the tracker — and stop. Do **not** tell the user
-to approve, confirm, or set any status. The user signals approval by moving the
-issue to **`in-progress`** on the tracker (or by asking you to implement in
-chat).
+Report that the plan is on the tracker and ask for the move to `in-progress`,
+in the shape *Asking the human to move a phase* in
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives — then stop. The user
+signals approval by making that move on the tracker (or by asking you to
+implement in chat); the request never lets you write `in-progress` yourself.
 
 ## Implementation phase (`in-progress`)
 
@@ -446,8 +447,8 @@ an axis, and `/code-review` stays outside this flow.
 | `security` | injection, secrets, unsafe access the diff introduces | the diff itself |
 
 **Confirm the request (review-menu, conversational).** Default the range to
-`main...HEAD` and confirm it with the user; all four axes always run, so there
-is nothing else to choose.
+`main...HEAD` and confirm it with the user, printing the issue link
+(`issue.url`); all four axes always run, so there is nothing else to choose.
 
 **Run the island.** With the `Workflow` tool available, run
 `workflows/review-verify.js` via

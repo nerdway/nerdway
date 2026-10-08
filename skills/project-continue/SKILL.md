@@ -23,9 +23,10 @@ through ad-hoc file surgery.
 ## Platform and adapters
 
 Tracker commands live in an adapter file at the plugin root, never in this
-skill. This skill only reads, through two operations of the tracker adapter:
-`issue.read-status` (status of the checkpointed issue) and
-`issue.list-active` (active issues of the project):
+skill. This skill only reads, through three operations of the tracker adapter:
+`issue.read-status` (status of the checkpointed issue),
+`issue.list-active` (active issues of the project) and `issue.url` (the link
+of the hinted issue):
 
 ```
 ${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
@@ -154,7 +155,7 @@ Print one compact block, always in this shape:
    user sees the whole board, not only the checkpointed issue.
 5. **One hint line** — *type `<ID>` to resume it with `issue-workflow`*,
    naming the checkpointed issue (or the single `in-progress` one when the
-   checkpoint is stale). The hint is all this skill does about the workflow:
+   checkpoint is stale), followed by its link from `issue.url`. The hint is all this skill does about the workflow:
    it never dispatches into it, since the status-driven flow has its own
    gates.
 

@@ -36,6 +36,12 @@ a rule that cannot be verified from the diff does not belong here.
    `mattpocock-skills` as the plugin; `scripts/validate-external-references.ts`
    guards it, with the exempt paths listed in ADR-0009. Naming the plugin or
    its author in prose is allowed.
+9. **README is for humans** — `README.md` holds only what a developer needs to
+   install and run the plugin: what it is, requirements, installation, first
+   steps and links into `docs/`. A README diff that adds workflow topology,
+   agent rosters, contract or validator detail, or a per-skill reference is a
+   violation; that content goes to `docs/` (contributors) or to `CONTEXT.md`
+   and the skills (agents).
 
 ## Language
 

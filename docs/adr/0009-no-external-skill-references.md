@@ -3,8 +3,8 @@
 The plugin started as a layer over two external skill families: superpowers
 (brainstorming, TDD, debugging, plan execution) and Matt Pocock's skills
 (grilling, domain modeling, code review). Several skills named them as an
-optional step — "if `mattpocock-skills:grilling` is available, you may use
-it" — with an inline fallback for machines without them. That tied the
+optional step — "if the grilling skill of that family is available, you may
+use it" — with an inline fallback for machines without them. That tied the
 plugin's behaviour to what happened to be installed: the same issue was
 planned one way on a machine with the family and another way without it,
 and an eval could not say which path it was testing. DEMO-371 decided that

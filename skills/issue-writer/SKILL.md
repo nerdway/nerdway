@@ -23,7 +23,7 @@ Create well-formed tracker issues whose goals are specified clearly enough that
 Tracker commands live in an adapter file at the plugin root, never in this
 skill. Run every operation by its ID from the adapter's `## Operations`
 table; its `## CLI` section carries the command gotchas (multi-line bodies,
-metadata flags), `## URL` how to build an issue link, and `## Statuses` the
+metadata flags), `## URL` the recipe behind `issue.url`, and `## Statuses` the
 state names:
 
 ```
@@ -185,12 +185,13 @@ Skip the offer for a small, clear task — same adaptive threshold as step 2.
 
 ### 7. Output + handoff
 
-Print the created issue ID(s) — as step 5 captured them — and, when a
-link helps, build the URL per the adapter's `## URL` section. Then point at
-the status-driven flow — do **not** offer to plan it yourself in this session:
+Print the created issue ID(s) — as step 5 captured them — each with its link
+from `issue.url`, in the shape *Asking the human to move a phase* in
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives. Then point at the
+status-driven flow — do **not** offer to plan it yourself in this session:
 
-> *Issue utworzone (DEMO-123) — w Backlogu. Wpisz ID issue w nowej sesji lub
-> wiadomości, aby rozpocząć planowanie.*
+> *Issue utworzone (DEMO-123) — w Backlogu: <link>. Wpisz ID issue w nowej
+> sesji lub wiadomości, aby rozpocząć planowanie.*
 
 Planning, implementation, and review are driven by the issue's phase on the tracker in
 `nerd4rent:issue-workflow` — keep creation and planning as separate,

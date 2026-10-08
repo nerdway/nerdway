@@ -95,6 +95,7 @@ it.
 | `issue.read-relations` | `gh issue view <n> -R <REPO> --json number,title,state,url,parent,subIssues,blockedBy,blocking` | parent and sub-issues are native; run it again on the parent to reach the siblings |
 | `issue.read-status` | the read recipe of the resolved strategy in `## Status strategies` | the issue's canonical phase; cheap enough to run every turn |
 | `issue.read-branch` | `gh issue view <n> -R <REPO> --json number,title,state,url`, then the branch-name recipe below | `<ID>` = `#<n>` (or `owner/repo#<n>`), `<title>`, `<url>`, `<branchName>` |
+| `issue.url` | the recipe in `## URL` | the issue link to print for the human; `url` from any issue JSON already read, else built |
 | `issue.create-branch` | the create-branch recipe below | `gh issue develop` links the branch to the issue; stops when `<branchName>` exists locally or on `origin` |
 | `issue.resolve-from-branch` | the loop below | prints `#<n>`, nothing when the branch carries no issue number |
 | `issue.list-active` | `label`: `gh issue list -R <CODE_REPO> --state open --search 'label:"<map.todo>","<map.in-progress>","<map.in-review>"' --limit 200 --json number,title,labels,url` | under `comment`: `gh issue list -R <CODE_REPO> --state open --limit 200 --json number,title,url` and keep the issues whose phase (`issue.read-status`) is `todo`, `in-progress` or `in-review` |

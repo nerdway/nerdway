@@ -59,6 +59,7 @@ candidate resolves, stop and ask the user for the ID — never guess it.
 | `issue.read-relations` | `linearis issues read <ID> --fields identifier,title,state.name,parent,children,relations,inverseRelations` | parent, sub-issues and linked issues without the comments; run it again on the parent to reach the siblings |
 | `issue.read-status` | the read recipe of the resolved strategy in `## Status strategies` | the issue's canonical phase; cheap enough to run every turn |
 | `issue.read-branch` | `linearis issues read <ID> --fields identifier,title,branchName,state.name,url` | `branchName` is already safe for git |
+| `issue.url` | the recipe in `## URL` | the issue link to print for the human; `<workspace>` from `project.list` when `url` is empty |
 | `issue.create-branch` | `git checkout -b <branchName>` | from the current checkout, which the caller has already put on `<base>`; `<branchName>` from `issue.read-branch`; fails when the branch exists |
 | `issue.resolve-from-branch` | the loop below | prints the first candidate that resolves, nothing when none does |
 | `issue.list-active` | `linearis issues list --team <KEY> --project <PROJECT> --status '<active states>' --fields nodes.identifier,nodes.title,nodes.state.name` | the project's active board; under `native` `<active states>` is `<map.todo>,<map.in-progress>,<map.in-review>`; under `comment` drop `--status` and keep the issues whose phase (`issue.read-status`) is one of those three |

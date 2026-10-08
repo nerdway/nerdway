@@ -103,6 +103,7 @@ resolves to nothing: stop and ask the user for the ID — never guess it.
 | `issue.read-relations` | `glab issue view <n> -R <REPO> --output json`, then the relations recipe below | parent, children and other linked issues, told apart by the `Parent: #<n>` first line |
 | `issue.read-status` | the read recipe of the resolved strategy in `## Status strategies` | the issue's canonical phase; cheap enough to run every turn |
 | `issue.read-branch` | `glab issue view <n> -R <REPO> --output json`, then the branch-name recipe below | `<ID>` = `#<n>` (or `group/project#<n>`), `<title>`, `<url>` = `web_url`, `<branchName>` |
+| `issue.url` | the recipe in `## URL` | the issue link to print for the human; `web_url` from any issue JSON already read, else built |
 | `issue.create-branch` | the create-branch recipe below | from the current checkout, which the caller has already put on `<base>`; stops when `<branchName>` exists locally or on `origin` |
 | `issue.resolve-from-branch` | the loop below | prints `#<n>`, nothing when the branch carries no issue number |
 | `issue.list-active` | the active-list recipe below | open issues in `<CODE_PROJECT>` whose phase is `todo`, `in-progress` or `in-review` |

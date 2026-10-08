@@ -180,10 +180,12 @@ project state, not a stop — see **Checkpoint**)
 
 **Checkpoint**:
 One dated bullet under `## Checkpoints` on a project's entity page — issue ID,
-Linear status, branch, short HEAD hash, next step — written by the
-session-summary step and by `auto-issue-mode`'s Nerdbrain stage after the
-merge, and read back by `project-continue`, which verifies it
-against git and Linear and asks before replacing it on drift. Newest first,
+workflow phase on the tracker, branch, short HEAD hash, next step — written by
+the session-summary step, by `auto-issue-mode`'s Nerdbrain stage after the
+merge, and by `project-continue`, which records the first one unasked when the
+section is empty and a new one on drift only with the user's consent. It is
+read back by `project-continue`, which verifies it against git and the tracker
+and reports any drift. Newest first,
 capped at 10; a record of where the project stands, never a point where the
 agent waits.
 _Avoid_: gate, milestone (both name a stop; a checkpoint stops nothing)

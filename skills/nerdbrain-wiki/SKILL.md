@@ -16,9 +16,8 @@ description: >-
 
 This skill is the **HOW**. The user rules / `AGENTS.md` / global
 `~/.claude/CLAUDE.md` decide **WHEN** to write and hold the hard safety
-rules (no MCP, vault root). Use the
-`obsidian-cli` skill for the broader CLI surface and `obsidian-markdown` for
-note syntax.
+rules (no MCP, vault root). Use the `obsidian-markdown` skill for note
+syntax.
 
 Entity pages live at `5-wiki/entities/projects/<slug>.md` and are **English-only**
 (tokenization efficiency). Index and log entries follow the vault language

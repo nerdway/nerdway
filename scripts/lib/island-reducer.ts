@@ -111,7 +111,7 @@ export function reducePlanContext(output: PlanGathererOutput, limits: PlanLimits
 
   if (repoFacts === null) gaps.push("repo-layout gatherer failed: repoLayout and commands are missing");
   if (conventions === null) gaps.push("conventions gatherer failed: CONTEXT.md/ADR constraints are missing");
-  if (priorPlans === null) gaps.push("prior-plans gatherer failed: docs/superpowers/plans precedents are missing");
+  if (priorPlans === null) gaps.push("prior-plans gatherer failed: docs/plans precedents are missing");
   if (trackerRelations === null) gaps.push("tracker-relations gatherer failed: related issues are missing");
 
   const planContext: PlanContext = {

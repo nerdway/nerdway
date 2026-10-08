@@ -61,8 +61,8 @@ The status strategy and map come from the `statuses` block of the platform
 phase. A strategy whose `## Status strategies` row is `—` → stop and report
 "strategy not supported — run `/bind-statuses`".
 
-The tracker adapter is used for one write (`issue.set-status`) and, when no
-ID was passed, `issue.resolve-from-branch`.
+The tracker adapter is used for one write (`issue.set-status`), the issue
+link (`issue.url`) and, when no ID was passed, `issue.resolve-from-branch`.
 
 ## Resolve the issue ID
 
@@ -142,7 +142,9 @@ merge already closed is closed again without error.
 
 Confirm briefly what happened: committed (or clean), pushed, merged,
 now on `<base>`, issue `<ID>` moved to done. If any step stopped early, report
-which one and why.
+which one and why. Either way, end with the issue link from `issue.url`, in
+the shape *Asking the human to move a phase* in
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives.
 
 ## Related skills
 

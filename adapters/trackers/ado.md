@@ -115,6 +115,7 @@ it.
 | `issue.read-relations` | the relations recipe below | parent, children and related work items |
 | `issue.read-status` | the read recipe of the resolved strategy in `## Status strategies` | the issue's canonical phase |
 | `issue.read-branch` | `az boards work-item show --organization <ORG> --id <n> --expand none --fields System.Title,System.TeamProject -o json` (project check), then the branch-name recipe below | `<ID>` = `#<n>`, `<title>` = `System.Title`, `<url>` per `## URL`, `<branchName>` |
+| `issue.url` | the recipe in `## URL` | the issue link to print for the human; built from `ado.org` and the project when no create returned `_links` |
 | `issue.create-branch` | the create-branch recipe below | from the current checkout, which the caller has already put on `<base>`; stops when `<branchName>` exists locally or on `origin` |
 | `issue.resolve-from-branch` | the loop below | prints `#<n>`, nothing when the branch carries no work item of `<PROJECT>` |
 | `issue.list-active` | the active-list recipe below | work items of `<PROJECT>` whose phase is `todo`, `in-progress` or `in-review` |

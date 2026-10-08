@@ -97,9 +97,8 @@ suggestion):**
 - Cap search results at **5** and review the list/snippets before reading
   any file in full.
 
-**Debugging flows:** a debugging session (e.g. `superpowers:systematic-debugging`)
-should consult this same pattern before reaching for a vault search — this
-skill doesn't modify third-party skills to wire that in automatically.
+**Debugging flows:** a debugging session should consult this same pattern
+before reaching for a vault search.
 
 ## Commands
 

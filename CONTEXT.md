@@ -31,6 +31,11 @@ a rule that cannot be verified from the diff does not belong here.
 7. **Line endings are LF** — `.gitattributes` (`* text=auto eol=lf`) enforces
    it and `scripts/line-endings.test.ts` guards it; a file committed with CRLF
    or mixed endings is a violation.
+8. **No calls to another plugin's skills** — a tracked file never contains
+   the invocation form `<plugin>:<skill>` with `superpowers` or
+   `mattpocock-skills` as the plugin; `scripts/validate-external-references.ts`
+   guards it, with the exempt paths listed in ADR-0009. Naming the plugin or
+   its author in prose is allowed.
 
 ## Language
 

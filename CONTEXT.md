@@ -181,7 +181,8 @@ project state, not a stop — see **Checkpoint**)
 **Checkpoint**:
 One dated bullet under `## Checkpoints` on a project's entity page — issue ID,
 Linear status, branch, short HEAD hash, next step — written by the
-session-summary step and read back by `project-continue`, which verifies it
+session-summary step and by `auto-issue-mode`'s Nerdbrain stage after the
+merge, and read back by `project-continue`, which verifies it
 against git and Linear and asks before replacing it on drift. Newest first,
 capped at 10; a record of where the project stands, never a point where the
 agent waits.

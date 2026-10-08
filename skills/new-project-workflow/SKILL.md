@@ -68,7 +68,7 @@ Run these checks in one tool batch. Their results feed into the plan and the ski
 | Remote configured? | `git -C <dir> remote get-url origin` | Skip repo creation if yes |
 | GitHub CLI authenticated? | `auth.check` (VCS adapter) | Flag if not |
 | GitHub repo exists? | `repo.view` (VCS adapter) | Skip repo creation if yes; surface URL |
-| Nerdbrain reachable? | `obsidian` CLI present + vault at `~/obsidian/nerdbrain` | Decide whether to include wiki step |
+| Nerdbrain reachable? | `test -d ~/obsidian/nerdbrain/5-wiki` (vault directory present) | Decide whether to include wiki step |
 
 The Linear-project existence check is deferred to **Step 2** because it requires the team selection to disambiguate.
 
@@ -223,7 +223,7 @@ Only run if inspection confirmed nerdbrain is reachable. Create `~/obsidian/nerd
   legacy `linear:` key.
 - `created` / `updated`: today
 
-Then append a one-liner to `5-wiki/index.md` under `## Projekty` and a log entry to `5-wiki/log.md`. Use the `obsidian-cli` skill for all vault writes.
+Then append a one-liner to `5-wiki/index.md` under `## Projekty` and a log entry to `5-wiki/log.md`. Write the page, `index.md` and `log.md` through `nerd4rent:nerdbrain-wiki` (filesystem `Read`/`Edit`/`Write` on the vault path).
 
 If nerdbrain is *not* reachable (this is the common case for users installing the open-source plugin), this whole step is silently skipped — no error.
 

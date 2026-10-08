@@ -41,7 +41,10 @@ a rule that cannot be verified from the diff does not belong here.
    steps and links into `docs/`. A README diff that adds workflow topology,
    agent rosters, contract or validator detail, or a per-skill reference is a
    violation; that content goes to `docs/` (contributors) or to `CONTEXT.md`
-   and the skills (agents).
+   and the skills (agents). Documentation for humans (`README.md` and the
+   files directly in `docs/`) follows `nerd-documentation-write`, whatever
+   style the surrounding text uses; an em dash there is a violation, guarded
+   by `scripts/validate-human-docs.ts`.
 
 ## Language
 

@@ -65,13 +65,6 @@ A grilling session interrogates the topic until shared understanding. Rules:
    only about **decisions**.
 6. Do not act on the outcome until the user confirms shared understanding.
 
-If `mattpocock-skills:grilling` is available in the session, you may use it for
-question formats — the inline rules above always work without it (same graceful
-degradation as external skill families elsewhere). Never delegate to the
-`grill-me` / `grill-with-docs` wrappers: they carry
-`disable-model-invocation: true` and only the user can run them, manually, as
-slash commands.
-
 ## Workflow
 
 ### 1. Resolve the platform, then the target team & project
@@ -205,8 +198,5 @@ deliberate steps.
   files issues on; invoked from step 1 when none is configured.
 - `nerd4rent:auto-issue-mode` — runs this skill's creation flow without
   grilling, then carries the issue autonomously to merge and done.
-- `mattpocock-skills:grilling` (optional, `npx skills` / `~/.agents/skills`) —
-  question formats for the inline grilling protocol; degrade gracefully when
-  absent.
 - `nerd4rent:new-project-workflow` — bootstraps a whole project; routes to
   spec-creating skills. This skill is the issue-level counterpart.

@@ -312,12 +312,6 @@ Run the session **inline** per this protocol:
   nerdbrain entity page (see the integration section below) — do not duplicate
   the `nerdbrain-wiki` procedure here.
 
-If `mattpocock-skills:grilling` / `domain-modeling` are available in the
-session, you may use them for question and CONTEXT/ADR formats — the inline
-rules above always work without them. Never delegate to the `grill-me` / `grill-with-docs`
-wrappers: they carry `disable-model-invocation: true` and only the user can
-run them, manually, as slash commands.
-
 ### 2. Post plan to the tracker and write `todo`
 
 Save the plan to a temp file, then:

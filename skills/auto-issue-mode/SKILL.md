@@ -184,8 +184,7 @@ picks the run up from the issue's phase.
 
 ## Final report
 
-Close with the run's **evidence**: issue ID and link (per the tracker
-adapter's `## URL`), PR/MR number, merge commit, test results (final, with
+Close with the run's **evidence**: issue ID and link (`issue.url`), PR/MR number, merge commit, test results (final, with
 pre-existing unrelated failures listed apart), the test approach with its
 reason whenever the run left TDD, and what went to nerdbrain.
 

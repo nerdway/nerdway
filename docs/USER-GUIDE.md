@@ -7,7 +7,7 @@ Contents:
 - [What is graph engineering?](#what-is-graph-engineering)
 - [How the plugin practices it](#how-the-plugin-practices-it)
 - [Programming in this spirit yourself](#programming-in-this-spirit-yourself)
-- [Prerequisites](#prerequisites) · [Installation](#installation)
+- [Installation](#installation)
 - [A day with the plugin](#a-day-with-the-plugin) · [Steering with Linear statuses](#steering-with-linear-statuses)
 - [Skills reference](#skills-reference) · [Troubleshooting](#troubleshooting)
 
@@ -92,74 +92,11 @@ The repo doubles as a reference implementation you can copy from. If you want to
 5. **Make verification adversarial.** Separate the mapper from the judge; prompt the judges to refute; give them a real rejection threshold; count every rejection and every unverified drop in the output.
 6. **Budget the fan-out and surface the gaps.** Declare max widths; return `stats` and `gaps` with every run so a degraded result is distinguishable from a complete one.
 
-Reading order if you want to go deeper: [`README.md` "Workflow topology"](../README.md) → [`workflow-graph.json`](../workflow-graph.json) → [ADR-0003](adr/0003-workflow-graph-contract.md) → the two island scripts in [`workflows/`](../workflows/) → the glossary in [`CONTEXT.md`](../CONTEXT.md) (Node, Edge, Gate, Frozen rule, Reducer, Rejection rule…).
-
-## Prerequisites
-
-You need [Claude Code](https://claude.com/claude-code), [Cursor](#cursor) (native plugin), or another coding agent — see [Other agents](#other-agents) — and these CLIs on your `PATH`:
-
-| CLI | Minimum version | Install | Authentication |
-|---|---|---|---|
-| `git` | 2.40 | your package manager | — |
-| `node` (with npm) | 22 | <https://nodejs.org> | — |
-| `gh` (GitHub CLI) | 2.97 | `brew install gh` / `winget install GitHub.cli` | `gh auth login` |
-| `linearis` (Linear CLI) | 2026.7.0 | `npm i -g linearis` | see below |
-| `glab` (GitLab CLI) — GitLab-hosted repos or GitLab Issues only | 1.117 | `brew install glab` / `winget install GLab.GLab` | `glab auth login` (token scopes `api`, `write_repository`) |
-| `jq` — GitLab Issues or Azure DevOps Boards only | 1.6 | `brew install jq` / `winget install jqlang.jq` | — |
-| `az` (Azure CLI) — Azure DevOps-hosted repos or Azure DevOps Boards only | 2.90 | `brew install azure-cli` / `winget install Microsoft.AzureCLI`, then `az extension add --name azure-devops` | `az login` or `az devops login` |
-| `rg` (ripgrep) | 14 | `brew install ripgrep` / `winget install BurntSushi.ripgrep.MSVC` | — |
-
-To authenticate `linearis`, create a personal API key in Linear under **Settings → Security & access → API → Personal API keys**, then either set it as the `LINEAR_API_TOKEN` environment variable or run `linearis auth login`. The key does not expire.
-
-You don't have to set this up by hand: once the plugin is installed, run `/bootstrap-clis` / `/nerd4rent:bootstrap-clis` and the agent will probe every dependency, install or update what's missing, and hand you back only the authentication steps a human has to complete.
-
-The Linear-based skills degrade gracefully — if `linearis` is missing or unauthenticated, the rest of the plugin still works.
+Reading order if you want to go deeper: [Workflow topology](ARCHITECTURE.md#workflow-topology) → [`workflow-graph.json`](../workflow-graph.json) → [ADR-0003](adr/0003-workflow-graph-contract.md) → the two island scripts in [`workflows/`](../workflows/) → the glossary in [`CONTEXT.md`](../CONTEXT.md) (Node, Edge, Gate, Frozen rule, Reducer, Rejection rule…).
 
 ## Installation
 
-In Claude Code, add the marketplace and install the plugin:
-
-```
-/plugin marketplace add https://github.com/nerd4rent/nerd4rent-claude-plugin
-/plugin install nerd4rent@nerd4rent-claude-plugin
-```
-
-To update later:
-
-```
-/plugin marketplace update nerd4rent-claude-plugin
-/plugin update nerd4rent@nerd4rent-claude-plugin
-```
-
-Merges to `main` don't update your install on their own — the two commands above are what refresh your local copy, and only a release with a bumped plugin version produces an actual update.
-
-The parallel islands need Claude Code ≥ 2.1.154 on a plan that includes dynamic workflows. In the default permission mode each island run asks for consent first; answer "don't ask again" to silence the prompt for that workflow in that project. Without workflows everything still runs — sequentially (see [degradation](#degradation-is-part-of-the-design)).
-
-### Cursor
-
-Symlink this repo into Cursor's local plugin directory, then reload:
-
-```bash
-mkdir -p ~/.cursor/plugins/local
-ln -s /path/to/nerd4rent-claude-plugin ~/.cursor/plugins/local/nerd4rent
-```
-
-**Reload Window**, then open **Customize**. The `nerd4rent` card should show the skills, the five agents, and the SessionStart / vault-MCP deny hooks.
-
-If you previously imported the GitHub repo with `/add-plugin`, disable that marketplace card first. The pin is a cloud `gitRef` on the Cursor account — `update` will not move it, and a card with the same `name` hides the local symlink.
-
-Cursor runs the sequential path (no `Workflow` islands). `sessionStart` is fire-and-forget: if the entity page is missing from the first turn, the agent reads it from disk.
-
-### Other agents
-
-The skills follow the shared [Agent Skills specification](https://github.com/vercel-labs/skills), so you can install them into Copilot, Windsurf, Cline and 70+ other agents — and into Cursor as a skills-only fallback:
-
-```bash
-npx skills add nerd4rent/nerd4rent-claude-plugin -g   # all skills, detected agents
-npx skills update                                     # keep them current
-```
-
-Restart the agent after installing. These agents run the sequential degradation path — same topology, read as prose. This path does not install Cursor agents or hooks.
+Requirements, installation in Claude Code, Cursor and other agents, and updating are in the [README](../README.md#requirements). Without dynamic workflows everything still runs, only sequentially (see [degradation](#degradation-is-part-of-the-design)).
 
 ## Telling the plugin which platform a project uses
 
@@ -266,6 +203,21 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 - **Say:** `/bootstrap-clis` / `/nerd4rent:bootstrap-clis`, or just let a skill fail because a CLI is missing.
 - **What happens:** every dependency from the table above is probed, installed, or updated (with checksum verification for downloads). Authentication is never done for you — the skill ends with the exact steps you need to run yourself.
 
+### `project-continue` — pick up where you left off
+
+- **Say:** *"where were we"*, *"continue"*, *"gdzie jesteśmy"*, *"na czym stanęliśmy"* — after switching to a project, on this machine or another one.
+- **What happens:** the agent reads the newest checkpoint from the project's nerdbrain entity page, checks it against git and the tracker (a commit never pushed, a branch gone, rewritten history, work done after the checkpoint), and reports the state, any drift and the project's active issues, ending with the issue ID to type to resume. It records a new checkpoint only after you agree, and never starts work on an issue by itself.
+
+### `tdd` — test first
+
+- **Say:** *"TDD"*, *"test first"*, *"napisz najpierw test"* — or nothing: `issue-workflow` and `auto-issue-mode` use it when the plan's test approach is TDD.
+- **What happens:** one cycle per behaviour: a failing test against a seam the plan names, a check that it fails for the right reason, the smallest change that makes it pass, a refactor, and a run of the suite. Not used for a plan whose test approach is `no tests` or for documentation-only changes.
+
+### `nerd-documentation-write` — documentation for outside readers
+
+- **Say:** nothing special — the agent uses it when writing or revising a tutorial, README or step-by-step guide for readers outside your own tooling, such as a client's engineers or open-source users.
+- **What happens:** the text states the facts the reader needs rather than the story of how they were found, drops internal issue IDs, opens sentences with words rather than code identifiers, uses noun-phrase headings, plain hyphens and no emoji, and gives each runnable command its own code block with its description above it.
+
 ### `nerdbrain-wiki` / `nerdbrain-search` — personal second brain (optional)
 
 These maintain a personal Obsidian vault with one entity page per project — the plan-phase island reads it as one of its five context sources, and decisions made during work are written back. They assume a specific vault layout under `~/obsidian/nerdbrain/` and matching rules in your user rules / `AGENTS.md` / `~/.claude/CLAUDE.md`; without that setup they simply stay inactive.
@@ -275,7 +227,7 @@ These maintain a personal Obsidian vault with one entity page per project — th
 - **`Issue with identifier "X" not found`** — wrong team prefix or workspace; check `linearis teams list`.
 - **`Status "X" for team ... not found`** — Linear statuses are your team's own names, spelled exactly (`In Progress`, not `in progress`); fix the map with `/bind-statuses` if you renamed them.
 - **"phase unknown"** — the issue shows a state, label or marker the status map doesn't hold; move the issue to a mapped status, or extend the map with `/bind-statuses`.
-- **`linearis` errors about authentication** — set `LINEAR_API_TOKEN` or run `linearis auth login` (see [Prerequisites](#prerequisites)).
+- **`linearis` errors about authentication** — set `LINEAR_API_TOKEN` or run `linearis auth login` (see [Requirements](../README.md#requirements)).
 - **`/plugin update` says nothing changed** — run `/plugin marketplace update nerd4rent-claude-plugin` first; if it still reports no change, no new version has been released yet.
 - **A skill doesn't trigger** — invoke it explicitly with the slash form, e.g. `/issue-workflow DEMO-123` or `/nerd4rent:issue-workflow DEMO-123`.
 - **The plan or review runs sequentially and slowly** — dynamic workflows are unavailable or disabled; see [Installation](#installation). The result is the same, only slower.

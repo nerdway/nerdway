@@ -59,6 +59,9 @@ A new exemption is a change to this ADR, not an edit of the constant alone.
 - `scripts/validate-external-references.ts` joins the release guard block
   in the README and the CI workflow; a pull request that calls an external
   skill fails before review.
+
+  *Amended by DEMO-377: the release guard block moved from the README to
+  `docs/CONTRIBUTING.md`; the guard itself is unchanged.*
 - The three skills that carried the references (`issue-writer`,
   `issue-workflow`, `nerdbrain-wiki`) describe the step inline; the grilling
   protocol itself is unchanged.

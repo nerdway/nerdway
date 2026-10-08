@@ -183,7 +183,7 @@ const [repoFacts, conventions, priorPlans, trackerRelations, vault] = await para
   () =>
     agent(
       issueHeader +
-        'Map the repository for a planning agent. Read README.md and the top-level layout, find the directories and files this issue will likely touch, and collect the exact test/build/validator commands the repo documents (README, CLAUDE.md, scripts). Return repoLayout as one compact paragraph and commands as verbatim shell commands.',
+        'Map the repository for a planning agent. Read README.md and the top-level layout, find the directories and files this issue will likely touch, and collect the exact test/build/validator commands the repo documents (README, CONTRIBUTING.md at the root or under docs/, CLAUDE.md, scripts). Return repoLayout as one compact paragraph and commands as verbatim shell commands.',
       { label: 'gather:repo-layout', phase: 'Gather', schema: repoFactsShape, agentType: 'nerd4rent:plan-gatherer' },
     ),
   () =>

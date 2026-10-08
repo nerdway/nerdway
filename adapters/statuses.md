@@ -104,6 +104,28 @@ A marker comment on the issue.
   `Status: <map[phase]>`. Never edit or delete an earlier marker — the thread
   is the history.
 
+## Asking the human to move a phase
+
+When a skill's turn ends on a phase only the human moves, or a skill stops
+because the issue is in the wrong phase, its message carries three parts, in
+this order:
+
+1. **What happened** — one line: the plan is posted, the start stopped, the
+   merge failed.
+2. **The phase the work waits for**, named by its map value `map[<phase>]`,
+   never by the canonical phase name, and phrased for the resolved strategy:
+   - `native` — "move the issue to `<value>`";
+   - `label` — "add the label `<value>`" (for `closed`: "close the issue";
+     for `open`: "remove the status labels");
+   - `comment` — "post a comment whose first line is `Status: <value>`".
+3. **The issue link** from `issue.url`.
+
+A message that waits for no phase — a close-out report, a state report —
+keeps parts 1 and 3.
+
+The request is addressed to the human and grants the agent nothing: asking
+for `in-progress` never lets the agent write it (the gate below).
+
 ## The approval gate, in every strategy
 
 `in-progress` unlocks repo changes. It is written by the human — a state

@@ -171,7 +171,7 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 ### `issue-workflow` - plan, implement, review
 
 - **Say:** any issue ID (`DEMO-123` on Linear; `#123` or `owner/repo#123` in a GitHub Issues project; `#123` or `group/project#123` in a GitLab Issues project; `#123` or `AB#123` in an Azure DevOps Boards project) with intent to work on it - *"plan DEMO-123"*, *"zrealizuj DEMO-123"*, or just the bare ID.
-- **What happens:** the status-driven flow described [above](#steering-with-linear-statuses), including both islands. During implementation it offers whichever implementation-style skills you have installed (TDD, subagent-driven, or plain).
+- **What happens:** the status-driven flow described [above](#steering-with-linear-statuses), including both islands. During implementation it follows the **Test approach** in the approved plan (see step 4 of [A day with the plugin](#a-day-with-the-plugin)): tests first through `tdd` by default, or `no tests` when the plan gives a reason and names the check that replaces the test.
 
 ### `issue-start` - open the branch and the PR
 

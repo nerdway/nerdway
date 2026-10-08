@@ -185,7 +185,7 @@ gatherer output always reduces to the same context and the same stats.
 
 | Source | What it contributes | Schema field |
 |---|---|---|
-| Repo code (layout, `README.md`, `CONTRIBUTING.md` at the root or in `docs/`, `CONTEXT.md`) | directories/files the change touches; test, build and validator commands | `PlanContext.repoLayout`, `.commands` |
+| Repo code (layout, `README.md`, `CONTRIBUTING.md` at the root or in `docs/`, `CLAUDE.md`, `CONTEXT.md`) | directories/files the change touches; test, build and validator commands | `PlanContext.repoLayout`, `.commands` |
 | ADRs (`docs/adr/*.md`) + `CONTEXT.md` terms + commit style | hard in-repo rules the plan must not break | `PlanContext.conventions` |
 | Prior plans (`docs/plans/`) and merged PRs | precedents: how similar changes were cut and committed | `PlanContext.priorArt` |
 | Related tracker issues (parent, siblings, links) | parent AC, cross-issue agreements and dependencies | `PlanContext.priorArt` |

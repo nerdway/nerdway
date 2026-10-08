@@ -17,6 +17,8 @@ jobs:
         run: node scripts/validate-manifests.ts
       - name: No calls to external plugins' skills
         run: node scripts/validate-external-references.ts
+      - name: No em dash in documentation for humans
+        run: node scripts/validate-human-docs.ts
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
       - name: claude plugin validate (warnings fail)

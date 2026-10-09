@@ -336,9 +336,9 @@ _Avoid_: false-positive rate (claims a ground truth the verification has not)
 
 **Passive metric**:
 A figure counted from what a run already emitted, stored only where that run's
-result already lands — a Linear comment. The repo has no CI and no telemetry,
-so a metric that needs a new collection channel, a log file or a clock is not
-measured at all: it is rejected, not deferred.
+result already lands — a Linear comment. The repo has no telemetry and its CI
+runs validators only, so a metric that needs a new collection channel, a log
+file or a clock is not measured at all: it is rejected, not deferred.
 _Avoid_: telemetry, instrumentation (both imply a channel this repo does not have)
 
 **Cursor Plugin**:

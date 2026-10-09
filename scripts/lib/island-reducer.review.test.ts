@@ -193,6 +193,57 @@ test("reduceVerdicts treats fewer than rejectAt cast votes as unverified with a 
   ]);
 });
 
+test("reduceVerdicts caps confidence at medium and records a gap when a finding passes on 2 of 3 votes", () => {
+  const candidates = [
+    { axis: "security", file: "p.ts", line: 4, claim: "c1", evidence: "e1", severity: "major" },
+  ] satisfies CandidateFinding[];
+
+  const result = reduceVerdicts(
+    candidates,
+    [{ refuted: false, justification: "stands" }, null, { refuted: false, justification: "stands" }],
+    { mappedCount: 1, overflowCount: 0 },
+    REVIEW_LIMITS,
+  );
+
+  assert.deepEqual(result.verified.map((f) => [f.file, f.line, f.confidence]), [["p.ts", 4, "medium"]]);
+  assert.deepEqual(result.stats, { mapped: 1, verified: 1, rejected: 0, unverifiedOverflow: 0 });
+  assert.deepEqual(result.gaps, ["finding p.ts:4 verified on 2 of 3 votes — confidence capped at medium"]);
+});
+
+test("reduceVerdicts records a gap when a finding passes on 2 of 3 votes with one refutation", () => {
+  const candidates = [
+    { axis: "correctness-regressions", file: "q.ts", line: 8, claim: "c1", evidence: "e1", severity: "minor" },
+  ] satisfies CandidateFinding[];
+
+  const result = reduceVerdicts(
+    candidates,
+    [null, { refuted: true, justification: "doubt" }, { refuted: false, justification: "stands" }],
+    { mappedCount: 1, overflowCount: 0 },
+    REVIEW_LIMITS,
+  );
+
+  assert.deepEqual(result.verified.map((f) => [f.file, f.line, f.confidence]), [["q.ts", 8, "medium"]]);
+  assert.deepEqual(result.stats, { mapped: 1, verified: 1, rejected: 0, unverifiedOverflow: 0 });
+  assert.deepEqual(result.gaps, ["finding q.ts:8 verified on 2 of 3 votes — confidence capped at medium"]);
+});
+
+test("reduceVerdicts records a gap when a finding is rejected on 2 of 3 votes", () => {
+  const candidates = [
+    { axis: "repo-standards", file: "r.ts", line: 15, claim: "c1", evidence: "e1", severity: "minor" },
+  ] satisfies CandidateFinding[];
+
+  const result = reduceVerdicts(
+    candidates,
+    [{ refuted: true, justification: "gone" }, { refuted: true, justification: "gone" }, null],
+    { mappedCount: 1, overflowCount: 0 },
+    REVIEW_LIMITS,
+  );
+
+  assert.deepEqual(result.verified, []);
+  assert.deepEqual(result.stats, { mapped: 1, verified: 0, rejected: 1, unverifiedOverflow: 0 });
+  assert.deepEqual(result.gaps, ["finding r.ts:15 rejected on 2 of 3 votes"]);
+});
+
 test("reduceVerdicts tolerates empty votes and malformed vote objects", () => {
   const candidates = [
     { axis: "security", file: "z.ts", line: 1, claim: "c1", evidence: "e1", severity: "minor" },

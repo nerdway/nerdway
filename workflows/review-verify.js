@@ -162,7 +162,7 @@ const SCHEMA_ReviewFindings = {
         "confidence": {
           "type": "string",
           "title": "Confidence",
-          "description": "How sure the verification pass is that the finding is real.",
+          "description": "How sure the verification pass is that the finding is real: high only when all 3 sceptics cast a vote and none refuted; medium when one refuted or a sceptic returned no vote.",
           "enum": ["high", "medium", "low"]
         }
       },
@@ -412,11 +412,18 @@ for (let findingIndex = 0; findingIndex < candidates.length; findingIndex++) {
     continue
   }
   const refutations = cast.filter((vote) => vote.refuted).length
+  const fullVote = cast.length === VOTES
   if (refutations >= REJECT_AT) {
     rejected++
+    if (!fullVote) {
+      gaps.push(`finding ${candidates[findingIndex].file}:${candidates[findingIndex].line} rejected on ${cast.length} of ${VOTES} votes`)
+    }
     continue
   }
-  verified.push({ ...candidates[findingIndex], confidence: refutations === 0 ? 'high' : 'medium' })
+  if (!fullVote) {
+    gaps.push(`finding ${candidates[findingIndex].file}:${candidates[findingIndex].line} verified on ${cast.length} of ${VOTES} votes — confidence capped at medium`)
+  }
+  verified.push({ ...candidates[findingIndex], confidence: fullVote && refutations === 0 ? 'high' : 'medium' })
 }
 
 log(`Verified: ${verified.length} stand, ${rejected} rejected, ${unverifiedOverflow} unverified`)

@@ -162,7 +162,7 @@ const SCHEMA_ReviewFindings = {
         "confidence": {
           "type": "string",
           "title": "Confidence",
-          "description": "How sure the verification pass is that the finding is real.",
+          "description": "How sure the verification pass is that the finding is real: high only when all 3 sceptics cast a vote and none refuted; medium when one refuted or a sceptic returned no vote.",
           "enum": ["high", "medium", "low"]
         }
       },

@@ -310,7 +310,9 @@ engine (the removed notion of an external skill driving an axis)
 The adversarial verification threshold: 3 independent sceptics each try to
 refute a finding, and 2 or more refutations out of 3 reject it. A finding
 with fewer than 2 cast votes is dropped as unverified and counted — it never
-passes because verification failed.
+passes because verification failed. A finding decided on 2 of 3 cast votes,
+verified or rejected, adds an entry to `gaps`, and a verified one is capped
+at `medium` confidence.
 _Avoid_: majority vote (hides that the sceptics' goal is to refute), veto
 
 **Axis conflict**:

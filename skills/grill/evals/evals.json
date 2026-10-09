@@ -1,0 +1,61 @@
+{
+  "skill_name": "grill",
+  "evals": [
+    {
+      "id": "three-decisions-two-rounds",
+      "prompt": "Run a grilling session with these arguments:\n\nissue: none\ntopic: this request: \"Add a CSV export of the monthly report. I have not decided where the Export button goes (report header or the row menu), whether the file includes the archived rows, and whether the column headers are the UI labels or the database field names.\"\n\nI will answer every round. When you ask a question I answer \"tak\". Count your rounds explicitly: label each round \"Round N\".",
+      "expected_output": "The agent announces the size (medium) before any question, asks all three decisions in Round 1 as numbered questions each with a recommended answer, accepts the user's \"tak\" for the whole round, prints a `## Grill state` block in chat, then prints the outcome with docs-discipline tags and asks one confirmation question. The session ends in at most two rounds.",
+      "files": [],
+      "assertions": [
+        "Before the first question the agent states the size classification (small, medium or large) and what follows from it, in a way the user can override",
+        "The agent says once that with `issue: none` the state is printed in chat and cannot be resumed from another machine",
+        "Round 1 contains all three decisions (button placement, archived rows, header naming) as numbered questions",
+        "Every question in a round carries a recommended answer worded so that a plain 'tak' or 'yes' accepts it",
+        "A single 'tak' answer is applied to every question of the round, not to the first one only",
+        "A block headed `## Grill state` is printed after the round, with Resolved, Facts checked, Open and Next round sections and the line `Confirmed shared understanding: no`",
+        "The transcript labels at most two rounds before the outcome is printed",
+        "The outcome lists each decision with its answer and a docs-discipline tag (ADR, glossary term, entity-page decision or none), then asks one confirmation question",
+        "No `## Grill state` block is written before the first round's answers arrive"
+      ]
+    },
+    {
+      "id": "facts-checked-not-asked",
+      "prompt": "Run a grilling session with these arguments:\n\nissue: none\ntopic: this request about the current repository: \"The validators should also reject a skill whose SKILL.md has no `description` in its frontmatter. I am not sure whether validate-manifests.ts already checks frontmatter at all, and I have not decided whether a missing description should be an error or a warning.\"\n\nAnswer the questions you ask me with the recommended answer.",
+      "expected_output": "The agent checks in the repository whether `scripts/validate-manifests.ts` already reads skill frontmatter and reports the finding; it asks the user only the error-or-warning decision, never whether the validator checks frontmatter.",
+      "files": [],
+      "assertions": [
+        "The agent reads scripts/validate-manifests.ts (or the module it delegates to) before or during the first round",
+        "The agent reports what the validator currently does with skill frontmatter as a finding, with the file it read",
+        "The agent does not ask the user whether the validator already checks frontmatter",
+        "The round asks the error-or-warning decision as a numbered question with a recommended answer",
+        "The `## Grill state` block lists the frontmatter check under Facts checked with where it was checked and the result"
+      ]
+    },
+    {
+      "id": "resume-from-grill-state",
+      "prompt": "Run a grilling session with these arguments:\n\nissue: none\ntopic: the CSV export of the monthly report\n\nHere is the state from my earlier session; resume from it:\n\n## Grill state\n\nTopic: CSV export of the monthly report\nSize: medium\nRound: 1\nConfirmed shared understanding: no\n\n### Resolved\n- Q1 Where does the Export button go? — report header (recommendation accepted)\n- Q2 Are archived rows included? — no, current rows only (recommendation accepted)\n\n### Facts checked\n- report query has an `archived` flag — src/report/query.ts — yes, filterable\n\n### Open\n- header naming not asked yet\n\n### Next round\n1. Are the column headers the UI labels or the database field names? — recommended: UI labels\n\nAnswer the questions you ask me with 'tak'.",
+      "expected_output": "The agent says it is resuming, does not re-announce the size or re-ask the button placement and archived-rows decisions, asks only the header-naming question from Next round, then prints the outcome with all three decisions and asks for confirmation.",
+      "files": [],
+      "assertions": [
+        "The agent states in one sentence that it resumes from the pasted `## Grill state` block",
+        "The agent does not re-ask the button placement or the archived-rows decision",
+        "The agent does not announce a size classification again",
+        "The next round contains the header-naming question from the block's Next round section, with its recommended answer",
+        "The outcome lists all three decisions, including the two resolved in the earlier session",
+        "The next `## Grill state` block is labelled Round 2 and keeps the two earlier Resolved entries"
+      ]
+    },
+    {
+      "id": "no-issue-chat-carrier",
+      "prompt": "Run a grilling session with these arguments:\n\nissue: none\ntopic: this request: \"Rename the `tier` field the SessionStart hook injects. I have not decided on the new name.\"\n\nDo not touch any tracker. Answer my questions with the recommended answer.",
+      "expected_output": "The agent treats chat as the carrier: it says once that the state cannot be resumed from another machine, prints every `## Grill state` block in chat, and runs no tracker command (no linearis, gh, glab or az call) during the session.",
+      "files": [],
+      "assertions": [
+        "The agent says once, before the first question, that with no issue the state is printed in chat and cross-machine resumption is not available",
+        "No tracker command is run during the session (no linearis, gh, glab or az invocation)",
+        "Every `## Grill state` block is printed in chat, and its first line is the heading, never a line starting with `Status:`",
+        "The agent does not ask the user whether an issue exists; it takes `issue: none` from the arguments"
+      ]
+    }
+  ]
+}

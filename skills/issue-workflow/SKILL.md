@@ -239,9 +239,8 @@ speculatively.
 
 ### 0c. Refine the spec (complex issues only)
 
-A small, clear issue skips this step — the same threshold `issue-writer`
-step 2 uses to pick the minimal template. For a complex issue, before the
-plan:
+An issue the grilling session (1a) classifies as small skips this step. For a
+medium or large issue, before the plan:
 
 1. Compare the description with the **full** variant of
    `issue-writer/issue-template.md`.
@@ -281,36 +280,28 @@ prose. The user approves the mode together with the plan; step 5 reads it.
 (`node scripts/render-templates.ts`); change a section by editing the schema, not
 the file. Filling them stays prose — no step in this skill asks anyone for JSON.
 
-For ambiguous requirements, offer a **grilling session** before posting the
-plan (see below). A small, clear task gets no grilling — go straight to the
-plan.
+For ambiguous requirements, run the **grilling session** of 1a through
+`nerd4rent:grill` before posting the plan. The skill says the size of the
+issue out loud first; a small, clear issue gets no interview — go straight to
+the plan.
 
 If a plan comment already exists, refine it (post a follow-up or update) rather
 than duplicating it.
 
 ### 1a. Grilling session (adaptive, before the plan is posted)
 
-Run the session **inline** per this protocol:
+Invoke **`nerd4rent:grill`** with the two argument lines `issue: <ID>` and
+`topic: the issue description`. The skill announces the size, checks facts in
+the repo itself, asks the decisions in numbered rounds with a recommended
+answer each, and records a `## Grill state` comment on the issue after every
+round, so the session resumes from the tracker on any machine. Its confirmed
+outcome feeds step 0c (the refined spec) and step 1 (the plan).
 
-1. Interrogate every aspect of the topic until shared understanding is reached.
-2. Walk down the decision tree, resolving dependencies between decisions one
-   branch at a time.
-3. Ask **one question at a time** and wait for the answer.
-4. Give a **recommended answer** with every question.
-5. Verify facts yourself in the environment (code, repo, CLI) — ask the user
-   only about **decisions**.
-6. Do not post the plan until the user confirms shared understanding.
-
-**Docs discipline** — apply to what the session produces:
-
-- A decision that is **hard to reverse** AND **surprising without context**
-  AND carries a **real trade-off** (all three) → record an ADR in the repo's
-  `docs/adr/` (follow the repo's existing ADR pattern if one exists).
-- Terms sharpened during the session → glossary entries in the repo's
-  `CONTEXT.md`.
-- Project-level decisions → the existing `## Decisions` write-trigger on the
-  nerdbrain entity page (see the integration section below) — do not duplicate
-  the `nerdbrain-wiki` procedure here.
+Do not post the plan before the skill has returned a confirmed outcome. The
+outcome tags each decision for the docs discipline — ADR, glossary term in
+`CONTEXT.md`, or `## Decisions` on the entity page; act on those tags with the
+plan (the entity-page write goes through `nerdbrain-wiki`, see the integration
+section below).
 
 ### 2. Post plan to the tracker and write `todo`
 
@@ -617,4 +608,6 @@ session's last push.
   here, never enters this workflow by itself.
 - `nerd4rent:tdd` — the implementation loop step 5 hands off to under
   `mode: TDD`.
+- `nerd4rent:grill` — the grilling session of step 1a (`issue: <ID>`); its
+  confirmed outcome feeds the spec refinement and the plan.
 - `gitlab-to-linear` / `simgit` — GitLab → Linear import (separate flow).

@@ -65,6 +65,11 @@ A new exemption is a change to this ADR, not an edit of the constant alone.
 - The three skills that carried the references (`issue-writer`,
   `issue-workflow`, `nerdbrain-wiki`) describe the step inline; the grilling
   protocol itself is unchanged.
+
+  *Amended: the inline grilling protocol moved into the plugin's own
+  `nerd4rent:grill` skill, which asks in rounds; `issue-writer`,
+  `issue-workflow` and `new-project-workflow` invoke it, and the manual
+  `/grill-me` menu item of `new-project-workflow` is gone.*
 - The planning island reads prior art from `docs/plans/` (`if present`), so
   a client repository without that directory behaves as before.
 - ADR-0008 is amended: `docs/plans/` and `docs/specs/` hold only the four

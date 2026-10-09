@@ -402,11 +402,22 @@ export function reduceVerdicts(
       continue;
     }
     const refutations = cast.filter((vote) => (vote as { refuted: boolean }).refuted).length;
+    const fullVote = cast.length === limits.votes;
     if (refutations >= limits.rejectAt) {
       rejected++;
+      if (!fullVote) {
+        gaps.push(
+          `finding ${candidates[findingIndex].file}:${candidates[findingIndex].line} rejected on ${cast.length} of ${limits.votes} votes`,
+        );
+      }
       continue;
     }
-    verified.push({ ...candidates[findingIndex], confidence: refutations === 0 ? "high" : "medium" });
+    if (!fullVote) {
+      gaps.push(
+        `finding ${candidates[findingIndex].file}:${candidates[findingIndex].line} verified on ${cast.length} of ${limits.votes} votes — confidence capped at medium`,
+      );
+    }
+    verified.push({ ...candidates[findingIndex], confidence: fullVote && refutations === 0 ? "high" : "medium" });
   }
 
   return {

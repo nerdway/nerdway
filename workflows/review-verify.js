@@ -412,11 +412,18 @@ for (let findingIndex = 0; findingIndex < candidates.length; findingIndex++) {
     continue
   }
   const refutations = cast.filter((vote) => vote.refuted).length
+  const fullVote = cast.length === VOTES
   if (refutations >= REJECT_AT) {
     rejected++
+    if (!fullVote) {
+      gaps.push(`finding ${candidates[findingIndex].file}:${candidates[findingIndex].line} rejected on ${cast.length} of ${VOTES} votes`)
+    }
     continue
   }
-  verified.push({ ...candidates[findingIndex], confidence: refutations === 0 ? 'high' : 'medium' })
+  if (!fullVote) {
+    gaps.push(`finding ${candidates[findingIndex].file}:${candidates[findingIndex].line} verified on ${cast.length} of ${VOTES} votes — confidence capped at medium`)
+  }
+  verified.push({ ...candidates[findingIndex], confidence: fullVote && refutations === 0 ? 'high' : 'medium' })
 }
 
 log(`Verified: ${verified.length} stand, ${rejected} rejected, ${unverifiedOverflow} unverified`)

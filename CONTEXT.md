@@ -190,6 +190,17 @@ capped at 10; a record of where the project stands, never a point where the
 agent waits.
 _Avoid_: gate, milestone (both name a stop; a checkpoint stops nothing)
 
+**Grill state**:
+The block headed `## Grill state` that `nerd4rent:grill` writes after every
+round of a grilling session: topic, size, round number, the decisions
+resolved, the facts checked, the open branches and the questions of the next
+round, closed by `Confirmed shared understanding: yes` or `no`. Its carrier is
+a comment on the issue when one exists (`issue: <ID>`), chat otherwise
+(`issue: none`); a session resumes from the newest block alone. It never opens
+with `Status:`, so the `comment` status strategy cannot read it as a phase.
+_Avoid_: checkpoint, grill checkpoint (a **Checkpoint** records where the
+project stands on the entity page; this records where one interview stands)
+
 **Platform config**:
 The project's tracker (`linear`, `github`, `gitlab`, `ado`, `none`) and VCS
 host (`github`, `gitlab`, `ado`) plus the identifiers each needs — schema

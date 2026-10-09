@@ -166,7 +166,7 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 ### `issue-writer` - file a new issue
 
 - **Say:** *"create an issue"*, *"new task"*, *"utwórz/zgłoś issue"* - intent to file new work, with no existing issue ID.
-- **What happens:** the agent resolves the platform (running `determine-platform` if none is recorded) and the target team/project - on GitHub Issues and GitLab Issues the repo, on Azure DevOps Boards the project and work item type - (and confirms it), interviews you only if the goal is unclear, shows you the drafted body, and creates the issue in Backlog only after you approve. For big topics it can split the work into real sub-issues, and optionally run a "grilling session" - a one-question-at-a-time interrogation that sharpens the requirements before planning starts.
+- **What happens:** the agent resolves the platform (running `determine-platform` if none is recorded) and the target team/project - on GitHub Issues and GitLab Issues the repo, on Azure DevOps Boards the project and work item type - (and confirms it), interviews you only if the goal is unclear, shows you the drafted body, and creates the issue in Backlog only after you approve. The interview and the optional "grilling session" after the issue is created both run through `grill` (below): questions in numbered rounds, each with a recommended answer, until the requirements are sharp enough for planning. For big topics it can split the work into real sub-issues.
 
 ### `issue-workflow` - plan, implement, review
 
@@ -196,7 +196,7 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 ### `new-project-workflow` - bootstrap a project
 
 - **Say:** *"start a new project"*, *"bootstrap this project"* - typically from an empty directory.
-- **What happens:** git init, `README.md` scaffold, GitHub repo via `gh`, a matching Linear project (skipped when you choose GitHub Issues as the tracker), and a hand-off to a spec-writing interview. One approval up front covers the whole sequence.
+- **What happens:** git init, `README.md` scaffold, GitHub repo via `gh`, a matching Linear project (skipped when you choose GitHub Issues as the tracker), and a hand-off to `grill` (below) or to another spec-writing skill you have installed. One approval up front covers the whole sequence.
 
 ### `bootstrap-clis` - set up a machine
 
@@ -212,6 +212,11 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 
 - **Say:** *"TDD"*, *"test first"*, *"napisz najpierw test"* - or nothing: `issue-workflow` and `auto-issue-mode` use it when the plan's test approach is TDD.
 - **What happens:** one cycle per behaviour: a failing test against a seam the plan names, a check that it fails for the right reason, the smallest change that makes it pass, a refactor, and a run of the suite. Not used for a plan whose test approach is `no tests` or for documentation-only changes.
+
+### `grill` - interview in rounds
+
+- **Say:** *"grill this"*, *"przepytaj mnie"*, *"sesja grillowania"* - or nothing: `issue-writer`, `issue-workflow` and `new-project-workflow` call it when a topic is fuzzy.
+- **What happens:** the agent first says how big it reads the topic (small, medium or large) so you can correct it; a small, clear topic gets no interview at all. Then it checks facts in the repo itself and asks you only about decisions, in rounds: every question that can be answered now, numbered, each with a recommended answer, so a plain "yes" accepts the whole round. After each round it writes a `## Grill state` block - as a comment on the issue when one exists, which lets you continue the session from another machine, or in chat otherwise. It ends by listing every decision, tagging the ones that deserve an ADR, a glossary entry or a project decision, and asking you once to confirm the shared understanding before anything acts on it.
 
 ### `nerd-documentation-write` - documentation for outside readers
 

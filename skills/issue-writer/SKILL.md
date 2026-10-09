@@ -6,8 +6,9 @@ description: >-
   the user wants to file/create/open a new issue or task ("utwórz/stwórz/dodaj/zgłoś
   issue/zadanie", "create issue", "new task") and does NOT yet have an issue ID.
   Adaptively interviews for missing goals, drafts the issue, gates the tracker
-  write on approval, creates the issue in the backlog phase, and offers an optional inline
-  grilling session that can split the topic into sub-issues. Distinct
+  write on approval, creates the issue in the backlog phase, and offers an optional
+  grilling session, run through nerd4rent:grill, that can split the topic into
+  sub-issues. Distinct
   from issue-workflow (which plans/implements an EXISTING issue ID).
   Delegates to determine-platform when no platform is configured; tracker
   commands come from the platform adapter.
@@ -52,19 +53,6 @@ operations, reading the repo/entity-page for context, asking clarifying question
 drafting the issue text. The same gate applies to sub-issues proposed by a
 grilling session (step 6).
 
-## Grilling protocol (inline)
-
-A grilling session interrogates the topic until shared understanding. Rules:
-
-1. Interrogate every aspect of the topic until shared understanding is reached.
-2. Walk down the decision tree, resolving dependencies between decisions one
-   branch at a time.
-3. Ask **one question at a time** and wait for the answer.
-4. Give a **recommended answer** with every question.
-5. Verify facts yourself in the environment (code, repo, CLI) — ask the user
-   only about **decisions**.
-6. Do not act on the outcome until the user confirms shared understanding.
-
 ## Workflow
 
 ### 1. Resolve the platform, then the target team & project
@@ -101,21 +89,22 @@ block has no `workItemType`, stop and run `nerd4rent:bind-statuses` first — it
 picks the team, board and type — never guess a type. Sub-issues are the same
 type with a parent link, so they land on the same board.
 
-### 2. Assess complexity (adaptive threshold)
+### 2. Assess complexity (out loud)
 
-Pick the path the same way every later adaptive choice is made:
+Invoke **`nerd4rent:grill`** with the two argument lines `issue: none` and
+`topic: the user's request`. It says the size of the topic out loud before any
+question, so the user can override it, and the size picks the path:
 
-| Signal | Path |
+| Size the skill announces | Path |
 |--------|------|
-| Single, clear, small task; user already stated the outcome | **Draft straight away**, minimal template (Objective + Acceptance criteria) |
-| Vague, broad, or multi-part; outcome/criteria unclear | **Short interview first**, full template |
+| **small** — one clear deliverable, outcome already stated | the skill returns at once: **draft straight away**, minimal template (Objective + Acceptance criteria) |
+| **medium** — one piece of work with open decisions | the skill interviews in rounds; draft with the full template from its confirmed outcome |
+| **large** — plainly splits into stages | the outcome proposes the split; step 3 turns it into sub-issues |
 
-Run the interview per the **grilling protocol** above (no docs part at this
-stage): one question at a time, a recommended answer with each, facts verified
-yourself, only decisions asked. Cover only what is missing: objective,
-problem/context, acceptance criteria, scope (in/out), constraints,
-dependencies, open questions. Stop as soon as the goals are unambiguous — do
-not interrogate a task that is already clear.
+The decisions the interview settles are the template's sections the request
+leaves open: objective, problem/context, acceptance criteria, scope (in/out),
+constraints, dependencies, open questions. Facts about the repo are checked by
+the skill, not asked.
 
 ### 3. Decide decomposition
 
@@ -164,9 +153,10 @@ quirks.
 ### 6. Grilling session (optional)
 
 For a complex or still-fuzzy topic, ask the user: *Odpalić sesję grillowania
-dla tego issue?* If yes, run it **inline** per the grilling protocol above
-(no docs part in this skill), taking the created issue's body as the input.
-Handle the outcome:
+dla tego issue?* If yes, invoke **`nerd4rent:grill`** with `issue: <ID>` (the
+issue step 5 created) and `topic: the created issue's body`; the skill records
+its state as comments on that issue, so the session can resume on another
+machine. Handle the confirmed outcome:
 
 - sharpened requirements → update the issue description
   (`issue.update-description`) after showing the diff;
@@ -174,7 +164,7 @@ Handle the outcome:
   create them with `issue.create-child` under `<ID>` **only after the user
   approves the drafts** (hard gate above).
 
-Skip the offer for a small, clear task — same adaptive threshold as step 2.
+Skip the offer when step 2 classified the topic as small.
 
 ### 7. Output + handoff
 
@@ -192,6 +182,9 @@ deliberate steps.
 
 ## Related skills
 
+- `nerd4rent:grill` — the interview of step 2 (`issue: none`) and the
+  optional session of step 6 (`issue: <ID>`); it announces the size and
+  returns a confirmed outcome.
 - `nerd4rent:issue-workflow` — downstream: status-driven planning and
   implementation of an issue ID produced here.
 - `nerd4rent:determine-platform` — upstream: records the platform this skill

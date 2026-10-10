@@ -7,7 +7,7 @@ import type { CliEntry } from "../types/cli-dependencies.ts";
 function nodeEntry(overrides: Partial<CliEntry> = {}): CliEntry {
   return {
     id: "node",
-    minVersion: "22.0.0",
+    minVersion: "24.0.0",
     versionCommand: ["node", "--version"],
     versionRegex: "v(\\d+\\.\\d+\\.\\d+)",
     requiredBy: ["issue-workflow"],

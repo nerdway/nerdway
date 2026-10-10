@@ -25,7 +25,7 @@ that happens to be in the conversation context:
 adapter files: `${CLAUDE_PLUGIN_ROOT}`, or two directories up from the
 skill's base directory when that variable was not substituted.
 
-**1. Script (preferred, Node ≥ 22).** Run:
+**1. Script (preferred, Node ≥ 24).** Run:
 
 ```bash
 node "<plugin root>/scripts/validate-platform-config.ts" --print "$(git rev-parse --show-toplevel)/CLAUDE.md"
@@ -39,7 +39,7 @@ node "<plugin root>/scripts/validate-platform-config.ts" --print "$(git rev-pars
 
 Any other exit code or failure → use the manual read below. That includes
 `1`, which comes from Node itself, not from the script (for example
-`ERR_UNKNOWN_FILE_EXTENSION` on Node older than 22), and a missing `node`.
+`ERR_UNKNOWN_FILE_EXTENSION` on Node older than 24), and a missing `node`.
 Outside a git repo there is no repo `CLAUDE.md`, so move on to the skill's
 next source.
 

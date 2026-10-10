@@ -22,7 +22,7 @@ These CLIs on your `PATH`:
 | CLI | Minimum version | Install | Authentication |
 |---|---|---|---|
 | `git` | 2.40 | your package manager | none |
-| `node` (with npm) | 22 | <https://nodejs.org> | none |
+| `node` (with npm) | 24 | <https://nodejs.org> | none |
 | `gh` (GitHub CLI) | 2.97 | `brew install gh` / `winget install GitHub.cli` | `gh auth login` |
 | `linearis` (Linear CLI), Linear only | 2026.7.0 | `npm i -g linearis` | see below |
 | `glab` (GitLab CLI), GitLab-hosted repos or GitLab Issues only | 1.117 | `brew install glab` / `winget install GLab.GLab` | `glab auth login` (token scopes `api`, `write_repository`) |

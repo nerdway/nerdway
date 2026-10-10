@@ -12,11 +12,11 @@ The plugin covers the lifecycle end to end except for nine practices:
 | Parallel subagent dispatch (`dispatch-agents`) | DEMO-405 |
 | Domain modelling (`model-domain`) | DEMO-405 |
 | Splitting work into stages with blocking edges | DEMO-407 |
-| Receiving review comments from people and bots on the PR or MR | pending |
-| PR or MR body written for human reviewers | pending |
-| Session retrospective that turns lessons into issues | pending |
-| Testing skills: an eval runner and coverage of the core skills | pending |
-| Detecting a stale plugin install or stale skill copies | pending |
+| Receiving review comments from people and bots on the PR or MR | DEMO-414 |
+| PR or MR body written for human reviewers | DEMO-410 |
+| Session retrospective that turns lessons into issues | DEMO-411 |
+| Testing skills: an eval runner and coverage of the core skills | DEMO-412 |
+| Detecting a stale plugin install or stale skill copies | DEMO-413 |
 
 Everything else is either covered by a plugin skill (`mamy` below, "have"), or deliberately left out (`skip`) with the reason in the row. No practice is a thin overlay: the two candidates, worktrees and skill authoring, are served by host built-ins that need no plugin context around them, so an overlay would add text without solving a problem.
 
@@ -83,7 +83,7 @@ Verdicts: **have** (`nerd4rent:<skill>` covers it), **missing** (no owner in the
 | A2 | Project bootstrap | Platform config and status binding | Matt Pocock `setup-matt-pocock-skills` | have `determine-platform`, `bind-statuses` | Same idea as Matt Pocock's setup, recorded in the repo `CLAUDE.md` where every skill reads it | |
 | A3 | Project bootstrap | Machine CLI state | none | have `bootstrap-clis` | | |
 | A4 | Project bootstrap | Repository guardrails: pre-commit hooks, git safety hooks, module boundary checks | Matt Pocock `setup-pre-commit`, `git-guardrails-claude-code`, `setup-ts-deep-modules` | skip | Tooling choices of each repository; client repositories have their own, and the plugin does not install tooling into them | |
-| A5 | Project bootstrap | Detecting a stale plugin install or stale skill copies | the four stale copies in `~/.agents/skills` | missing | See section 5: on 2026-10-10 Claude Code ran 0.45.0 against 0.51.0 on `main`, and Cursor loads June copies of four plugin skills next to the plugin, with no signal in either case | pending |
+| A5 | Project bootstrap | Detecting a stale plugin install or stale skill copies | the four stale copies in `~/.agents/skills` | missing | See section 5: on 2026-10-10 Claude Code ran 0.45.0 against 0.51.0 on `main`, and Cursor loads June copies of four plugin skills next to the plugin, with no signal in either case | DEMO-413 |
 | A6 | Issue and spec | Issue with a spec: objective, scope, criteria that name their check | Matt Pocock `to-spec`, `to-prd`, `request-refactor-plan` | have `issue-writer` | The spec lives on the tracker (ADR-0008); Matt Pocock's synthesis without interview is the minimal path of `issue-writer` | |
 | A7 | Issue and spec | Splitting work into stages or sub-issues with blocking edges | Matt Pocock `to-tickets`, `to-issues` | missing | `issue-writer` only knows parent and children; stages in time need siblings with `blocked by`, and the adapters have no relation operation | DEMO-407 |
 | A8 | Issue and spec | Triage of inbound bug reports, QA session filing issues | Matt Pocock `triage`, `qa`; pstack `triage-issue-reports`, `reproduce-and-fix-issues`, `setup-benny` | skip | No inbound report stream: issues are written by the developer with `issue-writer`; the automations write to the tracker without a human gate | |
@@ -103,16 +103,16 @@ Verdicts: **have** (`nerd4rent:<skill>` covers it), **missing** (no owner in the
 | A22 | Verification | Evidence before claiming done | superpowers `verification-before-completion`; pstack `principle-prove-it-works` | have `tdd` (check beat) and the criteria verification table of `issue-workflow` | | |
 | A23 | Verification | Driving the running application as a user would | pstack `create-verification-skill`, `maintain-verification-skill` | skip | The plugin has no running application; a project that has one writes its own verification skill | |
 | A24 | Review (request) | Independent review axes, adversarial verification | superpowers `requesting-code-review`; Matt Pocock `code-review`; pstack `interrogate`, `no-comments`; `/code-review`, `/security-review`, `/simplify`; Cursor `/review`, Bugbot | have `review-verify` | The built-ins stay available by hand; the flow uses the island because its findings are verified and counted | |
-| A25 | Review (receive) | Acting on review comments that people or bots leave on the PR or MR | superpowers `receiving-code-review`; Cursor Bugbot comments | missing | The island's findings are verified before they are fixed, but comments left on the PR or MR by colleagues (the only reviewers on client repositories) or by Bugbot are never read: the VCS adapters have no operation for them | pending |
+| A25 | Review (receive) | Acting on review comments that people or bots leave on the PR or MR | superpowers `receiving-code-review`; Cursor Bugbot comments | missing | The island's findings are verified before they are fixed, but comments left on the PR or MR by colleagues (the only reviewers on client repositories) or by Bugbot are never read: the VCS adapters have no operation for them | DEMO-414 |
 | A26 | Finishing a branch | Merge through the PR with a merge commit, switch to base | superpowers `finishing-a-development-branch` | have `issue-close` | | |
-| A27 | Finishing a branch | PR or MR body written for human reviewers | pstack `blast-radius` | missing | The draft body is `Fixes <ID>` plus one paragraph; on client repositories it is the only text other developers read | pending |
+| A27 | Finishing a branch | PR or MR body written for human reviewers | pstack `blast-radius` | missing | The draft body is `Fixes <ID>` plus one paragraph; on client repositories it is the only text other developers read | DEMO-410 |
 | A28 | Finishing a branch | Resolving merge conflicts | Matt Pocock `resolving-merge-conflicts` | skip | `issue-close` stops and reports; each conflict is resolved with the user, case by case | |
 | A29 | Close-out | Issue to done, base branch checked out | none | have `issue-close` | The check for unfinished children is DEMO-406, a refinement of this row | |
 | A30 | Wiki and memory | Project entity page, decisions, checkpoints | Matt Pocock `obsidian-vault`; `obsidian-markdown` in `~/.agents/skills` | have `nerdbrain-wiki`, `nerdbrain-search` | `nerdbrain-wiki` names `obsidian-markdown` for note syntax, a skill Claude Code does not load; harmless, since the syntax it needs is plain Markdown with wiki links | |
-| A31 | Wiki and memory | Session retrospective: lessons become issues | pstack `reflect`, `correct`, `principle-encode-lessons-in-structure` | missing | Lessons today end in memory files or nowhere; the plugin's rule is that a lesson becomes a tracker issue | pending |
+| A31 | Wiki and memory | Session retrospective: lessons become issues | pstack `reflect`, `correct`, `principle-encode-lessons-in-structure` | missing | Lessons today end in memory files or nowhere; the plugin's rule is that a lesson becomes a tracker issue | DEMO-411 |
 | A32 | Wiki and memory | Decision trail file | pstack `show-me-your-work` | skip | The issue thread (grill state, plan, spec changes, session summaries) is the trail | |
 | A33 | Skills | Writing a skill | superpowers `writing-skills`; superpowers-developing-for-claude-code `developing-claude-code-plugins`, `working-with-claude-code`; Matt Pocock `writing-great-skills`; `write-a-skill`, `find-skills` in `~/.agents/skills`; `skill-creator`; Cursor `/create-skill` | skip | Only this repository writes skills; its rules are in `CONTRIBUTING.md` and enforced by the validators | |
-| A34 | Skills | Testing a skill: an eval runner and coverage of the core skills | `claude plugin eval` | missing | `validate-evals.ts` checks the shape of two eval files; nothing runs them, and `issue-workflow`, `issue-start` and `issue-close` have none | pending |
+| A34 | Skills | Testing a skill: an eval runner and coverage of the core skills | `claude plugin eval` | missing | `validate-evals.ts` checks the shape of two eval files; nothing runs them, and `issue-workflow`, `issue-start` and `issue-close` have none | DEMO-412 |
 | A35 | Cross-cutting | Human documentation | Matt Pocock `edit-article`, `writing-beats`, `writing-fragments`, `writing-shape`; pstack `technical-writing`, `unslop` | have `nerd-documentation-write` | | |
 
 ## 4. The nine practices of 2026-10-06, re-rated

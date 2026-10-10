@@ -3,11 +3,11 @@
   "clis": [
     {
       "id": "node",
-      "minVersion": "22.0.0",
+      "minVersion": "24.0.0",
       "versionCommand": ["node", "--version"],
       "versionRegex": "v(\\d+\\.\\d+\\.\\d+)",
       "requiredBy": ["bootstrap-clis", "bind-statuses", "issue-start", "issue-workflow"],
-      "manualInstall": "Install Node.js >= 22 (with npm) before running this script; it is a prerequisite, not a target. https://nodejs.org"
+      "manualInstall": "Install Node.js >= 24 (with npm) before running this script; it is a prerequisite, not a target. https://nodejs.org"
     },
     {
       "id": "linearis",

@@ -59,12 +59,31 @@ done
 
 | Host | Plugin | Skills | Verdict |
 |---|---|---|---|
-| Claude Code | `anthropic-agent-skills` (`claude-api`, `document-skills`, `example-skills`, all disabled) | 18 each, one shared tree | off-cycle: document formats and API reference; its `skill-creator` is counted under A33 |
+| Claude Code | `anthropic-agent-skills/claude-api` | 18 (one shared tree) | off-cycle: Claude API reference |
+| Claude Code | `anthropic-agent-skills/document-skills` | 18 (one shared tree) | off-cycle: document formats (docx, pdf, pptx, xlsx) |
+| Claude Code | `anthropic-agent-skills/example-skills` | 18 (one shared tree) | off-cycle: example skills; its `skill-creator` is counted under A33 |
+| Claude Code | `claude-code-warp/warp` | 0 | off-cycle: terminal integration |
+| Claude Code | `gitkraken/gitkraken-hooks` | 0 | off-cycle: git client integration |
 | Claude Code | `linear-skills/gitlab-to-linear` | 1 | off-cycle: one-off GitLab import, a separate flow |
 | Claude Code | `linear-skills/linear-cli` | 1 | off-cycle: the Linear adapter calls `linearis` directly |
-| Claude Code | `claude-code-warp`, `gitkraken-hooks` | 0 | off-cycle: terminal and git client integration |
-| Cursor | `claude-plugins-official` (github, linear, eight LSP plugins) | 0 | off-cycle: MCP servers and language servers |
-| Cursor | `cursor-public` (1password, context7, google-drive, slack, gmail, google-calendar, outlook, linear, wispr-flow) | 11 in total | off-cycle: service connectors |
+| Cursor | `claude-plugins-official/github` | 0 | off-cycle: service connector |
+| Cursor | `claude-plugins-official/gopls-lsp` | 0 | off-cycle: language server |
+| Cursor | `claude-plugins-official/jdtls-lsp` | 0 | off-cycle: language server |
+| Cursor | `claude-plugins-official/kotlin-lsp` | 0 | off-cycle: language server |
+| Cursor | `claude-plugins-official/linear` | 0 | off-cycle: service connector |
+| Cursor | `claude-plugins-official/lua-lsp` | 0 | off-cycle: language server |
+| Cursor | `claude-plugins-official/php-lsp` | 0 | off-cycle: language server |
+| Cursor | `claude-plugins-official/rust-analyzer-lsp` | 0 | off-cycle: language server |
+| Cursor | `claude-plugins-official/typescript-lsp` | 0 | off-cycle: language server |
+| Cursor | `cursor-public/1password` | 1 | off-cycle: service connector |
+| Cursor | `cursor-public/context7-plugin` | 1 | off-cycle: service connector |
+| Cursor | `cursor-public/gmail` | 0 | off-cycle: service connector |
+| Cursor | `cursor-public/google-calendar` | 0 | off-cycle: service connector |
+| Cursor | `cursor-public/google-drive` | 1 | off-cycle: service connector |
+| Cursor | `cursor-public/linear` | 0 | off-cycle: service connector |
+| Cursor | `cursor-public/outlook` | 0 | off-cycle: service connector |
+| Cursor | `cursor-public/slack` | 8 | off-cycle: service connector |
+| Cursor | `cursor-public/wispr-flow` | 0 | off-cycle: service connector |
 
 Host built-ins that touch the lifecycle were taken from the Claude Code session's command list and from Cursor's documentation (skills, modes, Bugbot, worktrees pages, read 2026-10-10):
 

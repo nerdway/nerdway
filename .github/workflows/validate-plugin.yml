@@ -19,6 +19,18 @@ jobs:
         run: node scripts/validate-external-references.ts
       - name: No em dash in documentation for humans
         run: node scripts/validate-human-docs.ts
+      - name: Test suite
+        run: node --test 'scripts/**/*.test.ts'
+      - name: Workflow contract and adapters
+        run: node scripts/validate-workflow-graph.ts
+      - name: Skill evals shape
+        run: node scripts/validate-evals.ts
+      - name: CLI dependency list
+        run: node scripts/validate-cli-dependencies.ts
+      - name: Platform config and tracker status defaults
+        run: node scripts/validate-platform-config.ts
+      - name: Platform section read through adapters/platform.md
+        run: node scripts/validate-platform-references.ts
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
       - name: claude plugin validate (warnings fail)

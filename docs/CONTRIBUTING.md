@@ -42,6 +42,8 @@ After editing a schema body in `workflow-graph.json`, regenerate the skill templ
 node scripts/render-templates.ts
 ```
 
+CI runs the test suite and every check in this section on every pull request and every push to `main`, together with the release guards below. `render-templates.ts` is the exception: it is a generator, not a check, and the test suite already fails when a template drifts from the contract.
+
 ## Releasing
 
 Three manifests carry a version, and they move together:
@@ -56,7 +58,7 @@ Bump the version when a change reaches what the plugin loads at runtime: skills,
 
 Claude Code must never see a Cursor file: it reads `hooks/hooks.json` and a root `plugin.json` by convention, whatever its manifest says, and the claude.ai marketplace sync rejects what the CLI only warns about ([ADR-0007](adr/0007-dual-runtime-packaging.md)). Cursor's hooks therefore live in `hooks/cursor.hooks.json`, named in `.cursor-plugin/plugin.json`. The sync also checks claude.ai's upload rules, which the CLI does not, and reports a breach as a warning: the plugin description is at most 500 characters (one text in all four manifests), and a skill or agent `name` or `description` holds no `<` or `>` (write `{slug}`, not `<slug>`).
 
-Before every release, run the five guards below. CI runs all of them except `validate-platform-references.ts` on every pull request and every push to `main`.
+Before every release, run the five guards below. CI runs all of them on every pull request and every push to `main`.
 
 Check that the three versions are equal, that the Cursor manifest fits Cursor's schema, that nothing Cursor-only sits at Claude Code's paths, and that the claude.ai upload rules hold:
 

@@ -2,25 +2,41 @@
 
 Checked on 2026-10-10 on the author's machine, against the repository at `main` `5b1ddf5` (0.51.0). The earlier research answered narrower questions: `2026-10-06-sdd-patterns.md` (section "Practice decisions") rated the nine practices the plugin borrowed from superpowers and Matt Pocock, and `2026-10-08-framework-independence-review.md` checked that the repository no longer calls them. Neither asked what the framework needs across the whole lifecycle, skill by skill. This document does: every practice of the lifecycle gets a verdict, every installed skill is mapped to a practice or marked off-cycle, and every gap names the issue that closes it.
 
-## 1. Verdict
+## 1. What this means
 
-The plugin covers the lifecycle end to end except for nine practices:
+### The measure is progress, not coverage
 
-| Gap | Issue |
-|---|---|
-| Debugging (`debug`) | DEMO-405 |
-| Parallel subagent dispatch (`dispatch-agents`) | DEMO-405 |
-| Domain modelling (`model-domain`) | DEMO-405 |
-| Splitting work into stages with blocking edges | DEMO-407 |
-| Receiving review comments from people and bots on the PR or MR | DEMO-414 |
-| PR or MR body written for human reviewers | DEMO-410 |
-| Session retrospective that turns lessons into issues | DEMO-411 |
-| Testing skills: an eval runner and coverage of the core skills | DEMO-412 |
-| Detecting a stale plugin install or stale skill copies | DEMO-413 |
+Tables A and B measure how much of three other frameworks the plugin reproduces. That is the wrong bar for this plugin. Skill libraries of this kind are cheap to produce, and the number of skills says nothing about how well a framework carries real work. The plugin should be judged by the problems it solves that the analysed frameworks do not solve, or solve worse. A skill in table B is evidence that a practice exists; it is never on its own a reason to build one.
 
-Everything else is either covered by a plugin skill (`mamy` below, "have"), or deliberately left out (`skip`) with the reason in the row. No practice is a thin overlay: the two candidates, worktrees and skill authoring, are served by host built-ins that need no plugin context around them, so an overlay would add text without solving a problem.
+What the plugin already does that no skill in table B combines:
 
-Once the gaps above are closed, nothing in superpowers or Matt Pocock's library is needed by the plugin's flow. Disabling superpowers on this machine stays a separate, manual step (out of scope here).
+- **The issue is the whole record.** Spec, plan, spec changes, grilling state, session summaries and the review counts all live on one tracker issue, so any machine and any session resumes from the issue alone. Matt Pocock's `to-spec` publishes a spec to a tracker; nothing in table B keeps the plan, the decision history and the resume point there too.
+- **A human moves the phase.** Implementation starts only after a person moves the issue to in-progress on the tracker; the agent never approves its own plan. The gate is visible to anyone who opens the board, not only to whoever is in the chat.
+- **Review findings are verified and counted.** Every finding faces three sceptics, a rejection needs two refutations, and every dropped, unverified or overruled finding is counted in the result. A review cannot quietly lose findings.
+- **Reduction is code.** The islands' reducers are plain functions, so the same agent outputs always reduce to the same context and the same findings.
+- **One contract, many platforms.** Four trackers and three VCS hosts behind the same operation IDs and the same five phases.
+
+The next steps should extend that line: more guarantees that work is not lost, approved silently or left unverified, rather than more practices copied from a list.
+
+### The gaps, by the problem behind them
+
+| Gap | Issue | Our own problem behind it |
+|---|---|---|
+| Detecting a stale plugin install or stale skill copies | DEMO-413 | Yes. On 2026-10-10 Claude Code ran 0.45.0 against 0.51.0, and Cursor loads June copies of four plugin skills; nothing signalled either. No skill in table B addresses this |
+| Splitting work into stages with blocking edges | DEMO-407 | Yes. DEMO-380 was created as a child of the previous stage and closed automatically with it, with none of its work done |
+| Receiving review comments from people and bots on the PR or MR | DEMO-414 | Yes. On client repositories colleagues review on GitLab and never see the tracker; their comments are the only review that reaches the code, and the flow never reads them |
+| PR or MR body written for human reviewers | DEMO-410 | Yes. The same readers see only the PR body, which today is `Fixes <ID>` and one paragraph |
+| Testing skills: an eval runner and coverage of the core skills | DEMO-412 | Yes. A regression in phase dispatch or in a gate would surface only in a real session |
+| Session retrospective that turns lessons into issues | DEMO-411 | Partly. The rule that a lesson becomes a tracker issue is ours; the shape of the skill comes from pstack and needs its own justification |
+| Debugging (`debug`) | DEMO-405 | Not named. The three skills of DEMO-405 come from the 2026-10-06 decision to take practices from superpowers and Matt Pocock. DEMO-405 goes back to a grilling session to name the problem each one solves here before any skill is written |
+| Parallel subagent dispatch (`dispatch-agents`) | DEMO-405 | Not named (as above) |
+| Domain modelling (`model-domain`) | DEMO-405 | Not named (as above) |
+
+Everything else in table A is either covered by a plugin skill (**have**) or deliberately left out (**skip**) with the reason in the row. No practice is a thin overlay: the two candidates, worktrees and skill authoring, are served by host built-ins that need no plugin context around them, so an overlay would add text without solving a problem.
+
+### Order, and when superpowers can go
+
+Superpowers is still enabled on this machine and, through its session hook, fills three of these gaps today: debugging, subagent dispatch and acting on review comments. It can be disabled once DEMO-405 and DEMO-414 are closed, not before. Suggested order: DEMO-413 and DEMO-407 first (each fixes an incident that already happened), then DEMO-414 and DEMO-410 (client repositories), DEMO-412, DEMO-405 after its grilling session, DEMO-411 last.
 
 ## 2. Sources
 

@@ -4,7 +4,7 @@ This document is for developers who change the plugin itself: how to check a cha
 
 ## Checking a change
 
-The checks need Node.js 22 or newer and nothing else: there is no `package.json` and no build step. Run every command from the repository root.
+The checks need Node.js 24 or newer and nothing else: there is no `package.json` and no build step. Run every command from the repository root.
 
 Run the test suite (keep the glob quoted, so Node expands it rather than the shell):
 

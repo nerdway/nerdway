@@ -4,6 +4,9 @@
     "sessionStart": [
       {
         "command": "./hooks/session-start.sh"
+      },
+      {
+        "command": "./hooks/check-install.sh cursor"
       }
     ],
     "beforeMCPExecution": [

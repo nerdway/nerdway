@@ -22,12 +22,9 @@ const CURSOR_PLUGIN_KEYS = new Set([
   "mcpServers",
 ]);
 
-// Paths Claude Code reads by convention, whatever `.claude-plugin/plugin.json`
-// declares: `hooks/hooks.json` is auto-discovered and merged with the
-// manifest's `hooks`, and a root `plugin.json` is Claude Code's fallback
-// manifest. Neither may hold another runtime's format, or the claude.ai
-// marketplace sync rejects the plugin (DEMO-364).
 export const CLAUDE_CODE_CONVENTION_PATHS = ["hooks/hooks.json", "plugin.json"] as const;
+export const CLAUDE_CODE_HOOKS_PATH = "hooks/hooks.json";
+const CLAUDE_CODE_HOOK_EVENT = /^[A-Z][A-Za-z]+$/;
 
 export type ManifestSet = {
   claudePlugin: Record<string, unknown>;
@@ -85,20 +82,29 @@ export function validateManifests(set: ManifestSet): string[] {
   return errors;
 }
 
-// Claude Code must never see a Cursor-only file. `exists` answers for a path
-// relative to the repo root.
+function isClaudeCodeHooksFile(content: unknown): boolean {
+  if (typeof content !== "object" || content === null || Array.isArray(content)) return false;
+  const file = content as Record<string, unknown>;
+  if ("version" in file) return false;
+  const hooks = file.hooks;
+  if (typeof hooks !== "object" || hooks === null || Array.isArray(hooks)) return false;
+  const events = Object.keys(hooks);
+  return events.length > 0 && events.every((event) => CLAUDE_CODE_HOOK_EVENT.test(event));
+}
+
 export function validateClaudeCodeIsolation(
   cursorPlugin: Record<string, unknown>,
   exists: (path: string) => boolean,
+  readJson: (path: string) => unknown = () => null,
 ): string[] {
   const errors: string[] = [];
 
   for (const path of CLAUDE_CODE_CONVENTION_PATHS) {
-    if (exists(path)) {
-      errors.push(
-        `${path}: Claude Code reads this path by convention — keep Cursor and other runtimes' files out of it`,
-      );
-    }
+    if (!exists(path)) continue;
+    if (path === CLAUDE_CODE_HOOKS_PATH && isClaudeCodeHooksFile(readJson(path))) continue;
+    errors.push(
+      `${path}: Claude Code reads this path by convention — keep Cursor and other runtimes' files out of it`,
+    );
   }
 
   const hooks = cursorPlugin.hooks;

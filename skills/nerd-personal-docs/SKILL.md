@@ -5,7 +5,8 @@ description: >-
   Obsidian vault (5-wiki/guides/{topic}.md) whenever finished work created or
   changed something the user will use, operate, fix or do by hand - a tool,
   service, machine, config or workflow. Mandatory step before an issue is
-  closed: issue-close runs it before the merge. Based on
+  closed: issue-workflow and auto-issue-mode run it on the session model
+  before they call issue-close, which refuses to merge without it. Based on
   nerd-documentation-write, with one reversal: the reader is the user inside
   their own stack, so links to the related issues, PRs and commits are
   REQUIRED. The guide covers how to use it, the manual steps only the user can
@@ -26,12 +27,16 @@ reversals listed below.
 
 ## When it runs
 
-- **Before an issue is closed.** `nerd4rent:issue-close` runs this skill as
-  its first step, before the merge, with the issue ID. Decide whether the
-  work created or changed something the user uses, operates or may have to
-  do by hand. If yes, write or update the guide. If no (a refactor, a test,
-  a typo), say so in one line and stop: that answer is the step's result,
-  not a skip.
+- **Before an issue is closed.** The callers of `nerd4rent:issue-close` run
+  this skill first, on the session model, with the issue ID:
+  `nerd4rent:issue-workflow` in its close-out and `nerd4rent:auto-issue-mode`
+  at the start of its close-out stage. `issue-close` itself only checks the
+  result (its Step 0) and stops the close-out when it is missing. Decide
+  whether the work created or changed something the user uses, operates or
+  may have to do by hand. If yes, write or update the guide. If no (a
+  refactor, a test, a typo), say so in one line, post the not-needed comment
+  of [Finishing](#finishing) step 3 and stop: that answer is the step's
+  result, not a skip.
 - **On request**, when the user asks to document something for themselves.
 
 No guide for work that needs one means the issue is not finished.
@@ -135,9 +140,20 @@ Reversed, because the reader is the user inside their own stack:
 1. Link the guide on the project's entity page under `## Dokumentacja`.
 2. Append one line to `5-wiki/log.md`:
    `## [YYYY-MM-DD] guide | {topic} ({short note})`.
-3. Post a short comment on the issue with the guide's vault path
-   (`5-wiki/guides/{topic}.md`), with the tracker adapter's
-   `issue.comment` operation.
+3. Post a comment on the issue with the tracker adapter's `issue.comment`
+   operation. Its first line is `## Personal guide`, followed by exactly one
+   of these lines:
+
+   ```
+   Guide: 5-wiki/guides/{topic}.md
+   Not needed: {one-line reason}
+   ```
+
+   Post it in the not-needed case too: it is the durable record
+   `issue-close` reads when no guide mentions the issue. The guide's history
+   entry carries the issue ID as the link text (`[DEMO-400](...)`) and the
+   full issue URL, which is what `issue-close` searches the guides for.
+   With no vault on the machine, post nothing.
 4. Report the guide path, or the one-line reason no guide was needed, or
    the missing-vault line, to the caller.
 
@@ -147,12 +163,16 @@ Reversed, because the reader is the user inside their own stack:
 - [ ] Every manual or future step for the user is in "Kroki ręczne".
 - [ ] The issue and PR links are in "Historia i powiązania".
 - [ ] The entity page links to the guide.
-- [ ] The issue has a comment with the guide's path.
+- [ ] The issue has a `## Personal guide` comment with the guide's path,
+      or with the reason none was needed.
 - [ ] A line is appended to `5-wiki/log.md`.
 
 ## Related skills
 
-- `nerd4rent:issue-close` - runs this skill as its mandatory first step.
+- `nerd4rent:issue-workflow`, `nerd4rent:auto-issue-mode` - run this skill
+  before their close-out.
+- `nerd4rent:issue-close` - checks the guide or the `## Personal guide`
+  comment in its Step 0 and stops the close-out without them.
 - `nerd4rent:nerd-documentation-write` - the style this skill adapts, for
   readers outside the user's stack.
 - `nerd4rent:nerdbrain-search` - finds an existing guide before a new one is

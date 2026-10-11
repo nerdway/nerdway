@@ -117,7 +117,7 @@ A typical feature, from idea to merged PR - with the graph moments marked:
 3. **Approve by moving the status.** Read the plan in Linear. When you're happy, drag the issue to **In Progress**. That status change *is* the approval - a human gate stored outside the agent.
 4. **Implement.** Seeing In Progress, the agent hands the mechanical opening to the start chain - a branch named after the issue, an empty first commit, a **draft PR** wired to auto-close the issue on merge (`Fixes DEMO-123`) - and then implements the plan, committing atomically as it goes. Implementation is tests first by default (a failing test, then the code that makes it pass); the plan's **Test approach** can switch that to `no tests`, but only with a written reason and the check that replaces the test, which the session summary repeats.
 5. **Review.** *Island #2 fires*: four axis mappers in parallel, deterministic reduce, three sceptics per finding trying to refute it, and a summary the model cannot use to smuggle findings past the verifier. The review comment includes the `stats` counters - read them: `rejected` tells you how many plausible findings the adversarial pass killed, `gaps` whether anything degraded. Fixes get pushed to the same PR.
-6. **Close.** Say *"merge and close"*. The close-out chain commits leftovers, pushes, merges the PR, switches your checkout back to the base branch, and marks the issue Done. On any error it stops and reports - it never improvises, because this is the irreversible part.
+6. **Close.** Say *"merge and close"*. First the agent writes or updates your guide for the change in the nerdbrain vault, when you have one. Then the close-out chain checks the guide is there, commits leftovers, pushes, merges the PR, switches your checkout back to the base branch, and marks the issue Done. On any error it stops and reports - it never improvises, because this is the irreversible part.
 
 After every working session the agent posts a `## Session summary` comment (generated from the `SessionSummary` schema), so any future session - or any other agent - can resume from Linear alone.
 
@@ -181,7 +181,7 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 ### `issue-close` - merge and finish
 
 - **Say:** *"merge and close"*, *"close out DEMO-123"*, *"domknij"*, *"zmerguj i zamknij"*.
-- **What happens:** the deliberately mechanical close-out chain - commit leftovers, push, merge the PR (GitHub, GitLab or Azure DevOps), switch your checkout to the base branch, set the issue to Done. On any error it stops and reports.
+- **What happens:** the deliberately mechanical close-out chain - first a check that your guide in nerdbrain exists (`issue-workflow` and `auto-issue-mode` write it just before with `nerd-personal-docs`, below; without it the chain stops and tells you to run that skill), then commit leftovers, push, merge the PR (GitHub, GitLab or Azure DevOps), switch your checkout to the base branch, set the issue to Done. On any error it stops and reports.
 
 ### `auto-issue-mode` - run an issue end to end
 
@@ -227,6 +227,11 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 
 - **Say:** nothing special - the agent uses it when writing or revising a tutorial, README or step-by-step guide for readers outside your own tooling, such as a client's engineers or open-source users.
 - **What happens:** the text states the facts the reader needs rather than the story of how they were found, drops internal issue IDs, opens sentences with words rather than code identifiers, uses noun-phrase headings, plain hyphens and no emoji, and gives each runnable command its own code block with its description above it.
+
+### `nerd-personal-docs` - your own guide in nerdbrain
+
+- **Say:** *"udokumentuj dla mnie"*, *"napisz przewodnik"*, *"write a guide in nerdbrain"* - or nothing: `issue-workflow` and `auto-issue-mode` run it before every close-out, on the session model, and `issue-close` refuses to merge without it.
+- **What happens:** when the work created or changed something you use, operate or have to do by hand, the agent writes or updates a guide in `5-wiki/guides/` of your nerdbrain vault, in Polish: what it is and where it runs, how to use it, the manual steps only you can do, what to do when it breaks, where the secrets and config live, and the history with links to the issues and pull requests. Unlike `nerd-documentation-write`, those links are required here, because the reader is you. The agent links the guide on the project's entity page and records it in a `## Personal guide` comment on the issue. Work that changes nothing you use gets a `Not needed:` line in that comment instead, and a machine without the vault skips the step and says so.
 
 ### `nerdbrain-wiki` / `nerdbrain-search` - personal second brain (optional)
 

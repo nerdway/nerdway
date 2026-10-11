@@ -1,5 +1,5 @@
 {
-  "_comment": "Topology of the issue lifecycle axis: every node, the schema each edge carries, gates, failure policy and width budget. scripts/validate-workflow-graph.ts enforces it; see docs/adr/0003-workflow-graph-contract.md. runtime: conversational = needs mid-run human interaction, stays in the main agent; workflow = graphable island runnable as a Workflow script; chain = sequential and deliberately not a graph. Every registry entry carries its JSON Schema body: it is what `agent({schema})` enforces at runtime, what the markdown renderer builds the skill templates from, and it is self-contained (a $ref may only point into the entry's own $defs) because workflow scripts must inline it verbatim as `const SCHEMA_<Name> = {...}`, which is what the drift check reads. A workflow node whose island is built carries `script`: the repo-relative workflows/*.js file realising it (two sibling nodes may share one script — one island runs both). The contract is host-agnostic: an island is realisable as a Workflow script — Claude Code — or as Task + subagent orchestration over the same agents with `node scripts/island-reduce.ts` as the deterministic reducer — Cursor — emitting the same typed payloads; only the Workflow realisation carries the `script` binding. The binding arms the drift check in the omission direction: every schema in the node's `out` must be inlined in that script (rule 17) and each inline body must be a strict-JSON literal deep-equal to the registry body (rule 18). Inputs are deliberately exempt — they arrive through `args`, validated by their producer. A workflow node without `script` is an island not yet built. Irreversible actions on the axis are inventoried as `irreversible: true`: statuses-bind (creates tracker labels, tags or board columns), issue-write (creates the Linear issue), implement (pushes commits), close (merges the PR/MR and sets Done), wiki-write (writes the nerdbrain vault), auto-issue-mode (runs one issue from creation to merge on the user's single consent); each must sit behind a gate (rule 6). Gates carry the role split as data: a `decision` gate is the human's call — mechanism `tracker-status` or `chat-approval`, the Linear status being the only carrier of acceptance — while a `deny` gate is a hard prohibition that never asks, mechanism `pretooluse-hook` or `settings-deny`; the kind-mechanism pairing is a closed vocabulary (rule 19), so a new enforcement mechanism must change this contract deliberately. `frozenRules` is the first-class registry of frozen rules: a gate's `rule` points into it (rule 20), a deny gate exists only to enforce one (rule 21), and a rule no gate points to is rejected (rule 22). A frozen rule may carry `exemptions`: each names an existing node, the narrow scope it may touch despite the rule, and why (rule 23) — an exception written only in prose would be invisible to the check. `adapters` is the platform adapter contract: each key is a directory under `adapters/`, `config` names the PlatformConfig property whose enum values are the legal adapter file names, and every adapter file must carry each required section as a line-start `## ` heading plus exactly the declared operation ids in the first column of its `## Operations` table — none missing, none twice, none undeclared (rule 24). An axis may add `strategies`, naming the PlatformConfig enum of status strategies: its adapters must then carry a `## Status strategies` table listing exactly those strategies in the first column, each with both a read and a write recipe or `—` in both, and at least one supported (rule 25); what a strategy means is shared prose in `adapters/statuses.md`, and a real config is checked against its adapter by scripts/validate-platform-config.ts. An enum value without an adapter file is legal: the core skill stops with \"adapter not available yet\". Human gates sit on the boundaries between workflows, never inside them — the runtime takes no mid-run decision input (rule 8).",
+  "_comment": "Topology of the issue lifecycle axis: every node, the schema each edge carries, gates, failure policy and width budget. scripts/validate-workflow-graph.ts enforces it; see docs/adr/0003-workflow-graph-contract.md. runtime: conversational = needs mid-run human interaction, stays in the main agent; workflow = graphable island runnable as a Workflow script; chain = sequential and deliberately not a graph. Every registry entry carries its JSON Schema body: it is what `agent({schema})` enforces at runtime, what the markdown renderer builds the skill templates from, and it is self-contained (a $ref may only point into the entry's own $defs) because workflow scripts must inline it verbatim as `const SCHEMA_<Name> = {...}`, which is what the drift check reads. A workflow node whose island is built carries `script`: the repo-relative workflows/*.js file realising it (two sibling nodes may share one script — one island runs both). The contract is host-agnostic: an island is realisable as a Workflow script — Claude Code — or as Task + subagent orchestration over the same agents with `node scripts/island-reduce.ts` as the deterministic reducer — Cursor — emitting the same typed payloads; only the Workflow realisation carries the `script` binding. The binding arms the drift check in the omission direction: every schema in the node's `out` must be inlined in that script (rule 17) and each inline body must be a strict-JSON literal deep-equal to the registry body (rule 18). Inputs are deliberately exempt — they arrive through `args`, validated by their producer. A workflow node without `script` is an island not yet built. Irreversible actions on the axis are inventoried as `irreversible: true`: statuses-bind (creates tracker labels, tags or board columns), issue-write (creates the Linear issue), implement (pushes commits), close (merges the PR/MR and sets Done), personal-docs (writes the user's guide to the nerdbrain vault), wiki-write (writes the nerdbrain vault), auto-issue-mode (runs one issue from creation to merge on the user's single consent); each must sit behind a gate (rule 6). Gates carry the role split as data: a `decision` gate is the human's call — mechanism `tracker-status` or `chat-approval`, the Linear status being the only carrier of acceptance — while a `deny` gate is a hard prohibition that never asks, mechanism `pretooluse-hook` or `settings-deny`; the kind-mechanism pairing is a closed vocabulary (rule 19), so a new enforcement mechanism must change this contract deliberately. `frozenRules` is the first-class registry of frozen rules: a gate's `rule` points into it (rule 20), a deny gate exists only to enforce one (rule 21), and a rule no gate points to is rejected (rule 22). A frozen rule may carry `exemptions`: each names an existing node, the narrow scope it may touch despite the rule, and why (rule 23) — an exception written only in prose would be invisible to the check. `adapters` is the platform adapter contract: each key is a directory under `adapters/`, `config` names the PlatformConfig property whose enum values are the legal adapter file names, and every adapter file must carry each required section as a line-start `## ` heading plus exactly the declared operation ids in the first column of its `## Operations` table — none missing, none twice, none undeclared (rule 24). An axis may add `strategies`, naming the PlatformConfig enum of status strategies: its adapters must then carry a `## Status strategies` table listing exactly those strategies in the first column, each with both a read and a write recipe or `—` in both, and at least one supported (rule 25); what a strategy means is shared prose in `adapters/statuses.md`, and a real config is checked against its adapter by scripts/validate-platform-config.ts. An enum value without an adapter file is legal: the core skill stops with \"adapter not available yet\". Human gates sit on the boundaries between workflows, never inside them — the runtime takes no mid-run decision input (rule 8).",
   "frozenRules": [
     {
       "id": "no-tracker-write-before-approval",
@@ -915,6 +915,39 @@
       }
     },
     {
+      "id": "PersonalGuide",
+      "description": "The user's guide in the nerdbrain vault that the close-out waits for: the guide written or updated for the issue, or the one-line reason none was written. The caller of the close-out produces it on the session model (issue-workflow's close-out, auto-issue-mode's close-out stage) and records it as a `## Personal guide` issue comment; issue-close only checks it in the vault or that comment and stops without it.",
+      "schema": {
+        "type": "object",
+        "title": "Personal guide",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "title": "Outcome",
+            "description": "What the step did: the guide was written or updated, the work needs no guide, or the machine has no vault.",
+            "enum": ["written", "updated", "not-needed", "no-vault"]
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "Vault path of the guide, `5-wiki/guides/{topic}.md`; present when a guide was written or updated."
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "One line on why no guide was written; present when none was."
+          },
+          "links": {
+            "type": "array",
+            "title": "Links",
+            "description": "The issue, PR and commit links the guide's history section received.",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["outcome"]
+      }
+    },
+    {
       "id": "MergedBranch",
       "description": "The merged PR/MR, the checkout switched to the base branch, the issue set to Done.",
       "schema": {
@@ -1164,14 +1197,39 @@
       "gates": []
     },
     {
+      "id": "personal-docs",
+      "skill": "nerd-personal-docs",
+      "runtime": "conversational",
+      "phase": "close",
+      "irreversible": true,
+      "in": ["SessionSummary"],
+      "out": ["PersonalGuide"],
+      "dependsOn": ["session-summary"],
+      "failure": {
+        "retries": 0,
+        "fallback": "stop before issue-close and report; a machine without the vault reports no-vault instead of failing, and issue-close refuses to merge while the guide is missing",
+        "killsRun": true,
+        "reporting": "chat"
+      },
+      "budget": { "maxWidth": 1 },
+      "gates": [
+        {
+          "kind": "deny",
+          "mechanism": "settings-deny",
+          "rule": "vault-filesystem-only",
+          "description": "The guide is written to the vault through the filesystem only; the Obsidian/Linear MCP and the Local REST API are denied in settings.json — a hard stop, never a question."
+        }
+      ]
+    },
+    {
       "id": "close",
       "skill": "issue-close",
       "runtime": "chain",
       "phase": "close",
       "irreversible": true,
-      "in": ["ReviewFindings"],
+      "in": ["ReviewFindings", "PersonalGuide"],
       "out": ["MergedBranch"],
-      "dependsOn": ["review-verify"],
+      "dependsOn": ["review-verify", "personal-docs"],
       "failure": {
         "retries": 0,
         "fallback": "stop and report (merge conflict, missing gh/glab)",

@@ -138,7 +138,7 @@ marker is in those comments), then:
 | `backlog` / `todo` | **Planning** — draft and post a plan (or refine the existing one); write phase **`todo`**; end the turn asking for `in-progress` (step 3) |
 | `in-progress` | **Implementation** — rebuild context from the description (the spec), the `## Implementation plan` comment and later comments (`## Spec change`, plan extensions); if branch/PR missing, run the Start step first |
 | `in-review` | **Code review** — present the code-review menu with the issue link (`issue.url`) |
-| `done` (set manually, PR unmerged) | **Close-out** — push, merge PR, ask about switching to main/master |
+| `done` (set manually, PR unmerged) | **Close-out** — the user's guide (`nerd-personal-docs`), then push, merge PR, ask about switching to main/master |
 | unknown | report the raw value read from the tracker with the issue link (`issue.url`) and stop |
 
 This table also governs a bare issue ID typed into a **fresh session**: check
@@ -541,10 +541,20 @@ with "don't ask again" (per workflow, per project).
 ## Close-out (on user request, or phase `done` set manually)
 
 Only when the user asks to close/merge (or set `done` manually with the PR still
-open): invoke **`nerd4rent:issue-close`** with the issue ID. That skill
-mechanically commits any leftover changes, pushes, merges the PR/MR (GitHub or
-GitLab), switches the local checkout to the PR/MR base branch, and sets the
-issue's phase to `done`. It is deliberately lightweight (Haiku-friendly).
+open):
+
+1. **Guide for the user.** Invoke **`nerd4rent:nerd-personal-docs`** with the
+   issue ID and the resolved platform, here in the main session, so the guide
+   is written on the session model and not on `issue-close`'s Haiku. It writes
+   or updates the guide in the nerdbrain vault and records the outcome as a
+   `## Personal guide` comment on the issue, or says the machine has no vault.
+   If it stops with an error, stop and report; do not call `issue-close`.
+2. **Close.** Invoke **`nerd4rent:issue-close`** with the issue ID. Its
+   Step 0 checks the guide from step 1 and stops the close-out without it.
+   Then it mechanically commits any leftover changes, pushes, merges the
+   PR/MR (GitHub or GitLab), switches the local checkout to the PR/MR base
+   branch, and sets the issue's phase to `done`. It is deliberately
+   lightweight (Haiku-friendly).
 
 If the merge fails (e.g. conflicts), it stops and reports — resolve, then
 re-run.
@@ -607,6 +617,8 @@ session's last push.
   mirror of `issue-close`.
 - `nerd4rent:bind-statuses` — binds the phases to the tracker (strategy and
   map) this skill reads and writes.
+- `nerd4rent:nerd-personal-docs` — the user's guide in nerdbrain, written in
+  the close-out before `issue-close`.
 - `nerd4rent:issue-close` — the close-out chain (commit, push, merge,
   switch to base, write `done`).
 - `nerd4rent:auto-issue-mode` — user-invoked autonomous run of the same

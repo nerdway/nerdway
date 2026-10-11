@@ -78,7 +78,7 @@ _Avoid_: obsidian search (names the dropped tool)
 
 **Issue lifecycle axis**:
 The path an issue travels from `issue-writer` through
-`issue-workflow` to `issue-close`, branching to
+`issue-workflow` and `nerd-personal-docs` to `issue-close`, branching to
 `nerdbrain-search` in the plan phase and to `nerdbrain-wiki` off the
 implement phase. Declared as a whole in `workflow-graph.json`.
 _Avoid_: pipeline, the flow (both hide that parts of it are not sequential)

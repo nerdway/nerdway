@@ -144,11 +144,18 @@ number that proves it — before dispatching the next.
    regressions, security. Fix every real defect with its own commit, re-run the
    tests, push, then run `pr.mark-ready` (skipped when the adapter lists `—`).
    Report: findings with their fixes, final test results.
-5. **Close-out.** Run `nerd4rent:issue-close` with the ID and platform
-   (commit leftovers, push, merge, switch to the base branch, phase `done`).
+5. **Close-out.** First run `nerd4rent:nerd-personal-docs` with the ID and
+   platform: this subagent runs on the session model, so the guide is not
+   written on `issue-close`'s Haiku. It writes or updates the user's guide in
+   the nerdbrain vault and records a `## Personal guide` comment on the
+   issue, or says the machine has no vault. Then run
+   `nerd4rent:issue-close` with the ID and platform (its Step 0 checks the
+   guide, then it commits leftovers, pushes, merges, switches to the base
+   branch, writes phase `done`).
    `issue-close` does not print the merge hash, so once it finishes read it
    with `git rev-parse --short HEAD` on the base branch (its `git pull` puts
-   the merge commit at HEAD). Report: merge commit (short), base branch.
+   the merge commit at HEAD). Report: the guide path (or why none was
+   written), merge commit (short), base branch.
 6. **Nerdbrain.** Dispatched only after stage 5's report arrives, so it knows
    the merge; its prompt carries stage 5's merge commit and base branch. It
    makes one logical wiki write with `nerd4rent:nerdbrain-wiki` (one

@@ -213,6 +213,11 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 - **Say:** *"TDD"*, *"test first"*, *"napisz najpierw test"* - or nothing: `issue-workflow` and `auto-issue-mode` use it when the plan's test approach is TDD.
 - **What happens:** one cycle per behaviour: a failing test against a seam the plan names, a check that it fails for the right reason, the smallest change that makes it pass, a refactor, and a run of the suite. Not used for a plan whose test approach is `no tests` or for documentation-only changes.
 
+### `debug` - find the cause before the fix
+
+- **Say:** *"debug this"*, *"find the root cause"*, *"why does this fail"*, *"zdebuguj"*, *"znajdź przyczynę"* - or nothing: `tdd` hands over a red step it cannot explain, `auto-issue-mode` runs it before stopping on red tests, and an issue labelled Bug is planned around it.
+- **What happens:** one command that is already red on the bug is the only truth about it; secrets in it are redacted before anything is shown. Up to three ranked hypotheses are listed without waiting for an answer, each settled with the smallest piece of evidence (a forced mutation counts only once it is proved to have run). The regression test is written through `tdd` before the fix, the fix changes only what the evidence justifies, and the confirmed cause goes into the commit and the session summary. After three fixes that did not hold, the skill stops and asks which way to go. Not for a TDD red step that fails for the reason it was written for.
+
 ### `grill` - interview in rounds
 
 - **Say:** *"grill this"*, *"przepytaj mnie"*, *"sesja grillowania"* - or nothing: `issue-writer`, `issue-workflow` and `new-project-workflow` call it when a topic is fuzzy.

@@ -7,6 +7,7 @@ Contents:
 - [Platform config and adapters](#platform-config-and-adapters)
 - [Plugin agents](#plugin-agents)
 - [Workflow topology](#workflow-topology)
+- [Session start hooks](#session-start-hooks)
 
 ## Platform config and adapters
 
@@ -152,3 +153,16 @@ Degradation runs on separate tracks, and all of them end in the same place, the 
 - **Cursor** has no `Workflow` tool but has `Task`. The islands run manually: the same agents via `subagent_type`, prompts and shapes taken verbatim from `workflows/*.js`, and `node scripts/island-reduce.ts` as the deterministic reducer. The payloads and stats match the `Workflow` run.
 - **Other agents** (Copilot, Windsurf and others) have neither `Workflow` nor `Task`. They read the topology as documentation and run the axis sequentially.
 - **Claude Code with workflows unavailable** falls back the same way: below v2.1.154, on a plan that does not include them, or switched off via `"disableWorkflows": true`, the *Dynamic workflows* toggle in `/config`, or `CLAUDE_CODE_DISABLE_WORKFLOWS=1`. An island is always an optimization, never a precondition. A degraded run is flagged in the session summary's metrics, never silent.
+
+## Session start hooks
+
+The plugin ships hooks for both runtimes, each in its runtime's own file and format, because Claude Code reads `hooks/hooks.json` by convention and would misread a Cursor file there ([ADR-0007](adr/0007-dual-runtime-packaging.md)). `scripts/validate-manifests.ts` guards the split: `hooks/hooks.json` must have Claude Code's shape (a `hooks` object keyed by PascalCase events), `hooks/cursor.hooks.json` is named explicitly in `.cursor-plugin/plugin.json`, and a root `plugin.json` is rejected.
+
+| Hook | Runtime | Script | Purpose |
+|---|---|---|---|
+| `SessionStart` on `startup\|resume\|clear` | Claude Code (`hooks/hooks.json`) | `hooks/check-install.sh claude` | install check, see below |
+| `sessionStart` | Cursor (`hooks/cursor.hooks.json`) | `hooks/session-start.sh` | nerdbrain entity-page inject, the Cursor counterpart of `~/.claude/hooks/nerdbrain-load.sh` |
+| `sessionStart` | Cursor | `hooks/check-install.sh cursor` | install check, see below |
+| `beforeMCPExecution`, `preToolUse` (`failClosed`) | Cursor | `hooks/deny-vault-mcp.sh` | denies the Obsidian and Linear MCP tools (ADR-0001) |
+
+The **install check** is `scripts/check-install.ts`, run by the wrapper with `--runtime claude` or `--runtime cursor`; the wrapper locates the plugin from its own path and exits silently when `node` is not in the PATH. The runner is IO only: it reads the project directory from the hook's stdin (`cwd` in Claude Code, `workspace_roots[0]` in Cursor), the installed version from `.claude-plugin/plugin.json`, the version of `main` from a 24-hour cache (`CLAUDE_PLUGIN_DATA`, else `~/.cache/nerd4rent`) or from the raw manifest on GitHub with a 3-second timeout, and the `SKILL.md` files of the six user skill directories. Everything that decides is a pure function in `scripts/lib/install-check.ts` under `node:test`: `detectVersionDrift` reports only an installed version lower than `main`, `findStaleSkillCopies` flags a directory whose skill name is a historical plugin skill name or a current one with `nerd4rent` or `nerdbrain` in the text, `fetchMainVersion` turns every network failure into `null`, and `renderHookOutput` builds the runtime's envelope (`systemMessage` plus `hookSpecificOutput.additionalContext` for Claude Code, `additional_context` for Cursor) with one line and one remedy per finding, or an empty string when there is nothing to say. The envelope opens with an instruction to repeat the warning to the user in the first reply, the only channel Cursor offers. `NERD4RENT_MAIN_VERSION`, `NERD4RENT_SKILL_DIRS` and `NERD4RENT_CACHE_DIR` exist for the manual run described in [CONTRIBUTING](CONTRIBUTING.md); there is no kill switch.

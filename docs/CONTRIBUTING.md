@@ -42,6 +42,12 @@ Check that every term of the `## Language` glossary in `CONTEXT.md` is used, as 
 node scripts/validate-context-terms.ts
 ```
 
+Run the session-start install check by hand, the way the hooks in `hooks/hooks.json` (Claude Code) and `hooks/cursor.hooks.json` (Cursor) run it. The three environment variables exist for this run only: `NERD4RENT_MAIN_VERSION` replaces the version fetched from `main` and skips the network, `NERD4RENT_SKILL_DIRS` replaces the scanned skill directories (colon-separated; empty scans nothing), `NERD4RENT_CACHE_DIR` moves the 24-hour cache. An installation that is current prints nothing:
+
+```bash
+echo '{"cwd":"'"$PWD"'"}' | NERD4RENT_MAIN_VERSION=9.9.9 NERD4RENT_SKILL_DIRS= node scripts/check-install.ts --runtime claude
+```
+
 After editing a schema body in `workflow-graph.json`, regenerate the skill templates built from it. A test fails if one of them was edited by hand instead:
 
 ```bash
@@ -62,7 +68,7 @@ The Claude Code installed version comes from `.claude-plugin/plugin.json`. Bumpi
 
 Bump the version when a change reaches what the plugin loads at runtime: skills, agents, adapters, hooks, workflows, manifests. A change limited to `docs/` or to the README changes nothing an installed plugin reads, so it ships without a bump.
 
-Claude Code must never see a Cursor file: it reads `hooks/hooks.json` and a root `plugin.json` by convention, whatever its manifest says, and the claude.ai marketplace sync rejects what the CLI only warns about ([ADR-0007](adr/0007-dual-runtime-packaging.md)). Cursor's hooks therefore live in `hooks/cursor.hooks.json`, named in `.cursor-plugin/plugin.json`. The sync also checks claude.ai's upload rules, which the CLI does not, and reports a breach as a warning: the plugin description is at most 500 characters (one text in all four manifests), and a skill or agent `name` or `description` holds no `<` or `>` (write `{slug}`, not `<slug>`).
+Claude Code must never see a Cursor file: it reads `hooks/hooks.json` and a root `plugin.json` by convention, whatever its manifest says, and the claude.ai marketplace sync rejects what the CLI only warns about ([ADR-0007](adr/0007-dual-runtime-packaging.md)). Cursor's hooks therefore live in `hooks/cursor.hooks.json`, named in `.cursor-plugin/plugin.json`, while `hooks/hooks.json` holds only Claude Code hooks in Claude Code's format; `validate-manifests.ts` rejects a Cursor-shaped file at that path and any root `plugin.json`. The sync also checks claude.ai's upload rules, which the CLI does not, and reports a breach as a warning: the plugin description is at most 500 characters (one text in all four manifests), and a skill or agent `name` or `description` holds no `<` or `>` (write `{slug}`, not `<slug>`).
 
 Before every release, run the five guards below. CI runs all of them on every pull request and every push to `main`.
 

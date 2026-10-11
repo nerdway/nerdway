@@ -98,6 +98,15 @@ Reading order if you want to go deeper: [Workflow topology](ARCHITECTURE.md#work
 
 Requirements, installation in Claude Code, Cursor and other agents, and updating are in the [README](../README.md#requirements). Without dynamic workflows everything still runs, only sequentially (see [degradation](#degradation-is-part-of-the-design)).
 
+### The plugin tells you when it is out of date
+
+Neither Claude Code nor Cursor says when a newer version of a third-party plugin exists, so the plugin checks for itself at the start of every session (startup, resume and `/clear` in Claude Code; every `sessionStart` in Cursor). When something is off, the agent opens its first reply with one line per finding, and in Claude Code the same text also appears as a system message:
+
+- `nerd4rent plugin 0.45.0 is installed, main is 0.51.0: run ...`. Your copy is older than the `main` branch of the repository. The line ends with the fix for your runtime. In Claude Code: `/plugin marketplace update nerd4rent-claude-plugin`, then `/plugin update nerd4rent@nerd4rent-claude-plugin`, then restart. In Cursor, for a clone under `~/.cursor/plugins/local/`: `git -C <that directory> pull --ff-only`, then Reload Window; for a marketplace install: `agent plugin marketplace remove nerd4rent-claude-plugin`, `agent plugin marketplace add nerd4rent/nerd4rent-claude-plugin`, then reinstall the card in Customize.
+- `stale copy of the nerd4rent skill <name> at <path>: remove it`. A skill directory of yours (`~/.claude/skills`, `~/.cursor/skills`, `~/.agents/skills`, or the same under the project) holds an old copy of a plugin skill, typically from an `npx skills add` run or an early manual install. Such a copy shadows or duplicates the plugin's current skill. Delete the directory named in the line.
+
+When everything is current the check prints nothing. The version of `main` is fetched from GitHub at most once a day and the check stays silent when the network is unavailable (this includes `claude.ai/code`, which blocks that host), so an offline session is never slowed down or warned by mistake. The check needs `node` in the session's PATH; without it, it exits silently.
+
 ## Telling the plugin which platform a project uses
 
 Before the first issue, the plugin needs to know where the project's issues live (Linear, GitHub Issues, GitLab Issues or Azure DevOps Boards) and where its code lives (GitHub, GitLab or Azure DevOps). Run `/determine-platform` once per repo - or just file an issue and `issue-writer` runs it for you.
@@ -244,5 +253,6 @@ These maintain a personal Obsidian vault with one entity page per project - the 
 - **"phase unknown"**: the issue shows a state, label or marker the status map doesn't hold; move the issue to a mapped status, or extend the map with `/bind-statuses`.
 - **`linearis` errors about authentication**: set `LINEAR_API_TOKEN` or run `linearis auth login` (see [Requirements](../README.md#requirements)).
 - **`/plugin update` says nothing changed**: run `/plugin marketplace update nerd4rent-claude-plugin` first; if it still reports no change, no new version has been released yet.
+- **The session opens with "nerd4rent plugin X is installed, main is Y" or "stale copy of the nerd4rent skill"**: see [The plugin tells you when it is out of date](#the-plugin-tells-you-when-it-is-out-of-date); follow the fix the line ends with.
 - **A skill doesn't trigger**: invoke it explicitly with the slash form, e.g. `/issue-workflow DEMO-123` or `/nerd4rent:issue-workflow DEMO-123`.
 - **The plan or review runs sequentially and slowly**: dynamic workflows are unavailable or disabled; see [Installation](#installation). The result is the same, only slower.

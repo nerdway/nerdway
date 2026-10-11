@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { contextTermErrors, contextTermSources, languageTerms } from "./context-terms.ts";
+import { contextTermErrors, contextTermSources, languageTerms, validateContextTerms } from "./context-terms.ts";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -79,4 +79,8 @@ test("contextTermSources: every git-tracked file except CONTEXT.md and docs/rese
   assert.ok(paths.includes("skills/tdd/SKILL.md"));
   assert.ok(!paths.includes("CONTEXT.md"));
   assert.ok(paths.every((path) => !path.startsWith("docs/research/")));
+});
+
+test("validateContextTerms: every `## Language` term of this repo is used somewhere else", () => {
+  assert.deepEqual(validateContextTerms(repoRoot), []);
 });

@@ -90,3 +90,20 @@ export async function fetchMainVersion(fetchImpl: typeof fetch, timeoutMs = 3000
     return null;
   }
 }
+
+export const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+export function cachedMainVersion(text: string | null, now: number): string | null {
+  if (text === null) return null;
+  try {
+    const entry = JSON.parse(text) as { version?: unknown; fetchedAt?: unknown };
+    if (typeof entry.version !== "string" || typeof entry.fetchedAt !== "number") return null;
+    return now - entry.fetchedAt < CACHE_TTL_MS ? entry.version : null;
+  } catch {
+    return null;
+  }
+}
+
+export function cacheEntry(version: string, now: number): string {
+  return JSON.stringify({ version, fetchedAt: now });
+}

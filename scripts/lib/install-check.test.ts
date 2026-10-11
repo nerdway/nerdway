@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { detectVersionDrift, fetchMainVersion, findStaleSkillCopies, renderHookOutput } from "./install-check.ts";
+import { cachedMainVersion, detectVersionDrift, fetchMainVersion, findStaleSkillCopies, renderHookOutput } from "./install-check.ts";
 
 const CURRENT_SKILLS = ["issue-workflow", "nerdbrain-wiki", "tdd"];
 
@@ -119,4 +119,19 @@ test("fetchMainVersion reads the version of the raw main manifest", async () => 
   };
   assert.equal(await fetchMainVersion(ok as unknown as typeof fetch), "0.51.0");
   assert.equal(requested, "https://raw.githubusercontent.com/nerd4rent/nerd4rent-claude-plugin/main/.claude-plugin/plugin.json");
+});
+
+const NOW = Date.parse("2026-10-11T12:00:00Z");
+
+test("cachedMainVersion honours a cache entry younger than 24 hours and drops an older one", () => {
+  const fresh = JSON.stringify({ version: "0.51.0", fetchedAt: NOW - 23 * 60 * 60 * 1000 });
+  const stale = JSON.stringify({ version: "0.51.0", fetchedAt: NOW - 25 * 60 * 60 * 1000 });
+  assert.equal(cachedMainVersion(fresh, NOW), "0.51.0");
+  assert.equal(cachedMainVersion(stale, NOW), null);
+});
+
+test("cachedMainVersion returns null for a missing or unreadable cache file", () => {
+  assert.equal(cachedMainVersion(null, NOW), null);
+  assert.equal(cachedMainVersion("{not json", NOW), null);
+  assert.equal(cachedMainVersion(JSON.stringify({ fetchedAt: NOW }), NOW), null);
 });

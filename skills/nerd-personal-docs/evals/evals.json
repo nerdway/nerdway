@@ -1,0 +1,33 @@
+{
+  "skill_name": "nerd-personal-docs",
+  "evals": [
+    {
+      "id": "new-service-guide-with-manual-steps",
+      "prompt": "Issue DEMO-500 (https://linear.app/example/issue/DEMO-500) is about to be closed. Its PR https://github.com/example/infra/pull/42 deployed Uptime Kuma as container 214 on host host1, reachable at https://status.home.example. The admin password is in the password-manager item \"Uptime Kuma admin\". After the deploy the user still has to log in once and enable two-factor authentication, and the TLS certificate renews by itself every 60 days. No guide for Uptime Kuma exists yet. Write the guide for the user.",
+      "expected_output": "The agent checks that the vault exists, searches 5-wiki/guides for an existing guide, then writes 5-wiki/guides/uptime-kuma.md in Polish with the six sections in order. The manual login and two-factor setup are under Kroki ręczne marked as one-time; the password-manager item is named but no secret value appears; the history section links DEMO-500 and the PR with full URLs. It links the guide on the entity page, appends a log.md line and comments the guide path on the issue.",
+      "files": [],
+      "assertions": [
+        "The agent checks for the vault directory before writing anything",
+        "The agent searches the existing guides before creating a new file",
+        "The guide is written to 5-wiki/guides/ under a kebab-case file name",
+        "The guide is in Polish and has the sections Czym to jest i gdzie stoi, Jak używać, Kroki ręczne, Gdy coś nie działa, Gdzie są sekrety i konfiguracja, Historia i powiązania",
+        "The login and two-factor setup appear under Kroki ręczne marked as one-time",
+        "The password-manager item name appears and no password or secret value does",
+        "Historia i powiązania links DEMO-500 and the PR as full working URLs, not bare IDs",
+        "The guide uses no em dash and no emoji",
+        "The agent links the guide on the entity page, appends a line to 5-wiki/log.md and comments the guide path on the issue"
+      ]
+    },
+    {
+      "id": "refactor-needs-no-guide",
+      "prompt": "Issue DEMO-501 is about to be closed. Its only change renames private helper functions in a test file; nothing the user uses, operates or does by hand changed. Run the personal documentation step.",
+      "expected_output": "The agent states in one line that the work changes nothing the user uses, so no guide is needed, and writes nothing to the vault.",
+      "files": [],
+      "assertions": [
+        "The agent concludes that no guide is needed and gives the reason in one line",
+        "The agent writes no file in the vault",
+        "The agent does not treat the missing guide as a failure of the close-out"
+      ]
+    }
+  ]
+}

@@ -19,7 +19,11 @@ const errors = validateManifests({
 });
 
 errors.push(
-  ...validateClaudeCodeIsolation(readJson(".cursor-plugin/plugin.json"), (path) => existsSync(join(repoRoot, path))),
+  ...validateClaudeCodeIsolation(
+    readJson(".cursor-plugin/plugin.json"),
+    (path) => existsSync(join(repoRoot, path)),
+    (path) => readJson(path),
+  ),
 );
 
 const cursorMarketplace = readJson(".cursor-plugin/marketplace.json");

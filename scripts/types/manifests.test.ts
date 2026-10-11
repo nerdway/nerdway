@@ -72,8 +72,28 @@ test("accepts Cursor files kept out of Claude Code's convention paths", () => {
   assert.deepEqual(validateClaudeCodeIsolation(cursorPlugin(), inRepo()), []);
 });
 
-test("rejects hooks/hooks.json, which Claude Code auto-discovers", () => {
-  const errors = validateClaudeCodeIsolation(cursorPlugin(), inRepo(["hooks/hooks.json"]));
+const CLAUDE_CODE_HOOKS = {
+  hooks: {
+    SessionStart: [{ matcher: "startup|resume|clear", hooks: [{ type: "command", command: "x", timeout: 10 }] }],
+  },
+};
+const CURSOR_HOOKS = { version: 1, hooks: { sessionStart: [{ command: "x" }] } };
+
+const readingHooks = (content: unknown) => (path: string) => (path === "hooks/hooks.json" ? content : null);
+
+test("accepts hooks/hooks.json in Claude Code's own format", () => {
+  const errors = validateClaudeCodeIsolation(cursorPlugin(), inRepo(["hooks/hooks.json"]), readingHooks(CLAUDE_CODE_HOOKS));
+  assert.deepEqual(errors, []);
+});
+
+test("rejects hooks/hooks.json in Cursor's format, which Claude Code auto-discovers and misreads", () => {
+  const errors = validateClaudeCodeIsolation(cursorPlugin(), inRepo(["hooks/hooks.json"]), readingHooks(CURSOR_HOOKS));
+  assert.ok(errors.some((error) => error.startsWith("hooks/hooks.json:")));
+});
+
+test("rejects hooks/hooks.json whose events are not Claude Code's PascalCase names", () => {
+  const camel = { hooks: { sessionStart: [{ matcher: "startup", hooks: [{ type: "command", command: "x" }] }] } };
+  const errors = validateClaudeCodeIsolation(cursorPlugin(), inRepo(["hooks/hooks.json"]), readingHooks(camel));
   assert.ok(errors.some((error) => error.startsWith("hooks/hooks.json:")));
 });
 

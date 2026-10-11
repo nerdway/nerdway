@@ -76,3 +76,17 @@ export function renderHookOutput(findings: Finding[], runtime: Runtime, pluginRo
   }
   return JSON.stringify({ additional_context: context });
 }
+
+export const MAIN_MANIFEST_URL =
+  "https://raw.githubusercontent.com/nerd4rent/nerd4rent-claude-plugin/main/.claude-plugin/plugin.json";
+
+export async function fetchMainVersion(fetchImpl: typeof fetch, timeoutMs = 3000): Promise<string | null> {
+  try {
+    const response = await fetchImpl(MAIN_MANIFEST_URL, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!response.ok) return null;
+    const manifest = (await response.json()) as { version?: unknown };
+    return typeof manifest.version === "string" ? manifest.version : null;
+  } catch {
+    return null;
+  }
+}

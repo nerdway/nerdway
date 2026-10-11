@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { detectVersionDrift, findStaleSkillCopies, renderHookOutput } from "./install-check.ts";
+import { detectVersionDrift, fetchMainVersion, findStaleSkillCopies, renderHookOutput } from "./install-check.ts";
 
 const CURRENT_SKILLS = ["issue-workflow", "nerdbrain-wiki", "tdd"];
 
@@ -95,4 +95,28 @@ test("renderHookOutput names a stale copy by path and asks to remove it, one lin
 test("renderHookOutput prints nothing when there is nothing to report", () => {
   assert.equal(renderHookOutput([], "claude", "/plugin"), "");
   assert.equal(renderHookOutput([], "cursor", "/plugin"), "");
+});
+
+test("fetchMainVersion returns null when the network call rejects", async () => {
+  const unreachable = async () => {
+    throw new TypeError("fetch failed");
+  };
+  assert.equal(await fetchMainVersion(unreachable as unknown as typeof fetch), null);
+});
+
+test("fetchMainVersion returns null on a non-2xx response or a manifest without a version", async () => {
+  const notFound = async () => new Response("not found", { status: 404 });
+  const noVersion = async () => new Response(JSON.stringify({ name: "nerd4rent" }), { status: 200 });
+  assert.equal(await fetchMainVersion(notFound as unknown as typeof fetch), null);
+  assert.equal(await fetchMainVersion(noVersion as unknown as typeof fetch), null);
+});
+
+test("fetchMainVersion reads the version of the raw main manifest", async () => {
+  let requested = "";
+  const ok = async (url: string | URL | Request) => {
+    requested = String(url);
+    return new Response(JSON.stringify({ name: "nerd4rent", version: "0.51.0" }), { status: 200 });
+  };
+  assert.equal(await fetchMainVersion(ok as unknown as typeof fetch), "0.51.0");
+  assert.equal(requested, "https://raw.githubusercontent.com/nerd4rent/nerd4rent-claude-plugin/main/.claude-plugin/plugin.json");
 });

@@ -213,7 +213,12 @@ When no branch is open, print the outcome in chat:
     context, and carries a real trade-off — all three, in the repo's
     `docs/adr/` following its existing pattern;
   - **glossary term** when the session sharpened a word the project uses —
-    an entry in the repo's `CONTEXT.md`;
+    an entry in the repo's `CONTEXT.md`. The caller turns it into an
+    acceptance criterion of the issue, "`CONTEXT.md ## Language` has the
+    term `<Term>` — check: `node scripts/validate-context-terms.ts`", and
+    lists `CONTEXT.md` among the plan's affected files; the entry itself is
+    written during implementation, so nothing in the repo changes before the
+    issue is in progress;
   - **entity-page decision** when it is a project-level decision — the
     `## Decisions` write trigger of the nerdbrain entity page, through
     `nerd4rent:nerdbrain-wiki`;

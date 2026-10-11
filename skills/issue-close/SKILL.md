@@ -4,7 +4,8 @@ model: haiku
 description: >-
   Mechanically close out a tracker issue (Linear, GitHub Issues, GitLab
   Issues, Azure DevOps Boards) once the work
-  is done: commit any
+  is done: write or update the user's nerdbrain guide through
+  nerd-personal-docs (mandatory, before anything else), commit any
   leftover changes, push, merge the PR (GitHub, Azure DevOps) or MR (GitLab),
   switch the local
   checkout to the PR/MR base branch, and move the issue to done. Purely
@@ -74,6 +75,16 @@ explains why every candidate is confirmed before use.
 
 Call it `<ID>` below.
 
+## Step 0 — Guide for the user (mandatory)
+
+Invoke **`nerd4rent:nerd-personal-docs`** with `<ID>` and the resolved
+platform, before any commit or merge. It writes or updates the user's guide
+in the nerdbrain vault, or answers in one line that the work needs none, or
+that this machine has no vault. Carry its answer into the Report.
+
+If it stops with an error, **stop and report** — the issue is not closed
+without its guide.
+
 ## Step 1 — Commit leftover changes (skip if clean)
 
 ```bash
@@ -140,7 +151,8 @@ merge already closed is closed again without error.
 
 ## Report
 
-Confirm briefly what happened: committed (or clean), pushed, merged,
+Confirm briefly what happened: the guide path (or why none was written),
+committed (or clean), pushed, merged,
 now on `<base>`, issue `<ID>` moved to done. If any step stopped early, report
 which one and why. Either way, end with the issue link from `issue.url`, in
 the shape *Asking the human to move a phase* in
@@ -150,6 +162,8 @@ the shape *Asking the human to move a phase* in
 
 - `nerd4rent:issue-workflow` — the status-driven workflow whose close-out
   phase delegates here.
+- `nerd4rent:nerd-personal-docs` — Step 0: the user's guide in nerdbrain,
+  written before the merge.
 - `nerd4rent:issue-start` — the mirror chain at the other end of the issue:
   branch, start commit, push, draft PR/MR.
 - `nerd4rent:determine-platform` — records the platform this skill reads.

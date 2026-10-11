@@ -79,6 +79,9 @@ the plan for section 3, and the user can reorder it at any time.
 A hypothesis names a mechanism ("the glob is unquoted, so the shell expands
 it before Node sees it"), not a location ("something in the runner"). One
 that cannot be falsified by any observation is not a hypothesis; drop it.
+Write the list even when the cause looks obvious after reading the code: the
+obvious cause is the first hypothesis, not a reason to skip the step, and the
+list is what the user sees when the first fix does not hold.
 
 ## 3. Evidence
 

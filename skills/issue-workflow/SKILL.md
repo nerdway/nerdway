@@ -249,7 +249,11 @@ medium or large issue, before the plan:
    criterion, a constraint or a scope line.
 3. End each acceptance criterion with how it is checked —
    `— check: <test or command>`. A criterion that cannot name a check is too
-   vague: settle it in the session or leave it as an open question.
+   vague: settle it in the session or leave it as an open question. A
+   decision the session tagged **glossary term** becomes one such criterion:
+   "`CONTEXT.md ## Language` has the term `<Term>` — check:
+   `node scripts/validate-context-terms.ts`". The entry is written during
+   implementation, never while refining the spec.
 4. Extend the user's text, never drop it: `issue.update-description` replaces
    the whole description.
 5. Show the full new description in chat and write it with
@@ -268,12 +272,19 @@ issue language):
 **Affected Files** lists every file or directory the implementation will
 change; it is what the scope stop in step 6 checks against. Each acceptance
 criterion names its check (`— check: <test or command>`), copied from the spec
-or added here for a small issue.
+or added here for a small issue. A glossary-term criterion (step 0c) puts
+`CONTEXT.md` on the list, so the entry can be written in the same PR.
 
 **Test approach** is `TDD` by default, with the seams the tests will be written
 against. Choose `no tests` only with a reason and the nearest runnable check
 that stands in for a test — a change with no behaviour to drive, such as pure
 prose. The user approves the mode together with the plan; step 5 reads it.
+
+An issue labelled **Bug** (the label is in the `issue.read` JSON) is planned
+around `nerd4rent:debug`: the first implementation step is its feedback loop
+(one command, already run, red on this bug), the regression test for the
+confirmed cause is the first red of `tdd`, and the fix comes after both. The
+plan says so in Implementation Steps; the test approach stays `TDD`.
 
 `plan-template.md` and `session-summary-template.md` are **generated** from the
 `ImplementationPlan` and `SessionSummary` schemas in `workflow-graph.json`
@@ -300,7 +311,9 @@ outcome feeds step 0c (the refined spec) and step 1 (the plan).
 Do not post the plan before the skill has returned a confirmed outcome. The
 outcome tags each decision for the docs discipline — ADR, glossary term in
 `CONTEXT.md`, or `## Decisions` on the entity page; act on those tags with the
-plan (the entity-page write goes through `nerdbrain-wiki`, see the integration
+plan: an ADR goes into the plan's affected files, a glossary term becomes the
+acceptance criterion of step 0c with `CONTEXT.md` in the affected files, and
+the entity-page write goes through `nerdbrain-wiki` (see the integration
 section below).
 
 ### 2. Post plan to the tracker and write `todo`
@@ -620,6 +633,8 @@ session's last push.
   here, never enters this workflow by itself.
 - `nerd4rent:tdd` — the implementation loop step 5 hands off to under
   `mode: TDD`.
+- `nerd4rent:debug` — the cause-finding loop an issue labelled Bug is planned
+  around (step 1); `tdd` hands an unexplained red to it during implementation.
 - `nerd4rent:grill` — the grilling session of step 1a (`issue: <ID>`); its
   confirmed outcome feeds the spec refinement and the plan.
 - `gitlab-to-linear` / `simgit` — GitLab → Linear import (separate flow).

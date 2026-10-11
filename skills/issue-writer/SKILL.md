@@ -104,7 +104,10 @@ question, so the user can override it, and the size picks the path:
 The decisions the interview settles are the template's sections the request
 leaves open: objective, problem/context, acceptance criteria, scope (in/out),
 constraints, dependencies, open questions. Facts about the repo are checked by
-the skill, not asked.
+the skill, not asked. A decision the outcome tags **glossary term** becomes an
+acceptance criterion of the drafted issue: "`CONTEXT.md ## Language` has the
+term `<Term>` — check: `node scripts/validate-context-terms.ts`"; the entry
+itself is written when the issue is implemented.
 
 ### 3. Decide decomposition
 
@@ -160,6 +163,10 @@ machine. Handle the confirmed outcome:
 
 - sharpened requirements → update the issue description
   (`issue.update-description`) after showing the diff;
+- a decision tagged **glossary term** → the same acceptance criterion as in
+  step 2 ("`CONTEXT.md ## Language` has the term `<Term>` — check:
+  `node scripts/validate-context-terms.ts`"), added to the description in
+  that update;
 - the topic splits into stages → propose sub-issues (step 3 rules apply) and
   create them with `issue.create-child` under `<ID>` **only after the user
   approves the drafts** (hard gate above).

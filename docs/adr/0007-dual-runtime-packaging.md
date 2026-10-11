@@ -68,6 +68,57 @@ Should the plugin ever ship Claude Code hooks, they go to
 `hooks/hooks.json` in Claude Code's format, with the isolation guard
 updated in the same change.
 
+## Claude Code hooks (DEMO-413)
+
+The plugin now ships one Claude Code hook: `hooks/hooks.json`, in Claude
+Code's own format (a `hooks` object keyed by PascalCase event names), with a
+`SessionStart` entry on `startup|resume|clear` that runs
+`hooks/check-install.sh claude`. The same script, as
+`hooks/check-install.sh cursor`, is the second `sessionStart` entry of
+`hooks/cursor.hooks.json`. Both are thin wrappers around
+`node scripts/check-install.ts --runtime <claude|cursor>`; the detection
+itself is pure functions in `scripts/lib/install-check.ts` under `node:test`.
+
+The check answers two questions before a session works on the skills: is
+the installed plugin older than `main` (the raw `.claude-plugin/plugin.json`
+of `main`, fetched with a 3 second timeout and cached for 24 hours in
+`CLAUDE_PLUGIN_DATA`, else `~/.cache/nerd4rent`), and do stale copies of the
+plugin's skills sit in the user's skill directories (`~/.claude/skills`,
+`~/.cursor/skills`, `~/.agents/skills` and the same three under the project;
+a copy is a `SKILL.md` whose `name` is a historical plugin skill name, or a
+current one with `nerd4rent` or `nerdbrain` in the text). Neither runtime
+signals a newer version itself: Claude Code auto-updates only Anthropic
+marketplaces, and the Cursor CLI has no plugin update command. On 2026-10-10
+Claude Code ran six releases behind `main` and Cursor loaded four June
+copies, with no signal in either. A hook is the only mechanism that runs in
+every session without anyone remembering to ask; `project-continue` and
+`bootstrap-clis` run on request, so they would have missed exactly that
+case. The islands (`workflows/*.js`) have no filesystem or network
+(ADR-0003), so the check cannot live there.
+
+Output is one English line per finding with the remedy for the runtime
+(Claude Code: `/plugin marketplace update` then `/plugin update`; Cursor:
+`git pull --ff-only` for a clone under `~/.cursor/plugins/local/`, else
+re-add the marketplace and reinstall the card; a stale copy: its path and
+"remove it"). Claude Code gets `systemMessage` plus
+`hookSpecificOutput.additionalContext`, Cursor `additional_context`; both
+open with an instruction to repeat the warning to the user in the first
+reply, because in Cursor that is the only channel. No drift and no copies
+print nothing. A network failure is silent and leaves no cache entry;
+`claude.ai/code` blocks `raw.githubusercontent.com`, so the version check is
+silent there. Missing `node` in the hook's PATH exits silently too.
+
+The isolation guard in `scripts/validate-manifests.ts` changed in the same
+PR: `hooks/hooks.json` is accepted when it has Claude Code's shape and still
+rejected in Cursor's shape (`version: 1`, camelCase events); a root
+`plugin.json` stays forbidden. Only `NERD4RENT_MAIN_VERSION`,
+`NERD4RENT_SKILL_DIRS` and `NERD4RENT_CACHE_DIR` override the check, for the
+acceptance runs; there is no kill switch. The one risk is the claude.ai
+sync: it rejected unknown hook events in DEMO-364, and a `SessionStart` entry
+in Claude Code's format has not been through it before 0.55.0. If it fails,
+0.55.1 drops `hooks/hooks.json` and Claude Code falls back to a step in
+`project-continue`.
+
 ## Repo `CLAUDE.md` and `## Platform` in Cursor (DEMO-366)
 
 Every nerd-workflow project records its platform as the `## Platform`

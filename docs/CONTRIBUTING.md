@@ -36,6 +36,12 @@ Check the evals of every skill that has them:
 node scripts/validate-evals.ts
 ```
 
+Check that every term of the `## Language` glossary in `CONTEXT.md` is used, as the same phrase in any letter case, in at least one tracked file outside `CONTEXT.md` and `docs/research/`. A term nothing else uses is dead vocabulary: use it where its concept is described, or drop it.
+
+```bash
+node scripts/validate-context-terms.ts
+```
+
 After editing a schema body in `workflow-graph.json`, regenerate the skill templates built from it. A test fails if one of them was edited by hand instead:
 
 ```bash

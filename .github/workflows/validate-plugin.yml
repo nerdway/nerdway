@@ -28,6 +28,8 @@ jobs:
         run: node scripts/validate-workflow-graph.ts
       - name: Skill evals shape
         run: node scripts/validate-evals.ts
+      - name: Glossary terms in use
+        run: node scripts/validate-context-terms.ts
       - name: CLI dependency list
         run: node scripts/validate-cli-dependencies.ts
       - name: Platform config and tracker status defaults

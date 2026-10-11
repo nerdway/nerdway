@@ -135,7 +135,7 @@ Those agents read global skills from `~/.agents/skills/` (Cursor also reads `~/.
 3. Say *"create an issue: …"* and describe the work. For a fuzzy topic the agent asks its questions in numbered rounds, each with a recommended answer, so a plain yes accepts them; the same interview runs before a plan when an issue is ambiguous. The agent drafts the issue, shows it to you, and creates it in Backlog only after you approve.
 4. Type the issue ID (for example `DEMO-123` or `#123`). The agent posts an implementation plan as a comment and stops.
 5. Read the plan on the tracker and move the issue to In Progress. The agent opens a branch and a draft pull request, implements the plan, and checks every acceptance criterion.
-6. Review runs next; say *"merge and close"* when you are satisfied.
+6. Review runs next; say *"merge and close"* when you are satisfied. Before the merge the agent writes or updates your guide for the change in the nerdbrain vault, when you have one.
 
 The [User Guide](docs/USER-GUIDE.md#a-day-with-the-plugin) follows one feature through these steps in detail.
 

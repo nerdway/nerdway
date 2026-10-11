@@ -181,7 +181,7 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 ### `issue-close` - merge and finish
 
 - **Say:** *"merge and close"*, *"close out DEMO-123"*, *"domknij"*, *"zmerguj i zamknij"*.
-- **What happens:** the deliberately mechanical close-out chain - commit leftovers, push, merge the PR (GitHub, GitLab or Azure DevOps), switch your checkout to the base branch, set the issue to Done. On any error it stops and reports.
+- **What happens:** the deliberately mechanical close-out chain - first your guide in nerdbrain through `nerd-personal-docs` (below), then commit leftovers, push, merge the PR (GitHub, GitLab or Azure DevOps), switch your checkout to the base branch, set the issue to Done. On any error it stops and reports.
 
 ### `auto-issue-mode` - run an issue end to end
 
@@ -222,6 +222,11 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 
 - **Say:** nothing special - the agent uses it when writing or revising a tutorial, README or step-by-step guide for readers outside your own tooling, such as a client's engineers or open-source users.
 - **What happens:** the text states the facts the reader needs rather than the story of how they were found, drops internal issue IDs, opens sentences with words rather than code identifiers, uses noun-phrase headings, plain hyphens and no emoji, and gives each runnable command its own code block with its description above it.
+
+### `nerd-personal-docs` - your own guide in nerdbrain
+
+- **Say:** *"udokumentuj dla mnie"*, *"napisz przewodnik"*, *"write a guide in nerdbrain"* - or nothing: `issue-close` runs it before every merge.
+- **What happens:** when the work created or changed something you use, operate or have to do by hand, the agent writes or updates a guide in `5-wiki/guides/` of your nerdbrain vault, in Polish: what it is and where it runs, how to use it, the manual steps only you can do, what to do when it breaks, where the secrets and config live, and the history with links to the issues and pull requests. Unlike `nerd-documentation-write`, those links are required here, because the reader is you. The agent links the guide on the project's entity page and in a comment on the issue. Work that changes nothing you use gets a one-line note instead, and a machine without the vault skips the step and says so.
 
 ### `nerdbrain-wiki` / `nerdbrain-search` - personal second brain (optional)
 

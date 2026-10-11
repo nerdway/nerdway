@@ -127,7 +127,7 @@ The axis is an **island graph**, not one graph end to end. The Claude Code workf
   └─ close-out: a chain, pinned to Haiku, no workflow
 ```
 
-Chains sit at both ends of the axis: `issue-start` opens the branch and the draft PR, `issue-close` merges and finishes. Before it merges, `issue-close` runs `nerd-personal-docs`, the `personal-docs` node: it writes or updates the user's guide in the vault, and `close` takes its `PersonalGuide` as an input, so the contract has no path to a merge without that step. Neither is a graph node of its own. Start is the first half of `implement`, behind the same `tracker-status` gate, and a separate node would only duplicate that gate.
+Chains sit at both ends of the axis: `issue-start` opens the branch and the draft PR, `issue-close` merges and finishes. Before the close-out, its caller (`issue-workflow`, or the close-out stage of `auto-issue-mode`) runs `nerd-personal-docs`, the `personal-docs` node, on the session model rather than on the close-out's small model: it writes or updates the user's guide in the vault and records the outcome as a `## Personal guide` comment on the issue. `close` takes its `PersonalGuide` as an input, and `issue-close` checks for the guide or that comment before it merges and stops without them, so the contract has no path to a merge without that step. Neither is a graph node of its own. Start is the first half of `implement`, behind the same `tracker-status` gate, and a separate node would only duplicate that gate.
 
 | Node | Skill | Phase | Runtime | Edge in → out |
 |---|---|---|---|---|
@@ -141,7 +141,7 @@ Chains sit at both ends of the axis: `issue-start` opens the branch and the draf
 | `session-summary` | `issue-workflow` | implement | conversational | `ChangeSet` → `SessionSummary` |
 | `review-menu` | `issue-workflow` | review | conversational | `ChangeSet` → `ReviewRequest` |
 | `review-verify` | `issue-workflow` | review | **workflow** | `ReviewRequest` → `ReviewFindings` |
-| `personal-docs` | `nerd-personal-docs` | close | chain | `SessionSummary` → `PersonalGuide` |
+| `personal-docs` | `nerd-personal-docs` | close | conversational | `SessionSummary` → `PersonalGuide` |
 | `close` | `issue-close` | close | chain | `ReviewFindings`, `PersonalGuide` → `MergedBranch` |
 | `wiki-write` | `nerdbrain-wiki` | wiki | chain | `SessionSummary` → `EntityPageUpdate` |
 | `auto-issue-mode` | `auto-issue-mode` | orchestrate | conversational | `PlatformConfig` → `MergedBranch` |

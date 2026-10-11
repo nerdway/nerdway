@@ -916,7 +916,7 @@
     },
     {
       "id": "PersonalGuide",
-      "description": "The user's guide in the nerdbrain vault that the close-out waits for: the guide written or updated for the issue, or the one-line reason none was written.",
+      "description": "The user's guide in the nerdbrain vault that the close-out waits for: the guide written or updated for the issue, or the one-line reason none was written. The caller of the close-out produces it on the session model (issue-workflow's close-out, auto-issue-mode's close-out stage) and records it as a `## Personal guide` issue comment; issue-close only checks it in the vault or that comment and stops without it.",
       "schema": {
         "type": "object",
         "title": "Personal guide",
@@ -1199,7 +1199,7 @@
     {
       "id": "personal-docs",
       "skill": "nerd-personal-docs",
-      "runtime": "chain",
+      "runtime": "conversational",
       "phase": "close",
       "irreversible": true,
       "in": ["SessionSummary"],
@@ -1207,7 +1207,7 @@
       "dependsOn": ["session-summary"],
       "failure": {
         "retries": 0,
-        "fallback": "stop the close-out and report; a machine without the vault reports no-vault instead of failing",
+        "fallback": "stop before issue-close and report; a machine without the vault reports no-vault instead of failing, and issue-close refuses to merge while the guide is missing",
         "killsRun": true,
         "reporting": "chat"
       },

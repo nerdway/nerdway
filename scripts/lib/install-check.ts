@@ -77,6 +77,12 @@ export function renderHookOutput(findings: Finding[], runtime: Runtime, pluginRo
   return JSON.stringify({ additional_context: context });
 }
 
+const VERSION_FORMAT = /^\d+\.\d+\.\d+$/;
+
+function versionOrNull(value: unknown): string | null {
+  return typeof value === "string" && VERSION_FORMAT.test(value) ? value : null;
+}
+
 export const MAIN_MANIFEST_URL =
   "https://raw.githubusercontent.com/nerd4rent/nerd4rent-claude-plugin/main/.claude-plugin/plugin.json";
 
@@ -85,7 +91,7 @@ export async function fetchMainVersion(fetchImpl: typeof fetch, timeoutMs = 3000
     const response = await fetchImpl(MAIN_MANIFEST_URL, { signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) return null;
     const manifest = (await response.json()) as { version?: unknown };
-    return typeof manifest.version === "string" ? manifest.version : null;
+    return versionOrNull(manifest.version);
   } catch {
     return null;
   }
@@ -97,8 +103,9 @@ export function cachedMainVersion(text: string | null, now: number): string | nu
   if (text === null) return null;
   try {
     const entry = JSON.parse(text) as { version?: unknown; fetchedAt?: unknown };
-    if (typeof entry.version !== "string" || typeof entry.fetchedAt !== "number") return null;
-    return now - entry.fetchedAt < CACHE_TTL_MS ? entry.version : null;
+    const version = versionOrNull(entry.version);
+    if (version === null || typeof entry.fetchedAt !== "number") return null;
+    return now - entry.fetchedAt < CACHE_TTL_MS ? version : null;
   } catch {
     return null;
   }

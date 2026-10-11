@@ -4,8 +4,9 @@ model: haiku
 description: >-
   Mechanically close out a tracker issue (Linear, GitHub Issues, GitLab
   Issues, Azure DevOps Boards) once the work
-  is done: write or update the user's nerdbrain guide through
-  nerd-personal-docs (mandatory, before anything else), commit any
+  is done: check that the user's nerdbrain guide for the issue exists (the
+  caller writes it first with nerd-personal-docs; without it the close-out
+  stops), commit any
   leftover changes, push, merge the PR (GitHub, Azure DevOps) or MR (GitLab),
   switch the local
   checkout to the PR/MR base branch, and move the issue to done. Purely
@@ -62,8 +63,9 @@ The status strategy and map come from the `statuses` block of the platform
 phase. A strategy whose `## Status strategies` row is `—` → stop and report
 "strategy not supported — run `/bind-statuses`".
 
-The tracker adapter is used for one write (`issue.set-status`), the issue
-link (`issue.url`) and, when no ID was passed, `issue.resolve-from-branch`.
+The tracker adapter is used for one write (`issue.set-status`), one read
+(`issue.read`, in Step 0), the issue link (`issue.url`) and, when no ID was
+passed, `issue.resolve-from-branch`.
 
 ## Resolve the issue ID
 
@@ -75,15 +77,44 @@ explains why every candidate is confirmed before use.
 
 Call it `<ID>` below.
 
-## Step 0 — Guide for the user (mandatory)
+## Step 0 — Guide check (gate)
 
-Invoke **`nerd4rent:nerd-personal-docs`** with `<ID>` and the resolved
-platform, before any commit or merge. It writes or updates the user's guide
-in the nerdbrain vault, or answers in one line that the work needs none, or
-that this machine has no vault. Carry its answer into the Report.
+This skill never writes the guide. The caller writes it beforehand with
+`nerd4rent:nerd-personal-docs` on the session model (`issue-workflow`'s
+close-out, `auto-issue-mode`'s close-out stage); this step only checks that
+it happened. Take the first case that matches:
 
-If it stops with an error, **stop and report** — the issue is not closed
-without its guide.
+1. **No vault on this machine.**
+
+   ```bash
+   test -d ~/obsidian/nerdbrain/5-wiki
+   ```
+
+   Non-zero exit → note "no nerdbrain vault on this machine, guide not
+   checked" for the Report and go to Step 1.
+2. **A guide mentions the issue.** When `<ID>` has the `TEAM-123` form,
+   search for it as a whole word:
+
+   ```bash
+   rg -l -w -F "<ID>" ~/obsidian/nerdbrain/5-wiki/guides/
+   ```
+
+   Otherwise (`#123`) search for the issue link that `issue.url` gives:
+
+   ```bash
+   rg -l -F "<issue url>" ~/obsidian/nerdbrain/5-wiki/guides/
+   ```
+
+   A listed file → note its path for the Report and go to Step 1.
+3. **The caller recorded that no guide is needed.** Run `issue.read`; a
+   comment whose first line is `## Personal guide` and which holds a line
+   starting with `Not needed:` → note that reason for the Report and go to
+   Step 1.
+4. **Otherwise stop** — commit, push and merge nothing — and report exactly:
+
+   > No guide for `<ID>` in `5-wiki/guides/` and no `## Personal guide`
+   > comment saying none is needed. Run `nerd4rent:nerd-personal-docs <ID>`
+   > first, then run the close-out again.
 
 ## Step 1 — Commit leftover changes (skip if clean)
 
@@ -151,7 +182,8 @@ merge already closed is closed again without error.
 
 ## Report
 
-Confirm briefly what happened: the guide path (or why none was written),
+Confirm briefly what happened: the guide check (the guide path, the
+not-needed reason, or the missing vault),
 committed (or clean), pushed, merged,
 now on `<base>`, issue `<ID>` moved to done. If any step stopped early, report
 which one and why. Either way, end with the issue link from `issue.url`, in
@@ -162,8 +194,8 @@ the shape *Asking the human to move a phase* in
 
 - `nerd4rent:issue-workflow` — the status-driven workflow whose close-out
   phase delegates here.
-- `nerd4rent:nerd-personal-docs` — Step 0: the user's guide in nerdbrain,
-  written before the merge.
+- `nerd4rent:nerd-personal-docs` — writes the guide Step 0 checks; the
+  caller runs it before this skill, on the session model.
 - `nerd4rent:issue-start` — the mirror chain at the other end of the issue:
   branch, start commit, push, draft PR/MR.
 - `nerd4rent:determine-platform` — records the platform this skill reads.

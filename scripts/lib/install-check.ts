@@ -40,3 +40,39 @@ export function findStaleSkillCopies(entries: SkillEntry[], currentNames: string
   }
   return findings;
 }
+
+export type Finding = VersionDrift | StaleSkillCopy;
+export type Runtime = "claude" | "cursor";
+
+const REPEAT_INSTRUCTION =
+  "Repeat the following warning to the user verbatim in your first reply, before anything else:";
+
+function updateRemedy(runtime: Runtime, pluginRoot: string): string {
+  if (runtime === "claude") {
+    return "run /plugin marketplace update nerd4rent-claude-plugin, then /plugin update nerd4rent@nerd4rent-claude-plugin, then restart";
+  }
+  if (pluginRoot.includes("/.cursor/plugins/local/")) {
+    return `run git -C ${pluginRoot} pull --ff-only, then Reload Window`;
+  }
+  return "run agent plugin marketplace remove nerd4rent-claude-plugin, then agent plugin marketplace add nerd4rent/nerd4rent-claude-plugin, then reinstall the nerd4rent card in Customize";
+}
+
+function describe(finding: Finding, runtime: Runtime, pluginRoot: string): string {
+  if (finding.kind === "version-drift") {
+    return `nerd4rent plugin ${finding.installed} is installed, main is ${finding.main}: ${updateRemedy(runtime, pluginRoot)}`;
+  }
+  return `stale copy of the nerd4rent skill ${finding.name} at ${finding.path}: remove it, the plugin ships the current version`;
+}
+
+export function renderHookOutput(findings: Finding[], runtime: Runtime, pluginRoot: string): string {
+  if (findings.length === 0) return "";
+  const warning = findings.map((finding) => describe(finding, runtime, pluginRoot)).join("\n");
+  const context = `${REPEAT_INSTRUCTION}\n${warning}`;
+  if (runtime === "claude") {
+    return JSON.stringify({
+      systemMessage: warning,
+      hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: context },
+    });
+  }
+  return JSON.stringify({ additional_context: context });
+}

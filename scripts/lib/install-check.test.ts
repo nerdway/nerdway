@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { detectVersionDrift, findStaleSkillCopies } from "./install-check.ts";
+import { detectVersionDrift, findStaleSkillCopies, renderHookOutput } from "./install-check.ts";
 
 const CURRENT_SKILLS = ["issue-workflow", "nerdbrain-wiki", "tdd"];
 
@@ -56,4 +56,43 @@ test("findStaleSkillCopies ignores unrelated skills and files without a frontmat
     { path: "/home/u/.claude/skills/broken", text: "no frontmatter here, nerdbrain mentioned" },
   ];
   assert.deepEqual(findStaleSkillCopies(entries, CURRENT_SKILLS), []);
+});
+
+const DRIFT = { kind: "version-drift", installed: "0.45.0", main: "0.51.0" } as const;
+const COPY = { kind: "stale-skill-copy", path: "/home/u/.agents/skills/linear-issue-workflow", name: "linear-issue-workflow" } as const;
+
+test("renderHookOutput wraps a version drift in the Claude Code SessionStart envelope with the update commands", () => {
+  const out = JSON.parse(renderHookOutput([DRIFT], "claude", "/home/u/.claude/plugins/cache/nerd4rent-claude-plugin/nerd4rent/0.45.0"));
+  assert.equal(out.hookSpecificOutput.hookEventName, "SessionStart");
+  assert.match(out.systemMessage, /nerd4rent plugin 0\.45\.0 is installed, main is 0\.51\.0/);
+  assert.match(out.systemMessage, /\/plugin marketplace update nerd4rent-claude-plugin/);
+  assert.match(out.systemMessage, /\/plugin update nerd4rent@nerd4rent-claude-plugin/);
+  assert.match(out.hookSpecificOutput.additionalContext, /^Repeat the following warning to the user verbatim in your first reply/);
+  assert.ok(out.hookSpecificOutput.additionalContext.includes(out.systemMessage));
+});
+
+test("renderHookOutput tells a Cursor local clone to fast-forward itself", () => {
+  const out = JSON.parse(renderHookOutput([DRIFT], "cursor", "/home/u/.cursor/plugins/local/nerd4rent"));
+  assert.equal(Object.keys(out).join(","), "additional_context");
+  assert.match(out.additional_context, /^Repeat the following warning to the user verbatim in your first reply/);
+  assert.match(out.additional_context, /git -C \/home\/u\/\.cursor\/plugins\/local\/nerd4rent pull --ff-only/);
+});
+
+test("renderHookOutput tells a Cursor marketplace install to re-add the marketplace and reinstall the card", () => {
+  const out = JSON.parse(renderHookOutput([DRIFT], "cursor", "/home/u/.cursor/plugins/cache/nerd4rent/abc"));
+  assert.match(out.additional_context, /agent plugin marketplace remove nerd4rent-claude-plugin/);
+  assert.match(out.additional_context, /agent plugin marketplace add nerd4rent\/nerd4rent-claude-plugin/);
+  assert.match(out.additional_context, /Customize/);
+});
+
+test("renderHookOutput names a stale copy by path and asks to remove it, one line per finding", () => {
+  const out = JSON.parse(renderHookOutput([DRIFT, COPY], "claude", "/plugin"));
+  const lines = out.systemMessage.split("\n");
+  assert.equal(lines.length, 2);
+  assert.match(lines[1], /^stale copy of the nerd4rent skill linear-issue-workflow at \/home\/u\/\.agents\/skills\/linear-issue-workflow: remove it/);
+});
+
+test("renderHookOutput prints nothing when there is nothing to report", () => {
+  assert.equal(renderHookOutput([], "claude", "/plugin"), "");
+  assert.equal(renderHookOutput([], "cursor", "/plugin"), "");
 });

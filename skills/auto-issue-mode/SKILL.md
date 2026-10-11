@@ -122,6 +122,11 @@ number that proves it — before dispatching the next.
    the assumption is reported. Run the repo's tests and validators
    **before** touching code (baseline) and after; commit atomically per the
    repo's conventions (`CLAUDE.md`, `CONTEXT.md`, the entity page); push.
+   Tests or validators red after the implementation, with no cause the
+   subagent can name, go through `nerd4rent:debug` (`issue: <ID>`) before the
+   run declares its red-tests stop: the stop fires only after the skill's
+   three failed fixes, and its report of hypotheses and evidence is the stop
+   report.
    A file outside the plan's Affected Files may be changed without asking —
    the run's consent covers it (an exemption on `no-change-outside-plan`) —
    but first post an `issue.comment` that extends the plan with the file and
@@ -194,7 +199,8 @@ Stop the run, never force it, when:
 - the spec turns out wrong and would have to change — a spec change needs
   the user's acceptance, which the run cannot ask for;
 - a criterion stays `fail` after stage 3 and its subagent could not fix it;
-- tests are red after stage 4 and its subagent could not fix them;
+- tests are red after stage 3 or stage 4 and `nerd4rent:debug`, run by the
+  stage's subagent, stopped after three failed fixes;
 - the merge has a conflict or a branch policy blocks it;
 - a permission or classifier denial blocks a tool a stage needs;
 - the phase read back is unknown.
@@ -219,6 +225,8 @@ checkpoint line stage 6 wrote (or why none was).
   and 5.
 - `nerd4rent:plan-context-fanout` — optional context island for stage 2.
 - `nerd4rent:tdd` — the implementation loop of stage 3 under `mode: TDD`.
+- `nerd4rent:debug` — the cause-finding loop stage 3 runs on red tests before
+  the red-tests stop condition fires.
 - `nerd4rent:nerdbrain-wiki` — the write path of stage 6, checkpoint included.
 - `nerd4rent:issue-next-step` — may start a run at entry B for an issue ID
   once the user picks the autonomous mode in chat.

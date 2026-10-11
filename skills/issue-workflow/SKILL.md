@@ -280,6 +280,12 @@ against. Choose `no tests` only with a reason and the nearest runnable check
 that stands in for a test — a change with no behaviour to drive, such as pure
 prose. The user approves the mode together with the plan; step 5 reads it.
 
+An issue labelled **Bug** (the label is in the `issue.read` JSON) is planned
+around `nerd4rent:debug`: the first implementation step is its feedback loop
+(one command, already run, red on this bug), the regression test for the
+confirmed cause is the first red of `tdd`, and the fix comes after both. The
+plan says so in Implementation Steps; the test approach stays `TDD`.
+
 `plan-template.md` and `session-summary-template.md` are **generated** from the
 `ImplementationPlan` and `SessionSummary` schemas in `workflow-graph.json`
 (`node scripts/render-templates.ts`); change a section by editing the schema, not
@@ -615,6 +621,8 @@ session's last push.
   here, never enters this workflow by itself.
 - `nerd4rent:tdd` — the implementation loop step 5 hands off to under
   `mode: TDD`.
+- `nerd4rent:debug` — the cause-finding loop an issue labelled Bug is planned
+  around (step 1); `tdd` hands an unexplained red to it during implementation.
 - `nerd4rent:grill` — the grilling session of step 1a (`issue: <ID>`); its
   confirmed outcome feeds the spec refinement and the plan.
 - `gitlab-to-linear` / `simgit` — GitLab → Linear import (separate flow).

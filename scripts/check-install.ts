@@ -64,11 +64,17 @@ async function mainVersion(): Promise<string | null> {
   if (cached !== null) return cached;
 
   const fetched = await fetchMainVersion(fetch);
-  if (fetched !== null) {
-    mkdirSync(dirname(cacheFile), { recursive: true });
-    writeFileSync(cacheFile, cacheEntry(fetched, now));
-  }
+  if (fetched !== null) rememberMainVersion(cacheFile, fetched, now);
   return fetched;
+}
+
+function rememberMainVersion(cacheFile: string, version: string, now: number): void {
+  try {
+    mkdirSync(dirname(cacheFile), { recursive: true });
+    writeFileSync(cacheFile, cacheEntry(version, now));
+  } catch {
+    return;
+  }
 }
 
 function skillDirs(project: string): string[] {

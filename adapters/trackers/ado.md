@@ -119,6 +119,7 @@ it.
 | `issue.create-branch` | the create-branch recipe below | from the current checkout, which the caller has already put on `<base>`; stops when `<branchName>` exists locally or on `origin` |
 | `issue.resolve-from-branch` | the loop below | prints `#<n>`, nothing when the branch carries no work item of `<PROJECT>` |
 | `issue.list-active` | the active-list recipe below | work items of `<PROJECT>` whose phase is `todo`, `in-progress` or `in-review` |
+| `issue.list-open` | the open-list recipe below | every open work item of `<PROJECT>`, Backlog included, with its phase; a value the map does not hold is phase unknown and that item is dropped |
 | `issue.create` | the create recipe below | a `<TYPE>` work item with a markdown description on `<TEAM>`'s area; under `native` run `issue.set-status` with `backlog` afterwards unless the new item already reads as `backlog` |
 | `issue.create-child` | the create recipe below with the parent link | `<PARENT-n>` must be a work item of `<PROJECT>` (read it first); create the parent first |
 | `issue.update-description` | the update-description recipe below | replaces the whole description and keeps it markdown |
@@ -227,6 +228,17 @@ Under `label` the `WHERE` reads `[System.TeamProject] = '<PROJECT>' AND
 the items whose phase (`issue.read-status`) is one of the three. Under
 `comment` it reads `[System.TeamProject] = '<PROJECT>' AND
 [System.WorkItemType] = '<TYPE>'`, with the same phase filter.
+
+Open-list recipe for `issue.list-open` — the active-list recipe with the
+`backlog` value added, in the order the query returns. Under `native` the
+`IN` list reads `('<map.backlog>', '<map.todo>', '<map.in-progress>',
+'<map.in-review>')`; a column the map does not hold is phase unknown and
+never matches. Under `label` and under `comment` the `WHERE` is the one of
+the active-list recipe's `comment` branch, `[System.TeamProject] =
+'<PROJECT>' AND [System.WorkItemType] = '<TYPE>'`, since a `backlog` item
+carries no tag to search for; then keep the items whose phase
+(`issue.read-status`) is `backlog`, `todo`, `in-progress` or `in-review`,
+which drops the completed ones.
 
 Create recipe for `issue.create` and `issue.create-child`. `<TEAM>`'s
 default area puts the item on its board; with no `ado.team` drop the

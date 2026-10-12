@@ -66,7 +66,7 @@ Pick the first matching row. The table mirrors the dispatch table of
 | `in-progress` | branch or PR/MR present | continue implementation |
 | `in-review` | any | review |
 | `done` | open PR/MR | close-out |
-| `done` | PR/MR merged, or none | nothing left — report and end, no handoff |
+| `done` | PR/MR merged, or none | the open issues `issue.read-relations` returns (parent, siblings, links; run on the issue, then on its parent) — list them as the next step and end, no handoff; with none, report that and end |
 | unknown | — | stop condition |
 
 Print one compact block: the phase (raw value and canonical phase), the

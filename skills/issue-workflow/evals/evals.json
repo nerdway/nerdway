@@ -1,0 +1,21 @@
+{
+  "skill_name": "issue-workflow",
+  "evals": [
+    {
+      "id": "one-comment-holds-one-does-not",
+      "prompt": "The issue is in review. The diff adds a review-thread step: it reads threads with pr.review-comments, checks each against the diff, fixes only a comment that holds, replies with pr.review-reply from review-reply-template.md, and leaves the thread open. The step does not say what happens when the list is empty. Two review threads are open on that diff.\n\nThread A: \"When the list is empty the step should say there were no review comments and stop.\"\n\nThread B: \"Resolve each thread after the reply.\"\n\nThe reply operation has no resolve flag. Resolving a thread is out of scope.",
+      "expected_output": "Thread A holds, so the step gains an empty-list stop and that fix is pushed. Thread B does not hold, so it changes no code. Both threads get one reply from the template, in the comment's language, with no work-item id and no tool name, and both stay open.",
+      "files": [],
+      "assertions": [
+        "The agent reads the threads with pr.review-comments",
+        "The agent checks each thread against the diff before changing code",
+        "Thread A is fixed in the code because the comment holds",
+        "Thread B changes no code",
+        "Each thread gets one pr.review-reply taken from review-reply-template.md",
+        "Neither reply names a work item, a tracker, an assistant or a plugin",
+        "Neither reply starts with a status marker",
+        "Neither thread is resolved"
+      ]
+    }
+  ]
+}

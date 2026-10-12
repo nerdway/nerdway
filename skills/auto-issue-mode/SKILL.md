@@ -142,8 +142,11 @@ number that proves it — before dispatching the next.
    acceptance criteria **and** the plan comment, repo standards
    (`CONTEXT.md` `## Standards`, the no-comments rule), correctness and
    regressions, security. Fix every real defect with its own commit, re-run the
-   tests, push, then run `pr.mark-ready` (skipped when the adapter lists `—`).
-   Report: findings with their fixes, final test results.
+   tests, push. Then answer review threads the way `issue-workflow`'s
+   **Review threads on the PR/MR** section does. Re-run the tests after that
+   step. A failing suite stops the stage. Only then run `pr.mark-ready`
+   (skipped when the adapter lists `—`).
+   Report: findings with their fixes, the threads answered, final test results.
 5. **Close-out.** First run `nerd4rent:nerd-personal-docs` with the ID and
    platform: this subagent runs on the session model, so the guide is not
    written on `issue-close`'s Haiku. It writes or updates the user's guide in

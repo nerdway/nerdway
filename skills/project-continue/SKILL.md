@@ -15,7 +15,8 @@ description: >-
 
 One conversational pass: **read → verify → report → (ask) → write**. The
 checkpoint lives on the entity page, so this skill works offline against the
-vault and only reaches the tracker for the status check and the active-issue list.
+vault and only reaches the tracker for the status check, the open-issue list and
+the relations behind the suggested next step.
 The write, when it happens, goes through the `nerdbrain-wiki` procedure
 (section mode *Prepend, capped*, `updated:` bump, `log.md` line) — never
 through ad-hoc file surgery.
@@ -23,10 +24,12 @@ through ad-hoc file surgery.
 ## Platform and adapters
 
 Tracker commands live in an adapter file at the plugin root, never in this
-skill. This skill only reads, through three operations of the tracker adapter:
-`issue.read-status` (status of the checkpointed issue),
-`issue.list-active` (active issues of the project) and `issue.url` (the link
-of the hinted issue):
+skill. This skill only reads, through five operations of the tracker adapter:
+`issue.read-status` (status of the checkpointed issue), `issue.list-open`
+(every open issue of the project, Backlog included), `issue.read-relations`
+(parent, siblings and links behind the suggested next step),
+`issue.resolve-from-branch` (the issue of the checked-out branch, Step 5) and
+`issue.url` (the link of the hinted issue):
 
 ```
 ${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
@@ -150,14 +153,26 @@ Print one compact block, always in this shape:
    ahead-behind count).
 3. **Tracker** — "in sync" or `recorded X, now Y` (phases, with the raw values
    when they differ from the phase names).
-4. **Active issues** — the project's `todo / in-progress / in-review` list from
-   `issue.list-active` (identifiers from the platform config), so the
-   user sees the whole board, not only the checkpointed issue.
-5. **One hint line** — *type `<ID>` to resume it with `issue-workflow`*,
-   naming the checkpointed issue (or the single `in-progress` one when the
-   checkpoint is stale), followed by its link from `issue.url`. The hint is all this skill does about the workflow:
-   it never dispatches into it, since the status-driven flow has its own
-   gates.
+4. **Open issues** — the full list from `issue.list-open` (identifiers from
+   the platform config), grouped by phase in the order `in-progress`,
+   `in-review`, `todo`, `backlog`, each group in the order the tracker
+   returned it. Every open issue is printed, Backlog included, with no cap:
+   the user sees all the work that is still open, not only the board.
+5. **Suggested next** — one line, always printed, naming one open issue and
+   the reason in one sentence:
+   - an issue is `in-progress` → that issue, reason "already in progress"
+     (with several, the checkpointed one);
+   - none is → the first open issue a signal picks, trying the signals in
+     this order: a parent, sibling or linked issue of the checkpointed issue
+     (`issue.read-relations` on it, then on its parent); an issue whose
+     `blocked by` relations are all `done`; an issue whose title or
+     description names the part of the repo the last commits touched
+     (`git log --stat -5`); else the first open issue in the phase order of
+     section 4. The reason names the signal that fired.
+6. **One hint line** — *type `<ID>` to resume it with `issue-workflow`*,
+   naming the suggested issue, followed by its link from `issue.url`. The
+   hint and the suggestion are all this skill does about the workflow: it
+   never dispatches into it, since the status-driven flow has its own gates.
 
 **No drift** (git in sync, tracker in sync): the report is the whole result.
 Do not write anything — the checkpoint is still true.
@@ -173,7 +188,7 @@ the "next" line before writing if they want to.
 
 Establish the state from the two sources the checkpoint would have summarised:
 
-Run `issue.list-active`, then:
+Run `issue.list-open`, then:
 
 ```bash
 git status --short
@@ -181,8 +196,13 @@ git branch --show-current
 git log --oneline -5
 ```
 
-Show the result in the Step 4 shape (sections 4 and 5, plus the git state),
-then — page present, vault reachable — record the first checkpoint without
+Show the result in the Step 4 shape (sections 4 to 6, plus the git state).
+**Open issues** is the same grouped list; **Suggested next** follows the same
+rules, with the issue of the checked-out branch (`issue.resolve-from-branch`)
+as the anchor of the relations signal in place of the checkpointed issue, and
+without one the signals start at `blocked by`, so the fallback is the first
+open issue in phase order.
+Then — page present, vault reachable — record the first checkpoint without
 asking: the section was empty, so there is nothing to overwrite and the entry
 only captures what was just shown. Pick the issue for the entry in this order:
 the issue whose branch is checked out (ID from
@@ -218,7 +238,9 @@ If the page has `## Decisions` and `## Active context` but no
   for search) — no Obsidian/Linear MCP, no Local REST API, no git against the
   vault (ADR-0001, user rules / `AGENTS.md` / `~/.claude/CLAUDE.md`).
 - **The tracker is read-only here.** Status changes belong to the user on the tracker,
-  or to `issue-workflow` / `issue-close`.
+  or to `issue-workflow` / `issue-close`. The *Suggested next* line is a
+  suggestion with a printed reason, never a dispatch: this skill does not
+  enter `issue-workflow` for the suggested issue either.
 - **The injected page stays authoritative** for stack, commands and
   conventions; this skill narrows the "is it current?" question to one
   section and one entry.

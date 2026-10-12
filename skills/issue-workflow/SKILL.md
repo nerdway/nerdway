@@ -585,11 +585,16 @@ nerdbrain entity page, following `nerdbrain-wiki`'s **Prepend, capped** mode
 (entry format, cap of 10, `updated:` bump, `log.md` line live there):
 
 ```
-- YYYY-MM-DD — <ID> · <phase after the session> · <branch> @ <git rev-parse --short HEAD> — next: <first item of next steps, one line, English>
+- YYYY-MM-DD — <ID> · <phase after the session> · <branch> @ <git rev-parse --short HEAD> — next: <one line, English>
 ```
 
-It is the same logical wiki write as any other entity-page update from this
-session, so bump `updated:` once and add one log line. Skip it silently when
+The `next` line takes the first source that yields something: the first item
+of the summary's own next steps (remaining work on this issue); else an open
+issue related to this one through `issue.read-relations` (parent, sibling,
+link), run on the issue and then on its parent; else the first other open
+issue `issue.list-open` returns, Backlog included (ID and title); else
+`none`. It is the same logical wiki write as any other entity-page update
+from this session, so bump `updated:` once and add one log line. Skip it silently when
 the vault is unreachable (`tier=none`) or the project has no entity page —
 the tracker comment already holds the full summary. This entry is what
 `project-continue` reads back when the user asks "where were we" on this or
@@ -600,7 +605,7 @@ session's last push.
 
 - When the platform config carries the tracker identifiers (`linear.team` /
   `linear.project`, from `## Platform` or the entity page's `platform:` or
-  legacy `linear:`), query active work with `issue.list-active` instead of
+  legacy `linear:`), query open work with `issue.list-open` instead of
   re-asking the user.
 - When recording a decision on the entity page (nerdbrain write trigger),
   link it to the issue ID, e.g. `2026-05-05 — chose JWT (LIN-123)`.

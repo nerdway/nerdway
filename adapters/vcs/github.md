@@ -30,6 +30,8 @@ Used only when no platform config exists: read `git remote get-url origin`.
 | `pr.create-draft` | `gh pr create --draft --title "<ID>: <title>" --body "<body>"` | body per `## Magic words`; prints the PR URL |
 | `pr.view` | `gh pr view --json title,body,baseRefName` | the PR's stated intent; read-only |
 | `pr.diff` | `gh pr diff` | the PR's diff; read-only |
+| `pr.review-comments` | `gh api --paginate repos/<owner>/<repo>/pulls/<n>/comments` | review threads of the current PR; `<n>` from `gh pr view --json number --jq .number`. A thread id is `id` where `in_reply_to_id` is null; a reply's `in_reply_to_id` is that id. Author `user.login`, text `body`, place `path` and `line` (`line` is null when the diff moved). Issue comments are a different endpoint and are absent here. Read-only. Proven 2026-10-12 on PR 78 of this repo |
+| `pr.review-reply` | `gh api --method POST repos/<owner>/<repo>/pulls/<n>/comments/<id>/replies -f body="<text>"` | `<id>` is the thread id: the top-level review comment, not a reply. Does not resolve the thread. Proven 2026-10-12 on PR 78 of this repo |
 | `pr.list-merged` | `gh pr list --state merged --limit 5` | the last merged PRs; read-only |
 | `pr.view-base` | `gh pr view --json baseRefName,isDraft` | read **before** merging: `baseRefName` is the branch to switch to afterwards |
 | `pr.mark-ready` | `gh pr ready` | only when `isDraft` is `true` |

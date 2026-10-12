@@ -215,7 +215,7 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 ### `project-continue` - pick up where you left off
 
 - **Say:** *"where were we"*, *"continue"*, *"gdzie jesteśmy"*, *"na czym stanęliśmy"* - after switching to a project, on this machine or another one.
-- **What happens:** the agent reads the newest checkpoint from the project's nerdbrain entity page, checks it against git and the tracker (a commit never pushed, a branch gone, rewritten history, work done after the checkpoint), and reports the state, any drift and the project's active issues, ending with the issue ID to type to resume. It records a new checkpoint only after you agree, and never starts work on an issue by itself.
+- **What happens:** the agent reads the newest checkpoint from the project's nerdbrain entity page, checks it against git and the tracker (a commit never pushed, a branch gone, rewritten history, work done after the checkpoint), and reports the state and any drift, then all open issues of the project grouped by phase (in progress, in review, todo, backlog), the Backlog included, so a full Backlog never reads as "nothing to do". A "Suggested next" line names one issue with the reason in a sentence: the one already in progress, else an issue related to the checkpointed one, unblocked, or touching the same part of the repo. The report ends with the issue ID to type to resume. It records a new checkpoint only after you agree, and never starts work on an issue by itself, the suggested one included.
 
 ### `tdd` - test first
 

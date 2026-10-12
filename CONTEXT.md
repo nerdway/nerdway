@@ -237,6 +237,22 @@ a tracker's own state name; it reads the phase through the status strategy.
 Only the human moves an issue to `in-progress`.
 _Avoid_: status, state (both name what the tracker shows, not the phase)
 
+**Active issue**:
+An issue on the board: canonical phase `todo`, `in-progress` or `in-review`.
+What `issue.list-active` returns; the list every consumer read before
+`issue.list-open` existed, and so was blind to the Backlog.
+_Avoid_: open issue (wider: it includes the Backlog)
+
+**Open issue**:
+An issue in any mapped canonical phase but `done`: `backlog`, `todo`,
+`in-progress` or `in-review`. What `issue.list-open` returns and what every
+"what next" answer (`project-continue`, the checkpoint `next` line, the
+`done` row of `issue-next-step`) reads, so the Backlog is never reported as
+"nothing to do". A state the status map does not hold is phase unknown, not
+open.
+_Avoid_: active issue (narrower: the board only), backlog item (one phase of
+four)
+
 **Status strategy**:
 How a tracker shows a canonical phase: `native` (its own state field),
 `label` (one label per phase plus open/closed), or `comment` (the newest

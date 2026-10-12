@@ -175,8 +175,11 @@ number that proves it — before dispatching the next.
      missing, `git rev-parse --short HEAD` on the base branch gives it), so
      `project-continue` reads this entry back without drift. `next` is the
      first follow-up the run's reports name (stage 3 and 4 decisions, gotchas,
-     remaining work); else the first issue `issue.list-active` returns other
-     than the run's own issue (ID and title); else `none`.
+     remaining work); else an open issue related to the run's own issue
+     through `issue.read-relations` (parent, sibling, link), run on the issue
+     and then on its parent; else the first issue `issue.list-open` returns
+     other than the run's own issue, Backlog included (ID and title); else
+     `none`.
 
    The whole stage, checkpoint included, is skipped when the vault is
    unreachable (`tier=none`, directory missing); the checkpoint alone is

@@ -74,6 +74,7 @@
         "issue.create-branch",
         "issue.resolve-from-branch",
         "issue.list-active",
+        "issue.list-open",
         "issue.create",
         "issue.create-child",
         "issue.update-description",

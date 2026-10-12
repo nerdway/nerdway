@@ -538,6 +538,26 @@ not applied, and the session summary records it with the technical reason.
 consent — a review on every issue means a prompt on every issue. Silence it
 with "don't ask again" (per workflow, per project).
 
+## Review threads on the PR/MR
+
+After the island (or its sequential fallback) has finished, on the same diff
+range, answer the review threads people and bots left. The island agents stay
+read-only; this step runs in the main session.
+
+1. Run `pr.review-comments`. An empty list ends the step: say that there were
+   no review comments. Otherwise group rows that share a thread id into one
+   thread. A reply row points at the thread id; reply once per thread, not
+   once per row.
+2. Check each thread against the diff (`pr.diff`; where that operation is `—`,
+   `git diff` over the same range). A comment that holds gets a fix. Re-run
+   the tests and push that fix on the PR branch only when they pass. A comment
+   that does not hold changes no code.
+3. Reply to every thread with `pr.review-reply`, in the comment's language,
+   posting only the paragraph from `review-reply-template.md`. The same text
+   goes on a client repository and on this one: no work-item id, no tracker
+   name, no assistant name, no plugin name. The first line is not `Status:`.
+4. Leave the thread open. Do not resolve it.
+
 ## Close-out (on user request, or phase `done` set manually)
 
 Only when the user asks to close/merge (or set `done` manually with the PR still

@@ -107,6 +107,7 @@ resolves to nothing: stop and ask the user for the ID — never guess it.
 | `issue.create-branch` | the create-branch recipe below | from the current checkout, which the caller has already put on `<base>`; stops when `<branchName>` exists locally or on `origin` |
 | `issue.resolve-from-branch` | the loop below | prints `#<n>`, nothing when the branch carries no issue number |
 | `issue.list-active` | the active-list recipe below | open issues in `<CODE_PROJECT>` whose phase is `todo`, `in-progress` or `in-review` |
+| `issue.list-open` | the open-list recipe below | every open issue in `<CODE_PROJECT>`, Backlog included, with its phase; a value the map does not hold is phase unknown and that issue is dropped |
 | `issue.create` | `glab issue create -R <HOST>/<CODE_PROJECT> --title "<title>" --description-file body.md --yes` | add `--label '<map.backlog>'` only under `label` with a label (not `open`) mapped to `backlog` **and** present in `label.list`; `<ID>` = `#` + the last segment of the printed URL |
 | `issue.create-child` | `glab issue view <PARENT-n> -R <HOST>/<CODE_PROJECT> --output json` (must succeed), then `glab issue create -R <HOST>/<CODE_PROJECT> --title "<title>" --description-file body.md --linked-issues <PARENT-n> --link-type relates_to --yes` | `body.md` starts with the line `Parent: #<PARENT-n>`, then a blank line; same `--label` rule as `issue.create`; create the parent first |
 | `issue.update-description` | `glab issue update <n> -R <REPO> --description-file body.md` | replaces the whole description; keep a child's `Parent:` first line |
@@ -179,6 +180,21 @@ glab api --hostname <HOST> "projects/<ENC>/issues?state=opened&per_page=100" --p
 Under `comment` drop the `select`, then keep the issues whose phase
 (`issue.read-status`) is `todo`, `in-progress` or `in-review`. `<ENC>` here
 is `<CODE_PROJECT>` encoded.
+
+Open-list recipe for `issue.list-open` under `label` — the same call without
+the label `select`, in tracker order:
+
+```bash
+glab api --hostname <HOST> "projects/<ENC>/issues?state=opened&per_page=100" --paginate \
+  | jq '[.[] | {iid, title, labels, web_url}]'
+```
+
+The phase of each issue is read as the `label` row of `## Status strategies`
+does: the mapped name among `labels`, none → `open`, which is `backlog` under
+the default map; a value the map does not hold (such as `open` under a map
+that binds `backlog` to a label) is phase unknown and that issue is dropped.
+Under `comment` keep the issues whose phase (`issue.read-status`) is
+`backlog`, `todo`, `in-progress` or `in-review`.
 
 ## URL
 

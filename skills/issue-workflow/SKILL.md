@@ -549,8 +549,9 @@ read-only; this step runs in the main session.
    thread. A reply row points at the thread id; reply once per thread, not
    once per row.
 2. Check each thread against the diff (`pr.diff`; where that operation is `—`,
-   `git diff` over the same range). A comment that holds gets a fix, committed
-   and pushed on the PR branch. A comment that does not hold changes no code.
+   `git diff` over the same range). A comment that holds gets a fix. Re-run
+   the tests and push that fix on the PR branch only when they pass. A comment
+   that does not hold changes no code.
 3. Reply to every thread with `pr.review-reply`, in the comment's language,
    posting only the paragraph from `review-reply-template.md`. The same text
    goes on a client repository and on this one: no work-item id, no tracker

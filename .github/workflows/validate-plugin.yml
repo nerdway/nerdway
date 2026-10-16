@@ -23,7 +23,7 @@ jobs:
       - name: No em dash in documentation for humans
         run: node scripts/validate-human-docs.ts
       - name: Test suite
-        run: node --test 'scripts/**/*.test.ts'
+        run: node --test 'scripts/**/*.test.ts' 'hooks/*.test.ts'
       - name: Workflow contract and adapters
         run: node scripts/validate-workflow-graph.ts
       - name: Skill evals shape

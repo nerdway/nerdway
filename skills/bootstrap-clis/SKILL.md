@@ -59,7 +59,8 @@ a browser. Print the command and stop.
 Never edit `cli-dependencies.json` to make a run pass. A failing entry is a
 finding, not an obstacle.
 
-Adding an entry requires naming a skill under `skills/` in `requiredBy`; the
-validator rejects anything else. Run
+Adding an entry requires naming, in `requiredBy`, either a directory under
+`skills/` or an existing `hooks/*.ts` file. The validator rejects any other
+name. Run
 `node <resolved-path-to>/scripts/validate-cli-dependencies.ts` (same
 resolution as above) after editing the contract.

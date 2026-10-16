@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
@@ -103,6 +104,17 @@ test("reports every problem rather than stopping at the first", () => {
 
 test("rejects a non-object payload", () => {
   assert.equal(validateContract(null, skillDirs).length, 1);
+});
+
+test("the node entry keeps 24.0.0 and names both cursor hooks", () => {
+  const contract = JSON.parse(readFileSync(new URL("../../cli-dependencies.json", import.meta.url), "utf8")) as {
+    clis: Array<{ id: string; minVersion: string; requiredBy: string[] }>;
+  };
+  const node = contract.clis.find((item) => item.id === "node");
+  assert.ok(node);
+  assert.equal(node.minVersion, "24.0.0");
+  assert.equal(node.requiredBy.includes("hooks/deny-vault-mcp.ts"), true);
+  assert.equal(node.requiredBy.includes("hooks/session-start.ts"), true);
 });
 
 test("rejects a malformed versionRegex", () => {

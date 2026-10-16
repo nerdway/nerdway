@@ -29,13 +29,15 @@ server-side `gitRef` on the Cursor account.
 
 SessionStart is a **separate script per runtime**. Claude Code stays on
 `~/.claude/hooks/nerdbrain-load.sh` (`hookSpecificOutput.SessionStart`).
-The plugin ships `hooks/session-start.sh` that prints
+The plugin ships `hooks/session-start.ts`, invoked as
+`node ./hooks/session-start.ts`, which prints
 `{ "additional_context": "…" }` for Cursor. Both implement the same
 lazy-sections contract (whitelist, 8192-byte budget, slug, kill-switch,
 no-op inside the vault). They do not share a file: the JSON I/O contracts
 differ. Vault-MCP deny (`beforeMCPExecution` / `preToolUse`, `failClosed`)
-lives next to the Cursor hook, in `hooks/cursor.hooks.json`. Hook commands
-are relative to the plugin root, so the file's name does not change them.
+lives next to the Cursor hook, in `hooks/cursor.hooks.json`, as
+`node ./hooks/deny-vault-mcp.ts`. Hook commands are relative to the plugin
+root and start with `node` (DEMO-394).
 
 ## Correction (DEMO-364)
 
@@ -73,11 +75,12 @@ updated in the same change.
 The plugin now ships one Claude Code hook: `hooks/hooks.json`, in Claude
 Code's own format (a `hooks` object keyed by PascalCase event names), with a
 `SessionStart` entry on `startup|resume|clear` that runs
-`hooks/check-install.sh claude`. The same script, as
-`hooks/check-install.sh cursor`, is the second `sessionStart` entry of
-`hooks/cursor.hooks.json`. Both are thin wrappers around
-`node scripts/check-install.ts --runtime <claude|cursor>`; the detection
-itself is pure functions in `scripts/lib/install-check.ts` under `node:test`.
+`hooks/check-install.sh claude`. That wrapper locates the plugin from its
+own path, exits silently when `node` is not on `PATH`, and runs
+`node scripts/check-install.ts --runtime claude`. Cursor's second
+`sessionStart` entry calls `node ./scripts/check-install.ts --runtime cursor`
+directly (DEMO-394). The detection itself is pure functions in
+`scripts/lib/install-check.ts` under `node:test`.
 
 The check answers two questions before a session works on the skills: is
 the installed plugin older than `main` (the raw `.claude-plugin/plugin.json`
@@ -118,6 +121,25 @@ sync: it rejected unknown hook events in DEMO-364, and a `SessionStart` entry
 in Claude Code's format has not been through it before 0.55.0. If it fails,
 0.55.1 drops `hooks/hooks.json` and Claude Code falls back to a step in
 `project-continue`.
+
+## Cursor hook commands start with node (DEMO-394)
+
+Cursor has one command string for every operating system. A command that is
+only a path to a `.sh` file is opened by the system shell. On Windows that
+shell resolves `.sh` through the file association: Git Bash opens a window
+whose stdio is not connected to Cursor, a hidden `wscript` launcher drops
+stdin and stdout, and `bash` on `PATH` is WSL. The hook then prints nothing.
+With `failClosed: true` every tool is denied.
+
+A command that starts with an interpreter never consults that association.
+`hooks/cursor.hooks.json` calls `node ./hooks/session-start.ts`,
+`node ./hooks/deny-vault-mcp.ts`, and
+`node ./scripts/check-install.ts --runtime cursor`. `hooks/check-install.sh`
+stays for Claude Code. The TypeScript files use only the Node standard
+library and syntax Node 24 runs without a build (type stripping). `node`
+comes from `PATH`. There is no absolute path and no search: a Cursor
+process started from the Dock may not have `node`, and that stays a manual
+check on macOS.
 
 ## Repo `CLAUDE.md` and `## Platform` in Cursor (DEMO-366)
 

@@ -17,7 +17,11 @@ const skillDirs = readdirSync(join(repoRoot, "skills"), { withFileTypes: true })
   .filter((item) => item.isDirectory())
   .map((item) => item.name);
 
-const contractErrors = validateContract(raw, skillDirs);
+const hookPaths = readdirSync(join(repoRoot, "hooks"), { withFileTypes: true })
+  .filter((item) => item.isFile() && item.name.endsWith(".ts"))
+  .map((item) => `hooks/${item.name}`);
+
+const contractErrors = validateContract(raw, skillDirs, hookPaths);
 if (contractErrors.length > 0) {
   console.error("cli-dependencies.json is invalid:");
   for (const error of contractErrors) console.error(`  - ${error}`);

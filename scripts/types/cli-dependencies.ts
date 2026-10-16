@@ -52,7 +52,7 @@ function validateStrategy(id: string, key: string, strategy: unknown, errors: st
   if (typeof s.binary !== "string") errors.push(`${id}: install.${key} needs a binary path inside the archive`);
 }
 
-function validateEntry(raw: unknown, skillDirs: string[], seen: Set<string>, errors: string[]): void {
+function validateEntry(raw: unknown, skillDirs: string[], hookPaths: string[], seen: Set<string>, errors: string[]): void {
   if (typeof raw !== "object" || raw === null) {
     errors.push("each clis entry must be an object");
     return;
@@ -82,8 +82,9 @@ function validateEntry(raw: unknown, skillDirs: string[], seen: Set<string>, err
   if (!isStringArray(e.requiredBy) || e.requiredBy.length === 0) {
     errors.push(`${id}: requiredBy must name at least one skill`);
   } else {
-    for (const skill of e.requiredBy) {
-      if (!skillDirs.includes(skill)) errors.push(`${id}: requiredBy names ${skill}, which is not a directory under skills/`);
+    for (const name of e.requiredBy) {
+      if (skillDirs.includes(name) || hookPaths.includes(name)) continue;
+      errors.push(`${id}: requiredBy names ${name}, which is not a directory under skills/ or an allowed hook path`);
     }
   }
   if (e.npm !== undefined && (typeof e.npm !== "string" || e.npm.length === 0)) {
@@ -115,14 +116,14 @@ function validateEntry(raw: unknown, skillDirs: string[], seen: Set<string>, err
   }
 }
 
-export function validateContract(raw: unknown, skillDirs: string[]): string[] {
+export function validateContract(raw: unknown, skillDirs: string[], hookPaths: string[] = []): string[] {
   const errors: string[] = [];
   if (typeof raw !== "object" || raw === null || !Array.isArray((raw as Record<string, unknown>).clis)) {
     return ["contract must be an object with a clis array"];
   }
   const seen = new Set<string>();
   for (const entry of (raw as CliContract).clis) {
-    validateEntry(entry, skillDirs, seen, errors);
+    validateEntry(entry, skillDirs, hookPaths, seen, errors);
   }
   return errors;
 }

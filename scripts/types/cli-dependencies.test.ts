@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
@@ -24,6 +25,27 @@ test("rejects a requiredBy naming no existing skill directory", () => {
   const errors = validateContract({ clis: [entry({ requiredBy: ["ghost-skill"] })] }, skillDirs);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /ghost-skill/);
+});
+
+test("accepts a requiredBy naming a hook path from the allowed list", () => {
+  const errors = validateContract(
+    { clis: [entry({ requiredBy: ["hooks/deny-vault-mcp.ts"] })] },
+    skillDirs,
+    ["hooks/deny-vault-mcp.ts"],
+  );
+  assert.deepEqual(errors, []);
+});
+
+test("rejects a hook path outside the allowed list and names both kinds of reference", () => {
+  const errors = validateContract(
+    { clis: [entry({ requiredBy: ["hooks/other.ts"] })] },
+    skillDirs,
+    ["hooks/deny-vault-mcp.ts"],
+  );
+  assert.equal(errors.length, 1);
+  assert.ok(errors[0].includes("hooks/other.ts"));
+  assert.ok(errors[0].includes("directory under skills/"));
+  assert.ok(errors[0].includes("allowed hook path"));
 });
 
 test("rejects an empty requiredBy", () => {
@@ -82,6 +104,17 @@ test("reports every problem rather than stopping at the first", () => {
 
 test("rejects a non-object payload", () => {
   assert.equal(validateContract(null, skillDirs).length, 1);
+});
+
+test("the node entry keeps 24.0.0 and names both cursor hooks", () => {
+  const contract = JSON.parse(readFileSync(new URL("../../cli-dependencies.json", import.meta.url), "utf8")) as {
+    clis: Array<{ id: string; minVersion: string; requiredBy: string[] }>;
+  };
+  const node = contract.clis.find((item) => item.id === "node");
+  assert.ok(node);
+  assert.equal(node.minVersion, "24.0.0");
+  assert.equal(node.requiredBy.includes("hooks/deny-vault-mcp.ts"), true);
+  assert.equal(node.requiredBy.includes("hooks/session-start.ts"), true);
 });
 
 test("rejects a malformed versionRegex", () => {

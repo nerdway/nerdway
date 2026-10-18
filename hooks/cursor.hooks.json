@@ -3,21 +3,21 @@
   "hooks": {
     "sessionStart": [
       {
-        "command": "./hooks/session-start.sh"
+        "command": "node ./hooks/session-start.ts"
       },
       {
-        "command": "./hooks/check-install.sh cursor"
+        "command": "node ./scripts/check-install.ts --runtime cursor"
       }
     ],
     "beforeMCPExecution": [
       {
-        "command": "./hooks/deny-vault-mcp.sh",
+        "command": "node ./hooks/deny-vault-mcp.ts",
         "failClosed": true
       }
     ],
     "preToolUse": [
       {
-        "command": "./hooks/deny-vault-mcp.sh",
+        "command": "node ./hooks/deny-vault-mcp.ts",
         "failClosed": true
       }
     ]

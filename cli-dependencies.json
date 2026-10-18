@@ -1,12 +1,12 @@
 {
-  "_comment": "CLIs required by skills in this repo. Every entry must name a skill under skills/ in requiredBy; scripts/validate-cli-dependencies.ts enforces it.",
+  "_comment": "CLIs required by skills and Cursor hooks in this repo. Every entry must name a skill under skills/ or an allowed hook file in requiredBy; scripts/validate-cli-dependencies.ts enforces it.",
   "clis": [
     {
       "id": "node",
       "minVersion": "24.0.0",
       "versionCommand": ["node", "--version"],
       "versionRegex": "v(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["bootstrap-clis", "bind-statuses", "issue-start", "issue-workflow"],
+      "requiredBy": ["bootstrap-clis", "bind-statuses", "issue-start", "issue-workflow", "hooks/deny-vault-mcp.ts", "hooks/session-start.ts"],
       "manualInstall": "Install Node.js >= 24 (with npm) before running this script; it is a prerequisite, not a target. https://nodejs.org"
     },
     {

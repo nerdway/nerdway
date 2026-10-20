@@ -1,5 +1,5 @@
 {
-  "description": "Warns when the installed nerd4rent plugin is older than main or stale copies of its skills sit in user skill directories",
+  "description": "Warns when the installed nerd4rent plugin is older than main or stale copies of its skills sit in user skill directories; reminds about the issue and blocks git commit and git push on a branch without an issue ID in repos with a ## Platform section",
   "hooks": {
     "SessionStart": [
       {
@@ -9,6 +9,36 @@
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/check-install.sh\" claude",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/require-issue.ts\" --runtime claude --event reminder",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/require-issue.ts\" --runtime claude --event gate",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Bash(git push *)",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/require-issue.ts\" --runtime claude --event gate",
+            "timeout": 5
           }
         ]
       }

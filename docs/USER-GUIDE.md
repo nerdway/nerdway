@@ -107,6 +107,14 @@ Neither Claude Code nor Cursor says when a newer version of a third-party plugin
 
 When everything is current the check prints nothing. The version of `main` is fetched from GitHub at most once a day and the check stays silent when the network is unavailable (this includes `claude.ai/code`, which blocks that host), so an offline session is never slowed down or warned by mistake. The check needs `node` in the session's PATH; without it, it exits silently.
 
+### No commit without an issue
+
+Every piece of work starts with an issue. In a repo whose `CLAUDE.md` has a `## Platform` section with a tracker, the plugin reminds the agent of that when work starts (on every prompt in Claude Code, at session start in Cursor), and it refuses `git commit` and `git push` on a branch whose name carries no issue ID. On Linear that means the team key and a number anywhere in the branch name (`demo-123-...`); on GitHub Issues, GitLab Issues and Azure DevOps Boards a branch that starts with the issue number (`123-...`). The branches `issue-start` creates always pass. A commit whose message names the issue (`DEMO-123`, `#123`) passes too.
+
+Questions, reading code and edits are never blocked, and the plugin asks the tracker nothing: it only looks at the branch name and the command. A repo without a `## Platform` section is not checked at all. To work without an issue on purpose, start the agent with `NERD4RENT_NO_ISSUE=1` in its environment (for example `NERD4RENT_NO_ISSUE=1 claude`); the agent cannot set it for itself. If the check itself breaks (no `node`, a timeout), the commit goes through.
+
+Agents that do not run the plugin's hooks get the same rule from the `issue-workflow` and `auto-issue-mode` skills: the first step is the issue and its number, before any work.
+
 ## Telling the plugin which platform a project uses
 
 Before the first issue, the plugin needs to know where the project's issues live (Linear, GitHub Issues, GitLab Issues or Azure DevOps Boards) and where its code lives (GitHub, GitLab or Azure DevOps). Run `/determine-platform` once per repo - or just file an issue and `issue-writer` runs it for you.
@@ -254,5 +262,6 @@ These maintain a personal Obsidian vault with one entity page per project - the 
 - **`linearis` errors about authentication**: set `LINEAR_API_TOKEN` or run `linearis auth login` (see [Requirements](../README.md#requirements)).
 - **`/plugin update` says nothing changed**: run `/plugin marketplace update nerd4rent-claude-plugin` first; if it still reports no change, no new version has been released yet.
 - **The session opens with "nerd4rent plugin X is installed, main is Y" or "stale copy of the nerd4rent skill"**: see [The plugin tells you when it is out of date](#the-plugin-tells-you-when-it-is-out-of-date); follow the fix the line ends with.
+- **`nerd4rent blocked git commit` (or `git push`)**: the branch has no issue ID; see [No commit without an issue](#no-commit-without-an-issue). Create or pick the issue and work on its branch, or restart the agent with `NERD4RENT_NO_ISSUE=1` when the work really has no issue.
 - **A skill doesn't trigger**: invoke it explicitly with the slash form, e.g. `/issue-workflow DEMO-123` or `/nerd4rent:issue-workflow DEMO-123`.
 - **The plan or review runs sequentially and slowly**: dynamic workflows are unavailable or disabled; see [Installation](#installation). The result is the same, only slower.

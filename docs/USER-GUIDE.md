@@ -166,6 +166,17 @@ Only you can move an issue to **In Progress** - the agent never does it by itsel
 
 The table uses Linear's default names. On GitHub Issues and GitLab Issues the same steps are labels: **Backlog** is an open issue with no status label, then `status::todo`, `status::in-progress`, `status::in-review`, and **Done** is a closed issue - so merging the PR or MR with `Fixes #123` finishes it. On Azure DevOps Boards the steps are the columns of your team's board - `New`, `Todo`, `Active`, `In Review`, `Closed` by default - and `/bind-statuses` offers to add the columns your board lacks; you steer by dragging the card, and completing the PR with `Fixes #123` moves it to Closed. Under the hood the agent works with five phases and reads them through the project's status strategy, so the same steering works with labels (`status::in-progress`) or with a comment whose first line is `Status: in-progress` - whatever `/bind-statuses` recorded. A status the map doesn't know (say, *Canceled*) makes the agent report it and do nothing.
 
+### An issue that is Done with no work behind it
+
+`project-continue`, `issue-next-step`, `issue-workflow` and `auto-issue-mode` check every Done issue they read against the history of the default branch: the PR title, the start commit, `Fixes <ID>`, or the merge of the issue's branch. An issue with none of these was closed by mistake. The agent warns you and offers to file a bug through `issue-writer`, related to that issue and marked as a bug (the `Bug` label on Linear, `bug` on GitHub and GitLab, the `Bug` tag on Azure DevOps). It never settles for a comment and never moves the issue back to the Backlog: the issue stays closed as a record, and the bug carries the work still to do. You decide on it after reading the draft.
+
+A parent issue is checked through its children. When you close an issue on purpose with no code in this repo (a duplicate, a decision, work done in another repo), add a comment starting with these two lines, and the check skips it:
+
+```
+## No code in this repo
+Reason: duplicate of DEMO-213
+```
+
 ## Skills reference
 
 How to trigger each skill and what to expect. All of them also respond to `/<skill-name>` and `/nerd4rent:<skill-name>`.
@@ -208,7 +219,7 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 ### `issue-next-step` - take the next step
 
 - **Say:** *"what's next for DEMO-123"*, *"co dalej z DEMO-123"*, *"następny krok"*, or `/nerd4rent:issue-next-step DEMO-123`.
-- **What happens:** the agent reads the issue's status and what already exists for it - the plan comment, the branch, the PR, recent commits - and names one next step: plan, implement, review, or close out. It then asks one question: continue step by step with `issue-workflow`, run it autonomously with `auto-issue-mode`, or stop. When the next step is implementation and the issue isn't In Progress yet, choosing to continue moves it there; saying no writes nothing. Whatever you pick starts right away with the same issue ID.
+- **What happens:** the agent reads the issue's status and what already exists for it - the plan comment, the branch, the PR, recent commits - and names one next step: plan, implement, review, or close out. It then asks one question: continue step by step with `issue-workflow`, run it autonomously with `auto-issue-mode`, or stop. When the next step is implementation and the issue isn't In Progress yet, choosing to continue moves it there; saying no writes nothing. For a Done issue with no work on the default branch the next step is a bug report instead (see above). Whatever you pick starts right away with the same issue ID.
 
 ### `new-project-workflow` - bootstrap a project
 
@@ -223,7 +234,7 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 ### `project-continue` - pick up where you left off
 
 - **Say:** *"where were we"*, *"continue"*, *"gdzie jesteśmy"*, *"na czym stanęliśmy"* - after switching to a project, on this machine or another one.
-- **What happens:** the agent reads the newest checkpoint from the project's nerdbrain entity page, checks it against git and the tracker (a commit never pushed, a branch gone, rewritten history, work done after the checkpoint), and reports the state and any drift, then all open issues of the project grouped by phase (in progress, in review, todo, backlog), the Backlog included, so a full Backlog never reads as "nothing to do". A "Suggested next" line names one issue with the reason in a sentence: the one already in progress, else an issue related to the checkpointed one, unblocked, or touching the same part of the repo. The report ends with the issue ID to type to resume. It records a new checkpoint only after you agree, and never starts work on an issue by itself, the suggested one included.
+- **What happens:** the agent reads the newest checkpoint from the project's nerdbrain entity page, checks it against git and the tracker (a commit never pushed, a branch gone, rewritten history, work done after the checkpoint), and reports the state and any drift, then all open issues of the project grouped by phase (in progress, in review, todo, backlog), the Backlog included, so a full Backlog never reads as "nothing to do". A "Suggested next" line names one issue with the reason in a sentence: the one already in progress, else an issue related to the checkpointed one, unblocked, or touching the same part of the repo. The report ends with the issue ID to type to resume. A Done issue with no work on the default branch gets a warning and the offer of a bug. It records a new checkpoint only after you agree, and never starts work on an issue by itself, the suggested one included.
 
 ### `tdd` - test first
 

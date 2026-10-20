@@ -32,7 +32,7 @@ Check the `## Platform` config of this repo and the default status map of every 
 node scripts/validate-platform-config.ts
 ```
 
-Check the evals of every skill that has them:
+Check the evals of every skill that has them. The check reads `skills/*/evals/evals.json` and reports a missing or mistyped field, a `skill_name` that differs from the skill's directory and an `id` used twice; it runs no model:
 
 ```bash
 node scripts/validate-evals.ts
@@ -57,6 +57,24 @@ node scripts/render-templates.ts
 ```
 
 CI runs the test suite and every check in this section on every pull request and every push to `main`, together with the release guards below. `render-templates.ts` is the exception: it is a generator, not a check, and the test suite already fails when a template drifts from the contract.
+
+## Running the evals
+
+The checks above only look at the shape of the eval files. To see whether the skills actually behave as the cases say, run them through Claude Code's eval runner, `claude plugin eval`. It needs Claude Code 2.1.269 or newer with plugin evals enabled (an early-access feature), and it runs on your own login: every case is a real Claude Code session plus a few judge calls, billed to your plan or API account like any other session.
+
+`evals.json` stays the only place the cases are written. `scripts/run-evals.ts` converts them into the runner's format in a temporary `eval-cases/<timestamp>/` directory, starts `claude plugin eval` on the repository root and deletes the directory afterwards. Each eval becomes one case: the prompt as written, one judge grader per assertion, one for the expected output, and a check that the skill was invoked. The sessions get only Read, Glob, Grep and Skill. With no shell and no MCP tools they cannot reach the tracker or the VCS host, so a case states its facts in the prompt and the graders judge the steps and the decision the answer describes.
+
+Run the evals of one skill, three runs per case (the runner's default), keeping the report local:
+
+```bash
+node scripts/run-evals.ts --skill issue-close --no-publish
+```
+
+`--skill` can be repeated; without it every skill with an `evals.json` runs. Every other option goes to `claude plugin eval` unchanged, for example `--runs 1`, `--max-cost-usd 5`, `--case 'issue-close--merge-*'`, `--model`, `--judge-model` or `--json results.json`. Granting Bash or an MCP tool (`--allow-tools Bash`, `--allow-tools 'mcp__*'`), `--mocks off`, `--allow-real-servers`, `--scaffold` and `--eval-dir` are refused, because they would let a run reach real services or bypass the converter. `--dry-run` writes the cases and prints the command without running anything; `--keep-cases` keeps the converted cases after the run so you can read them.
+
+Mind the cost before a full run. By default every case runs three times with the plugin and three times without it, to measure what the plugin adds, and each judge grader votes three times on every run. With about 25 cases in the three core skills that is around 150 sessions. `--runs 1` and `--ablation none` (no run without the plugin) cut that to about 25, and `--max-cost-usd` stops the run when the estimated cost reaches the ceiling: it then exits with code 2 and keeps the partial results. The first run in a directory asks whether you trust it; answer yes, or pass `--trust-plugin` when nobody can answer.
+
+Results go to `results/<timestamp>/`: `aggregate-result.json` with the score of every case, its cost, and the Claude Code version, and `report.html` with every grader's verdict and the judge's explanation. Both `results/` and `eval-cases/` are ignored by git. A case passes when its score reaches `--threshold` (1.0 by default), so the command exits 1 as soon as one case scores below it. Read the report rather than the exit code alone. CI does not run the evals, since they need a login and cost money.
 
 ## Releasing
 

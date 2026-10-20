@@ -98,6 +98,7 @@ Run `issue.read` and `issue.read-status`, then dispatch on the phase:
 | `in-progress`, no comment starting with `## Implementation plan` | stage 2 (plan) — stage 1 first when the issue has no branch or PR/MR yet |
 | `in-progress`, plan comment present | stage 3 (implementation) |
 | `in-review` | stage 4 (review) |
+| `done`, no PR/MR, no trace of work | stop condition: the warning and the bug proposal of *A done issue without a trace of work* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`; the run creates no bug itself |
 | `done` | stage 5 (close-out) as verification: an open PR/MR is merged, an already merged one is only confirmed |
 | unknown | stop condition |
 
@@ -225,7 +226,8 @@ Stop the run, never force it, when:
   stage's subagent, stopped after three failed fixes;
 - the merge has a conflict or a branch policy blocks it;
 - a permission or classifier denial blocks a tool a stage needs;
-- the phase read back is unknown.
+- the phase read back is unknown, or `done` with no PR/MR and no trace of
+  work (entry B).
 
 On a stop, report what is done, what is pending, the exact error, and how to
 resume: fix the cause, then run `/nerd4rent:auto-issue-mode <ID>` — entry B

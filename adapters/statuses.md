@@ -132,3 +132,57 @@ for `in-progress` never lets the agent write it (the gate below).
 change, a label, or a marker comment — and read by the agent at the start of
 every turn. The agent writes `in-progress` itself only when the user says so
 in chat, and then only to record that instruction.
+
+## A done issue without a trace of work
+
+An issue read back as `done` should have left work on the default
+branch. When it has not, it was closed by mistake, and that is a bug in the
+process, not a note for the issue thread.
+
+**Detection.** After `git fetch`, search the history of the default branch
+for the forms the workflow writes, with `<ID>` as the tracker adapter's
+`## Issue ID` gives it:
+
+```bash
+git log origin/<default> --oneline -i -E \
+  --grep '^<ID>:' \
+  --grep '^Rozpoczęcie prac nad <ID>([^0-9]|$)' \
+  --grep 'Fixes <ID>([^0-9]|$)' \
+  --grep '\(<ID>\)'
+git log origin/<default> --oneline -F --grep '<branch>'
+```
+
+The first command finds the PR/MR title (`<ID>: <title>`, kept in the merge
+commit), the start commit, the `Fixes <ID>` line a squash merge keeps from
+the PR/MR body, and a subject ending in `(<ID>)`. For `#<n>` IDs drop the
+last pattern: GitHub appends `(#<PR>)` to squash-merged subjects, and PRs
+share the issue numbers. The second finds the merge
+commit of the issue's branch, `<branch>` from `issue.read-branch`. A bare
+mention of the ID does not count: another issue's PR title naming it (a bug
+about it, say) would hide the incident.
+
+No hit from either command is a done issue without a trace of work. A parent
+issue carries no work of its own: skip it and check its children
+(`issue.read-relations`).
+
+**Exception.** An issue closed on purpose with no code in this repo (a
+duplicate, a decision, a spike, work done in another repo) carries a comment
+whose first line is `## No code in this repo` and whose second line is
+`Reason: <why>`, found in the comments `issue.read` returns. With that comment
+the issue counts as done; nothing is reported. The human writes it when
+closing such an issue.
+
+**Consequence.** Every skill that reads issues (`project-continue`,
+`issue-next-step`, the `issue-workflow` dispatch, a backlog review) does the
+same:
+
+1. warn in its report: the issue, the phase it is in, and that no commit on
+   the default branch carries it;
+2. propose a bug through `issue-writer`: what was found and how, the issue
+   link, the expected state (work merged, or the exception comment), and a
+   `related` relation to the issue (`issue.relate`), marked as a bug per the
+   tracker adapter's `## Bugs`.
+
+A comment on the faulty issue alone is never enough, and the skill never
+moves the faulty issue's phase back: that is the human's call, made after
+reading the bug.

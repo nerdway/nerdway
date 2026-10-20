@@ -69,8 +69,9 @@ candidate resolves, stop and ask the user for the ID — never guess it.
 | `issue.update-description` | `linearis issues update <ID> --description "$(cat body.md)"` | replaces the whole description |
 | `issue.set-status` | the write recipe of the resolved strategy in `## Status strategies` | writes a canonical phase; never `in-progress` on the agent's own initiative |
 | `issue.comment` | `linearis issues discuss <ID> --body "$(cat body.md)"` | markdown body |
+| `issue.relate` | `linearis issues update <ID> --relates-to <OTHER-ID>` | adds a `related` relation between two existing issues; Linear shows it on both |
 | `status.list` | — | `linearis` has no state-listing command; a wrong state name fails loudly on write |
-| `label.list` | `linearis labels list --team <KEY> --limit 250 --fields nodes.name` | the team's own labels |
+| `label.list` | `linearis labels list --team <KEY> --limit 250 --fields nodes.name`, then `linearis labels list --scope workspace --limit 250 --fields nodes.name` | the union of both lists: the team's own labels and the workspace labels every team shares. `--team` alone filters on the team and hides the workspace labels, so a workspace `Bug` looked missing on 2026-10-10 |
 | `label.create` | `linearis labels create "<name>" --team <KEY>` | team-scoped label; only with the user's consent |
 
 `issue.resolve-from-branch`:
@@ -120,3 +121,10 @@ the map.
 | `native` | `linearis issues read <ID> --fields identifier,title,state.name` — the value is `state.name`; exits non-zero for an ID that does not exist | `linearis issues update <ID> --status '<value>'` |
 | `label` | — | — |
 | `comment` | `linearis issues read <ID> --with-comments --fields identifier,title,comments.nodes.createdAt,comments.nodes.body` — sort by `createdAt`, take the newest body whose first line is `Status: <value>` | `linearis issues discuss <ID> --body "Status: <value>"` |
+
+## Bugs
+
+A bug is an issue with the label `Bug`. Look for it in `label.list`, which
+also returns the workspace labels; when it is there, `issue.create` gets
+`--labels Bug`. When it is missing, ask before running `label.create` for
+it, as for any other label.

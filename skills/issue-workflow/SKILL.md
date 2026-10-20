@@ -154,6 +154,7 @@ marker is in those comments), then:
 | `in-progress` | **Implementation** — rebuild context from the description (the spec), the `## Implementation plan` comment and later comments (`## Spec change`, plan extensions); if branch/PR missing, run the Start step first |
 | `in-review` | **Code review** — present the code-review menu with the issue link (`issue.url`) |
 | `done` (set manually, PR unmerged) | **Close-out** — the user's guide (`nerd-personal-docs`), then push, merge PR, ask about switching to main/master |
+| `done`, no PR, no trace of work | **Warning and bug proposal** — the rule *A done issue without a trace of work* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`: report it with the issue link (`issue.url`), offer to draft the bug with `nerd4rent:issue-writer`, and stop; never a comment alone, never a phase change |
 | unknown | report the raw value read from the tracker with the issue link (`issue.url`) and stop |
 
 This table also governs a bare issue ID typed into a **fresh session**: check

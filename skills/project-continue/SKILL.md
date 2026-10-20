@@ -24,8 +24,10 @@ through ad-hoc file surgery.
 ## Platform and adapters
 
 Tracker commands live in an adapter file at the plugin root, never in this
-skill. This skill only reads, through five operations of the tracker adapter:
-`issue.read-status` (status of the checkpointed issue), `issue.list-open`
+skill. This skill only reads, through seven operations of the tracker adapter:
+`issue.read-status` (status of the checkpointed issue), `issue.read` and
+`issue.read-branch` (the comments and branch name of a `done` issue, Step 3),
+`issue.list-open`
 (every open issue of the project, Backlog included), `issue.read-relations`
 (parent, siblings and links behind the suggested next step),
 `issue.resolve-from-branch` (the issue of the checked-out branch, Step 5) and
@@ -142,6 +144,15 @@ issue moved to `in-review` or `done` while the checkpoint still says
 value the map does not hold is reported as "phase unknown", never as
 a match.
 
+When the checkpointed issue reads back as `done`, check it for a trace of
+work: the `git log` search of the default branch and the
+`## No code in this repo` comment, as *A done issue without a trace of work*
+in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` describes (`issue.read-branch`
+for the branch name, `issue.read` for the comments). Do the same for every
+`done` issue `issue.read-relations` returns in Step 4. No hit and no such
+comment is a **done issue without a trace of work**, reported in Step 4
+whether or not the checkpoint drifted.
+
 ## Step 4 — Report
 
 Print one compact block, always in this shape:
@@ -152,7 +163,9 @@ Print one compact block, always in this shape:
    `git log` lines, the default-branch ancestry result, the local/remote
    ahead-behind count).
 3. **Tracker** — "in sync" or `recorded X, now Y` (phases, with the raw values
-   when they differ from the phase names).
+   when they differ from the phase names), then one warning line per done
+   issue without a trace of work: the ID, its phase, "no commit on
+   `<default branch>` mentions it", and its link from `issue.url`.
 4. **Open issues** — the full list from `issue.list-open` (identifiers from
    the platform config), grouped by phase in the order `in-progress`,
    `in-review`, `todo`, `backlog`, each group in the order the tracker
@@ -174,7 +187,8 @@ Print one compact block, always in this shape:
    hint and the suggestion are all this skill does about the workflow: it
    never dispatches into it, since the status-driven flow has its own gates.
 
-**No drift** (git in sync, tracker in sync): the report is the whole result.
+**No drift** (git in sync, tracker in sync, no done issue without a trace of
+work): the report is the whole result.
 Do not write anything — the checkpoint is still true.
 
 **Drift** in any check: after the report, ask **one question**:
@@ -183,6 +197,14 @@ Do not write anything — the checkpoint is still true.
 Without an explicit yes, **nothing is written**. On yes, write via
 `nerdbrain-wiki` (Step 6) with the current values, and let the user correct
 the "next" line before writing if they want to.
+
+**A done issue without a trace of work**: the question after the report also
+offers, as its own numbered option, to draft a bug for each such issue with
+`nerd4rent:issue-writer` (the incident, the issue link, a `related` relation
+through `issue.relate`, the marking from the tracker adapter's `## Bugs`).
+The skill never offers a comment on the faulty issue in its place, nor a
+change of its phase. On yes, invoke `issue-writer` through the `Skill` tool;
+its own approval gate decides what gets created.
 
 ## Step 5 — No checkpoint
 
@@ -238,7 +260,8 @@ If the page has `## Decisions` and `## Active context` but no
   for search) — no Obsidian/Linear MCP, no Local REST API, no git against the
   vault (ADR-0001, user rules / `AGENTS.md` / `~/.claude/CLAUDE.md`).
 - **The tracker is read-only here.** Status changes belong to the user on the tracker,
-  or to `issue-workflow` / `issue-close`. The *Suggested next* line is a
+  or to `issue-workflow` / `issue-close`; a bug for a done issue without a
+  trace of work is created by `issue-writer`, after its own approval. The *Suggested next* line is a
   suggestion with a printed reason, never a dispatch: this skill does not
   enter `issue-workflow` for the suggested issue either.
 - **The injected page stays authoritative** for stack, commands and
@@ -254,5 +277,7 @@ If the page has `## Decisions` and `## Active context` but no
   issue ID from the report to enter it.
 - `nerd4rent:nerdbrain-search` — `rg` recipes if the page has to be found by
   content rather than by slug.
+- `nerd4rent:issue-writer` — drafts the bug for a done issue without a trace
+  of work, after the user picks that option.
 - `nerd4rent:issue-next-step` — takes the issue ID this report hints at,
   names its next step and hands off to the flow the user picks.

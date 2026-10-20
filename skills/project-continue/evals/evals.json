@@ -1,0 +1,45 @@
+{
+  "skill_name": "project-continue",
+  "evals": [
+    {
+      "id": "done-without-commits",
+      "prompt": "Gdzie jesteśmy? The newest checkpoint on the entity page reads: \"- 2026-10-08 — DEMO-380 · in-progress · demo-380-native-practice-skills @ 4f2c1aa — next: write the debug skill\". Git: the branch demo-380-native-practice-skills is gone locally and on origin, and 4f2c1aa is not on origin/main. Tracker: issue.read-status for DEMO-380 returns Done. issue.read shows no comment starting with \"## No code in this repo\". On origin/main both trace searches from adapters/statuses.md (the ID forms and the branch name) return nothing. The tracker is Linear with the native strategy and the default map.",
+      "expected_output": "The report shows the git case (branch gone, hash not on main), the tracker drift recorded in-progress, now done, and a warning line that DEMO-380 is done but no commit on main carries it, with its link. The question after the report offers, as its own option, to draft a bug with issue-writer, related to DEMO-380 and marked with the Bug label. Nothing is written without a yes; no comment is posted on DEMO-380 and its phase is not changed.",
+      "files": [],
+      "assertions": [
+        "The report has a warning line naming DEMO-380, its phase done and that no commit on the default branch carries it",
+        "The warning line carries the DEMO-380 link from issue.url",
+        "The question after the report offers drafting a bug through issue-writer as its own numbered option",
+        "The proposed bug has a related relation to DEMO-380 through issue.relate",
+        "The proposed bug is marked as the Linear adapter's ## Bugs says (the label Bug)",
+        "No comment is posted on DEMO-380",
+        "The phase of DEMO-380 is not changed",
+        "Nothing is written to the tracker or the vault before the user answers"
+      ]
+    },
+    {
+      "id": "done-with-no-code-comment",
+      "prompt": "Gdzie jesteśmy? The newest checkpoint reads: \"- 2026-10-01 — DEMO-214 · in-progress · demo-214-vault-cleanup @ 9ab01cd — next: decide on the vault layout\". Git: 9ab01cd is on origin/main, the branch is gone. Tracker: DEMO-214 is Done. issue.read shows a comment whose first line is \"## No code in this repo\" and whose second line is \"Reason: decided in the vault, nothing to change in the plugin\". The trace searches on origin/main return nothing.",
+      "expected_output": "The report shows the git case and the tracker drift (recorded in-progress, now done) and asks the usual checkpoint question. There is no warning about a done issue without a trace of work and no bug proposal, because the exception comment is present.",
+      "files": [],
+      "assertions": [
+        "The report shows the tracker drift recorded in-progress, now done",
+        "The report has no warning about a done issue without a trace of work for DEMO-214",
+        "No bug is proposed for DEMO-214",
+        "The checkpoint question is asked with a recommended answer"
+      ]
+    },
+    {
+      "id": "mention-in-another-pr-does-not-count",
+      "prompt": "Gdzie jesteśmy? The newest checkpoint reads: \"- 2026-10-08 — DEMO-380 · in-progress · demo-380-native-practice-skills @ 4f2c1aa — next: write the debug skill\". DEMO-380 is Done on the tracker, with no \"## No code in this repo\" comment. The only commit on origin/main that names DEMO-380 is the merge commit of another issue: \"Merge pull request #75 from nerd4rent/demo-405-demo-380-closed-without-work\" with the body \"DEMO-405: DEMO-380 closed without work\". Neither trace search from adapters/statuses.md matches it.",
+      "expected_output": "The merge commit of DEMO-405 does not count as a trace of DEMO-380: the report warns that DEMO-380 is done without a trace of work and offers the bug through issue-writer.",
+      "files": [],
+      "assertions": [
+        "The DEMO-405 merge commit is not taken as a trace of work for DEMO-380",
+        "The report warns that DEMO-380 is done without a trace of work",
+        "A bug through issue-writer is offered",
+        "No comment is posted on DEMO-380 and its phase is not changed"
+      ]
+    }
+  ]
+}

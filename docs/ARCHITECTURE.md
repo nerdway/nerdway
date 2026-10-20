@@ -116,6 +116,8 @@ Nothing here needs CI, a telemetry channel or a clock. The one candidate that di
 
 Not every skill is a node. Like `bootstrap-clis`, the `project-continue` skill is an entry point from outside the axis: it answers "where were we" by reading the `## Checkpoints` entry that the `session-summary` → `wiki-write` edge already produces, and it asks the user before writing, which makes it conversational by nature and rules out an island. Registering it as a node would mean inventing a `dependsOn` and an edge schema for a step that consumes an existing edge's output instead of extending the axis.
 
+The user-invoked `retro` skill stays off the axis for the same reason: it reads the session, proposes candidates and hands each accepted one to `issue-writer`, so the only write it leads to is the `issue-write` node's, behind that node's own gate.
+
 The axis is an **island graph**, not one graph end to end. The Claude Code workflow runtime takes no mid-run user input, so every step that needs a human (the grilling session, the "user sets In Progress" gate, the review menu) stays in the conversational main agent, and only the wide, independent, human-free stretches become workflow islands:
 
 ```

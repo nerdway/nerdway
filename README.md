@@ -84,7 +84,7 @@ Clone the plugin into it:
 git clone https://github.com/nerd4rent/nerd4rent-claude-plugin ~/.cursor/plugins/local/nerd4rent
 ```
 
-Then run **Developer: Reload Window** and open **Customize**. The `nerd4rent` card should list the skills, the five agents, and the SessionStart and vault-MCP deny hooks. If a marketplace plugin with the same name `nerd4rent` is installed, it takes precedence over the local copy, so uninstall it first.
+Then run **Developer: Reload Window** and open **Customize**. The `nerd4rent` card should list the skills, the five agents, and the hooks: SessionStart, the vault-MCP deny, and the issue gate (sessionStart reminder and beforeShellExecution on `git commit`/`git push`). If a marketplace plugin with the same name `nerd4rent` is installed, it takes precedence over the local copy, so uninstall it first.
 
 To update the local copy later, pull and reload the window again:
 

@@ -12,7 +12,7 @@ Run the test suite (keep the glob quoted, so Node expands it rather than the she
 node --test 'scripts/**/*.test.ts' 'hooks/*.test.ts'
 ```
 
-The hook tests sit next to the Cursor hooks. They cover the deny decision, the session-start inject, and the commands in `hooks/cursor.hooks.json`.
+The hook tests sit next to the hooks. They cover the vault deny decision, the session-start inject, the issue reminder and gate of `hooks/require-issue.ts` (including runs against throwaway git repos), and the commands in `hooks/hooks.json` and `hooks/cursor.hooks.json`.
 
 Check that every edge, gate and adapter in the workflow contract is consistent:
 
@@ -70,7 +70,7 @@ The Claude Code installed version comes from `.claude-plugin/plugin.json`. Bumpi
 
 Bump the version when a change reaches what the plugin loads at runtime: skills, agents, adapters, hooks, workflows, manifests. A change limited to `docs/` or to the README changes nothing an installed plugin reads, so it ships without a bump.
 
-Claude Code must never see a Cursor file: it reads `hooks/hooks.json` and a root `plugin.json` by convention, whatever its manifest says, and the claude.ai marketplace sync rejects what the CLI only warns about ([ADR-0007](adr/0007-dual-runtime-packaging.md)). Cursor's hooks therefore live in `hooks/cursor.hooks.json`, named in `.cursor-plugin/plugin.json`, while `hooks/hooks.json` holds only Claude Code hooks in Claude Code's format; `validate-manifests.ts` rejects a Cursor-shaped file at that path and any root `plugin.json`. Each Cursor command starts with `node` ([ADR-0007](adr/0007-dual-runtime-packaging.md)): a bare `.sh` path is opened through the Windows file association, which does not connect the hook's stdin and stdout. `hooks/check-install.sh` stays the Claude Code entry. Cursor calls `node ./scripts/check-install.ts --runtime cursor` directly. The sync also checks claude.ai's upload rules, which the CLI does not, and reports a breach as a warning: the plugin description is at most 500 characters (one text in all four manifests), and a skill or agent `name` or `description` holds no `<` or `>` (write `{slug}`, not `<slug>`).
+Claude Code must never see a Cursor file: it reads `hooks/hooks.json` and a root `plugin.json` by convention, whatever its manifest says, and the claude.ai marketplace sync rejects what the CLI only warns about ([ADR-0007](adr/0007-dual-runtime-packaging.md)). Cursor's hooks therefore live in `hooks/cursor.hooks.json`, named in `.cursor-plugin/plugin.json`, while `hooks/hooks.json` holds only Claude Code hooks in Claude Code's format; `validate-manifests.ts` rejects a Cursor-shaped file at that path and any root `plugin.json`. Each Cursor command starts with `node` ([ADR-0007](adr/0007-dual-runtime-packaging.md)): a bare `.sh` path is opened through the Windows file association, which does not connect the hook's stdin and stdout. `hooks/check-install.sh` stays the Claude Code entry of the install check; the Claude Code issue hooks call `node` directly, so a missing `node` is a non-blocking hook error that lets the action through. Cursor calls `node ./scripts/check-install.ts --runtime cursor` directly. The sync also checks claude.ai's upload rules, which the CLI does not, and reports a breach as a warning: the plugin description is at most 500 characters (one text in all four manifests), and a skill or agent `name` or `description` holds no `<` or `>` (write `{slug}`, not `<slug>`).
 
 Before every release, run the five guards below. CI runs all of them on every pull request and every push to `main`.
 

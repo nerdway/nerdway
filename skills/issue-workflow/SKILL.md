@@ -17,6 +17,21 @@ description: >-
 
 # Issue workflow
 
+## First step: the issue, before the work
+
+The first step after accepting a task is an issue in the tracker, and its
+number in your reply, before any work starts. Find the issue the task belongs
+to or create it with `nerd4rent:issue-writer`, tell the user its ID, and only
+then plan, edit or run anything that changes the repo. Questions, analysis and
+reading code need no issue.
+
+This rule binds every agent that reads this skill, including bots that run no
+hooks: for them nothing else checks it. Where the plugin's hooks run (Claude
+Code, Cursor), a repo with a configured tracker gets a reminder at the start
+of work, and `git commit` and `git push` are blocked on a branch whose name
+carries no issue ID; `NERD4RENT_NO_ISSUE=1` in the agent's environment turns
+both off.
+
 ## Platform and adapters
 
 Tracker and VCS commands live in adapter files at the plugin root, never in

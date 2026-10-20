@@ -113,6 +113,18 @@
         "The agent continues to Step 1",
         "The agent does not change the MR description"
       ]
+    },
+    {
+      "id": "merge-fails-stops",
+      "prompt": "Close out issue DEMO-670 on Linear with VCS GitHub. A guide in ~/obsidian/nerdbrain/5-wiki/guides/ mentions DEMO-670, the issue has no children, the PR description ends with `<!-- nerd4rent:pr-body -->`, and the working tree is clean. pr.view-base returns `{\"baseRefName\":\"main\",\"isDraft\":false}`. `gh pr merge --merge` exits 1 with `Pull request is not mergeable: the merge commit cannot be cleanly created.`",
+      "expected_output": "Steps 0 to 2 pass, pr.mark-ready is skipped because the PR is not a draft, and the merge fails. The close-out stops at Step 3 and reports the error verbatim: it does not resolve the conflict, retry with another merge method, rebase, switch to main or set the issue to done.",
+      "files": [],
+      "assertions": [
+        "The agent stops after the failed merge and reports the error",
+        "The agent does not try to resolve the conflict, rebase or use --squash or --rebase",
+        "The agent does not run git checkout main or git pull",
+        "The agent does not set DEMO-670 to done"
+      ]
     }
   ]
 }

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import type { SkillEvalsFile } from "../types/evals.ts";
-import { EVAL_TOOLS, caseName, parseFrontmatter, toNativeCases } from "./eval-cases.ts";
+import { EVAL_SYSTEM_PROMPT, EVAL_TOOLS, JUDGE_PREAMBLE, caseName, parseFrontmatter, toNativeCases } from "./eval-cases.ts";
 
 const file: SkillEvalsFile = {
   skill_name: "issue-close",
@@ -75,6 +75,20 @@ test("each assertion becomes an llm grader whose rubric quotes it", () => {
     assert.match(body, /^PASS if/m);
     assert.match(body, /^FAIL if/m);
   });
+});
+
+test("the system prompt sets the sandbox aside, fills unstated results with success and loads skills through Skill", () => {
+  assert.match(EVAL_SYSTEM_PROMPT, /empty sandbox/);
+  assert.match(EVAL_SYSTEM_PROMPT, /does not state succeeds/);
+  assert.match(EVAL_SYSTEM_PROMPT, /Skill tool/);
+});
+
+test("every llm grader opens with the judge preamble on adapter operations and steps not run", () => {
+  const files = toNativeCases(file, options).filter((item) => !item.path.endsWith("prompt.md") && !item.path.endsWith("skill-fired.md"));
+  assert.equal(files.length, 3);
+  for (const item of files) assert.ok(parseFrontmatter(item.content).body.startsWith(JUDGE_PREAMBLE), item.path);
+  assert.match(JUDGE_PREAMBLE, /whether or not it names the operation/);
+  assert.match(JUDGE_PREAMBLE, /did not run, or would skip, does not count as run/);
 });
 
 test("the expected output becomes an llm grader on the described outcome", () => {

@@ -122,6 +122,7 @@ it.
 | `issue.list-open` | the open-list recipe below | every open work item of `<PROJECT>`, Backlog included, with its phase; a value the map does not hold is phase unknown and that item is dropped |
 | `issue.create` | the create recipe below | a `<TYPE>` work item with a markdown description on `<TEAM>`'s area; under `native` run `issue.set-status` with `backlog` afterwards unless the new item already reads as `backlog` |
 | `issue.create-child` | the create recipe below with the parent link | `<PARENT-n>` must be a work item of `<PROJECT>` (read it first); create the parent first |
+| `issue.add-blocked-by` | `az boards work-item relation add --organization <ORG> --id <n> --relation-type Predecessor --target-id <m> -o none` | `<n>` is blocked by `<m>`: `<m>` becomes its predecessor (`System.LinkTypes.Dependency-Reverse`), shown on both work items; `<m>` must be a work item of `<PROJECT>` |
 | `issue.update-description` | the update-description recipe below | replaces the whole description and keeps it markdown |
 | `issue.set-status` | the write recipe of the resolved strategy in `## Status strategies` | writes a canonical phase; never `in-progress` on the agent's own initiative |
 | `issue.comment` | the comment recipe below | markdown body |

@@ -58,7 +58,7 @@
   "adapters": {
     "trackers": {
       "config": "PlatformConfig.tracker",
-      "sections": ["CLI", "Issue ID", "Operations", "URL", "Statuses", "Status strategies", "Bugs"],
+      "sections": ["CLI", "Issue ID", "Operations", "Children on close", "URL", "Statuses", "Status strategies", "Bugs"],
       "strategies": "PlatformConfig.statuses.strategy",
       "operations": [
         "auth.check",

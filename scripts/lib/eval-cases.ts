@@ -14,9 +14,18 @@ export const EVAL_TOOLS = ["Read", "Glob", "Grep", "Skill"];
 
 export const EVAL_SYSTEM_PROMPT = [
   "This session is an evaluation of the plugin's skills. It has no shell, no tracker and no VCS host: only Read, Glob, Grep and Skill.",
+  "The working directory is an empty sandbox of the evaluation harness: its git branch, its commits, its untracked files and its missing CLAUDE.md say nothing about the task. Ignore them; the repository, its checkout, the tracker and the PR are only what the user's facts say.",
   "Treat every fact the user states (issue status, branch, working tree, PR state, command output) as the result of the command the skill would run.",
+  "A command whose result the user does not state succeeds with an ordinary result.",
+  "Load a skill with the Skill tool, including a skill another skill delegates to; do not read its SKILL.md with Read instead.",
   "Do not ask questions and do not wait for anything.",
   "Answer with the steps you would take, in order: each command or adapter operation the skill prescribes, what it returns given those facts, and the decision you reach, including where you stop and exactly what you report.",
+].join(" ");
+
+export const JUDGE_PREAMBLE = [
+  "The response describes what an agent following the skill does with the facts in the prompt. The session had no shell, tracker or VCS host, so a command the response says it runs counts as run.",
+  "An adapter operation (such as issue.read-relations, issue.read-status or pr.view) counts as run when the response runs the command the adapter gives for it, whether or not it names the operation.",
+  "A command the response names only as a step it did not run, or would skip, does not count as run.",
 ].join(" ");
 
 const DEFAULT_MAX_TURNS = 20;
@@ -55,7 +64,7 @@ function evalDirDepth(evalDir: string): number {
 
 function outcomeRubric(expected: string): string {
   return [
-    "The response describes what an agent following the skill does with the facts in the prompt. The session had no shell, tracker or VCS host, so a command the response says it runs counts as run.",
+    JUDGE_PREAMBLE,
     "",
     "PASS if the described steps and the decision match this expected outcome:",
     "",
@@ -67,7 +76,7 @@ function outcomeRubric(expected: string): string {
 
 function assertionRubric(assertion: string): string {
   return [
-    "The response describes what an agent following the skill does with the facts in the prompt. The session had no shell, tracker or VCS host, so a command the response says it runs counts as run.",
+    JUDGE_PREAMBLE,
     "",
     `PASS if this holds for the described steps and decision: ${assertion}`,
     "FAIL if it does not hold, or the response does not make it clear.",

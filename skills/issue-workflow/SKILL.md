@@ -624,7 +624,9 @@ open):
    If it stops with an error, stop and report; do not call `issue-close`.
 2. **Close.** Invoke **`nerd4rent:issue-close`** with the issue ID. Its
    Step 0 checks the guide from step 1 and stops the close-out without it;
-   its Step 0b stops it while any child of the issue is not `done`. Then it
+   its Step 0b stops it while any child of the issue is not `done`; its
+   Step 0c stops it while the PR/MR description is still the start draft
+   (write the readiness description with step 6b, then close again). Then it
    mechanically commits any leftover changes, pushes, merges the
    PR/MR (GitHub or GitLab), switches the local checkout to the PR/MR base
    branch, and sets the issue's phase to `done`. It is deliberately

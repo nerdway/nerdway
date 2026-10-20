@@ -112,7 +112,7 @@ it.
 | `project.list` | — | the project is the container, taken from the `ado` block |
 | `project.create` | — | the project is the container, taken from the `ado` block |
 | `issue.read` | `az boards work-item show --organization <ORG> --id <n> --expand all -o json` (project check in `## CLI`), then the comments recipe below | state, tags, relations, full description (`System.Description`, markdown or HTML per `multilineFieldsFormat`), then every comment |
-| `issue.read-relations` | the relations recipe below | parent, children and related work items |
+| `issue.read-relations` | the relations recipe below | parent, children, related work items and blockers |
 | `issue.read-status` | the read recipe of the resolved strategy in `## Status strategies` | the issue's canonical phase |
 | `issue.read-branch` | `az boards work-item show --organization <ORG> --id <n> --expand none --fields System.Title,System.TeamProject -o json` (project check), then the branch-name recipe below | `<ID>` = `#<n>`, `<title>` = `System.Title`, `<url>` per `## URL`, `<branchName>` |
 | `issue.url` | the recipe in `## URL` | the issue link to print for the human; built from `ado.org` and the project when no create returned `_links` |
@@ -122,6 +122,7 @@ it.
 | `issue.list-open` | the open-list recipe below | every open work item of `<PROJECT>`, Backlog included, with its phase; a value the map does not hold is phase unknown and that item is dropped |
 | `issue.create` | the create recipe below | a `<TYPE>` work item with a markdown description on `<TEAM>`'s area; under `native` run `issue.set-status` with `backlog` afterwards unless the new item already reads as `backlog` |
 | `issue.create-child` | the create recipe below with the parent link | `<PARENT-n>` must be a work item of `<PROJECT>` (read it first); create the parent first |
+| `issue.add-blocked-by` | `az boards work-item relation add --organization <ORG> --id <n> --relation-type Predecessor --target-id <m> -o none` | `<n>` is blocked by `<m>`: `<m>` becomes its predecessor (`System.LinkTypes.Dependency-Reverse`), shown on both work items; `<m>` must be a work item of `<PROJECT>` |
 | `issue.update-description` | the update-description recipe below | replaces the whole description and keeps it markdown |
 | `issue.set-status` | the write recipe of the resolved strategy in `## Status strategies` | writes a canonical phase; never `in-progress` on the agent's own initiative |
 | `issue.comment` | the comment recipe below | markdown body |
@@ -176,14 +177,14 @@ done
 ```
 
 Relations recipe for `issue.read-relations` — each linked work item with its
-role towards `<n>` (`parent`, `child`, `related`); run it again on the parent
+role towards `<n>` (`parent`, `child`, `related`, `blocked-by`, `blocks`); run it again on the parent
 to reach the siblings, and `issue.read-branch`'s `show` on an ID for its
 title:
 
 ```bash
 az boards work-item show --organization <ORG> --id <n> --expand relations -o json \
-  | jq '[.relations[]? | select(.rel | test("^System\\.LinkTypes\\.(Hierarchy-Reverse|Hierarchy-Forward|Related)$"))
-      | {role: ({"System.LinkTypes.Hierarchy-Reverse": "parent", "System.LinkTypes.Hierarchy-Forward": "child", "System.LinkTypes.Related": "related"}[.rel]),
+  | jq '[.relations[]? | select(.rel | test("^System\\.LinkTypes\\.(Hierarchy-Reverse|Hierarchy-Forward|Related|Dependency-Reverse|Dependency-Forward)$"))
+      | {role: ({"System.LinkTypes.Hierarchy-Reverse": "parent", "System.LinkTypes.Hierarchy-Forward": "child", "System.LinkTypes.Related": "related", "System.LinkTypes.Dependency-Reverse": "blocked-by", "System.LinkTypes.Dependency-Forward": "blocks"}[.rel]),
          id: (.url | split("/") | last | tonumber)}]'
 ```
 

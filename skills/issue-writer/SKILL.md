@@ -99,7 +99,7 @@ question, so the user can override it, and the size picks the path:
 |--------|------|
 | **small** — one clear deliverable, outcome already stated | the skill returns at once: **draft straight away**, minimal template (Objective + Acceptance criteria) |
 | **medium** — one piece of work with open decisions | the skill interviews in rounds; draft with the full template from its confirmed outcome |
-| **large** — plainly splits into stages | the outcome proposes the split; step 3 turns it into sub-issues |
+| **large** — plainly splits into stages | the outcome proposes the split, named as a result split or as stages in time; step 3 turns it into issues |
 
 The decisions the interview settles are the template's sections the request
 leaves open: objective, problem/context, acceptance criteria, scope (in/out),
@@ -112,17 +112,32 @@ itself is written when the issue is implemented.
 ### 3. Decide decomposition
 
 Default is a **checklist in the issue body** when the work has clear discrete steps.
-Escalate to **real sub-issues** only when the topic plainly splits into stages.
+Escalate to **separate issues** only when the topic plainly splits into parts
+of one result or into stages in time.
 
 | Situation | Action |
 |-----------|--------|
 | Clear discrete steps within one deliverable | Implementation checklist in the description (default) |
-| Topic plainly splits into stages/epics | **Propose** a parent + N child issues, each child with its own mini-template; create only after approval |
+| Topic splits into parts of one result | **Result split**: propose a parent + N child issues, each child with its own mini-template; create only after approval |
+| Topic splits into stages that follow one another in time | **Stages in time**: propose N sibling issues under one epic, each stage after the first blocked by the one before; create only after approval |
 | User explicitly asks for sub-issues | Create sub-issues even if you would have used a checklist |
 | User rejects sub-issues as too granular | Collapse the proposed children back into one issue + checklist |
 
-When proposing sub-issues, present the split as a short list (each child's title +
-one-line objective) and let the user accept, edit, or decline before any write.
+The two splits differ in what closing means. A **result split** is one
+deliverable in parts: the children together are the parent's result, and the
+parent closes once every child is done. **Stages in time** are separate
+deliverables, each shipping on its own: stage 2 starts after stage 1 is done,
+and closing stage 1 must leave stage 2 open. A stage is therefore never a
+child of the stage before it. The stages are siblings: children of a shared
+epic (the parent the user names, the parent of the issue being split, or a
+new epic issue proposed with them), else top-level issues of the project.
+The order is a `blocked by` relation from each stage to the one before.
+
+When proposing a split, name its kind first (*podział rezultatu* or *etapy w
+czasie*, in the issue's language) with the one-sentence reason, then present
+it as a short list (each issue's title + one-line objective, and for stages
+the issue it is blocked by), and let the user accept, edit, or decline before
+any write.
 
 ### 4. Draft the issue body
 
@@ -149,6 +164,12 @@ For a parent + sub-issues, create the parent first with `issue.create`,
 capture its ID (`TEAM-123`, `#123`) as the operation's notes describe, then create each child with
 `issue.create-child`, passing that ID as the parent.
 
+For stages in time, create the epic first when it is new, then each stage in
+order: under the epic with `issue.create-child`, or with `issue.create` when
+there is none. After each stage but the first, run `issue.add-blocked-by`
+with the new stage as the blocked issue and the stage before it as the
+blocker.
+
 Add labels, priority or estimate only when the user specified them — don't
 invent metadata; the adapter's `## CLI` section lists the flags and their
 quirks.
@@ -167,9 +188,13 @@ machine. Handle the confirmed outcome:
   step 2 ("`CONTEXT.md ## Language` has the term `<Term>` — check:
   `node scripts/validate-context-terms.ts`"), added to the description in
   that update;
-- the topic splits into stages → propose sub-issues (step 3 rules apply) and
-  create them with `issue.create-child` under `<ID>` **only after the user
-  approves the drafts** (hard gate above).
+- the topic splits → propose the split of the kind the outcome named (step 3
+  rules apply) and create it **only after the user approves the drafts**
+  (hard gate above): a result split as children of `<ID>` with
+  `issue.create-child`; stages in time with `<ID>` as the first stage and
+  the later stages as its siblings (under its parent with
+  `issue.create-child`, else with `issue.create`), each blocked by the one
+  before through `issue.add-blocked-by`.
 
 Skip the offer when step 2 classified the topic as small.
 

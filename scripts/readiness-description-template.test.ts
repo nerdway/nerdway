@@ -105,3 +105,12 @@ test("auto-issue-mode writes the readiness description through step 6b before pr
   assert.equal(text.includes(READINESS_MARKER), false);
   assert.doesNotMatch(text, /blast radius|## Merge risk|readiness-description-template/);
 });
+
+test("issue-close stops on the start draft through the classifier and writes no description", () => {
+  const text = read("skills/issue-close/SKILL.md");
+  const step = /## Step 0c — Readiness description check \(gate\)\n([\s\S]*?)\n## Step 1/.exec(text)?.[1] ?? "";
+  assert.match(step, /scripts\/pr-body-state\.ts/);
+  assert.match(step, /`draft` → stop — commit, push and merge nothing/);
+  assert.match(step, /`readiness`[\s\S]*or `manual`[\s\S]*go\s+to Step 1/);
+  assert.doesNotMatch(text, /pr\.edit-body|pr\.comment/);
+});

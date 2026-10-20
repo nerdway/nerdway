@@ -7,7 +7,8 @@ description: >-
   is done: check that the user's nerdbrain guide for the issue exists (the
   caller writes it first with nerd-personal-docs; without it the close-out
   stops), check that every child of the issue is done (an unfinished child
-  stops it before the merge), commit any
+  stops it before the merge), check that the PR/MR description is no longer
+  the start draft (the caller writes the readiness description first), commit any
   leftover changes, push, merge the PR (GitHub, Azure DevOps) or MR (GitLab),
   switch the local
   checkout to the PR/MR base branch, and move the issue to done. Purely
@@ -67,7 +68,8 @@ phase. A strategy whose `## Status strategies` row is `—` → stop and report
 The tracker adapter is used for one write (`issue.set-status`), the reads
 of Step 0 (`issue.read`) and Step 0b (`issue.read-relations`,
 `issue.read-status`), the issue link (`issue.url`) and, when no ID was
-passed, `issue.resolve-from-branch`.
+passed, `issue.resolve-from-branch`. Step 0c reads the PR/MR description with
+the VCS adapter's `pr.view`.
 
 ## Resolve the issue ID
 
@@ -140,6 +142,30 @@ and what the tracker does to them.
    > Finish each child or detach it from `<ID>`, then run the close-out
    > again.
 
+## Step 0c — Readiness description check (gate)
+
+This skill never writes the PR/MR description. The caller rewrites it for
+human reviewers beforehand (`issue-workflow` step 6b, `auto-issue-mode`
+stage 4); this step only checks that the description is no longer the start
+draft `issue-start` wrote.
+
+1. Pipe the output of `pr.view` through the classifier:
+
+   ```bash
+   <pr.view command> | node ${CLAUDE_PLUGIN_ROOT}/scripts/pr-body-state.ts
+   ```
+
+   It prints one word: `draft`, `readiness` or `manual`.
+2. `readiness` (the readiness description, with its marker) or `manual` (a
+   description someone wrote by hand) → note the word for the Report and go
+   to Step 1.
+3. `draft` → stop — commit, push and merge nothing, and write no phase — and
+   report exactly:
+
+   > The PR/MR description of `<ID>` is still the start draft (`Fixes <ID>`
+   > and one paragraph). Write the readiness description with
+   > `nerd4rent:issue-workflow` step 6b, then run the close-out again.
+
 ## Step 1 — Commit leftover changes (skip if clean)
 
 ```bash
@@ -208,7 +234,7 @@ merge already closed is closed again without error.
 
 Confirm briefly what happened: the guide check (the guide path, the
 not-needed reason, or the missing vault), the children check (no children,
-or how many, all done),
+or how many, all done), the description check (`readiness` or `manual`),
 committed (or clean), pushed, merged,
 now on `<base>`, issue `<ID>` moved to done. If any step stopped early, report
 which one and why. Either way, end with the issue link from `issue.url`, in

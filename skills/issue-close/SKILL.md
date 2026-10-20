@@ -95,7 +95,7 @@ it happened. Take the first case that matches:
    ```
 
    Non-zero exit → note "no nerdbrain vault on this machine, guide not
-   checked" for the Report and go to Step 1.
+   checked" for the Report and go to Step 0b.
 2. **A guide mentions the issue.** When `<ID>` has the `TEAM-123` form,
    search for it as a whole word:
 
@@ -109,11 +109,11 @@ it happened. Take the first case that matches:
    rg -l -F "<issue url>" ~/obsidian/nerdbrain/5-wiki/guides/
    ```
 
-   A listed file → note its path for the Report and go to Step 1.
+   A listed file → note its path for the Report and go to Step 0b.
 3. **The caller recorded that no guide is needed.** Run `issue.read`; a
    comment whose first line is `## Personal guide` and which holds a line
    starting with `Not needed:` → note that reason for the Report and go to
-   Step 1.
+   Step 0b.
 4. **Otherwise stop** — commit, push and merge nothing — and report exactly:
 
    > No guide for `<ID>` in `5-wiki/guides/` and no `## Personal guide`
@@ -128,10 +128,10 @@ tracker adapter's `## Children on close` section says where the children are
 and what the tracker does to them.
 
 1. Run `issue.read-relations` on `<ID>` and take its children. No children →
-   go to Step 1.
+   go to Step 0c.
 2. For each child, run `issue.read-status` and look the value up in the
    status map, and run `issue.url` for its link.
-3. Every child in phase `done` → go to Step 1.
+3. Every child in phase `done` → go to Step 0c.
 4. Otherwise stop — commit, push and merge nothing, and write no phase — and
    report exactly, one line per child that is not `done`, with its phase or
    `phase unknown` for a value the map does not hold:

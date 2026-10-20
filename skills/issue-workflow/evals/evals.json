@@ -28,6 +28,43 @@
         "The agent does not set DEMO-620 or DEMO-621 to done itself",
         "The report names DEMO-621 as the reason the close-out stopped"
       ]
+    },
+    {
+      "id": "readiness-description-replaces-start-draft",
+      "prompt": "DEMO-630 is In Progress on Linear with VCS GitHub. The implementation is committed and pushed, and every row of the Criteria verification table is pass. The PR body is still the one issue-start wrote:\n\nFixes DEMO-630\n\nAdds retry to the export job.\n\nThe repo's merged PRs are written in Polish.",
+      "expected_output": "Before offering the review, the agent writes the readiness description from readiness-description-template.md in Polish, pipes pr.view through scripts/pr-body-state.ts, gets draft, and replaces the body with pr.edit-body. The new body opens with `Fixes DEMO-630`, has the why, what changed, scope, evidence table, merge risk sections, no After merge section without steps, ends with the `<!-- nerd4rent:pr-body -->` marker, and names DEMO-630 nowhere else.",
+      "files": [],
+      "assertions": [
+        "The agent runs scripts/pr-body-state.ts on the pr.view output before writing the body",
+        "The agent replaces the body with pr.edit-body, not gh pr edit",
+        "The new body starts with `Fixes DEMO-630` and ends with `<!-- nerd4rent:pr-body -->`",
+        "The evidence section is the criteria table without tracker links",
+        "The merge risk section says whether the merge is a one-way or a two-way door and names the blast radius",
+        "DEMO-630 appears only in the Fixes line"
+      ]
+    },
+    {
+      "id": "readiness-description-keeps-manual-body",
+      "prompt": "DEMO-631 is In Progress on Linear with VCS GitHub, every criterion is pass, and a teammate rewrote the PR body by hand: it has three paragraphs about the migration and no `<!-- nerd4rent:pr-body -->` marker.",
+      "expected_output": "The classifier prints manual, so the agent leaves the PR body untouched, posts the readiness description with pr.comment, and tells the user the new version is a comment because the description was changed by hand.",
+      "files": [],
+      "assertions": [
+        "The agent does not run pr.edit-body",
+        "The agent posts the readiness description with pr.comment",
+        "The agent tells the user why the new version is a comment"
+      ]
+    },
+    {
+      "id": "readiness-description-over-ado-limit",
+      "prompt": "DEMO-632 is In Progress on Linear with VCS Azure DevOps. The PR description is still the start draft. The readiness description the agent wrote is 5200 characters long, most of it a 30-row evidence table, all rows pass.",
+      "expected_output": "The agent sees the 4000-character limit in the notes of pr.edit-body, writes the description with a shortened evidence table holding the key criteria and a line saying the full table is in a comment, replaces the description with pr.edit-body passing one argument per line, and posts the full table with pr.comment.",
+      "files": [],
+      "assertions": [
+        "The agent counts the characters of the description before pr.edit-body",
+        "The description sent with pr.edit-body is at most 4000 characters",
+        "The shortened table keeps the key criteria and says the full table is in a comment",
+        "The full table goes out with pr.comment"
+      ]
     }
   ]
 }

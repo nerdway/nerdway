@@ -66,3 +66,31 @@ test("the body carries no issue code and no tracker or assistant name", () => {
     assert.equal(text.toLowerCase().includes(name), false, name);
   }
 });
+
+function step6b(): string {
+  const text = read("skills/issue-workflow/SKILL.md");
+  const match = /### 6b\. Write the readiness description\n([\s\S]*?)\n### /.exec(text);
+  assert.ok(match, "issue-workflow has step 6b");
+  return match[1];
+}
+
+test("issue-workflow step 6b points at the template instead of copying it", () => {
+  const step = step6b();
+  assert.match(step, /readiness-description-template\.md/);
+  assert.doesNotMatch(step, /blast radius|## Merge risk/);
+});
+
+test("issue-workflow step 6b classifies the description, then edits it or comments", () => {
+  const step = step6b();
+  assert.match(step, /scripts\/pr-body-state\.ts/);
+  assert.match(step, /`draft` or `readiness` → run\s+`pr\.edit-body`/);
+  assert.match(step, /`manual` → leave the description as it is,\s+post the file with `pr\.comment`/);
+  assert.ok(step.includes(READINESS_MARKER));
+});
+
+test("issue-workflow step 6b shortens the evidence over the platform limit", () => {
+  const step = step6b();
+  assert.match(step, /limit/);
+  assert.match(step, /`fail` rows and the key criteria/);
+  assert.match(step, /full table\s+with `pr\.comment`/);
+});

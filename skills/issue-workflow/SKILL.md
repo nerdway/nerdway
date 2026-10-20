@@ -438,9 +438,46 @@ the spec (the plan's, when the spec has none) and fill the
 evidence. Any `fail` blocks the move to review — fix it, or settle a spec
 change with the user. The table goes into the session summary.
 
+### 6b. Write the readiness description
+
+With every criterion at `pass`, rewrite the PR/MR description for a human
+reviewer: the readiness description (*opis gotowości*). It is written here,
+on the session model, never in `issue-close`. What it holds — sections,
+language, the marker — is defined once in the bundled
+`readiness-description-template.md`; this step says how it reaches the PR/MR.
+
+1. **Write it to a file** from the template, the diff, the table of 6a and,
+   once a review has run, its results.
+2. **Read the state of the current description.** Pipe the output of
+   `pr.view` through the classifier:
+
+   ```bash
+   <pr.view command> | node ${CLAUDE_PLUGIN_ROOT}/scripts/pr-body-state.ts
+   ```
+
+   It prints one word: `draft` (the start draft — the magic-word lines and at
+   most one paragraph — or an empty description), `readiness` (a description
+   carrying the marker `<!-- nerd4rent:pr-body -->`), or `manual` (anything
+   else: someone changed the description by hand).
+3. **Overwrite only what the workflow wrote.** `draft` or `readiness` → run
+   `pr.edit-body` with the file. `manual` → leave the description as it is,
+   post the file with `pr.comment`, and tell the user that the new version
+   went out as a comment because the description was changed by hand.
+4. **Keep within the platform's limit.** Count the characters
+   (`wc -m < <file>`) against the limit the notes of the adapter's
+   `pr.edit-body` give (Azure DevOps: 4000). Over the limit, the description
+   keeps a shortened Evidence table — the `fail` rows and the key criteria —
+   and one line saying the full table is in a comment; post the full table
+   with `pr.comment`.
+
+Run the step again when later work changes what the description says (fixes
+from the review): the marker lets it overwrite its own text, and never a text
+someone wrote by hand.
+
 ### 7. After implementation: offer code review — never closure
 
-Only with every criterion at `pass` (6a). Do **not** offer to merge the PR or
+Only with every criterion at `pass` (6a) and the readiness description
+written (6b). Do **not** offer to merge the PR or
 close the issue. Enter the review phase
 (same as the `in-review` phase below): confirm the change range, then run
 the review island.

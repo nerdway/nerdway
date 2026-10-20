@@ -154,6 +154,16 @@ with its check, `pass` or `fail`, and the evidence. A `fail` blocks review; the
 table goes into the session summary.
 _Avoid_: test results (covers only the tests, not every criterion)
 
+**Opis gotowości**:
+The readiness description: the PR/MR description rewritten for a human
+reviewer once the Criteria verification table is complete — why, what
+changed, scope, the criteria table as evidence and the merge risk. Written on
+the session model in `issue-workflow` step 6b (and through it in stage 4 of
+`auto-issue-mode`); it ends with the marker `<!-- nerd4rent:pr-body -->`, and
+only a start draft or a description with that marker is overwritten.
+`issue-close` stops while the description is still the start draft.
+_Avoid_: PR summary (the one paragraph of the start draft), changelog
+
 **Workflow island**:
 A stretch of the axis wide enough, independent enough and free enough of human
 input to run as one `Workflow` script. Islands sit inside a conversational

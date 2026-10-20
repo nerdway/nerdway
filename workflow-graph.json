@@ -77,6 +77,7 @@
         "issue.list-open",
         "issue.create",
         "issue.create-child",
+        "issue.add-blocked-by",
         "issue.update-description",
         "issue.set-status",
         "issue.comment",

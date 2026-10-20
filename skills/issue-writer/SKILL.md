@@ -153,6 +153,18 @@ Add labels, priority or estimate only when the user specified them — don't
 invent metadata; the adapter's `## CLI` section lists the flags and their
 quirks.
 
+**A bug report.** When the input is an incident handed over by another skill
+(an issue found in the wrong phase, the rule *A done issue without a trace of
+work* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`), the bug marking and
+the relation count as specified. The draft names both: the marking from the
+tracker adapter's `## Bugs`, and a `related` relation to the faulty issue.
+The body describes the incident (what was found, how, the faulty issue's
+link and phase, the expected state); the unfinished work goes into the same
+body or into child issues proposed under step 3. After approval, run
+`issue.create` with the marking, then `issue.relate` from the new bug to the
+faulty issue. The faulty issue itself is not edited: no comment in place of
+the bug, no change of its phase.
+
 ### 6. Grilling session (optional)
 
 For a complex or still-fuzzy topic, ask the user: *Odpalić sesję grillowania

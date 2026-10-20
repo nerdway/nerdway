@@ -6,7 +6,7 @@
       "minVersion": "24.0.0",
       "versionCommand": ["node", "--version"],
       "versionRegex": "v(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["bootstrap-clis", "bind-statuses", "issue-start", "issue-workflow", "hooks/deny-vault-mcp.ts", "hooks/require-issue.ts", "hooks/session-start.ts"],
+      "requiredBy": ["bootstrap-clis", "bind-statuses", "issue-start", "issue-workflow", "issue-close", "hooks/deny-vault-mcp.ts", "hooks/require-issue.ts", "hooks/session-start.ts"],
       "manualInstall": "Install Node.js >= 24 (with npm) before running this script; it is a prerequisite, not a target. https://nodejs.org"
     },
     {

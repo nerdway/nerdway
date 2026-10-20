@@ -169,17 +169,25 @@ number that proves it — before dispatching the next.
    tests and pushes. Then it answers review threads the way
    `issue-workflow`'s **Review threads on the PR/MR** section does and
    re-runs the tests after that step. A failing suite stops the stage. Only
-   then it runs `pr.mark-ready` (skipped when the adapter lists `—`).
+   then it writes the readiness description exactly as `issue-workflow`
+   step 6b does — the template, the classifier, the overwrite rule and the
+   length rule all live there — from stage 3's criteria table, which its
+   prompt carries, and this stage's review results. Then it runs
+   `pr.mark-ready` (skipped when the adapter lists `—`).
    Report: each finding with its fix commit or the reason it was not applied,
    the island's `stats` and `gaps` (or the degraded flag), the threads
-   answered, final test results.
+   answered, final test results, and whether the readiness description
+   replaced the PR/MR description (`pr.edit-body`) or went out as a comment
+   (`pr.comment`), with the reason.
 5. **Close-out.** First run `nerd4rent:nerd-personal-docs` with the ID and
    platform: this subagent runs on the session model, so the guide is not
    written on `issue-close`'s Haiku. It writes or updates the user's guide in
    the nerdbrain vault and records a `## Personal guide` comment on the
    issue, or says the machine has no vault. Then run
    `nerd4rent:issue-close` with the ID and platform (its Step 0 checks the
-   guide and its Step 0b that every child of the issue is `done`, then it
+   guide, its Step 0b that every child of the issue is `done` and its
+   Step 0c that stage 4 replaced the start draft of the PR/MR description;
+   then it
    commits leftovers, pushes, merges, switches to the base branch, writes
    phase `done`).
    `issue-close` does not print the merge hash, so once it finishes read it
@@ -223,7 +231,7 @@ runs inside stage 3 as its own commit.
 ## Audience of committed work
 
 On a client repo, the text the subagents author for other developers — repo
-docs, code, the PR/MR description beyond what `issue-start` writes — follows
+docs, code, the readiness description of stage 4 — follows
 the audience rule of the user's global `CLAUDE.md`: issue codes appear only in
 branch names and commit messages, and nothing links to a path the repo does
 not track. Put this rule in the stage 3 and 4 prompts.
@@ -236,7 +244,7 @@ Stop the run, never force it, when:
   missing (`—`; a missing `pr.mark-ready` is only skipped);
 - `issue-start` or `issue-close` stops early (a dirty tree, a checkout off
   `main`/`master`, an existing branch, a missing guide, a child of the issue
-  that is not `done`);
+  that is not `done`, a PR/MR description still the start draft);
 - the spec turns out wrong and would have to change — a spec change needs
   the user's acceptance, which the run cannot ask for;
 - a criterion stays `fail` after stage 3 and its subagent could not fix it;

@@ -80,6 +80,39 @@
         "The agent runs no commit, push or merge",
         "The stop message lists DEMO-616 as phase unknown"
       ]
+    },
+    {
+      "id": "readiness-gate-stops-on-start-draft",
+      "prompt": "Close out issue DEMO-640 on Linear with VCS GitHub. The guide mentions DEMO-640 and the issue has no children. The PR body is still:\n\nFixes DEMO-640\n\nAdds retry to the export job.",
+      "expected_output": "Step 0c pipes pr.view through scripts/pr-body-state.ts, gets draft, and stops before any commit, push or merge, telling the caller to write the readiness description with nerd4rent:issue-workflow step 6b and then run the close-out again.",
+      "files": [],
+      "assertions": [
+        "The agent runs scripts/pr-body-state.ts on the pr.view output before any git command",
+        "The agent runs no commit, push or merge",
+        "The agent does not rewrite the PR body itself",
+        "The stop message names issue-workflow step 6b and says to run the close-out again"
+      ]
+    },
+    {
+      "id": "readiness-gate-passes-with-marker",
+      "prompt": "Close out issue DEMO-641 on Linear with VCS GitHub. The guide mentions DEMO-641, the issue has no children, and the PR body has why, what changed, scope, evidence and merge risk sections and ends with `<!-- nerd4rent:pr-body -->`.",
+      "expected_output": "Step 0c gets readiness from the classifier and the close-out continues with Step 1; the Report names the description check as readiness.",
+      "files": [],
+      "assertions": [
+        "The agent continues to the commit, push and merge steps",
+        "The Report says the description check gave readiness"
+      ]
+    },
+    {
+      "id": "readiness-gate-passes-manual-body",
+      "prompt": "Close out issue DEMO-642 on Linear with VCS GitLab. The guide mentions DEMO-642, the issue has no children, and a teammate rewrote the MR description by hand into four paragraphs without the marker.",
+      "expected_output": "Step 0c pipes `glab mr view --output json` through scripts/pr-body-state.ts, gets manual, and continues with Step 1 without touching the description.",
+      "files": [],
+      "assertions": [
+        "The agent reads the description with the GitLab adapter's pr.view",
+        "The agent continues to Step 1",
+        "The agent does not change the MR description"
+      ]
     }
   ]
 }

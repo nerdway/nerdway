@@ -19,7 +19,7 @@
     },
     {
       "id": "close-out-parent-with-open-child",
-      "prompt": "Merge and close DEMO-620. Its PR is green and approved, and the user's guide for it is already in nerdbrain. DEMO-620 has a sub-issue DEMO-621, which is still in Todo.",
+      "prompt": "DEMO-620 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-620` and asks to merge and close it. Its PR is green and approved, and the user's guide for it is already in nerdbrain. DEMO-620 has a sub-issue DEMO-621, which is still in Todo. issue.url gives https://linear.app/example/issue/DEMO-620, and https://linear.app/example/issue/DEMO-621 for the sub-issue.",
       "expected_output": "The close-out runs nerd4rent:issue-close, whose children check stops on DEMO-621 before the merge. The agent reports that DEMO-620 cannot be closed while DEMO-621 is not done, lists DEMO-621 with its link, and does not merge the PR, set DEMO-620 to done or close DEMO-621 by any other route.",
       "files": [],
       "assertions": [
@@ -68,15 +68,15 @@
     },
     {
       "id": "dispatch-backlog-plans",
-      "prompt": "DEMO-650 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-650` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear.",
-      "expected_output": "The phase is backlog, so the agent plans: it drafts the plan from plan-template.md, posts it with issue.comment starting with `## Implementation plan`, writes phase todo with issue.set-status, and ends the turn asking the user to move the issue to In Progress, with the issue link. It creates no branch, commit or PR and edits no file.",
+      "prompt": "DEMO-650 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-650` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-650.",
+      "expected_output": "The phase is backlog, so the agent plans: it drafts the plan from plan-template.md, posts it with issue.comment starting with `## Implementation plan`, writes phase todo with issue.set-status, and ends the turn asking the user to move the issue to In Progress, with the issue link. It creates no branch, commit or PR and edits no file in the repository.",
       "files": [],
       "assertions": [
         "The agent reads the phase from the tracker before doing anything else",
         "The agent posts a comment starting with `## Implementation plan`",
         "The agent writes phase todo, not in-progress",
         "The agent asks the user to move the issue to In Progress and prints the issue link",
-        "The agent creates no branch, commit or PR and changes no file"
+        "The agent creates no branch, commit or PR and edits no file in the repository"
       ]
     },
     {
@@ -93,13 +93,13 @@
     },
     {
       "id": "dispatch-in-review-review-menu",
-      "prompt": "DEMO-652 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-652`. The issue is In Review, its branch and PR exist, and the implementation is pushed.",
-      "expected_output": "The phase is in-review, so the agent enters the code review phase: it confirms the change range with the user, defaulting to main...HEAD, prints the issue link, and runs the four-axis review island (review-verify) on that range. It neither merges the PR nor writes done.",
+      "prompt": "DEMO-652 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-652`. The issue is In Review, its branch and PR exist, the implementation is pushed, and the local checkout is on that branch, `demo-652-export-retry`. issue.url gives https://linear.app/example/issue/DEMO-652.",
+      "expected_output": "The phase is in-review, so the agent enters the code review phase: it asks the user to confirm the change range, defaulting to main...HEAD, and prints the issue link; once the range is confirmed it runs the four-axis review island (review-verify) on it. It neither merges the PR nor writes done.",
       "files": [],
       "assertions": [
         "The agent dispatches on the in-review phase to the code review",
         "The agent proposes the range main...HEAD and prints the issue link",
-        "The review covers the four axes spec-compliance, repo-standards, correctness-regressions and security",
+        "The agent says the review runs all four axes, spec-compliance, repo-standards, correctness-regressions and security, through the review island on the confirmed range",
         "The agent does not merge the PR or write done"
       ]
     },
@@ -116,7 +116,7 @@
     },
     {
       "id": "unknown-phase-stops",
-      "prompt": "DEMO-654 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `implement DEMO-654`. issue.read shows the issue in the state `Canceled`.",
+      "prompt": "DEMO-654 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `implement DEMO-654`. issue.read shows the issue in the state `Canceled`. issue.url gives https://linear.app/example/issue/DEMO-654.",
       "expected_output": "`Canceled` is not in the status map, so the phase is unknown: the agent reports the raw value `Canceled` with the issue link and stops. It does not plan, implement, change a status or touch the repo.",
       "files": [],
       "assertions": [
@@ -128,7 +128,7 @@
     },
     {
       "id": "in-progress-gate-todo-no-repo-change",
-      "prompt": "DEMO-655 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). In a fresh session the user types `DEMO-655`. The issue is in Todo and already has a `## Implementation plan` comment. The plan names three files to change. There is no branch and no PR.",
+      "prompt": "DEMO-655 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). In a fresh session the user types `DEMO-655`. The issue is in Todo and already has a `## Implementation plan` comment. The plan names three files to change. There is no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-655.",
       "expected_output": "The phase is todo, not in-progress, so the hard gate holds: the agent makes no repo change (no branch, edit, commit or PR), refines the existing plan only if needed instead of duplicating it, and ends the turn asking the user to move DEMO-655 to In Progress on the tracker, with the issue link. It never writes in-progress itself.",
       "files": [],
       "assertions": [

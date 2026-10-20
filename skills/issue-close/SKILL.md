@@ -6,7 +6,8 @@ description: >-
   Issues, Azure DevOps Boards) once the work
   is done: check that the user's nerdbrain guide for the issue exists (the
   caller writes it first with nerd-personal-docs; without it the close-out
-  stops), commit any
+  stops), check that every child of the issue is done (an unfinished child
+  stops it before the merge), commit any
   leftover changes, push, merge the PR (GitHub, Azure DevOps) or MR (GitLab),
   switch the local
   checkout to the PR/MR base branch, and move the issue to done. Purely
@@ -63,8 +64,9 @@ The status strategy and map come from the `statuses` block of the platform
 phase. A strategy whose `## Status strategies` row is `—` → stop and report
 "strategy not supported — run `/bind-statuses`".
 
-The tracker adapter is used for one write (`issue.set-status`), one read
-(`issue.read`, in Step 0), the issue link (`issue.url`) and, when no ID was
+The tracker adapter is used for one write (`issue.set-status`), the reads
+of Step 0 (`issue.read`) and Step 0b (`issue.read-relations`,
+`issue.read-status`), the issue link (`issue.url`) and, when no ID was
 passed, `issue.resolve-from-branch`.
 
 ## Resolve the issue ID
@@ -115,6 +117,28 @@ it happened. Take the first case that matches:
    > No guide for `<ID>` in `5-wiki/guides/` and no `## Personal guide`
    > comment saying none is needed. Run `nerd4rent:nerd-personal-docs <ID>`
    > first, then run the close-out again.
+
+## Step 0b — Children check (gate)
+
+An issue whose children are not finished is never closed: closing the parent
+can close its children on some trackers, with no work done in them. The
+tracker adapter's `## Children on close` section says where the children are
+and what the tracker does to them.
+
+1. Run `issue.read-relations` on `<ID>` and take its children. No children →
+   go to Step 1.
+2. For each child, run `issue.read-status` and look the value up in the
+   status map, and run `issue.url` for its link.
+3. Every child in phase `done` → go to Step 1.
+4. Otherwise stop — commit, push and merge nothing, and write no phase — and
+   report exactly, one line per child that is not `done`, with its phase or
+   `phase unknown` for a value the map does not hold:
+
+   > `<ID>` has children that are not done:
+   > - `<child ID>` (`<phase>`): `<child url>`
+   >
+   > Finish each child or detach it from `<ID>`, then run the close-out
+   > again.
 
 ## Step 1 — Commit leftover changes (skip if clean)
 
@@ -183,7 +207,8 @@ merge already closed is closed again without error.
 ## Report
 
 Confirm briefly what happened: the guide check (the guide path, the
-not-needed reason, or the missing vault),
+not-needed reason, or the missing vault), the children check (no children,
+or how many, all done),
 committed (or clean), pushed, merged,
 now on `<base>`, issue `<ID>` moved to done. If any step stopped early, report
 which one and why. Either way, end with the issue link from `issue.url`, in

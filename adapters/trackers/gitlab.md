@@ -203,6 +203,16 @@ that binds `backlog` to a label) is phase unknown and that issue is dropped.
 Under `comment` keep the issues whose phase (`issue.read-status`) is
 `backlog`, `todo`, `in-progress` or `in-review`.
 
+## Children on close
+
+The children are the linked issues whose role in `issue.read-relations` is
+`child` (their description starts with `Parent: #<n>`); read each one's
+phase with `issue.read-status`.
+
+On GitLab Free a child is an ordinary linked issue, so closing the parent, by
+hand or through `Fixes #<n>` on a merged MR, changes no child: the closing
+pattern closes only the issues it names.
+
 ## URL
 
 Take the link from the issue JSON's `web_url` field. Without it, build

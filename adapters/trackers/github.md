@@ -136,6 +136,15 @@ n=$(git branch --show-current | grep -oE '^[0-9]+')
 [ -n "$n" ] && gh issue view "$n" -R <CODE_REPO> --json url --jq .url 2>/dev/null | grep -q '/issues/' && echo "#$n"
 ```
 
+## Children on close
+
+The children are the `subIssues` of `issue.read-relations`; read each one's
+phase with `issue.read-status`.
+
+Closing a parent issue on GitHub, by hand or through `Fixes #<n>` on a merged
+PR, leaves its sub-issues open; GitHub only shows their progress on the
+parent. Nothing closes a child unless a repository workflow does it.
+
 ## URL
 
 Take the link from the issue JSON's `url` field. Without it, build

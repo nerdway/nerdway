@@ -179,8 +179,9 @@ number that proves it — before dispatching the next.
    the nerdbrain vault and records a `## Personal guide` comment on the
    issue, or says the machine has no vault. Then run
    `nerd4rent:issue-close` with the ID and platform (its Step 0 checks the
-   guide, then it commits leftovers, pushes, merges, switches to the base
-   branch, writes phase `done`).
+   guide and its Step 0b that every child of the issue is `done`, then it
+   commits leftovers, pushes, merges, switches to the base branch, writes
+   phase `done`).
    `issue-close` does not print the merge hash, so once it finishes read it
    with `git rev-parse --short HEAD` on the base branch (its `git pull` puts
    the merge commit at HEAD). Report: the guide path (or why none was
@@ -234,7 +235,8 @@ Stop the run, never force it, when:
 - the tracker or VCS CLI returns an error, or an adapter or operation is
   missing (`—`; a missing `pr.mark-ready` is only skipped);
 - `issue-start` or `issue-close` stops early (a dirty tree, a checkout off
-  `main`/`master`, an existing branch);
+  `main`/`master`, an existing branch, a missing guide, a child of the issue
+  that is not `done`);
 - the spec turns out wrong and would have to change — a spec change needs
   the user's acceptance, which the run cannot ask for;
 - a criterion stays `fail` after stage 3 and its subagent could not fix it;

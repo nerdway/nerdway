@@ -586,14 +586,18 @@ open):
    `## Personal guide` comment on the issue, or says the machine has no vault.
    If it stops with an error, stop and report; do not call `issue-close`.
 2. **Close.** Invoke **`nerd4rent:issue-close`** with the issue ID. Its
-   Step 0 checks the guide from step 1 and stops the close-out without it.
-   Then it mechanically commits any leftover changes, pushes, merges the
+   Step 0 checks the guide from step 1 and stops the close-out without it;
+   its Step 0b stops it while any child of the issue is not `done`. Then it
+   mechanically commits any leftover changes, pushes, merges the
    PR/MR (GitHub or GitLab), switches the local checkout to the PR/MR base
    branch, and sets the issue's phase to `done`. It is deliberately
    lightweight (Haiku-friendly).
 
 If the merge fails (e.g. conflicts), it stops and reports — resolve, then
-re-run.
+re-run. When it stops on unfinished children, report the children it lists
+and stop: never merge the PR/MR, write `done` or close a child by another
+route. The children check lives only in `issue-close`, so this close-out and
+`auto-issue-mode`'s apply the same rule.
 
 ## Session summary (mandatory)
 

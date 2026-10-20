@@ -83,6 +83,21 @@ for candidate in $(git branch --show-current | grep -oiE '[a-z]+-[0-9]+' | tr '[
 done
 ```
 
+## Children on close
+
+The children are the `children` nodes of `issue.read-relations`; read each
+one's phase with `issue.read-status`.
+
+Linear can close children on its own: with the team setting **Sub-issue
+auto-close** on (Settings → Team → Workflow, API field
+`autoCloseChildIssues`), marking a parent Done marks every remaining
+sub-issue Done too, including when the GitHub integration closes the parent
+on a merged `Fixes <ID>`. That setting closed DEMO-380 without any work when
+its parent DEMO-374 merged. The opposite setting, **Parent auto-close**,
+marks a parent Done once all its sub-issues are done. Neither setting is
+visible to `linearis`, so the plugin never relies on either: the close-out
+reads the children before the merge.
+
 ## URL
 
 Take the link from the issue JSON's `url` field (request it with

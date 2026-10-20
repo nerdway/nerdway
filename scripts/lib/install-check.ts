@@ -64,17 +64,27 @@ function describe(finding: Finding, runtime: Runtime, pluginRoot: string): strin
   return `stale copy of the nerd4rent skill ${finding.name} at ${finding.path}: remove it, the plugin ships the current version`;
 }
 
+export type ContextEvent = "SessionStart" | "UserPromptSubmit";
+
+export interface ContextOptions {
+  event?: ContextEvent;
+  systemMessage?: string;
+}
+
+export function renderContextOutput(context: string, runtime: Runtime, options: ContextOptions = {}): string {
+  if (context.length === 0) return "";
+  if (runtime === "claude") {
+    const hookSpecificOutput = { hookEventName: options.event ?? "SessionStart", additionalContext: context };
+    if (options.systemMessage === undefined) return JSON.stringify({ hookSpecificOutput });
+    return JSON.stringify({ systemMessage: options.systemMessage, hookSpecificOutput });
+  }
+  return JSON.stringify({ additional_context: context });
+}
+
 export function renderHookOutput(findings: Finding[], runtime: Runtime, pluginRoot: string): string {
   if (findings.length === 0) return "";
   const warning = findings.map((finding) => describe(finding, runtime, pluginRoot)).join("\n");
-  const context = `${REPEAT_INSTRUCTION}\n${warning}`;
-  if (runtime === "claude") {
-    return JSON.stringify({
-      systemMessage: warning,
-      hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: context },
-    });
-  }
-  return JSON.stringify({ additional_context: context });
+  return renderContextOutput(`${REPEAT_INSTRUCTION}\n${warning}`, runtime, { systemMessage: warning });
 }
 
 const VERSION_FORMAT = /^\d+\.\d+\.\d+$/;

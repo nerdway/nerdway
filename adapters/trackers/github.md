@@ -105,6 +105,7 @@ it.
 | `issue.update-description` | `gh issue edit <n> -R <REPO> --body-file body.md` | replaces the whole body |
 | `issue.set-status` | the write recipe of the resolved strategy in `## Status strategies` | writes a canonical phase; never `in-progress` on the agent's own initiative |
 | `issue.comment` | `gh issue comment <n> -R <REPO> --body-file body.md` | markdown body |
+| `issue.relate` | `gh issue comment <n> -R <REPO> --body "Related: <OTHER-ID>"` | GitHub has no `related` relation; the comment is the documented equivalent, and the mention puts a cross-reference on the other issue's timeline. `<OTHER-ID>` as `#<m>`, or `owner/repo#<m>` in another repo |
 | `status.list` | — | GitHub issues have only open/closed; phases live in labels or marker comments |
 | `label.list` | `gh label list -R <CODE_REPO> --limit 500 --json name` | the repo's labels |
 | `label.create` | `gh label create "<name>" -R <CODE_REPO>` | only with the user's consent; exit 1 when it already exists |
@@ -178,3 +179,10 @@ counts only when its author has write access to the repo — the rule of
 member of the owning organisation and `COLLABORATOR` includes read-only
 collaborators, so the recipe asks the permissions endpoint instead, usually
 once per read (the newest marker's author).
+
+## Bugs
+
+A bug is an issue with the label `bug`, one of the labels GitHub creates in
+every new repo. Look for it in `label.list`; when it is there,
+`issue.create` gets `--label bug`. When it is missing (the repo deleted or
+renamed it), ask before running `label.create` for it.

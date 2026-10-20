@@ -294,6 +294,16 @@ az devops invoke --organization <ORG> --area wit --resource comments \
   --http-method POST --in-file comment.json --api-version 7.1-preview -o json | jq '{id, createdDate}'
 ```
 
+## Children on close
+
+The children are the work items whose role in `issue.read-relations` is
+`child` (`System.LinkTypes.Hierarchy-Forward`); read each one's phase with
+`issue.read-status`.
+
+Azure Boards changes no child's state when its parent closes, by hand or
+when a completed PR moves the parent it links through `--work-items`; a child
+stays in its column until someone moves it.
+
 ## URL
 
 Take the link from `_links.html.href` when a create returned it. Otherwise

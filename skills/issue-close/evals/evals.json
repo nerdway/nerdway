@@ -45,6 +45,41 @@
         "The agent continues to Step 1 without stopping",
         "The Report says there is no nerdbrain vault on this machine and the guide was not checked"
       ]
+    },
+    {
+      "id": "children-gate-stops-open-child",
+      "prompt": "Close out issue DEMO-610 on Linear: its PR is reviewed and green, and ~/obsidian/nerdbrain/5-wiki/guides/plugin.md mentions DEMO-610. DEMO-610 has two sub-issues: DEMO-611 in Done and DEMO-612 in Backlog.",
+      "expected_output": "Step 0 finds the guide. Step 0b reads the children with issue.read-relations, reads each child's phase with issue.read-status, finds DEMO-612 in backlog and stops before any commit, push or merge, listing DEMO-612 with its phase and link and saying to finish or detach it and run the close-out again.",
+      "files": [],
+      "assertions": [
+        "The agent runs issue.read-relations on DEMO-610 before any git command",
+        "The agent reads the phase of DEMO-611 and DEMO-612 with issue.read-status",
+        "The agent runs no commit, push or merge and does not set DEMO-610 to done",
+        "The stop message lists DEMO-612 with its phase and its link",
+        "The stop message does not list DEMO-611"
+      ]
+    },
+    {
+      "id": "children-gate-passes-all-done",
+      "prompt": "Close out issue DEMO-613 on Linear. The vault exists and a guide mentions DEMO-613. DEMO-613 has one sub-issue, DEMO-614, in Done.",
+      "expected_output": "Step 0b finds one child, reads its phase as done and continues with Step 1; the Report says the issue has one child and it is done.",
+      "files": [],
+      "assertions": [
+        "The agent reads the phase of DEMO-614 with issue.read-status",
+        "The agent continues to the commit, push and merge steps",
+        "The Report mentions the children check"
+      ]
+    },
+    {
+      "id": "children-gate-unknown-phase-blocks",
+      "prompt": "Close out issue DEMO-615 on Linear with the default status map. The vault does not exist on this machine. DEMO-615 has one sub-issue, DEMO-616, in the state Canceled.",
+      "expected_output": "Step 0 notes the missing vault. Step 0b reads DEMO-616 as Canceled, a value the default map does not hold, treats it as phase unknown and stops before any commit, push or merge, listing DEMO-616 as phase unknown with its link.",
+      "files": [],
+      "assertions": [
+        "The agent does not treat Canceled as done",
+        "The agent runs no commit, push or merge",
+        "The stop message lists DEMO-616 as phase unknown"
+      ]
     }
   ]
 }

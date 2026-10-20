@@ -56,6 +56,19 @@
         "Every `## Grill state` block is printed in chat, and its first line is the heading, never a line starting with `Status:`",
         "The agent does not ask the user whether an issue exists; it takes `issue: none` from the arguments"
       ]
+    },
+    {
+      "id": "large-outcome-names-split-kind",
+      "prompt": "issue: none\ntopic: Przenieść checkpointy z entity page do osobnego pliku. Najpierw nowy format i zapis w project-continue, wydany i używany przez tydzień; potem, w osobnym wydaniu, migracja starych wpisów i usunięcie sekcji z entity page. Pierwsza część ma dwie połowy, które mają sens tylko razem: format pliku i zapis w nerdbrain-wiki.",
+      "expected_output": "The size is announced as large. The confirmed outcome proposes stages in time: stage 1 (new format and write) and stage 2 (migration and removal), stage 2 blocked by stage 1 and a sibling of it, not its child. Stage 1 is itself a result split into the file format and the nerdbrain-wiki write, as children of stage 1.",
+      "files": [],
+      "assertions": [
+        "The size is announced as large before the first question",
+        "The outcome names the top-level split as stages in time",
+        "Stage 2 is blocked by stage 1 and is not a child of stage 1",
+        "The outcome names stage 1's own split as a result split with two children",
+        "The outcome is printed only after the interview settles the split"
+      ]
     }
   ]
 }

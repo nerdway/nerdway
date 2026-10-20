@@ -90,7 +90,19 @@ turn:
 |---|---|---|
 | **small** | one clear deliverable, outcome already stated, nothing left to decide | no interview: return to the caller at once, which goes straight to its minimal template or its plan |
 | **medium** | one piece of work with open decisions | the interview below; the caller uses its full template |
-| **large** | plainly splits into stages or deliverables that can ship apart | the interview settles the split first; the outcome proposes the stages, which the caller turns into sub-issues or a staged plan |
+| **large** | plainly splits into stages or deliverables that can ship apart | the interview settles the split first; the outcome proposes it as a result split or as stages in time (below), which the caller turns into issues or a staged plan |
+
+A large topic splits in one of two ways, and the outcome names which:
+
+- **result split**: parts of one deliverable, which together make the
+  result; they become a parent with children, and the parent closes after
+  them;
+- **stages in time**: deliverables that ship one after another; they become
+  siblings under a shared epic, each blocked by the stage before it, never a
+  child of the previous stage, because closing a parent can close its
+  children (a tracker's sub-issue auto-close).
+
+A topic with both (stages, one of them in parts) says so per stage.
 
 The user's override wins. During the session the size only grows: when
 answers reveal stages a medium topic did not show, say so and re-classify as
@@ -204,7 +216,8 @@ after the user's confirmation (section 5) and carries
 
 When no branch is open, print the outcome in chat:
 
-- the size, with the proposed stages when it is large;
+- the size, and when it is large the proposed split with its kind (result
+  split or stages in time) and, for stages, which one each is blocked by;
 - every decision with its answer;
 - the facts checked, with where and what;
 - the open items left for another machine;
@@ -235,7 +248,7 @@ let the caller act on it, before that yes.
 
 | Caller | Passes | Does with the outcome |
 |---|---|---|
-| `nerd4rent:issue-writer` step 2 | `issue: none`, topic = the user's request | drafts the issue body from the decisions; a large size becomes the sub-issue proposal of its step 3 |
+| `nerd4rent:issue-writer` step 2 | `issue: none`, topic = the user's request | drafts the issue body from the decisions; a large size becomes the split proposal of its step 3, of the kind the outcome named |
 | `nerd4rent:issue-writer` step 6 | `issue: <ID>`, topic = the created issue's body | updates the description after showing the diff, proposes sub-issues only after approval |
 | `nerd4rent:issue-workflow` step 1a | `issue: <ID>`, topic = the issue description | refines the spec (its step 0c) and drafts the plan; posts neither before the confirmed outcome |
 | `nerd4rent:new-project-workflow` step 5 | `issue: none`, topic = the scaffolded README and the project idea | hands the decisions to the first issue of the project |

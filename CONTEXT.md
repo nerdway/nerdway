@@ -270,6 +270,15 @@ value read back from the tracker names exactly one phase; a value the map does
 not hold is "phase unknown", never a guess. Written by `bind-statuses`.
 _Avoid_: status mapping table, state aliases
 
+**Done issue without a trace of work**:
+An issue in phase `done`, not a parent, with no commit on the default branch
+in the forms the workflow writes (the PR/MR title, the start commit,
+`Fixes <ID>`, the branch's merge) and no `## No code in this repo` comment
+giving a reason. A process bug: the skill that finds it warns and proposes a
+bug through `issue-writer`, related to the issue; never a comment alone,
+never a phase change. Defined once in `adapters/statuses.md`.
+_Avoid_: stale issue, false done (both suggest moving the issue back)
+
 **Exemption**:
 A validated exception on a frozen rule: the node allowed to act despite it,
 the narrow scope it may touch, and the reason. Four exist today, all on

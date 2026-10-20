@@ -1,38 +1,18 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { readPlatform, validateAdapterDefaults, type PlatformVocabulary } from "./types/platform-config.ts";
+import { pluginVocabulary, trackerAdapterSources } from "./lib/platform-read.ts";
+import { readPlatform, validateAdapterDefaults } from "./types/platform-config.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..");
 
-interface Property {
-  enum?: string[];
-  required?: string[];
-  properties?: Record<string, Property>;
-}
-
-const contract = JSON.parse(readFileSync(join(repoRoot, "workflow-graph.json"), "utf8")) as {
-  schemas: { id: string; schema: Property }[];
-};
-const platform = contract.schemas.find((entry) => entry.id === "PlatformConfig")?.schema.properties ?? {};
-const statuses = platform.statuses?.properties ?? {};
-const vocabulary: PlatformVocabulary = {
-  trackers: platform.tracker?.enum ?? [],
-  vcs: platform.vcs?.enum ?? [],
-  strategies: statuses.strategy?.enum ?? [],
-  phases: statuses.map?.required ?? [],
-};
+const vocabulary = pluginVocabulary(repoRoot);
+const trackerAdapters = trackerAdapterSources(repoRoot);
 
 const errors: string[] = [];
-
-const trackersDir = join(repoRoot, "adapters", "trackers");
-const trackerAdapters = new Map<string, string>();
-for (const file of readdirSync(trackersDir).filter((name) => name.endsWith(".md"))) {
-  const name = file.slice(0, -".md".length);
-  const source = readFileSync(join(trackersDir, file), "utf8");
-  trackerAdapters.set(name, source);
+for (const [name, source] of trackerAdapters) {
   errors.push(...validateAdapterDefaults(name, source, vocabulary));
 }
 

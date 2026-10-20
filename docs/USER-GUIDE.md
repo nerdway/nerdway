@@ -209,7 +209,7 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 ### `issue-close` - merge and finish
 
 - **Say:** *"merge and close"*, *"close out DEMO-123"*, *"domknij"*, *"zmerguj i zamknij"*.
-- **What happens:** the deliberately mechanical close-out chain - first a check that your guide in nerdbrain exists (`issue-workflow` and `auto-issue-mode` write it just before with `nerd-personal-docs`, below; without it the chain stops and tells you to run that skill), then commit leftovers, push, merge the PR (GitHub, GitLab or Azure DevOps), switch your checkout to the base branch, set the issue to Done. On any error it stops and reports.
+- **What happens:** the deliberately mechanical close-out chain - first a check that your guide in nerdbrain exists (`issue-workflow` and `auto-issue-mode` write it just before with `nerd-personal-docs`, below; without it the chain stops and tells you to run that skill), then a check that every sub-issue is done (an unfinished one stops the chain before the merge and is listed with its link, so closing a parent never closes work nobody did), then commit leftovers, push, merge the PR (GitHub, GitLab or Azure DevOps), switch your checkout to the base branch, set the issue to Done. On any error it stops and reports.
 
 ### `auto-issue-mode` - run an issue end to end
 

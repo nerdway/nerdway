@@ -16,7 +16,8 @@ description: >-
 One pass for one issue: **diagnose → propose → ask once → hand off**. The
 diagnosis only reads. The single write this skill makes itself is the
 `in-progress` phase of the diagnosed issue, after the user agrees in chat;
-branch, commits and PR/MR belong to the skill it hands off to.
+branch, commits and PR/MR belong to the skill it hands off to, and a bug
+report to `nerd4rent:issue-writer`.
 
 ## Platform and adapters
 
@@ -50,7 +51,11 @@ the **evidence**:
 - **PR/MR** — the link in the issue's comments or attachments from
   `issue.read`; when the current checkout is the issue branch, also
   `pr.view-base` for its draft state and base;
-- **commits** — the newest few on the branch, when it exists.
+- **commits** — the newest few on the branch, when it exists;
+- **trace** — only in phase `done`: the `git log` search of the default
+  branch and the `## No code in this repo` comment, both as
+  `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` describes in *A done issue
+  without a trace of work*.
 
 ## Step 2 — Name the next step
 
@@ -66,6 +71,7 @@ Pick the first matching row. The table mirrors the dispatch table of
 | `in-progress` | branch or PR/MR present | continue implementation |
 | `in-review` | any | review |
 | `done` | open PR/MR | close-out |
+| `done` | no PR/MR, and the trace check finds no trace of work | done without a trace of work: a warning and a bug proposal through `issue-writer` (see below); the issue's phase stays as it is |
 | `done` | PR/MR merged, or none | the open issues `issue.read-relations` returns (parent, siblings, links; run on the issue, then on its parent) — list them as the next step and end, no handoff; with none, report that and end |
 | unknown | — | stop condition |
 
@@ -85,6 +91,17 @@ When the next step is implementation and the phase is not `in-progress`:
    nothing more until the merge and `done`;
 3. no — end here.
 
+When the next step is done without a trace of work:
+
+1. draft the bug with `issue-writer`: what was found and how (the phase, the
+   empty `git log` search), the issue link, the expected state, a `related`
+   relation to the issue (`issue.relate`) and the bug marking from the
+   tracker adapter's `## Bugs`;
+2. no — end here, with the warning printed.
+
+A comment on the issue is never offered in place of the bug, nor a move of
+its phase.
+
 For every other next step: 1) step by step with `issue-workflow`,
 2) autonomously with `auto-issue-mode` (same consent as above), 3) end here.
 
@@ -96,6 +113,10 @@ skill with nothing written.
 ## Step 4 — Hand off
 
 Continue in the same conversation with the ID the user already gave:
+
+- **bug** → invoke `nerd4rent:issue-writer` through the `Skill` tool with the
+  incident as its input; it shows the draft and creates nothing without its
+  own approval, then runs `issue.relate` from the new bug to the issue;
 
 - **step by step** → invoke `nerd4rent:issue-workflow` through the `Skill`
   tool with the issue ID as the argument;

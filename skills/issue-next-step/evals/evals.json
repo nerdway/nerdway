@@ -1,0 +1,43 @@
+{
+  "skill_name": "issue-next-step",
+  "evals": [
+    {
+      "id": "done-without-trace-proposes-bug",
+      "prompt": "co dalej z DEMO-380? issue.read-status returns Done. issue.read shows no PR link and no comment starting with \"## No code in this repo\". The branch demo-380-native-practice-skills does not exist locally or on origin. On origin/main both trace searches from adapters/statuses.md return nothing. DEMO-380 has no children. The tracker is Linear with the native strategy and the default map.",
+      "expected_output": "The diagnosis names phase done, no PR, no branch, and no trace of work on main. The next step is a warning and a bug proposal. The question offers drafting the bug with issue-writer (incident description, DEMO-380 link, related relation through issue.relate, the label Bug) or ending with the warning printed. No comment on DEMO-380 is offered and its phase stays Done.",
+      "files": [],
+      "assertions": [
+        "The diagnosis shows phase done and that no commit on the default branch carries DEMO-380",
+        "The named next step is a warning plus a bug proposal, not the relations listing of the plain done row",
+        "Option 1 drafts the bug with issue-writer and option 2 ends with the warning printed",
+        "The bug draft carries a related relation to DEMO-380 through issue.relate and the label Bug",
+        "No option posts a comment on DEMO-380 in place of the bug",
+        "The phase of DEMO-380 is not changed",
+        "Nothing is created on the tracker before issue-writer gets its own approval"
+      ]
+    },
+    {
+      "id": "done-with-no-code-comment-is-skipped",
+      "prompt": "co dalej z DEMO-214? issue.read-status returns Done. issue.read shows no PR link and a comment whose first line is \"## No code in this repo\" and whose second line is \"Reason: duplicate of DEMO-213\". The trace searches on origin/main return nothing. issue.read-relations returns the parent DEMO-213 (Done) and one open sibling, DEMO-218 (Todo).",
+      "expected_output": "The exception comment makes DEMO-214 a normal done issue: no warning and no bug proposal. The plain done row applies: the open sibling DEMO-218 is listed as the next step and the skill ends without a handoff.",
+      "files": [],
+      "assertions": [
+        "No warning about a done issue without a trace of work is printed",
+        "No bug is proposed",
+        "The open sibling DEMO-218 is listed as the next step",
+        "The skill ends without handing off to issue-workflow or auto-issue-mode"
+      ]
+    },
+    {
+      "id": "done-parent-is-checked-through-children",
+      "prompt": "co dalej z DEMO-299? issue.read-status returns Done. DEMO-299 is a parent: issue.read-relations returns eight children, all Done, and every child has a hit in the trace searches on origin/main. DEMO-299 itself has no hit and no \"## No code in this repo\" comment.",
+      "expected_output": "A parent carries no work of its own, so DEMO-299 is not reported as done without a trace of work; its children are checked instead and all have a trace. The plain done row applies.",
+      "files": [],
+      "assertions": [
+        "DEMO-299 is not reported as done without a trace of work",
+        "The children are checked for a trace instead of the parent",
+        "No bug is proposed"
+      ]
+    }
+  ]
+}

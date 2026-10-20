@@ -100,7 +100,7 @@ resolves to nothing: stop and ask the user for the ID — never guess it.
 | `project.list` | — | the project is the container, taken from the `gitlab` block |
 | `project.create` | — | the project is the container, taken from the `gitlab` block |
 | `issue.read` | `glab issue view <n> -R <REPO> --output json`, then the notes recipe below | state, labels, full description, then every note; an issue's JSON plus the note array |
-| `issue.read-relations` | `glab issue view <n> -R <REPO> --output json`, then the relations recipe below | parent, children and other linked issues, told apart by the `Parent: #<n>` first line |
+| `issue.read-relations` | `glab issue view <n> -R <REPO> --output json`, then the relations recipe below | parent, children, blockers and other linked issues, told apart by the `Parent: #<n>` first line and the link type |
 | `issue.read-status` | the read recipe of the resolved strategy in `## Status strategies` | the issue's canonical phase; cheap enough to run every turn |
 | `issue.read-branch` | `glab issue view <n> -R <REPO> --output json`, then the branch-name recipe below | `<ID>` = `#<n>` (or `group/project#<n>`), `<title>`, `<url>` = `web_url`, `<branchName>` |
 | `issue.url` | the recipe in `## URL` | the issue link to print for the human; `web_url` from any issue JSON already read, else built |
@@ -110,6 +110,7 @@ resolves to nothing: stop and ask the user for the ID — never guess it.
 | `issue.list-open` | the open-list recipe below | every open issue in `<CODE_PROJECT>`, Backlog included, with its phase; a value the map does not hold is phase unknown and that issue is dropped |
 | `issue.create` | `glab issue create -R <HOST>/<CODE_PROJECT> --title "<title>" --description-file body.md --yes` | add `--label '<map.backlog>'` only under `label` with a label (not `open`) mapped to `backlog` **and** present in `label.list`; `<ID>` = `#` + the last segment of the printed URL |
 | `issue.create-child` | `glab issue view <PARENT-n> -R <HOST>/<CODE_PROJECT> --output json` (must succeed), then `glab issue create -R <HOST>/<CODE_PROJECT> --title "<title>" --description-file body.md --linked-issues <PARENT-n> --link-type relates_to --yes` | `body.md` starts with the line `Parent: #<PARENT-n>`, then a blank line; same `--label` rule as `issue.create`; create the parent first |
+| `issue.add-blocked-by` | `glab api --hostname <HOST> --method POST "projects/<ENC>/issues/<n>/links" -f target_project_id=<ENC> -f target_issue_iid=<m> -f link_type=is_blocked_by` | `#<n>` is blocked by `#<m>`; blocking links need GitLab Premium. When the call fails with a licence error (GitLab Free), the documented equivalent is the same call with `link_type=relates_to`, then `issue.comment` on `#<n>` with the body `Blocked by #<m>` |
 | `issue.update-description` | `glab issue update <n> -R <REPO> --description-file body.md` | replaces the whole description; keep a child's `Parent:` first line |
 | `issue.set-status` | the write recipe of the resolved strategy in `## Status strategies` | writes a canonical phase; never `in-progress` on the agent's own initiative |
 | `issue.comment` | `glab issue note <n> -R <REPO> --message "$(cat body.md)"` | markdown body; prints the note URL |
@@ -135,7 +136,10 @@ glab api --hostname <HOST> "projects/<ENC>/issues/<n>/notes?sort=desc&order_by=c
 Relations recipe for `issue.read-relations` — each linked issue with its role
 towards `<n>`: `parent` when `<n>`'s own description starts with
 `Parent: #<iid>`, `child` when the linked issue's description starts with
-`Parent: #<n>`, `related` otherwise. Run it again on the parent to reach the
+`Parent: #<n>`, `blocked-by` and `blocks` from the `link_type` of a blocking
+link (GitLab Premium), `related` otherwise. On GitLab Free a blocker shows as
+`related`, and the `Blocked by #<m>` comment from `issue.add-blocked-by`
+tells it apart. Run it again on the parent to reach the
 siblings:
 
 ```bash
@@ -144,6 +148,8 @@ glab api --hostname <HOST> "projects/<ENC>/issues/<n>/links" \
   | jq --arg n "<n>" --arg parent "$parent" '[.[] | {iid, title, state, ref: .references.full, link_type,
       role: (if (.iid | tostring) == $parent then "parent"
              elif ((.description // "") | split("\n")[0]) == ("Parent: #" + $n) then "child"
+             elif .link_type == "is_blocked_by" then "blocked-by"
+             elif .link_type == "blocks" then "blocks"
              else "related" end)}]'
 ```
 

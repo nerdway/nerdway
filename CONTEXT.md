@@ -243,6 +243,20 @@ What `issue.list-active` returns; the list every consumer read before
 `issue.list-open` existed, and so was blind to the Backlog.
 _Avoid_: open issue (wider: it includes the Backlog)
 
+**Result split**:
+A topic divided into parts of one deliverable: a parent issue with children,
+created with `issue.create-child`, where the parent closes once every child
+is done. Proposed by `issue-writer` and `grill` when the parts only make
+sense together.
+_Avoid_: epic split, sub-tasks (both blur it with stages in time)
+
+**Stages in time**:
+A topic divided into deliverables that ship one after another: sibling
+issues under a shared epic (or top-level), each stage after the first
+blocked by the one before through `issue.add-blocked-by`. A stage is never a
+child of the previous stage, since closing a parent can close its children.
+_Avoid_: phases (the canonical phases are something else), child stages
+
 **Open issue**:
 An issue in any mapped canonical phase but `done`: `backlog`, `todo`,
 `in-progress` or `in-review`. What `issue.list-open` returns and what every

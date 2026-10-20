@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": "precondition-not-in-progress",
-      "prompt": "Start DEMO-660 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read-status returns `Todo`. The checkout is a clean `main`.",
+      "prompt": "Start DEMO-660 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read-status returns `Todo`. The checkout is a clean `main`. issue.url gives https://linear.app/example/issue/DEMO-660.",
       "expected_output": "Precondition 1 fails: the phase is todo, not in-progress. The chain stops before any branch, commit, push or PR, reports the phase, and asks the user to move DEMO-660 to In Progress with the issue link from issue.url. It does not write the status itself.",
       "files": [],
       "assertions": [
@@ -21,7 +21,7 @@
       "assertions": [
         "The agent stops and reports the current branch demo-640-other-work",
         "The agent does not run git checkout or create a branch",
-        "The agent does not ask the user which base branch to use"
+        "The agent neither picks a base branch itself nor asks the user a question about it; it reports the stop and leaves that decision to the caller"
       ]
     },
     {

@@ -100,7 +100,7 @@ resolves to nothing: stop and ask the user for the ID — never guess it.
 | `project.list` | — | the project is the container, taken from the `gitlab` block |
 | `project.create` | — | the project is the container, taken from the `gitlab` block |
 | `issue.read` | `glab issue view <n> -R <REPO> --output json`, then the notes recipe below | state, labels, full description, then every note; an issue's JSON plus the note array |
-| `issue.read-relations` | `glab issue view <n> -R <REPO> --output json`, then the relations recipe below | parent, children and other linked issues, told apart by the `Parent: #<n>` first line |
+| `issue.read-relations` | `glab issue view <n> -R <REPO> --output json`, then the relations recipe below | parent, children, blockers and other linked issues, told apart by the `Parent: #<n>` first line and the link type |
 | `issue.read-status` | the read recipe of the resolved strategy in `## Status strategies` | the issue's canonical phase; cheap enough to run every turn |
 | `issue.read-branch` | `glab issue view <n> -R <REPO> --output json`, then the branch-name recipe below | `<ID>` = `#<n>` (or `group/project#<n>`), `<title>`, `<url>` = `web_url`, `<branchName>` |
 | `issue.url` | the recipe in `## URL` | the issue link to print for the human; `web_url` from any issue JSON already read, else built |
@@ -134,7 +134,10 @@ glab api --hostname <HOST> "projects/<ENC>/issues/<n>/notes?sort=desc&order_by=c
 Relations recipe for `issue.read-relations` — each linked issue with its role
 towards `<n>`: `parent` when `<n>`'s own description starts with
 `Parent: #<iid>`, `child` when the linked issue's description starts with
-`Parent: #<n>`, `related` otherwise. Run it again on the parent to reach the
+`Parent: #<n>`, `blocked-by` and `blocks` from the `link_type` of a blocking
+link (GitLab Premium), `related` otherwise. On GitLab Free a blocker shows as
+`related`, and the `Blocked by #<m>` comment from `issue.add-blocked-by`
+tells it apart. Run it again on the parent to reach the
 siblings:
 
 ```bash
@@ -143,6 +146,8 @@ glab api --hostname <HOST> "projects/<ENC>/issues/<n>/links" \
   | jq --arg n "<n>" --arg parent "$parent" '[.[] | {iid, title, state, ref: .references.full, link_type,
       role: (if (.iid | tostring) == $parent then "parent"
              elif ((.description // "") | split("\n")[0]) == ("Parent: #" + $n) then "child"
+             elif .link_type == "is_blocked_by" then "blocked-by"
+             elif .link_type == "blocks" then "blocks"
              else "related" end)}]'
 ```
 

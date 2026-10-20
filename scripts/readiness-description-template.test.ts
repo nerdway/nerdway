@@ -94,3 +94,14 @@ test("issue-workflow step 6b shortens the evidence over the platform limit", () 
   assert.match(step, /`fail` rows and the key criteria/);
   assert.match(step, /full table\s+with `pr\.comment`/);
 });
+
+test("auto-issue-mode writes the readiness description through step 6b before pr.mark-ready", () => {
+  const text = read("skills/auto-issue-mode/SKILL.md");
+  const stage = /4\. \*\*Review\.\*\*([\s\S]*?)\n5\. \*\*Close-out\.\*\*/.exec(text)?.[1] ?? "";
+  const write = stage.indexOf("readiness description exactly as `issue-workflow`\n   step 6b");
+  const ready = stage.indexOf("`pr.mark-ready`");
+  assert.ok(write > 0, "stage 4 points at step 6b");
+  assert.ok(ready > write, "the readiness description comes before pr.mark-ready");
+  assert.equal(text.includes(READINESS_MARKER), false);
+  assert.doesNotMatch(text, /blast radius|## Merge risk|readiness-description-template/);
+});

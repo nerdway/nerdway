@@ -16,53 +16,53 @@
     },
     {
       "id": "gate-passes-with-guide",
-      "prompt": "Close out issue DEMO-601 on Linear. The vault exists and ~/obsidian/nerdbrain/5-wiki/guides/pangolin.md has a history entry `[DEMO-601](https://linear.app/example/issue/DEMO-601)`.",
-      "expected_output": "Step 0 finds pangolin.md, notes its path, and the close-out continues with Step 1; the Report names the guide path.",
+      "prompt": "Close out issue DEMO-601 on Linear with VCS GitHub. The vault exists and ~/obsidian/nerdbrain/5-wiki/guides/pangolin.md has a history entry `[DEMO-601](https://linear.app/example/issue/DEMO-601)`. The checkout is on the issue branch `demo-601-pangolin-export`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerd4rent:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-601.",
+      "expected_output": "Step 0 finds pangolin.md and notes its path, Steps 0b and 0c pass, and the close-out goes on through commit, push and merge to the base branch and phase done; the Report names the guide path.",
       "files": [],
       "assertions": [
         "The agent finds 5-wiki/guides/pangolin.md through the DEMO-601 search",
-        "The agent continues to the commit, push and merge steps",
+        "The agent goes past the gates to the commit, push and merge steps",
         "The Report names the guide path"
       ]
     },
     {
       "id": "gate-passes-not-needed",
-      "prompt": "Close out issue DEMO-602 on Linear. The vault exists, no guide mentions DEMO-602, and the issue has a comment:\n\n## Personal guide\nNot needed: only test helpers were renamed.",
-      "expected_output": "Step 0 finds no guide, reads the `## Personal guide` comment with its `Not needed:` line, notes the reason and continues with Step 1; the Report carries the reason.",
+      "prompt": "Close out issue DEMO-602 on Linear with VCS GitHub. The vault exists, no guide mentions DEMO-602, and the issue has a comment:\n\n## Personal guide\nNot needed: only test helpers were renamed.\n\nThe checkout is on the issue branch `demo-602-rename-test-helpers`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerd4rent:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-602.",
+      "expected_output": "Step 0 finds no guide, reads the `## Personal guide` comment with its `Not needed:` line, notes the reason and goes on; Steps 0b and 0c pass and the close-out commits, pushes and merges; the Report carries the reason.",
       "files": [],
       "assertions": [
-        "The agent accepts the `Not needed:` comment and continues to Step 1",
+        "The agent accepts the `Not needed:` comment as passing Step 0 and goes on to the commit, push and merge steps",
         "The Report carries the reason from the comment"
       ]
     },
     {
       "id": "gate-no-vault",
-      "prompt": "Close out issue DEMO-603 on Linear on a machine where ~/obsidian/nerdbrain does not exist.",
-      "expected_output": "Step 0 sees no vault, notes that the guide was not checked, and continues with Step 1; the Report says the machine has no nerdbrain vault.",
+      "prompt": "Close out issue DEMO-603 on Linear with VCS GitHub on a machine where ~/obsidian/nerdbrain does not exist. The checkout is on the issue branch `demo-603-cache-headers`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerd4rent:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-603.",
+      "expected_output": "Step 0 sees no vault, notes that the guide was not checked and goes on without searching; Steps 0b and 0c pass and the close-out commits, pushes and merges; the Report says the machine has no nerdbrain vault.",
       "files": [],
       "assertions": [
-        "The agent checks for ~/obsidian/nerdbrain/5-wiki before searching",
-        "The agent continues to Step 1 without stopping",
+        "The agent checks for ~/obsidian/nerdbrain/5-wiki with test -d and, finding no vault, does not search for a guide",
+        "The agent does not stop at the guide check and goes on to the commit, push and merge steps",
         "The Report says there is no nerdbrain vault on this machine and the guide was not checked"
       ]
     },
     {
       "id": "children-gate-stops-open-child",
-      "prompt": "Close out issue DEMO-610 on Linear: its PR is reviewed and green, and ~/obsidian/nerdbrain/5-wiki/guides/plugin.md mentions DEMO-610. DEMO-610 has two sub-issues: DEMO-611 in Done and DEMO-612 in Backlog.",
+      "prompt": "Close out issue DEMO-610 on Linear with VCS GitHub: its PR is reviewed and green, and ~/obsidian/nerdbrain/5-wiki/guides/plugin.md mentions DEMO-610. DEMO-610 has two sub-issues: DEMO-611 in Done and DEMO-612 in Backlog. issue.url gives https://linear.app/example/issue/DEMO-611 and https://linear.app/example/issue/DEMO-612 for them.",
       "expected_output": "Step 0 finds the guide. Step 0b reads the children with issue.read-relations, reads each child's phase with issue.read-status, finds DEMO-612 in backlog and stops before any commit, push or merge, listing DEMO-612 with its phase and link and saying to finish or detach it and run the close-out again.",
       "files": [],
       "assertions": [
-        "The agent runs issue.read-relations on DEMO-610 before any git command",
+        "The agent reads the sub-issues of DEMO-610 (issue.read-relations) before any git command",
         "The agent reads the phase of DEMO-611 and DEMO-612 with issue.read-status",
         "The agent runs no commit, push or merge and does not set DEMO-610 to done",
-        "The stop message lists DEMO-612 with its phase and its link",
-        "The stop message does not list DEMO-611"
+        "The stop message lists DEMO-612 with its phase backlog and its link https://linear.app/example/issue/DEMO-612",
+        "The list of children that are not done holds DEMO-612 only, not DEMO-611"
       ]
     },
     {
       "id": "children-gate-passes-all-done",
-      "prompt": "Close out issue DEMO-613 on Linear. The vault exists and a guide mentions DEMO-613. DEMO-613 has one sub-issue, DEMO-614, in Done.",
-      "expected_output": "Step 0b finds one child, reads its phase as done and continues with Step 1; the Report says the issue has one child and it is done.",
+      "prompt": "Close out issue DEMO-613 on Linear with VCS GitHub. The vault exists and a guide mentions DEMO-613. DEMO-613 has one sub-issue, DEMO-614, in Done. The checkout is on the issue branch `demo-613-billing-export`, which has an open PR on GitHub based on `main`. The PR description is a readiness description ending with `<!-- nerd4rent:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-613.",
+      "expected_output": "Step 0b finds one child, reads its phase as done and goes on; Step 0c passes and the close-out commits, pushes and merges; the Report says the issue has one child and it is done.",
       "files": [],
       "assertions": [
         "The agent reads the phase of DEMO-614 with issue.read-status",
@@ -87,7 +87,7 @@
       "expected_output": "Step 0c pipes pr.view through scripts/pr-body-state.ts, gets draft, and stops before any commit, push or merge, telling the caller to write the readiness description with nerd4rent:issue-workflow step 6b and then run the close-out again.",
       "files": [],
       "assertions": [
-        "The agent runs scripts/pr-body-state.ts on the pr.view output before any git command",
+        "The agent pipes pr.view (gh pr view) through scripts/pr-body-state.ts before any git command",
         "The agent runs no commit, push or merge",
         "The agent does not rewrite the PR body itself",
         "The stop message names issue-workflow step 6b and says to run the close-out again"
@@ -95,8 +95,8 @@
     },
     {
       "id": "readiness-gate-passes-with-marker",
-      "prompt": "Close out issue DEMO-641 on Linear with VCS GitHub. The guide mentions DEMO-641, the issue has no children, and the PR body has why, what changed, scope, evidence and merge risk sections and ends with `<!-- nerd4rent:pr-body -->`.",
-      "expected_output": "Step 0c gets readiness from the classifier and the close-out continues with Step 1; the Report names the description check as readiness.",
+      "prompt": "Close out issue DEMO-641 on Linear with VCS GitHub. The guide mentions DEMO-641, the issue has no children, and the PR body has why, what changed, scope, evidence and merge risk sections and ends with `<!-- nerd4rent:pr-body -->`. The checkout is on the issue branch `demo-641-retry-export`, which has an open PR on GitHub based on `main`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-641.",
+      "expected_output": "Step 0c gets readiness from the classifier and the close-out goes on to commit, push and merge; the Report names the description check as readiness.",
       "files": [],
       "assertions": [
         "The agent continues to the commit, push and merge steps",
@@ -112,6 +112,18 @@
         "The agent reads the description with the GitLab adapter's pr.view",
         "The agent continues to Step 1",
         "The agent does not change the MR description"
+      ]
+    },
+    {
+      "id": "merge-fails-stops",
+      "prompt": "Close out issue DEMO-670 on Linear with VCS GitHub. A guide in ~/obsidian/nerdbrain/5-wiki/guides/ mentions DEMO-670, the issue has no children, the PR description ends with `<!-- nerd4rent:pr-body -->`, and the working tree is clean. The checkout is on the issue branch `demo-670-csv-import`, and `git push` succeeds. pr.view-base returns `{\"baseRefName\":\"main\",\"isDraft\":false}`. `gh pr merge --merge` exits 1 with `Pull request is not mergeable: the merge commit cannot be cleanly created.`",
+      "expected_output": "Steps 0 to 2 pass, pr.mark-ready is skipped because the PR is not a draft, and the merge fails. The close-out stops at Step 3 and reports the error verbatim: it does not resolve the conflict, retry with another merge method, rebase, switch to main or set the issue to done.",
+      "files": [],
+      "assertions": [
+        "The agent stops after the failed merge and reports the error",
+        "The agent does not try to resolve the conflict, rebase or use --squash or --rebase",
+        "After the failed merge the agent does not switch to main: it runs neither git checkout main nor git pull",
+        "The agent does not set DEMO-670 to done"
       ]
     }
   ]

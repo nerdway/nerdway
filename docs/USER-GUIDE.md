@@ -225,6 +225,11 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 - **Say:** *"where were we"*, *"continue"*, *"gdzie jesteśmy"*, *"na czym stanęliśmy"* - after switching to a project, on this machine or another one.
 - **What happens:** the agent reads the newest checkpoint from the project's nerdbrain entity page, checks it against git and the tracker (a commit never pushed, a branch gone, rewritten history, work done after the checkpoint), and reports the state and any drift, then all open issues of the project grouped by phase (in progress, in review, todo, backlog), the Backlog included, so a full Backlog never reads as "nothing to do". A "Suggested next" line names one issue with the reason in a sentence: the one already in progress, else an issue related to the checkpointed one, unblocked, or touching the same part of the repo. The report ends with the issue ID to type to resume. It records a new checkpoint only after you agree, and never starts work on an issue by itself, the suggested one included.
 
+### `retro` - lessons from the session as issues
+
+- **Say:** `/nerd4rent:retro`, at the end of a session; optionally with the path to a session transcript. The agent never starts it by itself.
+- **What happens:** the agent goes through the session and picks out the places where it cost more than it had to or went wrong: a file searched for three times, a mistake no check caught, a long output read in full, a step that changed nothing, information it had to ask you for. Each becomes a candidate in one of six categories (navigation, automated checks, coding standards, tool economy, no-ops, information access) with its evidence from the session, the change it asks for and a recommendation. Lessons an open issue already covers are listed with that issue's link instead. You pick which candidates become issues; each one goes to `issue-writer`, which shows the draft and creates it only after you approve. Nothing is changed directly: no file in the repo, no `CLAUDE.md`, no memory file, no nerdbrain page.
+
 ### `tdd` - test first
 
 - **Say:** *"TDD"*, *"test first"*, *"napisz najpierw test"* - or nothing: `issue-workflow` and `auto-issue-mode` use it when the plan's test approach is TDD.

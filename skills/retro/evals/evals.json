@@ -1,0 +1,55 @@
+{
+  "skill_name": "retro",
+  "evals": [
+    {
+      "id": "candidates-by-category-nothing-applied",
+      "prompt": "/nerd4rent:retro\n\nIn this session: the agent searched three times for the command that bumps the manifests before the user pointed at CONTRIBUTING.md; a PR body went out with a Co-authored-by line and the user had to edit it, though no check looks for it; and the agent read the 2000-line output of claude plugin validate in full twice. The tracker is Linear, team DEMO, project nerd4rent-claude-plugin; issue.list-open returns no issue about any of these.",
+      "expected_output": "Three candidates, numbered and grouped: navigation (a pointer to the bump command), automated checks (a check for attribution lines in PR bodies), tool economy (read only the summary of the validator). Each has the evidence from the session, the change and where it lands, and a recommendation. One question asks which become issues. No file is edited and nothing is created yet.",
+      "files": [],
+      "assertions": [
+        "The candidates are grouped under navigation, automated checks and tool economy",
+        "Each candidate quotes or summarises its evidence from the session",
+        "Each candidate names the change it asks for and where it lands",
+        "Each candidate carries an accept or reject recommendation with a reason",
+        "One question asks which candidates become issues",
+        "No file in the repo, no memory file and no vault page is edited",
+        "Nothing is created on the tracker in this turn"
+      ]
+    },
+    {
+      "id": "accepted-candidate-goes-to-issue-writer",
+      "prompt": "The retro listed three candidates and the user answered: \"1 i 2\". Candidate 1: a pointer to the version bump command in CONTRIBUTING.md (navigation). Candidate 2: a validator that rejects Co-authored-by lines in PR bodies (automated checks). Candidate 3, rejected: read only the summary of claude plugin validate.",
+      "expected_output": "issue-writer is invoked for candidate 1, then for candidate 2, each with the title, the evidence, the change and the session as the source. issue-writer shows each draft and creates it only after its own approval. Candidate 3 is reported as turned down. The retro writes nothing to the repo itself.",
+      "files": [],
+      "assertions": [
+        "issue-writer is invoked once for candidate 1 and once for candidate 2, in that order",
+        "Each request to issue-writer carries the evidence and names the session as the source",
+        "No issue is created before issue-writer's own approval of its draft",
+        "Candidate 3 is not handed to issue-writer and is reported as turned down",
+        "The retro edits no file in the repo"
+      ]
+    },
+    {
+      "id": "duplicate-of-open-issue-is-listed-apart",
+      "prompt": "/nerd4rent:retro\n\nIn this session the agent ran the eval files by hand because nothing runs them. issue.list-open returns DEMO-412 \"Runner ewaluacji i pokrycie skilli rdzenia\" (Backlog).",
+      "expected_output": "The lesson is not proposed as a new candidate: it is listed apart as covered by DEMO-412, with its link, so the user can add the evidence there. With no other lesson there is no candidate to accept, and the skill says so.",
+      "files": [],
+      "assertions": [
+        "No new candidate is proposed for running the evals",
+        "The lesson is listed as covered by DEMO-412 with its link from issue.url",
+        "issue-writer is not invoked"
+      ]
+    },
+    {
+      "id": "no-evidence-no-candidate",
+      "prompt": "/nerd4rent:retro\n\nThe session was one short question about a function's behaviour, answered from one file read. No correction, no failed command, no repeated step.",
+      "expected_output": "The skill finds no lesson with evidence, says so in one line and ends. It does not invent generic advice as candidates and invokes nothing.",
+      "files": [],
+      "assertions": [
+        "The skill says there is no candidate",
+        "No generic candidate without evidence from the session is proposed",
+        "issue-writer is not invoked and nothing is written"
+      ]
+    }
+  ]
+}

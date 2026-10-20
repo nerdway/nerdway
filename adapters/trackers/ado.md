@@ -125,6 +125,7 @@ it.
 | `issue.update-description` | the update-description recipe below | replaces the whole description and keeps it markdown |
 | `issue.set-status` | the write recipe of the resolved strategy in `## Status strategies` | writes a canonical phase; never `in-progress` on the agent's own initiative |
 | `issue.comment` | the comment recipe below | markdown body |
+| `issue.relate` | `az boards work-item relation add --organization <ORG> --id <n> --relation-type Related --target-id <m> -o none` | a `Related` link, shown on both work items; `<m>` must be a work item of `<PROJECT>` |
 | `status.list` | the board recipe below — `columns[].name` | under `native` the phases are the columns of `<BOARD>`, not work item states |
 | `label.list` | `az devops invoke --organization <ORG> --area wit --resource tags --route-parameters project=<PROJECT> --api-version 7.1-preview -o json` | the tags already used in the project; names in `.value[].name` |
 | `label.create` | — | ADO has no tag create: a tag appears the first time a work item carries it. `bind-statuses` asks for consent to the tags as it would for labels, and the first `issue.set-status` of that phase creates the tag |
@@ -412,3 +413,17 @@ jq -r '(if .format == "html" then (.text | gsub("<br\\s*/?>|</(div|p)>"; "\n") |
 Any author counts: on Azure DevOps only members of the project — Stakeholder
 access included — can comment on a work item, even in a public project, so
 the outsider rule of `adapters/statuses.md` does not apply.
+
+## Bugs
+
+A bug is a `<TYPE>` work item with the tag `Bug`. A work item of the type
+`Bug` is not used, even where the process has one: every operation here
+filters on `<TYPE>`, so a `Bug` item would vanish from the lists and the
+board recipes. Add the tag in the create recipe's patch before the `POST`:
+
+```json
+{"op": "add", "path": "/fields/System.Tags", "value": "Bug"}
+```
+
+ADO creates a tag the first time a work item carries it; the user's
+approval of the drafted bug covers that tag.

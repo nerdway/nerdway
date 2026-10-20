@@ -53,11 +53,13 @@ The `native` strategy maps phases to the tracker's state names, `label` to label
 
 What each strategy means is in [`adapters/statuses.md`](../adapters/statuses.md). The command `node scripts/validate-platform-config.ts [path/to/CLAUDE.md]` checks a config (all five phases, a strategy the adapter supports, no value twice) and every tracker adapter's default. See [ADR-0006](adr/0006-canonical-phases-and-status-strategies.md).
 
+The same file holds the one rule for a **done issue without a trace of work**: a `done` issue, not a parent, with no commit on the default branch in the forms the workflow writes and no `## No code in this repo` comment. `project-continue`, `issue-next-step`, the `issue-workflow` dispatch and entry B of `auto-issue-mode` point at it instead of restating it. The finding ends in a warning and a bug proposal through `issue-writer`, never a comment alone and never a phase change. The bug is marked as the tracker adapter's `## Bugs` section says and tied to the faulty issue with `issue.relate`.
+
 The commands themselves live in **adapter files**, one per platform per axis:
 
 | Axis | Adapter files | Required sections |
 |---|---|---|
-| tracker | `adapters/trackers/linear.md`, `adapters/trackers/github.md`, `adapters/trackers/gitlab.md`, `adapters/trackers/ado.md` | `CLI`, `Issue ID`, `Operations`, `URL`, `Statuses`, `Status strategies` |
+| tracker | `adapters/trackers/linear.md`, `adapters/trackers/github.md`, `adapters/trackers/gitlab.md`, `adapters/trackers/ado.md` | `CLI`, `Issue ID`, `Operations`, `URL`, `Statuses`, `Status strategies`, `Bugs` |
 | VCS host | `adapters/vcs/github.md`, `adapters/vcs/gitlab.md`, `adapters/vcs/ado.md` | `CLI`, `Detection`, `Operations`, `Magic words`, `URL` |
 
 Skills never quote a command: they name an **operation ID** (`issue.set-status`, `pr.merge`, and so on) and look it up in the adapter's `## Operations` table, read through `${CLAUDE_PLUGIN_ROOT}`. The `adapters` block of `workflow-graph.json` declares each axis's sections and operation IDs. The `validate-workflow-graph.ts` script rejects an adapter that misses one, repeats one, lists an undeclared one, or is named outside the config enum, and a tracker adapter whose `## Status strategies` table does not list exactly the strategies of the config enum, or supports none. A configured platform with no adapter file yet makes the skill stop with "adapter not available yet"; it never falls back to Linear.

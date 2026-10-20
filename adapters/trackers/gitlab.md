@@ -113,6 +113,7 @@ resolves to nothing: stop and ask the user for the ID — never guess it.
 | `issue.update-description` | `glab issue update <n> -R <REPO> --description-file body.md` | replaces the whole description; keep a child's `Parent:` first line |
 | `issue.set-status` | the write recipe of the resolved strategy in `## Status strategies` | writes a canonical phase; never `in-progress` on the agent's own initiative |
 | `issue.comment` | `glab issue note <n> -R <REPO> --message "$(cat body.md)"` | markdown body; prints the note URL |
+| `issue.relate` | `glab api --hostname <HOST> --method POST "projects/<ENC>/issues/<n>/links" -f target_project_id=<ENC> -f target_issue_iid=<m> -f link_type=relates_to` | a `relates_to` link, available on GitLab Free and shown on both issues; `<m>` is the other issue's IID, and `target_project_id` takes the other project's `<ENC>` when it lives elsewhere. Not run: this machine has no GitLab project; the call follows the issue links API |
 | `status.list` | — | GitLab issues have only opened/closed; phases live in labels or marker comments |
 | `label.list` | `glab api --hostname <HOST> "projects/<ENC>/labels?per_page=100" --paginate` | the project's labels with those inherited from its groups; names in `.[].name` |
 | `label.create` | `glab label create -R <HOST>/<CODE_PROJECT> --name "<name>"` | only with the user's consent; HTTP 409, exit 1 when it already exists |
@@ -254,3 +255,10 @@ project, any signed-in user — so a marker counts only when its author can
 push to the project, the rule of `adapters/statuses.md`. Developer is the
 lowest role with push access; Guest, Planner and Reporter can comment but not
 push. The check usually costs one call per read (the newest marker's author).
+
+## Bugs
+
+A bug is an issue with the label `bug`. GitLab creates no default labels, so
+look for it in `label.list` (group labels included); when it is there,
+`issue.create` gets `--label bug`. When it is missing, ask before running
+`label.create` for it.

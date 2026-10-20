@@ -65,6 +65,78 @@
         "The shortened table keeps the key criteria and says the full table is in a comment",
         "The full table goes out with pr.comment"
       ]
+    },
+    {
+      "id": "dispatch-backlog-plans",
+      "prompt": "DEMO-650 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-650` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear.",
+      "expected_output": "The phase is backlog, so the agent plans: it drafts the plan from plan-template.md, posts it with issue.comment starting with `## Implementation plan`, writes phase todo with issue.set-status, and ends the turn asking the user to move the issue to In Progress, with the issue link. It creates no branch, commit or PR and edits no file.",
+      "files": [],
+      "assertions": [
+        "The agent reads the phase from the tracker before doing anything else",
+        "The agent posts a comment starting with `## Implementation plan`",
+        "The agent writes phase todo, not in-progress",
+        "The agent asks the user to move the issue to In Progress and prints the issue link",
+        "The agent creates no branch, commit or PR and changes no file"
+      ]
+    },
+    {
+      "id": "dispatch-in-progress-starts",
+      "prompt": "DEMO-651 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-651`. issue.read shows the issue In Progress with a `## Implementation plan` comment whose Test approach is TDD. There is no branch and no PR yet, and the local checkout is a clean `main`.",
+      "expected_output": "The phase is in-progress, so the agent implements: it rebuilds context from the description and the plan, runs the Start step by delegating to nerd4rent:issue-start with DEMO-651 and a one-paragraph summary (branch, empty start commit, push, draft PR with `Fixes DEMO-651`), then follows the plan's TDD test approach through nerd4rent:tdd. It does not re-plan.",
+      "files": [],
+      "assertions": [
+        "The agent dispatches on the in-progress phase and does not draft a new plan",
+        "The agent delegates the Start step to nerd4rent:issue-start because there is no branch or PR",
+        "The draft PR body starts with `Fixes DEMO-651`",
+        "The agent implements with nerd4rent:tdd, as the plan's test approach says"
+      ]
+    },
+    {
+      "id": "dispatch-in-review-review-menu",
+      "prompt": "DEMO-652 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-652`. The issue is In Review, its branch and PR exist, and the implementation is pushed.",
+      "expected_output": "The phase is in-review, so the agent enters the code review phase: it confirms the change range with the user, defaulting to main...HEAD, prints the issue link, and runs the four-axis review island (review-verify) on that range. It neither merges the PR nor writes done.",
+      "files": [],
+      "assertions": [
+        "The agent dispatches on the in-review phase to the code review",
+        "The agent proposes the range main...HEAD and prints the issue link",
+        "The review covers the four axes spec-compliance, repo-standards, correctness-regressions and security",
+        "The agent does not merge the PR or write done"
+      ]
+    },
+    {
+      "id": "dispatch-done-close-out",
+      "prompt": "DEMO-653 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user moved DEMO-653 to Done on the tracker and types `DEMO-653`. Its PR is still open, green and reviewed.",
+      "expected_output": "Phase done with the PR unmerged means close-out: the agent first runs nerd4rent:nerd-personal-docs with the issue ID on the session model, then delegates to nerd4rent:issue-close, which checks the guide, the children and the PR description, merges with a merge commit and switches to the base branch.",
+      "files": [],
+      "assertions": [
+        "The agent dispatches on the done phase to the close-out",
+        "The agent runs nerd4rent:nerd-personal-docs before nerd4rent:issue-close",
+        "The merge is delegated to nerd4rent:issue-close, not run directly"
+      ]
+    },
+    {
+      "id": "unknown-phase-stops",
+      "prompt": "DEMO-654 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `implement DEMO-654`. issue.read shows the issue in the state `Canceled`.",
+      "expected_output": "`Canceled` is not in the status map, so the phase is unknown: the agent reports the raw value `Canceled` with the issue link and stops. It does not plan, implement, change a status or touch the repo.",
+      "files": [],
+      "assertions": [
+        "The agent reports the raw state `Canceled` as a phase it does not know",
+        "The agent prints the issue link",
+        "The agent writes no status and posts no plan",
+        "The agent creates no branch and changes no file"
+      ]
+    },
+    {
+      "id": "in-progress-gate-todo-no-repo-change",
+      "prompt": "DEMO-655 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). In a fresh session the user types `DEMO-655`. The issue is in Todo and already has a `## Implementation plan` comment. The plan names three files to change. There is no branch and no PR.",
+      "expected_output": "The phase is todo, not in-progress, so the hard gate holds: the agent makes no repo change (no branch, edit, commit or PR), refines the existing plan only if needed instead of duplicating it, and ends the turn asking the user to move DEMO-655 to In Progress on the tracker, with the issue link. It never writes in-progress itself.",
+      "files": [],
+      "assertions": [
+        "The agent makes no repo change: no branch, no file edit, no commit, no PR",
+        "The agent does not write in-progress itself",
+        "The agent does not post a second, duplicate plan",
+        "The agent asks the user to move the issue to In Progress and prints the issue link"
+      ]
     }
   ]
 }

@@ -14,8 +14,10 @@ You are the **orchestrator** of an autonomous run: one issue, from a task
 description (or an existing issue ID) to a merged PR/MR and the `done` phase.
 Every stage runs on its own subagent (`Agent` tool, `general-purpose`). You
 resolve the platform, dispatch stages, carry each stage's report into the next
-prompt, and print progress. The code, the commits and the tracker writes of a
-stage belong to its subagent; you edit no file yourself.
+prompt, and print progress. The one thing you run yourself is the review island
+of stage 4, which needs your `Workflow` or `Task` tool. The code, the commits
+and the tracker writes of a stage belong to its subagent; you edit no file
+yourself.
 
 ## First step: the issue, before the work
 
@@ -146,16 +148,30 @@ number that proves it — before dispatching the next.
    approach (mode, and under `no tests` the reason and the stand-in check's
    result), and every
    decision, gotcha or command learned on the way.
-4. **Review.** Write phase `in-review`. Review `main...HEAD` (or the PR/MR
-   base) along `issue-workflow`'s four axes — spec compliance against the
-   acceptance criteria **and** the plan comment, repo standards
-   (`CONTEXT.md` `## Standards`, the no-comments rule), correctness and
-   regressions, security. Fix every real defect with its own commit, re-run the
-   tests, push. Then answer review threads the way `issue-workflow`'s
-   **Review threads on the PR/MR** section does. Re-run the tests after that
-   step. A failing suite stops the stage. Only then run `pr.mark-ready`
-   (skipped when the adapter lists `—`).
-   Report: findings with their fixes, the threads answered, final test results.
+4. **Review.** Write phase `in-review` with `issue.set-status`. Then run the
+   review island yourself, before dispatching the stage's subagent: an island
+   needs the `Workflow` or `Task` tool, which a subagent may not have. Run
+   `review-verify` exactly as `issue-workflow`'s **Code review phase** does,
+   on the range `<base>...<issue branch>` (the PR/MR base, else `main`),
+   without the range confirmation: invoking this skill is the user's consent.
+   With `Workflow`, call `nerd4rent:review-verify`; without it, run the `Task`
+   path stage by stage with `node scripts/island-reduce.ts review`. Keep its
+   `ReviewFindings` (`summary`, `findings`, `stats`, `conflicts`) and its
+   `gaps` verbatim. Only with neither tool, the subagent runs
+   `issue-workflow`'s degradation (a), one pass per axis, and its report
+   flags the review as degraded.
+   The subagent's prompt carries the `ReviewFindings` verbatim and forbids it
+   to review the diff itself, to dispatch a reviewer of its own and to add a
+   finding. It checks each verified finding against the code and fixes the
+   ones that hold, each with its own commit; a finding that does not hold is
+   not applied and is reported with the technical reason. It re-runs the
+   tests and pushes. Then it answers review threads the way
+   `issue-workflow`'s **Review threads on the PR/MR** section does and
+   re-runs the tests after that step. A failing suite stops the stage. Only
+   then it runs `pr.mark-ready` (skipped when the adapter lists `—`).
+   Report: each finding with its fix commit or the reason it was not applied,
+   the island's `stats` and `gaps` (or the degraded flag), the threads
+   answered, final test results.
 5. **Close-out.** First run `nerd4rent:nerd-personal-docs` with the ID and
    platform: this subagent runs on the session model, so the guide is not
    written on `issue-close`'s Haiku. It writes or updates the user's guide in
@@ -234,7 +250,8 @@ picks the run up from the issue's phase.
 ## Final report
 
 Close with the run's **evidence**: issue ID and link (`issue.url`), PR/MR number, merge commit, test results (final, with
-pre-existing unrelated failures listed apart), the test approach with its
+pre-existing unrelated failures listed apart), the review island's `stats` and
+`gaps` from stage 4 (or that the review ran degraded), the test approach with its
 reason whenever the run left TDD, and what went to nerdbrain, including the
 checkpoint line stage 6 wrote (or why none was).
 
@@ -242,7 +259,8 @@ checkpoint line stage 6 wrote (or why none was).
 
 - `nerd4rent:issue-writer` — the creation flow entry A runs without grilling.
 - `nerd4rent:issue-workflow` — the human-steered flow whose status gate this
-  mode suspends for the run; its plan template and review axes are reused here.
+  mode suspends for the run; its plan template and its review island
+  (`review-verify`) are reused here.
 - `nerd4rent:issue-start` / `nerd4rent:issue-close` — the chains of stages 1
   and 5.
 - `nerd4rent:plan-context-fanout` — optional context island for stage 2.

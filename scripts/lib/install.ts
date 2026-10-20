@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, join, posix } from "node:path";
 
 import type { CliEntry, InstallStrategy } from "../types/cli-dependencies.ts";
 import { runCommand } from "./probe.ts";
@@ -91,7 +91,7 @@ export async function applyInstall(entry: CliEntry, strategy: InstallStrategy): 
 }
 
 export function npmGlobalBinDir(prefix: string, platform: NodeJS.Platform): string {
-  return platform === "win32" ? prefix : join(prefix, "bin");
+  return platform === "win32" ? prefix : posix.join(prefix, "bin");
 }
 
 export async function applyNpmInstall(pkg: string): Promise<InstallOutcome> {

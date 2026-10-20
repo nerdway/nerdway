@@ -17,6 +17,15 @@ resolve the platform, dispatch stages, carry each stage's report into the next
 prompt, and print progress. The code, the commits and the tracker writes of a
 stage belong to its subagent; you edit no file yourself.
 
+## First step: the issue, before the work
+
+The first step after accepting a task is an issue in the tracker, and its
+number in your reply, before any stage runs. With a task description, entry A
+creates it and you print its ID right after `issue.create`; with an issue ID,
+entry B confirms it exists. No subagent changes the repo before that ID is
+known. The plugin's hooks, where they run, block `git commit` and `git push`
+on a branch without an issue ID; a bot without hooks has only this rule.
+
 ## Consent: the one exception to the status gate
 
 Invoking this skill is the user's consent to the whole run. In this mode the

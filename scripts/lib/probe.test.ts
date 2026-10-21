@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { probe, runCommand } from "./probe.ts";
+import { probe, runCommand, type CommandResult, type RunOptions } from "./probe.ts";
 import type { CliEntry } from "../types/cli-dependencies.ts";
 
 function nodeEntry(overrides: Partial<CliEntry> = {}): CliEntry {
@@ -45,4 +45,25 @@ test("probe reports missing for an absent binary", async () => {
 test("probe reports unknown when the regex does not match the output", async () => {
   const result = await probe(nodeEntry({ versionRegex: "totally unmatched (\\d+)" }));
   assert.equal(result.status, "unknown");
+});
+
+function fakeRun(results: Record<string, CommandResult>) {
+  const calls: { argv: string[]; options?: RunOptions }[] = [];
+  const run = async (argv: string[], options?: RunOptions): Promise<CommandResult> => {
+    calls.push({ argv, options });
+    const result = results[argv[0]];
+    if (!result) throw new Error(`unexpected command ${argv[0]}`);
+    return result;
+  };
+  return { run, calls };
+}
+
+const notRecognized: CommandResult = { code: 1, stdout: "", stderr: "Polecenie 'glab' nie jest rozpoznawane." };
+const glabEntry = nodeEntry({ id: "glab", versionCommand: ["glab", "--version"], versionRegex: "glab version (\\d+\\.\\d+\\.\\d+)" });
+
+test("on linux an unparseable version output stays unknown and runs nothing else", async () => {
+  const { run, calls } = fakeRun({ glab: { code: 0, stdout: "garbage", stderr: "" } });
+  const result = await probe(glabEntry, { run, platform: "linux" });
+  assert.deepEqual(result, { status: "unknown", output: "garbage" });
+  assert.equal(calls.length, 1);
 });

@@ -72,3 +72,13 @@ test("on win32 a command that where.exe cannot find is missing, whatever cmd.exe
   const { run } = fakeRun({ glab: notRecognized, "where.exe": { code: 1, stdout: "", stderr: "INFO: Could not find files" } });
   assert.deepEqual(await probe(glabEntry, { run, platform: "win32" }), { status: "missing" });
 });
+
+test("on win32 a command that where.exe finds but whose output does not parse stays unknown", async () => {
+  const { run } = fakeRun({ glab: { code: 0, stdout: "garbage", stderr: "" }, "where.exe": { code: 0, stdout: "C:\\Tools\\glab.exe\r\n", stderr: "" } });
+  assert.deepEqual(await probe(glabEntry, { run, platform: "win32" }), { status: "unknown", output: "garbage" });
+});
+
+test("on win32 a lookup that cannot run at all proves nothing, so the probe stays unknown", async () => {
+  const { run } = fakeRun({ glab: notRecognized, "where.exe": { code: null, stdout: "", stderr: "" } });
+  assert.equal((await probe(glabEntry, { run, platform: "win32" })).status, "unknown");
+});

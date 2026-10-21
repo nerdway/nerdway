@@ -50,7 +50,10 @@ export async function probe(entry: CliEntry, { run = runCommand, platform = proc
   const output = `${result.stdout}${result.stderr}`;
   const version = extractVersion(output, entry.versionRegex);
   if (version === null) {
-    if (platform === "win32") return { status: "missing" };
+    if (platform === "win32") {
+      const lookup = await run(["where.exe", entry.versionCommand[0]]);
+      if (lookup.code !== null && lookup.code !== 0) return { status: "missing" };
+    }
     return { status: "unknown", output: output.trim() };
   }
 

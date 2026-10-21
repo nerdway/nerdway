@@ -41,8 +41,12 @@ export function runCommand(argv: string[], { shell = process.platform === "win32
     // win32 needs a shell: npm and npm-installed CLIs are .cmd shims, which
     // Node refuses to spawn directly (CVE-2024-27980). argv comes from the
     // static contract, never from user input, so the shell adds no injection
-    // surface.
-    const child = spawn(argv[0], argv.slice(1), { shell, stdio: ["ignore", "pipe", "pipe"] });
+    // surface. With a shell the command goes as one quoted line: Node would
+    // join separate args with bare spaces (DEP0190).
+    const stdio: ["ignore", "pipe", "pipe"] = ["ignore", "pipe", "pipe"];
+    const child = shell
+      ? spawn(windowsCommandLine(argv), { shell: true, stdio })
+      : spawn(argv[0], argv.slice(1), { stdio });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk) => { stdout += String(chunk); });

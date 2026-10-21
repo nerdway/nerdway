@@ -113,3 +113,18 @@ test("windowsCommandLine refuses what cmd.exe cannot pass on safely", () => {
   assert.throws(() => windowsCommandLine(["echo", "%PATH%"]), /cmd\.exe/);
   assert.throws(() => windowsCommandLine(["echo", "a\nb"]), /cmd\.exe/);
 });
+
+test("runCommand through a shell keeps an argument with a space in one piece and raises no DEP0190", async () => {
+  const warnings: string[] = [];
+  const onWarning = (warning: Error & { code?: string }) => warnings.push(warning.code ?? warning.name);
+  process.on("warning", onWarning);
+  try {
+    const result = await runCommand(["node", "-p", "process.argv[1]", "a b"], { shell: true });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(result.code, 0);
+    assert.equal(result.stdout, "a b\n");
+    assert.deepEqual(warnings, []);
+  } finally {
+    process.off("warning", onWarning);
+  }
+});

@@ -82,3 +82,9 @@ test("on win32 a lookup that cannot run at all proves nothing, so the probe stay
   const { run } = fakeRun({ glab: notRecognized, "where.exe": { code: null, stdout: "", stderr: "" } });
   assert.equal((await probe(glabEntry, { run, platform: "win32" })).status, "unknown");
 });
+
+test("on win32 the lookup asks where.exe for the command name without a shell", async () => {
+  const { run, calls } = fakeRun({ glab: notRecognized, "where.exe": { code: 1, stdout: "", stderr: "" } });
+  await probe(glabEntry, { run, platform: "win32" });
+  assert.deepEqual(calls[1], { argv: ["where.exe", "glab"], options: { shell: false } });
+});

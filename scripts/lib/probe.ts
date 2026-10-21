@@ -26,13 +26,12 @@ export interface ProbeEnvironment {
   platform?: NodeJS.Platform;
 }
 
-export function runCommand(argv: string[]): Promise<CommandResult> {
+export function runCommand(argv: string[], { shell = process.platform === "win32" }: RunOptions = {}): Promise<CommandResult> {
   return new Promise((resolve) => {
     // win32 needs a shell: npm and npm-installed CLIs are .cmd shims, which
     // Node refuses to spawn directly (CVE-2024-27980). argv comes from the
     // static contract, never from user input, so the shell adds no injection
     // surface.
-    const shell = process.platform === "win32";
     const child = spawn(argv[0], argv.slice(1), { shell, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
@@ -51,7 +50,7 @@ export async function probe(entry: CliEntry, { run = runCommand, platform = proc
   const version = extractVersion(output, entry.versionRegex);
   if (version === null) {
     if (platform === "win32") {
-      const lookup = await run(["where.exe", entry.versionCommand[0]]);
+      const lookup = await run(["where.exe", entry.versionCommand[0]], { shell: false });
       if (lookup.code !== null && lookup.code !== 0) return { status: "missing" };
     }
     return { status: "unknown", output: output.trim() };

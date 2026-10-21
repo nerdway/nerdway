@@ -15,6 +15,16 @@ export type ProbeResult =
   | { status: "missing" }
   | { status: "unknown"; output: string };
 
+export interface RunOptions {
+  shell?: boolean;
+}
+
+export type Runner = (argv: string[], options?: RunOptions) => Promise<CommandResult>;
+
+export interface ProbeEnvironment {
+  run?: Runner;
+}
+
 export function runCommand(argv: string[]): Promise<CommandResult> {
   return new Promise((resolve) => {
     // win32 needs a shell: npm and npm-installed CLIs are .cmd shims, which
@@ -32,8 +42,8 @@ export function runCommand(argv: string[]): Promise<CommandResult> {
   });
 }
 
-export async function probe(entry: CliEntry): Promise<ProbeResult> {
-  const result = await runCommand(entry.versionCommand);
+export async function probe(entry: CliEntry, { run = runCommand }: ProbeEnvironment = {}): Promise<ProbeResult> {
+  const result = await run(entry.versionCommand);
   if (result.code === null) return { status: "missing" };
 
   const output = `${result.stdout}${result.stderr}`;

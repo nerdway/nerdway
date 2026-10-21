@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { probe, runCommand, type CommandResult, type RunOptions } from "./probe.ts";
+import { probe, runCommand, windowsCommandLine, type CommandResult, type RunOptions } from "./probe.ts";
 import type { CliEntry } from "../types/cli-dependencies.ts";
 
 function nodeEntry(overrides: Partial<CliEntry> = {}): CliEntry {
@@ -92,4 +92,24 @@ test("on win32 the lookup asks where.exe for the command name without a shell", 
   const { run, calls } = fakeRun({ glab: notRecognized, "where.exe": { code: 1, stdout: "", stderr: "" } });
   await probe(glabEntry, { run, platform: "win32" });
   assert.deepEqual(calls[1], { argv: ["where.exe", "glab"], options: { shell: false } });
+});
+
+test("windowsCommandLine leaves plain arguments as they are", () => {
+  assert.equal(windowsCommandLine(["npm", "install", "--global", "linearis"]), "npm install --global linearis");
+  assert.equal(windowsCommandLine(["tar", "-xzf", "C:\\Temp\\a.tgz", "-C", "C:\\Temp\\w"]), "tar -xzf C:\\Temp\\a.tgz -C C:\\Temp\\w");
+});
+
+test("windowsCommandLine quotes an argument with a space, a cmd.exe metacharacter or nothing in it", () => {
+  assert.equal(
+    windowsCommandLine(["tar", "-xzf", "C:\\Users\\Jan Kowalski\\AppData\\Local\\Temp\\a.tgz"]),
+    'tar -xzf "C:\\Users\\Jan Kowalski\\AppData\\Local\\Temp\\a.tgz"',
+  );
+  assert.equal(windowsCommandLine(["echo", "a&b", "x|y", ""]), 'echo "a&b" "x|y" ""');
+  assert.equal(windowsCommandLine(["dir", "C:\\Users\\Paweł Wlazło\\"]), 'dir "C:\\Users\\Paweł Wlazło\\\\"');
+});
+
+test("windowsCommandLine refuses what cmd.exe cannot pass on safely", () => {
+  assert.throws(() => windowsCommandLine(["echo", 'say "hi"']), /cmd\.exe/);
+  assert.throws(() => windowsCommandLine(["echo", "%PATH%"]), /cmd\.exe/);
+  assert.throws(() => windowsCommandLine(["echo", "a\nb"]), /cmd\.exe/);
 });

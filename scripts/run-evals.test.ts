@@ -2,10 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 
-const RUNNER = new URL("./run-evals.ts", import.meta.url).pathname;
+const RUNNER = join(import.meta.dirname, "run-evals.ts");
 const ROOT = join(import.meta.dirname, "..");
+
+function escapeRegExp(text: string) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 function run(args: string[]) {
   const result = spawnSync(process.execPath, [RUNNER, ...args], { encoding: "utf8", cwd: ROOT });
@@ -20,7 +24,8 @@ test("--dry-run writes the cases of the chosen skill and prints the claude comma
   try {
     assert.deepEqual(readdirSync(join(ROOT, dir)), ["issue-close"]);
     assert.ok(existsSync(join(ROOT, dir, "issue-close", "gate-stops-without-guide", "prompt.md")));
-    assert.match(stdout, new RegExp(`claude plugin eval ${ROOT} --eval-dir ${dir} --output-dir ${ROOT}/results/\\S+ --runs 1 --no-publish`));
+    const results = escapeRegExp(join(ROOT, "results") + sep);
+    assert.match(stdout, new RegExp(`claude plugin eval ${escapeRegExp(ROOT)} --eval-dir ${escapeRegExp(dir)} --output-dir ${results}\\S+ --runs 1 --no-publish`));
   } finally {
     rmSync(join(ROOT, dir), { recursive: true, force: true });
   }

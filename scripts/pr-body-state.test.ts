@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { join } from "node:path";
 
-const RUNNER = new URL("./pr-body-state.ts", import.meta.url).pathname;
+const RUNNER = join(import.meta.dirname, "pr-body-state.ts");
 
 function run(input: string, args: string[] = []) {
   const result = spawnSync(process.execPath, [RUNNER, ...args], { input, encoding: "utf8" });

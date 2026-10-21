@@ -67,3 +67,8 @@ test("on linux an unparseable version output stays unknown and runs nothing else
   assert.deepEqual(result, { status: "unknown", output: "garbage" });
   assert.equal(calls.length, 1);
 });
+
+test("on win32 a command that where.exe cannot find is missing, whatever cmd.exe printed", async () => {
+  const { run } = fakeRun({ glab: notRecognized, "where.exe": { code: 1, stdout: "", stderr: "INFO: Could not find files" } });
+  assert.deepEqual(await probe(glabEntry, { run, platform: "win32" }), { status: "missing" });
+});

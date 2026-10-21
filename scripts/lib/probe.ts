@@ -23,6 +23,7 @@ export type Runner = (argv: string[], options?: RunOptions) => Promise<CommandRe
 
 export interface ProbeEnvironment {
   run?: Runner;
+  platform?: NodeJS.Platform;
 }
 
 export function runCommand(argv: string[]): Promise<CommandResult> {
@@ -42,13 +43,16 @@ export function runCommand(argv: string[]): Promise<CommandResult> {
   });
 }
 
-export async function probe(entry: CliEntry, { run = runCommand }: ProbeEnvironment = {}): Promise<ProbeResult> {
+export async function probe(entry: CliEntry, { run = runCommand, platform = process.platform }: ProbeEnvironment = {}): Promise<ProbeResult> {
   const result = await run(entry.versionCommand);
   if (result.code === null) return { status: "missing" };
 
   const output = `${result.stdout}${result.stderr}`;
   const version = extractVersion(output, entry.versionRegex);
-  if (version === null) return { status: "unknown", output: output.trim() };
+  if (version === null) {
+    if (platform === "win32") return { status: "missing" };
+    return { status: "unknown", output: output.trim() };
+  }
 
   return satisfiesMinimum(version, entry.minVersion)
     ? { status: "ok", version }

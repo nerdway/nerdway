@@ -21,9 +21,14 @@ test("runCommand captures stdout and exit code", async () => {
   assert.match(result.stdout, /^v\d+\.\d+\.\d+/);
 });
 
-test("runCommand reports a null code for a binary that does not exist", async () => {
+test("runCommand reports a null code for a binary that does not exist, or cmd.exe's non-zero exit on win32", async () => {
   const result = await runCommand(["definitely-not-a-real-binary-xyz"]);
-  assert.equal(result.code, null);
+  if (process.platform === "win32") {
+    assert.equal(typeof result.code, "number");
+    assert.notEqual(result.code, 0);
+  } else {
+    assert.equal(result.code, null);
+  }
 });
 
 test("probe reports ok for an installed CLI meeting the minimum", async () => {

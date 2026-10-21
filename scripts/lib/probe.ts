@@ -15,14 +15,38 @@ export type ProbeResult =
   | { status: "missing" }
   | { status: "unknown"; output: string };
 
-export function runCommand(argv: string[]): Promise<CommandResult> {
+export interface RunOptions {
+  shell?: boolean;
+}
+
+export type Runner = (argv: string[], options?: RunOptions) => Promise<CommandResult>;
+
+export interface ProbeEnvironment {
+  run?: Runner;
+  platform?: NodeJS.Platform;
+}
+
+const PLAIN_ARGUMENT = /^[A-Za-z0-9_+.:\/\\@-]+$/;
+
+export function windowsCommandLine(argv: string[]): string {
+  return argv.map((arg) => {
+    if (/["%\r\n]/.test(arg)) throw new Error(`cmd.exe cannot pass this argument on safely: ${JSON.stringify(arg)}`);
+    if (PLAIN_ARGUMENT.test(arg)) return arg;
+    return `"${arg.replace(/(\\+)$/, "$1$1")}"`;
+  }).join(" ");
+}
+
+export function runCommand(argv: string[], { shell = process.platform === "win32" }: RunOptions = {}): Promise<CommandResult> {
   return new Promise((resolve) => {
     // win32 needs a shell: npm and npm-installed CLIs are .cmd shims, which
     // Node refuses to spawn directly (CVE-2024-27980). argv comes from the
     // static contract, never from user input, so the shell adds no injection
-    // surface.
-    const shell = process.platform === "win32";
-    const child = spawn(argv[0], argv.slice(1), { shell, stdio: ["ignore", "pipe", "pipe"] });
+    // surface. With a shell the command goes as one quoted line: Node would
+    // join separate args with bare spaces (DEP0190).
+    const stdio: ["ignore", "pipe", "pipe"] = ["ignore", "pipe", "pipe"];
+    const child = shell
+      ? spawn(windowsCommandLine(argv), { shell: true, stdio })
+      : spawn(argv[0], argv.slice(1), { stdio });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk) => { stdout += String(chunk); });
@@ -32,13 +56,19 @@ export function runCommand(argv: string[]): Promise<CommandResult> {
   });
 }
 
-export async function probe(entry: CliEntry): Promise<ProbeResult> {
-  const result = await runCommand(entry.versionCommand);
+export async function probe(entry: CliEntry, { run = runCommand, platform = process.platform }: ProbeEnvironment = {}): Promise<ProbeResult> {
+  const result = await run(entry.versionCommand);
   if (result.code === null) return { status: "missing" };
 
   const output = `${result.stdout}${result.stderr}`;
   const version = extractVersion(output, entry.versionRegex);
-  if (version === null) return { status: "unknown", output: output.trim() };
+  if (version === null) {
+    if (platform === "win32") {
+      const lookup = await run(["where.exe", entry.versionCommand[0]], { shell: false });
+      if (lookup.code !== null && lookup.code !== 0) return { status: "missing" };
+    }
+    return { status: "unknown", output: output.trim() };
+  }
 
   return satisfiesMinimum(version, entry.minVersion)
     ? { status: "ok", version }

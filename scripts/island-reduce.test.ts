@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { join } from "node:path";
 
-const RUNNER = new URL("./island-reduce.ts", import.meta.url).pathname;
+const RUNNER = join(import.meta.dirname, "island-reduce.ts");
 
 function run(args: string[], input: unknown) {
   const result = spawnSync(process.execPath, [RUNNER, ...args], { input: JSON.stringify(input), encoding: "utf8" });

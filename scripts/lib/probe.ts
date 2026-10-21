@@ -26,6 +26,16 @@ export interface ProbeEnvironment {
   platform?: NodeJS.Platform;
 }
 
+const PLAIN_ARGUMENT = /^[A-Za-z0-9_+.:\/\\@-]+$/;
+
+export function windowsCommandLine(argv: string[]): string {
+  return argv.map((arg) => {
+    if (/["%\r\n]/.test(arg)) throw new Error(`cmd.exe cannot pass this argument on safely: ${JSON.stringify(arg)}`);
+    if (PLAIN_ARGUMENT.test(arg)) return arg;
+    return `"${arg.replace(/(\\+)$/, "$1$1")}"`;
+  }).join(" ");
+}
+
 export function runCommand(argv: string[], { shell = process.platform === "win32" }: RunOptions = {}): Promise<CommandResult> {
   return new Promise((resolve) => {
     // win32 needs a shell: npm and npm-installed CLIs are .cmd shims, which

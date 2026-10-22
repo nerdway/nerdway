@@ -31,7 +31,8 @@ Code, Cursor), a repo with a configured tracker gets a reminder at the start
 of work, and `git commit` and `git push` are blocked on a branch whose name
 carries no issue ID; `NERD4RENT_NO_ISSUE=1` in the agent's environment turns
 both off. A push of tags only (`git push origin <tag>`, `git push --tags`)
-always passes, and so does a push from a `feature/` or `hotfix/` branch.
+always passes, and a `feature/` or `hotfix/` branch needs no issue ID for
+commit or push.
 
 ## Platform and adapters
 

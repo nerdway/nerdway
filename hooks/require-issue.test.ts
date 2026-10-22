@@ -9,9 +9,11 @@ import {
   branchHasIssue,
   commitMessage,
   decideGate,
+  exemptBranch,
   gitInvocations,
   messageHasIssue,
   pushRefs,
+  tagOnlyPush,
   reminderText,
   runHook,
   type Platform,
@@ -24,13 +26,16 @@ const GITLAB: Platform = { tracker: "gitlab", vcs: "gitlab" };
 const ADO: Platform = { tracker: "ado", vcs: "ado" };
 const NONE: Platform = { tracker: "none", vcs: "github" };
 
-function probe(platform: Platform | null, branch: string | null): Probe {
-  return { platformFor: () => platform, branchFor: () => branch };
+function probe(platform: Platform | null, branch: string | null, refs: string[] = []): Probe {
+  return { platformFor: () => platform, branchFor: () => branch, refExists: (_dir, ref) => refs.includes(ref) };
 }
 
-function gate(command: string, platform: Platform | null, branch: string | null, env: NodeJS.ProcessEnv = {}) {
-  return decideGate(command, "/repo", env, probe(platform, branch)).decision;
+function gate(command: string, platform: Platform | null, branch: string | null, env: NodeJS.ProcessEnv = {}, refs: string[] = []) {
+  return decideGate(command, "/repo", env, probe(platform, branch, refs)).decision;
 }
+
+const TAGS = ["refs/tags/v1.2.3", "refs/tags/client-modernization--v0.18.0", "refs/tags/both", "refs/heads/both"];
+const isTag = (name: string) => TAGS.includes(`refs/tags/${name}`) && !TAGS.includes(`refs/heads/${name}`);
 
 test("Linear: the team key from the config, any letter case, anywhere in the branch", () => {
   assert.equal(branchHasIssue("demo-432-plugin-hook", LINEAR), true);
@@ -99,6 +104,58 @@ test("pushRefs takes the refspecs after the remote, both sides of a colon", () =
   assert.deepEqual(pushRefs([]), []);
 });
 
+test("pushRefs skips the values of push options that take one", () => {
+  assert.deepEqual(pushRefs(["-o", "ci.skip", "origin", "main"]), ["main"]);
+  assert.deepEqual(pushRefs(["--push-option", "demo-5", "origin", "main"]), ["main"]);
+  assert.deepEqual(pushRefs(["--receive-pack", "git-receive-pack", "origin", "x"]), ["x"]);
+});
+
+test("tagOnlyPush: refs/tags refspecs, tag <name>, --tags and names that are tags push tags only", () => {
+  assert.equal(tagOnlyPush(["origin", "refs/tags/x"], isTag), true);
+  assert.equal(tagOnlyPush(["origin", "+refs/tags/x"], isTag), true);
+  assert.equal(tagOnlyPush(["origin", "refs/tags/a", "refs/tags/b"], isTag), true);
+  assert.equal(tagOnlyPush(["--tags"], isTag), true);
+  assert.equal(tagOnlyPush(["origin", "--tags"], isTag), true);
+  assert.equal(tagOnlyPush(["--tags", "origin", "refs/tags/x"], isTag), true);
+  assert.equal(tagOnlyPush(["origin", "v1.2.3"], isTag), true);
+  assert.equal(tagOnlyPush(["origin", "tag", "v9.9.9"], isTag), true);
+  assert.equal(tagOnlyPush(["origin", "v1.2.3:refs/tags/v1.2.3"], isTag), true);
+  assert.equal(tagOnlyPush(["origin", "v1.2.3:v1.2.3"], isTag), true);
+  assert.equal(tagOnlyPush(["origin", "HEAD:refs/tags/v2"], isTag), true);
+  assert.equal(tagOnlyPush(["origin", ":refs/tags/old"], isTag), true);
+  assert.equal(tagOnlyPush(["origin", "--delete", "v1.2.3"], isTag), true);
+});
+
+test("tagOnlyPush: a branch, a name that is no tag, a name that is both, the default push or --all push more than tags", () => {
+  assert.equal(tagOnlyPush([], isTag), false);
+  assert.equal(tagOnlyPush(["origin"], isTag), false);
+  assert.equal(tagOnlyPush(["origin", "main"], isTag), false);
+  assert.equal(tagOnlyPush(["origin", "v7.7.7"], isTag), false);
+  assert.equal(tagOnlyPush(["origin", "both"], isTag), false);
+  assert.equal(tagOnlyPush(["origin", "main", "refs/tags/x"], isTag), false);
+  assert.equal(tagOnlyPush(["--tags", "origin", "main"], isTag), false);
+  assert.equal(tagOnlyPush(["origin", "v1.2.3:refs/heads/main"], isTag), false);
+  assert.equal(tagOnlyPush(["origin", "main:v1.2.3"], isTag), false);
+  assert.equal(tagOnlyPush(["--all", "--tags", "origin"], isTag), false);
+  assert.equal(tagOnlyPush(["--mirror", "origin"], isTag), false);
+});
+
+test("--follow-tags adds no tag-only meaning: the refspecs decide, the default push pushes the branch", () => {
+  assert.equal(tagOnlyPush(["--follow-tags"], isTag), false);
+  assert.equal(tagOnlyPush(["--follow-tags", "origin", "main"], isTag), false);
+  assert.equal(tagOnlyPush(["--follow-tags", "origin", "refs/tags/x"], isTag), true);
+});
+
+test("exemptBranch: the feature/ and hotfix/ prefixes, also as refs/heads/, nothing else", () => {
+  assert.equal(exemptBranch("feature/foo"), true);
+  assert.equal(exemptBranch("hotfix/bar"), true);
+  assert.equal(exemptBranch("refs/heads/feature/foo"), true);
+  assert.equal(exemptBranch("feature"), false);
+  assert.equal(exemptBranch("my-feature/foo"), false);
+  assert.equal(exemptBranch("bugfix/x"), false);
+  assert.equal(exemptBranch("main"), false);
+});
+
 test("the gate denies commit and push on a branch without an issue ID", () => {
   assert.equal(gate("git commit -m 'Poprawka'", LINEAR, "main"), "deny");
   assert.equal(gate("git push", LINEAR, "main"), "deny");
@@ -114,6 +171,49 @@ test("the gate allows a commit whose message names the issue and a push of an is
   assert.equal(gate("git commit -m 'Poprawka (DEMO-432)'", LINEAR, "main"), "allow");
   assert.equal(gate("git push -u origin demo-432-hook", LINEAR, "main"), "allow");
   assert.equal(gate("git commit -m 'Fix #12'", GITHUB, "main"), "allow");
+});
+
+test("the gate allows a push of tags only from main or master, whatever the branch", () => {
+  for (const branch of ["main", "master", "fix-login"]) {
+    assert.equal(gate("git push origin refs/tags/x", LINEAR, branch), "allow", branch);
+    assert.equal(gate("git push --tags", LINEAR, branch), "allow", branch);
+    assert.equal(gate("git push origin --tags", GITHUB, branch), "allow", branch);
+    assert.equal(gate("git push origin v1.2.3", LINEAR, branch, {}, TAGS), "allow", branch);
+    assert.equal(gate("git push origin client-modernization--v0.18.0", LINEAR, branch, {}, TAGS), "allow", branch);
+  }
+});
+
+test("the gate still denies a push that is not tags only from a branch without an issue ID", () => {
+  assert.equal(gate("git push origin v1.2.3", LINEAR, "main"), "deny");
+  assert.equal(gate("git push origin main refs/tags/x", LINEAR, "main"), "deny");
+  assert.equal(gate("git push origin main v1.2.3", LINEAR, "master", {}, TAGS), "deny");
+  assert.equal(gate("git push --tags origin main", LINEAR, "main"), "deny");
+  assert.equal(gate("git push --follow-tags", LINEAR, "main", {}, TAGS), "deny");
+  assert.equal(gate("git push --follow-tags origin master", LINEAR, "master", {}, TAGS), "deny");
+  assert.equal(gate("git push origin refs/tags/x && git push", LINEAR, "main"), "deny");
+});
+
+test("the gate allows a push from feature/ and hotfix/ branches and of such a branch, and only a push", () => {
+  assert.equal(gate("git push -u origin feature/foo", LINEAR, "feature/foo"), "allow");
+  assert.equal(gate("git push", LINEAR, "hotfix/bar"), "allow");
+  assert.equal(gate("git push --follow-tags", GITHUB, "hotfix/bar"), "allow");
+  assert.equal(gate("git push -u origin feature/foo", LINEAR, "main"), "allow");
+  assert.equal(gate("git commit -m 'Poprawka'", LINEAR, "feature/foo"), "deny");
+});
+
+test("the gate keeps denying other branches without an issue ID and allowing issue branches", () => {
+  assert.equal(gate("git push", LINEAR, "fix-login"), "deny");
+  assert.equal(gate("git push -u origin bugfix/x", LINEAR, "bugfix/x"), "deny");
+  assert.equal(gate("git push", LINEAR, "demo-449-tags"), "allow");
+  assert.equal(gate("git push --follow-tags", LINEAR, "demo-449-tags"), "allow");
+});
+
+test("the deny reason for a push names the tag-only way out", () => {
+  const result = decideGate("git push", "/repo", {}, probe(LINEAR, "main"));
+  assert.equal(result.decision, "deny");
+  if (result.decision !== "deny") return;
+  assert.match(result.agent, /refs\/tags\//);
+  assert.match(result.agent, /feature\//);
 });
 
 test("the gate lets through everything that is not git commit or git push", () => {
@@ -172,7 +272,7 @@ test("runHook renders the Claude Code envelopes", () => {
 
 test("runHook renders the Cursor envelopes, reading workspace_roots for the reminder", () => {
   const seen: string[] = [];
-  const recording: Probe = { platformFor: (dir) => (seen.push(dir), LINEAR), branchFor: () => "main" };
+  const recording: Probe = { platformFor: (dir) => (seen.push(dir), LINEAR), branchFor: () => "main", refExists: () => false };
   const reminder = JSON.parse(runHook("cursor", "reminder", JSON.stringify({ workspace_roots: ["/ws"] }), {}, "/", recording));
   assert.deepEqual(Object.keys(reminder), ["additional_context"]);
   assert.deepEqual(seen, ["/ws"]);
@@ -190,6 +290,7 @@ test("runHook fails open when the probe throws or stdin is not JSON", () => {
       throw new Error("boom");
     },
     branchFor: () => "main",
+    refExists: () => false,
   };
   assert.deepEqual(JSON.parse(runHook("cursor", "gate", JSON.stringify({ command: "git push" }), {}, "/", broken)), { permission: "allow" });
   assert.equal(runHook("claude", "gate", JSON.stringify({ tool_input: { command: "git push" } }), {}, "/", broken), "");
@@ -229,6 +330,26 @@ test("the script reads a real repo: deny on main with ## Platform, allow on an i
   const plain = repo(null, "main");
   assert.equal(JSON.parse(run("cursor", "gate", { command: "git commit -m x", cwd: plain }).stdout).permission, "allow");
   assert.equal(run("claude", "reminder", { cwd: plain }).stdout, "");
+});
+
+function commitAndTag(dir: string, tag: string) {
+  const env = { ...process.env, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@t", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@t" };
+  execFileSync("git", ["-C", dir, "commit", "-q", "--allow-empty", "-m", "x"], { env });
+  execFileSync("git", ["-C", dir, "tag", tag], { env });
+}
+
+test("the script reads tags from a real repo: a tag name pushes from master, a plain name is still denied", () => {
+  const master = repo(PLATFORM_MD, "master");
+  commitAndTag(master, "client-modernization--v0.18.0");
+  const tag = run("claude", "gate", { cwd: master, tool_input: { command: "git push origin client-modernization--v0.18.0" } });
+  assert.equal(tag.stdout, "");
+  const cursorTag = run("cursor", "gate", { command: "git push origin v1.2.3", cwd: master });
+  assert.equal(JSON.parse(cursorTag.stdout).permission, "deny");
+  execFileSync("git", ["-C", master, "tag", "v1.2.3"]);
+  assert.equal(JSON.parse(run("cursor", "gate", { command: "git push origin v1.2.3", cwd: master }).stdout).permission, "allow");
+  assert.equal(JSON.parse(run("cursor", "gate", { command: "git push origin master v1.2.3", cwd: master }).stdout).permission, "deny");
+  const feature = repo(PLATFORM_MD, "feature/foo");
+  assert.equal(JSON.parse(run("cursor", "gate", { command: "git push -u origin feature/foo", cwd: feature }).stdout).permission, "allow");
 });
 
 test("the script honours NERD4RENT_NO_ISSUE=1 from its environment and allows outside a git repo", () => {

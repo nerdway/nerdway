@@ -18,6 +18,7 @@ export interface GitInvocation {
 export interface Probe {
   platformFor: (dir: string) => Platform | null;
   branchFor: (dir: string) => string | null;
+  refExists: (dir: string, ref: string) => boolean;
 }
 
 export type GateDecision = { decision: "allow" } | { decision: "deny"; agent: string; user: string };
@@ -25,6 +26,9 @@ export type GateDecision = { decision: "allow" } | { decision: "deny"; agent: st
 const OPTIONS_WITH_VALUE = new Set(["-C", "-c", "--git-dir", "--work-tree", "--namespace", "--config-env"]);
 const SEPARATORS = new Set([";", "&", "|", "\n", "(", ")", "`"]);
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
+const PUSH_OPTIONS_WITH_VALUE = new Set(["-o", "--push-option", "--receive-pack", "--exec", "--repo"]);
+const PUSH_BEYOND_REFSPECS = new Set(["--all", "--branches", "--mirror"]);
+export const EXEMPT_BRANCH_PREFIXES = ["feature/", "hotfix/"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -167,13 +171,69 @@ export function commitMessage(args: string[]): string {
   return parts.join("\n");
 }
 
+interface PushArgs {
+  flags: string[];
+  refspecs: string[];
+}
+
+function pushArgs(args: string[]): PushArgs {
+  const flags: string[] = [];
+  const positional: string[] = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg.startsWith("-")) {
+      flags.push(arg);
+      if (PUSH_OPTIONS_WITH_VALUE.has(arg)) index += 1;
+    } else positional.push(arg);
+  }
+  return { flags, refspecs: positional.slice(1) };
+}
+
 export function pushRefs(args: string[]): string[] {
-  const positional = args.filter((arg) => !arg.startsWith("-"));
-  return positional.slice(1).flatMap((refspec) => refspec.replace(/^\+/, "").split(":"));
+  return pushArgs(args).refspecs.flatMap((refspec) => refspec.replace(/^\+/, "").split(":"));
+}
+
+function isTagSide(name: string, isTag: (name: string) => boolean): boolean {
+  if (name.startsWith("refs/tags/")) return name.length > "refs/tags/".length;
+  return !name.startsWith("refs/") && name !== "HEAD" && name.length > 0 && isTag(name);
+}
+
+function refspecIsTag(refspec: string, isTag: (name: string) => boolean): boolean {
+  const spec = refspec.replace(/^\+/, "");
+  const colon = spec.indexOf(":");
+  if (colon === -1) return isTagSide(spec, isTag);
+  const src = spec.slice(0, colon);
+  const dst = spec.slice(colon + 1);
+  if (dst.startsWith("refs/")) return isTagSide(dst, isTag);
+  if (src.length === 0) return isTagSide(dst, isTag);
+  return dst.length > 0 && isTagSide(src, isTag);
+}
+
+export function tagOnlyPush(args: string[], isTag: (name: string) => boolean): boolean {
+  const { flags, refspecs } = pushArgs(args);
+  if (flags.some((flag) => PUSH_BEYOND_REFSPECS.has(flag))) return false;
+  const specs: string[] = [];
+  for (let index = 0; index < refspecs.length; index += 1) {
+    if (refspecs[index] === "tag" && index + 1 < refspecs.length) {
+      specs.push(`refs/tags/${refspecs[index + 1]}`);
+      index += 1;
+    } else specs.push(refspecs[index]);
+  }
+  if (!specs.every((spec) => refspecIsTag(spec, isTag))) return false;
+  return specs.length > 0 || flags.includes("--tags");
+}
+
+export function exemptBranch(branch: string): boolean {
+  const name = branch.startsWith("refs/heads/") ? branch.slice("refs/heads/".length) : branch;
+  return EXEMPT_BRANCH_PREFIXES.some((prefix) => name.startsWith(prefix) && name.length > prefix.length);
 }
 
 export function noIssueOverride(env: NodeJS.ProcessEnv): boolean {
   return env.NERD4RENT_NO_ISSUE === "1";
+}
+
+function prefixList(): string {
+  return EXEMPT_BRANCH_PREFIXES.map((prefix) => `\`${prefix}\``).join(" or ");
 }
 
 function denyMessages(invocation: GitInvocation, branch: string, platform: Platform): { agent: string; user: string } {
@@ -184,7 +244,12 @@ function denyMessages(invocation: GitInvocation, branch: string, platform: Platf
     "Every change needs an issue first: find or create it (nerd4rent:issue-writer), tell the user its number, " +
     "then work on its branch (nerd4rent:issue-start) and commit there. " +
     "Do not rename the branch to a made-up ID. If the user explicitly wants this change without an issue, " +
-    "ask them to set NERD4RENT_NO_ISSUE=1 in the environment the agent runs in and restart the session.";
+    "ask them to set NERD4RENT_NO_ISSUE=1 in the environment the agent runs in and restart the session." +
+    ` Commits and pushes on a branch starting with ${prefixList()} pass without an issue ID.` +
+    (invocation.subcommand === "push"
+      ? " A push of tags only always passes (git push origin refs/tags/<tag>, git push origin <tag>, git push --tags); " +
+        "--follow-tags pushes the branch as well, so it is judged by the branch."
+      : "");
   const user = `nerd4rent: git ${invocation.subcommand} blocked, branch ${branch} has no ${tracker} issue ID (NERD4RENT_NO_ISSUE=1 turns the check off).`;
   return { agent, user };
 }
@@ -197,9 +262,14 @@ export function decideGate(command: string, cwd: string, env: NodeJS.ProcessEnv,
     if (!enforced(platform)) continue;
     const branch = probe.branchFor(dir);
     if (branch === null || branch.length === 0) continue;
-    if (branchHasIssue(branch, platform)) continue;
+    if (branchHasIssue(branch, platform) || exemptBranch(branch)) continue;
     if (invocation.subcommand === "commit" && messageHasIssue(commitMessage(invocation.args), platform)) continue;
-    if (invocation.subcommand === "push" && pushRefs(invocation.args).some((ref) => branchHasIssue(ref, platform))) continue;
+    if (invocation.subcommand === "push") {
+      const isTag = (name: string) => probe.refExists(dir, `refs/tags/${name}`) && !probe.refExists(dir, `refs/heads/${name}`);
+      if (tagOnlyPush(invocation.args, isTag)) continue;
+      const refs = pushRefs(invocation.args);
+      if (refs.some((ref) => branchHasIssue(ref, platform) || exemptBranch(ref))) continue;
+    }
     return { decision: "deny", ...denyMessages(invocation, branch, platform) };
   }
   return { decision: "allow" };
@@ -210,13 +280,15 @@ export function reminderText(dir: string, env: NodeJS.ProcessEnv, probe: Probe):
   const platform = probe.platformFor(dir);
   if (!enforced(platform)) return "";
   const branch = probe.branchFor(dir);
-  if (branch === null || branch.length === 0 || branchHasIssue(branch, platform)) return "";
+  if (branch === null || branch.length === 0 || branchHasIssue(branch, platform) || exemptBranch(branch)) return "";
   return (
     `nerd4rent: this repository tracks work in ${trackerOf(platform)} (## Platform in CLAUDE.md) and the current branch ` +
     `\`${branch}\` carries no issue ID. If the user's request will change the repository, the first step is an issue ` +
     "in the tracker: find or create it (nerd4rent:issue-writer) and tell the user its number before you start, " +
     "then work on its branch (nerd4rent:issue-start). Questions, analysis and reading code need no issue. " +
-    "git commit and git push are blocked on a branch without an issue ID unless NERD4RENT_NO_ISSUE=1 is set."
+    "git commit and git push are blocked on a branch without an issue ID unless NERD4RENT_NO_ISSUE=1 is set. " +
+    `Exempt: branches starting with ${prefixList()} (commit and push), and a push of tags only ` +
+    "(git push origin <tag>, git push origin refs/tags/<tag>, git push --tags) from any branch."
   );
 }
 
@@ -282,6 +354,9 @@ export function gitProbe(pluginRoot: string): Probe {
     },
     branchFor(dir) {
       return git(dir, ["branch", "--show-current"]);
+    },
+    refExists(dir, ref) {
+      return git(dir, ["show-ref", "--verify", "--quiet", ref]) !== null;
     },
   };
 }

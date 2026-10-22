@@ -30,7 +30,9 @@ hooks: for them nothing else checks it. Where the plugin's hooks run (Claude
 Code, Cursor), a repo with a configured tracker gets a reminder at the start
 of work, and `git commit` and `git push` are blocked on a branch whose name
 carries no issue ID; `NERD4RENT_NO_ISSUE=1` in the agent's environment turns
-both off.
+both off. A push of tags only (`git push origin <tag>`, `git push --tags`)
+always passes, and a `feature/` or `hotfix/` branch needs no issue ID for
+commit or push.
 
 ## Platform and adapters
 

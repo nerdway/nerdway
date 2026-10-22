@@ -198,7 +198,24 @@ test("the gate allows a push from feature/ and hotfix/ branches and of such a br
   assert.equal(gate("git push", LINEAR, "hotfix/bar"), "allow");
   assert.equal(gate("git push --follow-tags", GITHUB, "hotfix/bar"), "allow");
   assert.equal(gate("git push -u origin feature/foo", LINEAR, "main"), "allow");
-  assert.equal(gate("git commit -m 'Poprawka'", LINEAR, "feature/foo"), "deny");
+});
+
+test("the gate allows a commit on feature/ and hotfix/ branches and still denies it on other branches without an issue ID", () => {
+  assert.equal(gate("git commit -m 'Poprawka'", LINEAR, "feature/foo"), "allow");
+  assert.equal(gate("git commit -m 'Poprawka'", GITHUB, "hotfix/bar"), "allow");
+  assert.equal(gate("git commit -m 'Poprawka'", LINEAR, "bugfix/x"), "deny");
+  assert.equal(gate("git commit -m 'Poprawka'", LINEAR, "fix-login"), "deny");
+  assert.equal(gate("git commit -m 'Poprawka'", LINEAR, "main"), "deny");
+  assert.equal(gate("git commit -m 'Poprawka'", LINEAR, "demo-449-tags"), "allow");
+});
+
+test("the reminder names the exemptions and stays silent on feature/ and hotfix/ branches", () => {
+  const text = reminderText("/repo", {}, probe(LINEAR, "main"));
+  assert.match(text, /feature\//);
+  assert.match(text, /hotfix\//);
+  assert.match(text, /tags only/);
+  assert.equal(reminderText("/repo", {}, probe(LINEAR, "feature/foo")), "");
+  assert.equal(reminderText("/repo", {}, probe(LINEAR, "hotfix/bar")), "");
 });
 
 test("the gate keeps denying other branches without an issue ID and allowing issue branches", () => {
@@ -350,6 +367,8 @@ test("the script reads tags from a real repo: a tag name pushes from master, a p
   assert.equal(JSON.parse(run("cursor", "gate", { command: "git push origin master v1.2.3", cwd: master }).stdout).permission, "deny");
   const feature = repo(PLATFORM_MD, "feature/foo");
   assert.equal(JSON.parse(run("cursor", "gate", { command: "git push -u origin feature/foo", cwd: feature }).stdout).permission, "allow");
+  assert.equal(JSON.parse(run("cursor", "gate", { command: "git commit -m x", cwd: feature }).stdout).permission, "allow");
+  assert.equal(run("claude", "reminder", { cwd: feature }).stdout, "");
 });
 
 test("the script honours NERD4RENT_NO_ISSUE=1 from its environment and allows outside a git repo", () => {

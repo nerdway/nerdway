@@ -16,7 +16,7 @@ description: >-
 
 This skill is the **HOW**. The user rules / `AGENTS.md` / global
 `~/.claude/CLAUDE.md` decide **WHEN** to write and hold the hard safety
-rules (no MCP, vault root). Use the `obsidian-markdown` skill for note
+rules (vault root, never git against the vault). Use the `obsidian-markdown` skill for note
 syntax.
 
 Entity pages live at `5-wiki/entities/projects/<slug>.md` and are **English-only**
@@ -105,8 +105,15 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/vault/<tier>.md
 ```
 
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
-directories up from this skill's base directory. The tier is `file` when the
-directory `~/obsidian/nerdbrain` exists and `none` when it does not.
+directories up from this skill's base directory.
+
+**Tier probe** (the same steps as `## Tier` of `adapters/vault/mcp.md`): the
+directory `~/obsidian/nerdbrain` exists → `file`. Otherwise `ToolSearch` with
+the query `+nerdbrain` and `max_results` 1: a result naming a
+`mcp__claude_ai_nerdbrain__*` tool → `mcp`; none → `none`. The connector tools
+stay deferred: an operation loads only the names it needs
+(`select:mcp__claude_ai_nerdbrain__vault_read,...`) right before the call, as
+the adapter says.
 
 | Step | Operation |
 |------|-----------|
@@ -117,8 +124,7 @@ directory `~/obsidian/nerdbrain` exists and `none` when it does not.
 | create a new page | `page.create`, then `index.append` and `log.append` |
 | every write | `page.bump-updated` |
 
-**If the vault directory itself is missing** (`tier=none`): wiki is
-unreachable this session. Do not attempt writes. Mention briefly if the
+**If the probe gives `tier=none`**: wiki is unreachable this session. Do not attempt writes. Mention briefly if the
 user asks something the wiki would have answered.
 
 ## Checkpoints

@@ -11,6 +11,8 @@ const read = (path: string) => readFileSync(join(repoRoot, path), "utf8");
 
 const SKILLS = ["skills/nerdbrain-wiki/SKILL.md", "skills/nerdbrain-search/SKILL.md"];
 const FILE_ADAPTER = "adapters/vault/file.md";
+const MCP_ADAPTER = "adapters/vault/mcp.md";
+const CONNECTOR_PREFIX = "mcp__claude_ai_nerdbrain__";
 
 const VAULT_OPERATIONS = [
   "page.read",
@@ -29,6 +31,8 @@ const VAULT_OPERATIONS = [
 ];
 
 const INLINE_TRANSPORT_RECIPE = /^\s*rg |Edit \$PAGE|Write \$PAGE/;
+const HEADING_TARGET = /targetType:\s*"heading"/;
+const UNSUPPORTED = "—";
 
 function operationRows(adapter: string): string[][] {
   const table = sectionBody(read(adapter), "Operations");
@@ -56,4 +60,38 @@ test(`${FILE_ADAPTER} lists exactly the vault operations`, () => {
 
 test(`${FILE_ADAPTER} is the only vault adapter that runs rg`, () => {
   assert.match(read(FILE_ADAPTER), /\brg /);
+  assert.doesNotMatch(read(MCP_ADAPTER), /\brg /);
 });
+
+test(`${MCP_ADAPTER} lists the same operations as ${FILE_ADAPTER}`, () => {
+  assert.ok(existsSync(join(repoRoot, MCP_ADAPTER)));
+  assert.deepEqual(operationRows(MCP_ADAPTER).map((row) => row[0]), VAULT_OPERATIONS);
+});
+
+test(`${MCP_ADAPTER} addresses every heading target by its full heading path`, () => {
+  const headingRows = operationRows(MCP_ADAPTER).filter((row) => HEADING_TARGET.test(row[1]));
+  assert.ok(headingRows.length >= 5, "the section reads and patches target headings");
+  for (const row of headingRows) assert.match(row[1], /::/, `${row[0]} targets a heading without the H1 root`);
+});
+
+test(`${MCP_ADAPTER} never reads a whole page`, () => {
+  const wholePageReads = operationRows(MCP_ADAPTER).filter((row) => /vault_read/.test(row[1]) && !/target:/.test(row[1]));
+  assert.deepEqual(wholePageReads.map((row) => row[0]), []);
+});
+
+test(`${MCP_ADAPTER} marks the graph operations unsupported`, () => {
+  const graphRecipes = operationRows(MCP_ADAPTER)
+    .filter((row) => row[0].startsWith("graph."))
+    .map((row) => row[1]);
+  assert.deepEqual(graphRecipes, [UNSUPPORTED, UNSUPPORTED, UNSUPPORTED]);
+});
+
+test(`${MCP_ADAPTER} carries no connector credential`, () => {
+  assert.doesNotMatch(read(MCP_ADAPTER), /bearer|api[ _-]?key|secret/i);
+});
+
+for (const file of [...SKILLS, MCP_ADAPTER]) {
+  test(`${file} names the connector tool prefix the tier probe looks for`, () => {
+    assert.ok(read(file).includes(CONNECTOR_PREFIX));
+  });
+}

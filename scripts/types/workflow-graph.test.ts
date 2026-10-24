@@ -1,7 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { extractInlineSchemas, validateContract } from "./workflow-graph.ts";
+import { extractInlineSchemas, validateContract, type GraphContract } from "./workflow-graph.ts";
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const realContract = JSON.parse(readFileSync(join(repoRoot, "workflow-graph.json"), "utf8")) as GraphContract;
 
 const skillDirs = ["issue-writer", "issue-workflow", "issue-close"];
 
@@ -1003,6 +1009,15 @@ test("rule 26: rejects a node whose adapters is an empty array", () => {
   const errors = nodeAdaptersErrors([]);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /plan: adapters must be a non-empty array/);
+});
+
+test("rule 26: the real contract declares the vault axis and the three vault nodes name it", () => {
+  const vaultNodes = realContract.nodes.filter((node) => node.adapters?.includes("vault")).map((node) => node.id).sort();
+  assert.deepEqual(vaultNodes, ["personal-docs", "wiki-recall", "wiki-write"]);
+  const vault = realContract.adapters?.vault;
+  assert.equal(vault?.config, "EntityPageUpdate.tier");
+  assert.deepEqual(vault?.sections, ["Tier", "Paths", "Operations", "Limits"]);
+  assert.equal(vault?.operations.length, 13);
 });
 
 const strategiesPlatformSchema = {

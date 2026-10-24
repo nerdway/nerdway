@@ -317,8 +317,8 @@ _Avoid_: override, bypass (both imply the rule stops holding)
 
 **Frozen rule**:
 An invariant enforced mechanically rather than by prose — no tracker write
-before approval, no merge without a green check, no vault access outside
-filesystem/`rg`. A first-class registry (`frozenRules`) in the contract:
+before approval, no merge without a green check, no repo change before In
+Progress. A first-class registry (`frozenRules`) in the contract:
 carried by a deny gate, or made unreachable without a human by a decision
 gate when the rule is stateful (approval, green verification) and a stateless
 deny cannot check it. A registry entry no gate points to is a contract error.

@@ -171,7 +171,6 @@ The plugin ships hooks for both runtimes, each in its runtime's own file and for
 | `SessionStart` on `startup\|resume\|clear` | Claude Code (`hooks/hooks.json`) | `hooks/check-install.sh claude` | install check, see below |
 | `sessionStart` | Cursor (`hooks/cursor.hooks.json`) | `node ./hooks/session-start.ts` | nerdbrain entity-page inject, the Cursor counterpart of `~/.claude/hooks/nerdbrain-load.sh` |
 | `sessionStart` | Cursor | `node ./scripts/check-install.ts --runtime cursor` | install check, see below |
-| `beforeMCPExecution`, `preToolUse` (`failClosed`) | Cursor | `node ./hooks/deny-vault-mcp.ts` | denies Obsidian MCP and the Obsidian Local REST API on port 27124, so the vault is reached through the filesystem only (ADR-0001); Linear MCP and every other MCP server pass |
 | `UserPromptSubmit` | Claude Code | `node hooks/require-issue.ts --runtime claude --event reminder` | issue reminder, see below |
 | `PreToolUse` on `Bash`, `if` `Bash(git commit *)` and `Bash(git push *)` | Claude Code | `node hooks/require-issue.ts --runtime claude --event gate` | issue gate, see below |
 | `sessionStart` | Cursor | `node ./hooks/require-issue.ts --runtime cursor --event reminder` | issue reminder, see below |

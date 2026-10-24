@@ -13,18 +13,6 @@
         "timeout": 5
       }
     ],
-    "beforeMCPExecution": [
-      {
-        "command": "node ./hooks/deny-vault-mcp.ts",
-        "failClosed": true
-      }
-    ],
-    "preToolUse": [
-      {
-        "command": "node ./hooks/deny-vault-mcp.ts",
-        "failClosed": true
-      }
-    ],
     "beforeShellExecution": [
       {
         "command": "node ./hooks/require-issue.ts --runtime cursor --event gate",

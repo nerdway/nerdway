@@ -85,7 +85,7 @@ Five read-only agents ship in `agents/` and register as `nerd4rent:<name>` in th
 | `nerd4rent:review-sceptic` | `inherit` (the session model) | Read, Grep, Glob, Bash, Skill | the three sceptics per finding of `review-verify` |
 | `nerd4rent:review-judge` | `inherit` (the session model) | Read | one judge per axis conflict of `review-verify`, only when one occurs |
 | `nerd4rent:review-synthesizer` | Haiku | Read | the summary writer of `review-verify` |
-| `nerd4rent:plan-gatherer` | Sonnet | Read, Grep, Glob, Bash, Skill; preloads `nerd4rent:nerdbrain-search` | the five gatherers of `plan-context-fanout` |
+| `nerd4rent:plan-gatherer` | Sonnet | Read, Grep, Glob, Bash, Skill, ToolSearch and the three read tools of the `nerdbrain` connector (`vault_get_document_map`, `vault_read`, `search_simple`); preloads `nerd4rent:nerdbrain-search` | the five gatherers of `plan-context-fanout` |
 
 The sceptics of the review island keep the **session model** on purpose (`model: inherit`): they are the only quality gate, and their "when uncertain, refute" rule on a weaker model would refute everything. What they gain from a dedicated agent is the tool whitelist alone. The default workflow subagent was observed running `git checkout` in the repo during a review, which the whitelist plus the agent's read-only rule now rule out. The agents are not meant for direct delegation, and their descriptions say so. The `plugin.json` manifest does not list them, since the `agents` manifest field would replace the auto-discovered directory rather than add to it.
 

@@ -95,3 +95,41 @@ for (const file of [...SKILLS, MCP_ADAPTER]) {
     assert.ok(read(file).includes(CONNECTOR_PREFIX));
   });
 }
+
+const GATHERER = "agents/plan-gatherer.md";
+const GATHERER_READ_OPERATIONS = ["page.read", "page.read-section", "vault.search"];
+
+function connectorTools(recipe: string): string[] {
+  return [...recipe.matchAll(/\b(vault_[a-z_]+|search_[a-z_]+)\b/g)].map((match) => CONNECTOR_PREFIX + match[1]);
+}
+
+function gathererTools(): string[] {
+  const line = read(GATHERER)
+    .split("\n")
+    .find((candidate) => candidate.startsWith("tools:"));
+  assert.ok(line !== undefined, `${GATHERER} needs a tools: frontmatter line`);
+  return line
+    .slice("tools:".length)
+    .split(",")
+    .map((tool) => tool.trim());
+}
+
+test(`${GATHERER} can load and call every connector tool the mcp read operations use`, () => {
+  const tools = gathererTools();
+  assert.ok(tools.includes("ToolSearch"), "the connector tools stay deferred, so the gatherer needs ToolSearch");
+  const rows = operationRows(MCP_ADAPTER).filter((row) => GATHERER_READ_OPERATIONS.includes(row[0]));
+  assert.equal(rows.length, GATHERER_READ_OPERATIONS.length);
+  for (const row of rows) {
+    for (const tool of connectorTools(row[1])) assert.ok(tools.includes(tool), `${row[0]} calls ${tool}`);
+  }
+});
+
+test(`${GATHERER} holds no connector tool outside the mcp read operations`, () => {
+  const readTools = new Set(
+    operationRows(MCP_ADAPTER)
+      .filter((row) => GATHERER_READ_OPERATIONS.includes(row[0]))
+      .flatMap((row) => connectorTools(row[1])),
+  );
+  const offenders = gathererTools().filter((tool) => tool.startsWith(CONNECTOR_PREFIX) && !readTools.has(tool));
+  assert.deepEqual(offenders, []);
+});

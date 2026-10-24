@@ -1,7 +1,7 @@
 ---
 name: plan-gatherer
 description: One context gatherer of the plan-context-fanout island. Reads a single source (repo layout, conventions, prior plans, related tracker issues, or the nerdbrain vault) and returns what it found as structured data. Called only from workflows/plan-context-fanout.js; not for direct delegation.
-tools: Read, Grep, Glob, Bash, Skill
+tools: Read, Grep, Glob, Bash, Skill, ToolSearch, mcp__claude_ai_nerdbrain__vault_get_document_map, mcp__claude_ai_nerdbrain__vault_read, mcp__claude_ai_nerdbrain__search_simple
 model: sonnet
 skills: nerd4rent:nerdbrain-search
 readonly: true

@@ -29,9 +29,9 @@ test("rejects a requiredBy naming no existing skill directory", () => {
 
 test("accepts a requiredBy naming a hook path from the allowed list", () => {
   const errors = validateContract(
-    { clis: [entry({ requiredBy: ["hooks/deny-vault-mcp.ts"] })] },
+    { clis: [entry({ requiredBy: ["hooks/require-issue.ts"] })] },
     skillDirs,
-    ["hooks/deny-vault-mcp.ts"],
+    ["hooks/require-issue.ts"],
   );
   assert.deepEqual(errors, []);
 });
@@ -40,7 +40,7 @@ test("rejects a hook path outside the allowed list and names both kinds of refer
   const errors = validateContract(
     { clis: [entry({ requiredBy: ["hooks/other.ts"] })] },
     skillDirs,
-    ["hooks/deny-vault-mcp.ts"],
+    ["hooks/require-issue.ts"],
   );
   assert.equal(errors.length, 1);
   assert.ok(errors[0].includes("hooks/other.ts"));
@@ -113,7 +113,7 @@ test("the node entry keeps 24.0.0 and names both cursor hooks", () => {
   const node = contract.clis.find((item) => item.id === "node");
   assert.ok(node);
   assert.equal(node.minVersion, "24.0.0");
-  assert.equal(node.requiredBy.includes("hooks/deny-vault-mcp.ts"), true);
+  assert.equal(node.requiredBy.includes("hooks/require-issue.ts"), true);
   assert.equal(node.requiredBy.includes("hooks/session-start.ts"), true);
 });
 

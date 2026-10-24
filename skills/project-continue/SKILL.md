@@ -256,9 +256,10 @@ If the page has `## Decisions` and `## Active context` but no
   about to deliver a newer entry from another machine.
 - **`tier=none` or no entity page → zero writes**, full stop. The state report
   from repo and tracker is still produced.
-- **Vault access is filesystem-only** (`Read`/`Edit` on the vault path, `rg`
-  for search) — no Obsidian/Linear MCP, no Local REST API, no git against the
-  vault (ADR-0001, user rules / `AGENTS.md` / `~/.claude/CLAUDE.md`).
+- **Vault access goes through the filesystem by default** (`Read`/`Edit` on
+  the vault path, `rg` for search); an MCP server is the transport only where
+  the vault filesystem is absent (ADR-0010). Never git against the vault
+  (ADR-0004, user rules / `AGENTS.md` / `~/.claude/CLAUDE.md`).
 - **The tracker is read-only here.** Status changes belong to the user on the tracker,
   or to `issue-workflow` / `issue-close`; a bug for a done issue without a
   trace of work is created by `issue-writer`, after its own approval. The *Suggested next* line is a

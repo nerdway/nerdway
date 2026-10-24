@@ -2,6 +2,8 @@
 
 *Amended by ADR-0004 (DEMO-297): git is no longer part of the access path.*
 
+*Amended by ADR-0010 (DEMO-450): the MCP/REST prohibition in Consequences no longer applies. The filesystem stays the default vault path wherever the vault directory exists; where it does not (a Claude Code cloud session), an MCP server in front of Obsidian is an allowed transport.*
+
 The nerdbrain vault must be manageable from headless remote servers, where no
 Obsidian app, REST API, or `obsidian` CLI exists — and the official Obsidian
 CLI (v1.12+) only remote-controls a running desktop app, while Obsidian

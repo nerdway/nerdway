@@ -146,6 +146,7 @@ const platform = input && input.platform ? input.platform : {}
 const adapters = platform.adapters || {}
 const trackerAdapter = typeof adapters.tracker === 'string' && adapters.tracker.length > 0 ? adapters.tracker : null
 const vcsAdapter = typeof adapters.vcs === 'string' && adapters.vcs.length > 0 ? adapters.vcs : null
+const vaultAdapter = typeof adapters.vault === 'string' && adapters.vault.length > 0 ? adapters.vault : null
 
 function adapterInstruction(path, operation) {
   return `Platform commands come from the adapter file \`${path}\`: read its "## CLI" and "## Operations" sections and run operation \`${operation}\` exactly as its table gives it. If that operation's command is \`—\`, skip it and say so.`
@@ -210,11 +211,13 @@ const [repoFacts, conventions, priorPlans, trackerRelations, vault] = await para
           { label: 'gather:tracker-relations', phase: 'Gather', schema: stringListShape, agentType: 'nerd4rent:plan-gatherer' },
         ),
   () =>
-    agent(
-      issueHeader +
-        `Recall project context from the nerdbrain vault using the preloaded nerdbrain-search recipes (filesystem + rg only, vault at ~/obsidian/nerdbrain/5-wiki/). Find the project entity page under entities/projects/, extract its slug, the "## Decisions" section (one string per decision) and "## Active context", then assemble the 1-hop graph (outgoing [[links]] + backlinks) for relatedPages. Keep at most ${MAX_SEARCH_RESULTS} search results per query and at most ${MAX_RELATED_PAGES} related pages. If the vault is unreachable, fail rather than invent content.`,
-      { label: 'gather:vault', phase: 'Gather', schema: SCHEMA_ProjectContext, agentType: 'nerd4rent:plan-gatherer' },
-    ),
+    vaultAdapter === null
+      ? Promise.resolve(null)
+      : agent(
+          issueHeader +
+            `Recall project context from the nerdbrain vault with the preloaded nerdbrain-search operations. Vault recipes come from the adapter file \`${vaultAdapter}\`: read its "## Paths" and "## Operations" sections and run only the read operations page.read, page.read-section, vault.search, graph.links, graph.backlinks and graph.hop1 exactly as its table gives them; skip an operation whose recipe is \`—\` and say so in the result. Find the project entity page under entities/projects/, extract its slug, the "## Decisions" section (one string per decision) and "## Active context", then assemble the 1-hop graph (graph.hop1) for relatedPages. Keep at most ${MAX_SEARCH_RESULTS} search results per query and at most ${MAX_RELATED_PAGES} related pages. If the vault is unreachable, fail rather than invent content.`,
+          { label: 'gather:vault', phase: 'Gather', schema: SCHEMA_ProjectContext, agentType: 'nerd4rent:plan-gatherer' },
+        ),
 ])
 
 // --- Deterministic reducer: plain code, no agents, no clock, no randomness. ---
@@ -286,7 +289,11 @@ for (const field of missingRequired(SCHEMA_PlanContext, planContext)) {
 // simply absent and the gap is flagged for the planning agent.
 let projectContext = null
 if (vault === null) {
-  gaps.push('vault gatherer failed (vault unreachable or no entity page): ProjectContext is absent')
+  gaps.push(
+    vaultAdapter === null
+      ? 'vault adapter unavailable (tier none): ProjectContext is absent'
+      : 'vault gatherer failed (vault unreachable or no entity page): ProjectContext is absent',
+  )
 } else {
   projectContext = {
     slug: typeof vault.slug === 'string' ? vault.slug.trim() : '',

@@ -69,13 +69,15 @@ adapter paths already resolved, as `args.platform`:
 ```
 platform: { tracker: "<tracker>", vcs: "<vcs>",
             adapters: { tracker: "<absolute path>" | null,
-                        vcs: "<absolute path>" | null } }
+                        vcs: "<absolute path>" | null,
+                        vault: "<absolute path>" | null } }
 ```
 
 Each path is the substituted `${CLAUDE_PLUGIN_ROOT}/adapters/...` file above,
-checked to exist; `null` when the file is missing or `tracker` is `none`. An
-island turns a `null` adapter into a `gaps` entry and runs no command of
-another platform.
+checked to exist; `null` when the file is missing or `tracker` is `none`.
+`vault` is `${CLAUDE_PLUGIN_ROOT}/adapters/vault/<tier>.md` for the tier the
+`nerdbrain-wiki` probe found, `null` on tier `none`. An island turns a `null`
+adapter into a `gaps` entry and runs no command of another platform.
 
 The tracker adapter's `## CLI` section carries the command gotchas (field
 paths, multi-line bodies), `## URL` the recipe behind `issue.url`, and

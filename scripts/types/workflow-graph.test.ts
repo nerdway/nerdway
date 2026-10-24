@@ -978,6 +978,33 @@ test("rule 24: reads operation ids only from the Operations section", () => {
   assert.match(errors[0], /issue\.set-status/);
 });
 
+function nodeAdaptersErrors(adapters: unknown) {
+  const nodes = [entryNode(), planNode({ adapters })];
+  return validateContract(contract(nodes, { schemas: adapterContract().schemas, adapters: { trackers: trackersAxis } }), skillDirs);
+}
+
+test("rule 26: accepts a node naming an axis the adapters block declares", () => {
+  assert.deepEqual(nodeAdaptersErrors(["trackers"]), []);
+});
+
+test("rule 26: rejects a node naming an axis the adapters block does not declare", () => {
+  const errors = nodeAdaptersErrors(["boards"]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /plan: adapters names boards/);
+});
+
+test("rule 26: rejects a node whose adapters is a bare string instead of an array", () => {
+  const errors = nodeAdaptersErrors("trackers");
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /plan: adapters must be a non-empty array/);
+});
+
+test("rule 26: rejects a node whose adapters is an empty array", () => {
+  const errors = nodeAdaptersErrors([]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /plan: adapters must be a non-empty array/);
+});
+
 const strategiesPlatformSchema = {
   ...platformSchema,
   schema: schemaBody({

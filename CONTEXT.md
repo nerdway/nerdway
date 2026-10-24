@@ -60,9 +60,10 @@ project context injected at session start.
 _Avoid_: project note, wiki page (ambiguous)
 
 **Tier**:
-The vault-availability signal probed by the SessionStart hook. Reduced to
-`file` (vault directory present) or `none` (absent); the historical
-REST/CLI tiers are dropped.
+The vault-availability signal probed by the SessionStart hook: `file` (vault
+directory present, access through the filesystem), `mcp` (directory absent,
+the vault reachable only through a configured MCP server, as in a Claude Code
+cloud session) or `none` (neither). The historical REST/CLI tiers are dropped.
 _Avoid_: mode, level
 
 **Wiki write**:

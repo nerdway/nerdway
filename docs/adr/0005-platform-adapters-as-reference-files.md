@@ -6,6 +6,8 @@
 
 *Amended by DEMO-304: branch creation becomes the tracker operation `issue.create-branch`. On Linear it stays `git checkout -b <branchName>`; GitHub Issues creates the branch with `gh issue develop`, which also links it to the issue in the GitHub UI. A plain git command in `issue-start` would have been a platform command quoted in a skill, and a per-adapter note would have left the skill to improvise.*
 
+*Amended by DEMO-454: the vault is a third axis, `adapters/vault/<tier>.md`, selected by the tier rather than by the platform config, because a repo does not know where its vault is; the selector enum is `EntityPageUpdate.tier` (`file`, `mcp`), so rule 24 holds unchanged with an enum outside `PlatformConfig`. `nerdbrain-wiki` and `nerdbrain-search` name operation IDs (`page.read-section`, `page.replace-section`, `vault.search`, `graph.hop1`, ...) and the recipes moved out of them verbatim. A node that runs through an axis names it in `adapters` and the validator rejects an undeclared axis (rule 26). The planning island receives the vault adapter path as `args.platform.adapters.vault`, like the two others.*
+
 Every core skill used to carry its Linear, GitHub and GitLab commands inline,
 so supporting another tracker (GitHub Issues, GitLab Issues, Azure DevOps
 Boards) or another VCS host (Azure DevOps Repos) would mean editing every

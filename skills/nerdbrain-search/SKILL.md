@@ -21,9 +21,21 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/vault/<tier>.md
 ```
 
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
-directories up from this skill's base directory. The tier is `file` when the
-directory `~/obsidian/nerdbrain` exists and `none` when it does not; on `none`
-there is no adapter and no recall.
+directories up from this skill's base directory.
+
+**Tier probe** (the same steps as `## Tier` of `adapters/vault/mcp.md`): the
+directory `~/obsidian/nerdbrain` exists → `file`. Otherwise `ToolSearch` with
+the query `+nerdbrain` and `max_results` 1: a result naming a
+`mcp__claude_ai_nerdbrain__*` tool → `mcp`; none → `none`. The connector tools
+stay deferred: an operation loads only the names it needs
+(`select:mcp__claude_ai_nerdbrain__vault_read,...`) right before the call, as
+the adapter says. On `none` there is no adapter and no recall.
+
+On tier `mcp` the graph operations (`graph.links`, `graph.backlinks`,
+`graph.hop1`) are `—` in the adapter: skip them and add the annotation
+`graph recall unavailable on tier mcp` to the result; `vault.search` and
+`page.read-section` still run. A missing operation degrades the result, it
+never fails the recall.
 
 To read a page whose path you already know (not a search), use the adapter's
 `page.read-section`; the operations below are for when you don't yet know

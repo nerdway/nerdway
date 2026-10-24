@@ -212,8 +212,9 @@ only with Third-Party Imports on.
 - The only tracker writes are `label.create` and, on Azure DevOps, the one
   add-columns `PUT`, each after an explicit yes.
   Never change an issue's state, labels or comments here.
-- Vault access is filesystem-only — no Obsidian or Linear MCP, no Local REST
-  API, no git against the vault.
+- Vault access goes through the filesystem by default; an MCP server is the
+  transport only where the vault filesystem is absent (ADR-0010). Never git
+  against the vault (ADR-0004).
 
 ## Related skills
 

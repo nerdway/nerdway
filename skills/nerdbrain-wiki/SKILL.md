@@ -5,8 +5,8 @@ description: >-
   5-wiki/entities/projects/{slug}.md in the user's Obsidian vault. Invoke when
   about to write such a wiki page — a write trigger fired, you need section
   update modes (Edit/Append/Prepend-capped), the checkpoint entry format for
-  `## Checkpoints`, the filesystem write pattern, the frontmatter
-  `updated:` bump, the entity-page template for a new page, or steps to append to
+  `## Checkpoints`, the vault adapter operations behind each write, the
+  frontmatter `updated:` bump, the entity-page template for a new page, or steps to append to
   the wiki index.md / log.md. Also covers advisory boundary cases. The WHEN-to-write
   triggers and hard safety rules live in the user rules / AGENTS.md /
   ~/.claude/CLAUDE.md.
@@ -51,7 +51,7 @@ decision's rationale matters]`. The whole inject also has a hard byte budget
 (default 8192, env `NERDBRAIN_INJECT_BUDGET`); overflow is cut with
 `[truncated — read full page: <path>]`.
 
-**Reading lazy sections:** `Read` the absolute path from the marker. Any
+**Reading lazy sections:** `page.read-section` the page the marker names. Any
 skill that relies on a lazy section — Decisions when planning, Gotchas
 before debugging, Checkpoints when resuming a project — must read the page
 itself; the inject alone is not enough.
@@ -75,19 +75,14 @@ Do not read related pages or run vault searches outside these two triggers.
 **`related:`/`[[link]]` follow:** an entity page's `related:` frontmatter
 holds `"[[slug]]"` entries; `slug` → path
 `5-wiki/entities/projects/<slug>.md` (same convention as the rest of this
-skill). The path is already known, so just `Read` it directly:
-
-```
-Read ~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md
-```
-
-Read only the section(s) relevant to the task — same always/lazy contract as
-the current page, not the whole file.
+skill). The path is already known, so `page.read-section` it directly, only
+the section(s) relevant to the task — same always/lazy contract as the
+current page, not the whole file.
 
 **Vault search:** when you don't yet know which file(s) you need, use the
-`nerdbrain-search` skill's recipes — phrase search, outgoing `[[links]]`,
-backlinks, or 1-hop graph — cast a narrow net first, review filenames/snippets,
-then `Read` only what looked relevant.
+`nerdbrain-search` skill's operations — `vault.search`, `graph.links`,
+`graph.backlinks`, `graph.hop1` — cast a narrow net first, review
+filenames/snippets, then `page.read-section` only what looked relevant.
 
 **Hard limits (textual, not code-enforced — treat as a hard gate, not a
 suggestion):**
@@ -102,31 +97,25 @@ before reaching for a vault search.
 
 ## Commands
 
-The patterns below are the canonical shape for wiki entity-page writes: plain
-filesystem (`Read`/`Edit`/`Write`) on the absolute vault path, identically on
-desktop and headless server (ADR-0001). The filesystem write is the whole
-recipe — propagation is Obsidian Sync, not this skill's concern.
+Every vault access is an operation of the `vault` adapter axis; the skill
+names the operation, the adapter for the current tier holds the recipe:
 
 ```
-PAGE=~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md
-
-# Read (the hook pre-loads only the always-in-inject sections; read the
-# full page before editing lazy sections)
-Read $PAGE
-
-# Section-aware edit (rewrite a specific section under its heading)
-Edit $PAGE   # old_string = the section's current content, new_string = updated content
-
-# Append (chronological, end-of-file — Gotchas, Decisions)
-Edit $PAGE   # old_string = last existing line, new_string = last line + new entry
-
-# Prepend, capped (Checkpoints)
-Edit $PAGE   # old_string = the `## Checkpoints` heading + current entries,
-             # new_string = heading + new entry + the newest 9 existing entries
-
-# Create a new file
-Write $PAGE  # content = filled entity-page-template.md
+${CLAUDE_PLUGIN_ROOT}/adapters/vault/<tier>.md
 ```
+
+If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
+directories up from this skill's base directory. The tier is `file` when the
+directory `~/obsidian/nerdbrain` exists and `none` when it does not.
+
+| Step | Operation |
+|------|-----------|
+| read the page, or a lazy section before editing it | `page.read`, `page.read-section` |
+| Edit (rewrite) a section | `page.replace-section` |
+| Append (chronological) | `page.append-section` |
+| Prepend, capped (Checkpoints) | `page.prepend-capped` |
+| create a new page | `page.create`, then `index.append` and `log.append` |
+| every write | `page.bump-updated` |
 
 **If the vault directory itself is missing** (`tier=none`): wiki is
 unreachable this session. Do not attempt writes. Mention briefly if the
@@ -173,18 +162,18 @@ and `## Active context` and treat the section as empty.
 ## Index and log maintenance
 
 **New entity page created:**
-1. Append to `~/obsidian/nerdbrain/5-wiki/index.md` under `## Projekty`:
+1. `index.append` under `## Projekty` of `5-wiki/index.md`:
    `- [[<slug>]] — <one-line description>` (description in vault language, PL)
-2. Append to `~/obsidian/nerdbrain/5-wiki/log.md`:
+2. `log.append` to `5-wiki/log.md`:
    `## [YYYY-MM-DD] entity | <slug> (new project page)`
 
-Write page + index + log together as one logical filesystem write.
+Write page + index + log together as one logical wiki write.
 
 **Entity page updated:**
-Append to log only:
+`log.append` only:
 `## [YYYY-MM-DD] entity | <slug> (<short note>)`
 
-Write page + log together as one logical filesystem write.
+Write page + log together as one logical wiki write.
 
 ## Creating a new page
 

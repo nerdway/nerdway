@@ -34,12 +34,9 @@ test("the issue gate runs only on git commit and git push and fails open", () =>
   assert.equal(hooks.hooks.beforeShellExecution[0].failClosed, undefined);
 });
 
-test("deny stays fail-closed and calls node", () => {
-  for (const event of ["beforeMCPExecution", "preToolUse"]) {
-    assert.deepEqual(hooks.hooks[event], [
-      { command: "node ./hooks/deny-vault-mcp.ts", failClosed: true },
-    ]);
-  }
+test("no hook runs on MCP execution or tool use", () => {
+  assert.equal("beforeMCPExecution" in hooks.hooks, false);
+  assert.equal("preToolUse" in hooks.hooks, false);
 });
 
 test("cursor hook commands do not start a shell script", () => {
@@ -47,8 +44,7 @@ test("cursor hook commands do not start a shell script", () => {
   assert.equal(all.some((command) => command.includes(".sh")), false);
 });
 
-test("the Claude Code install wrapper stays and the two shell hooks are gone", () => {
+test("the Claude Code install wrapper stays and the session-start shell hook is gone", () => {
   assert.equal(existsSync("hooks/check-install.sh"), true);
-  assert.equal(existsSync("hooks/deny-vault-mcp.sh"), false);
   assert.equal(existsSync("hooks/session-start.sh"), false);
 });

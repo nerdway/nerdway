@@ -2,6 +2,8 @@
 
 *Supersedes ADR-0002 (DEMO-297).*
 
+*Amended by ADR-0010 (DEMO-450): the frozen rule `vault-filesystem-only` and the `settings-deny` gates named below are gone from `workflow-graph.json`, and the MCP/REST prohibition is lifted. The git prohibition is unchanged and stays a prose rule.*
+
 *Amended by DEMO-300: linear-continue is now project-continue.*
 
 Wiki writes are filesystem-only: a skill mutates the vault with `Read` /

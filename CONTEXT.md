@@ -60,11 +60,23 @@ project context injected at session start.
 _Avoid_: project note, wiki page (ambiguous)
 
 **Tier**:
-The vault-availability signal probed by the SessionStart hook: `file` (vault
-directory present, access through the filesystem), `mcp` (directory absent,
-the vault reachable only through a configured MCP server, as in a Claude Code
-cloud session) or `none` (neither). The historical REST/CLI tiers are dropped.
+The vault-availability signal: `file` (vault directory present, access
+through the filesystem), `mcp` (directory absent, the vault reachable only
+through a configured MCP server, as in a Claude Code cloud session) or `none`
+(neither). The SessionStart hook probes `file` and `none`; `mcp` is found by
+the vault skills' own probe (`ToolSearch` for the connector tools when the
+directory is absent), because a cloud session runs no hook. The tier selects
+the vault adapter, `adapters/vault/<tier>.md`. The historical REST/CLI tiers
+are dropped.
 _Avoid_: mode, level
+
+**Heading path**:
+The address of one section of a vault page on the `mcp` tier: the text of the
+page's H1, `::`, the section heading text, as in
+`nerdbrain-claude-plugin::Decisions`. The root is the H1 text as the document
+map lists it, not the slug. Reads and patches through the connector always
+target a heading path, never a whole page.
+_Avoid_: section path, anchor
 
 **Wiki write**:
 One logical wiki mutation — page edit plus index/log upkeep — written
@@ -224,13 +236,15 @@ Skills read it from disk through `adapters/platform.md`, never from a
 _Avoid_: platform settings, integration (both hide that it is one YAML object in two places)
 
 **Adapter**:
-One markdown file per platform per axis — `adapters/trackers/<name>.md` or
-`adapters/vcs/<name>.md` — holding that platform's commands under the sections
-its axis requires. Selected by the platform config; read by core skills
-through `${CLAUDE_PLUGIN_ROOT}`, and by island agents through the absolute
-path the calling skill passes in `args.platform.adapters`. A missing adapter
-stops the skill and becomes a gap in an island; it never falls back to
-another platform.
+One markdown file per value per axis — `adapters/trackers/<name>.md`,
+`adapters/vcs/<name>.md` or `adapters/vault/<tier>.md` — holding that
+platform's or transport's recipes under the sections its axis requires. The
+tracker and VCS axes are selected by the platform config, the vault axis by
+the tier; read by core skills through `${CLAUDE_PLUGIN_ROOT}`, and by island
+agents through the absolute path the calling skill passes in
+`args.platform.adapters` (`tracker`, `vcs`, `vault`). A missing adapter stops
+the skill and becomes a gap in an island; it never falls back to another
+platform or transport.
 _Avoid_: driver, plugin (both suggest executable code)
 
 **Operation ID**:

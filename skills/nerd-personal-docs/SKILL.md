@@ -59,8 +59,9 @@ No guide for work that needs one means the issue is not finished.
 - The project's entity page (`5-wiki/entities/projects/{slug}.md`) links to
   its guides in a `## Dokumentacja` section; add the section when it is
   missing. Write the entity page through `nerd4rent:nerdbrain-wiki`.
-- Vault access is filesystem only: `Read`, `Edit`, `Write` and `rg`, never
-  an MCP server or the Local REST API.
+- Vault access goes through the filesystem by default: `Read`, `Edit`,
+  `Write` and `rg`; an MCP server is the transport only where the vault
+  filesystem is absent (ADR-0010).
 - Before editing an existing file, copy it next to itself with a `.bak`
   suffix, and delete the copy once the write is verified. After every write,
   read the file back and check that Polish characters survived.

@@ -12,7 +12,7 @@ Run the test suite (keep the glob quoted, so Node expands it rather than the she
 node --test 'scripts/**/*.test.ts' 'hooks/*.test.ts'
 ```
 
-The hook tests sit next to the hooks. They cover the vault deny decision, the session-start inject, the issue reminder and gate of `hooks/require-issue.ts` (including runs against throwaway git repos), and the commands in `hooks/hooks.json` and `hooks/cursor.hooks.json`.
+The hook tests sit next to the hooks. They cover the session-start inject, the issue reminder and gate of `hooks/require-issue.ts` (including runs against throwaway git repos), and the commands in `hooks/hooks.json` and `hooks/cursor.hooks.json`.
 
 Check that every edge, gate and adapter in the workflow contract is consistent:
 

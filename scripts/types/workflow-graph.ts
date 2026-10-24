@@ -81,6 +81,7 @@ export interface GraphNode {
   irreversible?: boolean;
   /** Repo-relative workflows/*.js file realising this island; legal only on runtime "workflow". */
   script?: string;
+  adapters?: string[];
 }
 
 export interface AdapterAxis {
@@ -505,6 +506,18 @@ function validateAdapters(raw: unknown, registry: Map<string, unknown>, files: A
   }
 }
 
+function validateNodeAdapters(id: string, raw: unknown, axes: unknown, errors: string[]): void {
+  if (!isStringArray(raw) || raw.length === 0) {
+    errors.push(`${id}: adapters must be a non-empty array of axis names from the adapters block`);
+    return;
+  }
+  for (const axis of raw) {
+    if (!isRecord(axes) || !Object.hasOwn(axes, axis)) {
+      errors.push(`${id}: adapters names ${axis}, which is not an axis declared in the adapters block`);
+    }
+  }
+}
+
 function validateBudget(id: string, raw: unknown, errors: string[]): void {
   const maxWidth = (raw as { maxWidth?: unknown })?.maxWidth;
   if (typeof maxWidth !== "number" || !Number.isInteger(maxWidth) || maxWidth < 1 || maxWidth > MAX_WIDTH) {
@@ -641,6 +654,7 @@ export function validateContract(
         }
       }
     }
+    if (node.adapters !== undefined) validateNodeAdapters(id, node.adapters, c.adapters, errors);
     validateFailure(id, node.failure, errors);
     validateGates(id, node.runtime, node.gates, ruleIds, referencedRules, errors);
     validateBudget(id, node.budget, errors);

@@ -66,7 +66,8 @@ is a stop condition. Hand every subagent the same resolved block:
 
 ```
 platform: { tracker: "<tracker>", vcs: "<vcs>",
-            adapters: { tracker: "<absolute path>", vcs: "<absolute path>" },
+            adapters: { tracker: "<absolute path>", vcs: "<absolute path>",
+                        vault: "<absolute path>" | null },
             statuses: { strategy: "<strategy>", map: { ... } } }
 ```
 

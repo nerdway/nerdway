@@ -323,9 +323,10 @@ than duplicating it.
 
 Invoke **`nerd4rent:grill`** with the two argument lines `issue: <ID>` and
 `topic: the issue description`. The skill announces the size, checks facts in
-the repo itself, asks the decisions in numbered rounds with a recommended
-answer each, and records a `## Grill state` comment on the issue after every
-round, so the session resumes from the tracker on any machine. Its confirmed
+the repo itself, asks the decisions one question per turn, each as a menu of
+options with a recommended one, and records a `## Grill state` comment on the
+issue after every answer, so the session resumes from the tracker on any
+machine. Its confirmed
 outcome feeds step 0c (the refined spec) and step 1 (the plan).
 
 Do not post the plan before the skill has returned a confirmed outcome. The

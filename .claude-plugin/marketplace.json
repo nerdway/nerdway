@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Nerd4Rent open-source Claude Code skills for daily developer workflows.",
-    "version": "0.66.0"
+    "version": "0.67.0"
   },
   "plugins": [
     {

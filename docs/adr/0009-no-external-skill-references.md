@@ -70,6 +70,10 @@ A new exemption is a change to this ADR, not an edit of the constant alone.
   `nerd4rent:grill` skill, which asks in rounds; `issue-writer`,
   `issue-workflow` and `new-project-workflow` invoke it, and the manual
   `/grill-me` menu item of `new-project-workflow` is gone.*
+
+  *Amended by DEMO-460: the grill no longer asks in batches; it asks one
+  question per turn as a menu of options and writes its state after every
+  answer, as ADR-0011 records.*
 - The planning island reads prior art from `docs/plans/` (`if present`), so
   a client repository without that directory behaves as before.
 - ADR-0008 is amended: `docs/plans/` and `docs/specs/` hold only the four

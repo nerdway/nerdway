@@ -215,11 +215,12 @@ _Avoid_: gate, milestone (both name a stop; a checkpoint stops nothing)
 
 **Grill state**:
 The block headed `## Grill state` that `nerd4rent:grill` writes after every
-round of a grilling session: topic, size, round number, the decisions
-resolved, the facts checked, the open branches and the questions of the next
-round, closed by `Confirmed shared understanding: yes` or `no`. Its carrier is
-a comment on the issue when one exists (`issue: <ID>`), chat otherwise
-(`issue: none`); a session resumes from the newest block alone. It never opens
+answer of a grilling session: topic, size, the decisions resolved, the facts
+checked, the open branches and the next question with its options, closed by
+`Confirmed shared understanding: yes` or `no`. Its carrier is a comment on the
+issue when one exists (`issue: <ID>`), and chat then gets one summary line;
+only without an issue (`issue: none`) is the block printed in chat. A session
+resumes from the newest block alone. It never opens
 with `Status:`, so the `comment` status strategy cannot read it as a phase.
 _Avoid_: checkpoint, grill checkpoint (a **Checkpoint** records where the
 project stands on the entity page; this records where one interview stands)

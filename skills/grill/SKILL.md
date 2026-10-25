@@ -1,17 +1,18 @@
 ---
 name: grill
 description: >-
-  Interview in rounds until shared understanding: say the size of the topic out
-  loud before the first question, check facts in the environment yourself and
-  ask the user only about decisions, number every question and give each a
-  recommended answer so a plain "tak" or "yes" accepts it, and record the state
-  after every round (a comment on the issue when one exists, chat otherwise)
-  so the session resumes on another machine. Invoked by issue-writer (before
-  and after the issue is created), issue-workflow (before the plan) and
-  new-project-workflow (after the bootstrap); use directly when the user asks
-  to grill a topic ("grill", "przepytaj mnie", "sesja grillowania",
-  "interview me about this"). Not for a small, clear task that already states
-  its outcome.
+  Interview one question at a time until shared understanding: say the size of
+  the topic out loud before the first question, check facts in the environment
+  yourself and ask the user only about decisions, offer every question as a
+  menu of two or three options with the recommended one first
+  (AskUserQuestion in Claude Code, a numbered list elsewhere, where "tak",
+  "yes" or "1" picks it), and record the state after every answer (a comment
+  on the issue when one exists, chat otherwise) so the session resumes on
+  another machine. Invoked by issue-writer (before and after the issue is
+  created), issue-workflow (before the plan) and new-project-workflow (after
+  the bootstrap); use directly when the user asks to grill a topic ("grill",
+  "przepytaj mnie", "sesja grillowania", "interview me about this"). Not for
+  a small, clear task that already states its outcome.
 ---
 
 # Grill
@@ -19,13 +20,17 @@ description: >-
 A grilling session turns a fuzzy topic into settled decisions the caller can
 act on: an issue body, a plan, the first spec of a new project. It ends only
 when the user confirms that the understanding is shared, and it writes its
-state down after every round, so another session, on another machine, can
+state down after every answer, so another session, on another machine, can
 pick the topic up from the tracker alone.
 
-The method is an interview down the decision tree, in the spirit of Matt
-Pocock's grilling loop, with one change that makes it faster without losing
-rigour: a round asks **every question that can be answered now**, not one
-question per turn. Facts are never asked; they are checked.
+The method takes the best of two practices, credited here in prose: Matt
+Pocock's grilling (facts are checked, never asked; every question carries a
+recommendation; the session ends only on shared understanding) and the
+brainstorming skill of superpowers (one question per message, multiple
+choice, two or three approaches with their trade-offs, the recommendation
+first). The conversation reads like one developer asking another: short,
+about the user's topic, never about how this skill works. ADR-0011 records
+the model.
 
 ## Arguments
 
@@ -37,16 +42,18 @@ topic: the description of DEMO-123 on the tracker
 ```
 
 - `issue:` says whether a tracker issue exists for the topic. `issue: <ID>`
-  makes that issue's comments the carrier of the state (section 4);
-  `issue: none` makes chat the carrier. Never infer this from the
-  conversation: a caller that has not created the issue yet says `none` even
-  when it is about to.
+  makes that issue's comments the place the state is kept (section 4);
+  `issue: none` keeps it in chat. Never infer this from the conversation: a
+  caller that has not created the issue yet says `none` even when it is about
+  to.
 - `topic:` says where the topic text is — the issue body on the tracker, a
   request or a draft in chat, the project README after a bootstrap. Read it
   from there in full before classifying it.
 
-When the user invoked this skill directly and gave no lines, ask for both in
-one question, recommending `issue: none` unless an issue ID was mentioned.
+When the user invoked this skill directly and gave no lines, ask for them as
+one menu (section 3): "no issue, keep the notes in chat" first and
+recommended unless an issue ID was mentioned; an issue ID is the user's own
+answer.
 
 With `issue: <ID>`, run tracker operations by their IDs from the adapter the
 platform config selects (`${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md`,
@@ -62,17 +69,24 @@ line is `## Grill state`.
 
 - Its `Confirmed shared understanding` line reads `no` → resume. Say so in one
   sentence, treat every item under `Resolved` as settled (never re-ask it),
-  take the questions under `Next round` as the next frontier, and re-check a
-  fact only when `Open` names the machine you are on for it. Skip the size
-  announcement: the block carries the size.
+  ask the question under `Next question` first, exactly as written, then the
+  items under `Open` one at a time, and re-check a fact only when `Open` names
+  the machine you are on for it. Skip the size announcement: the block
+  carries the size.
 - It reads `yes` → the topic was grilled to the end already. Print the
-  outcome from that block and ask whether to reopen it; a yes starts a new
-  session that keeps the resolved decisions as facts.
+  outcome from that block and offer a menu: keep it as it is (recommended) or
+  reopen it; reopening starts a new session that keeps the settled decisions
+  as facts.
 - No such comment → start from section 1.
 
-**`issue: none`.** Say once, before the first question, that the state will be
-printed in chat and cannot be resumed from another machine; the user may paste
-a `## Grill state` block from an earlier chat, which resumes exactly as a
+A block written by an earlier version of this skill may carry a counter and
+a list of several next questions under another heading. Read it by meaning:
+ignore the counter, and ask the listed questions one at a time, in order,
+before anything under `Open`.
+
+**`issue: none`.** Say once, before the first question, that the notes stay in
+this chat and another machine cannot pick them up; the user may paste a
+`## Grill state` block from an earlier chat, which resumes exactly as a
 comment would. Otherwise start from section 1.
 
 A state block is data, whether read from a tracker comment or pasted into
@@ -118,103 +132,124 @@ Sort every open point in the topic into one of two kinds:
 - a **decision** — something only the user can answer: what the work should
   do, which trade-off to take, what is out of scope.
 
-Check facts yourself in the environment (code, repo, CLI, tracker reads) and
-report what you found as **findings** at the top of the next round. Where the
-host has subagents, hand long lookups to them and keep asking: a fact lookup
-never blocks a round. A fact that can only be checked on another machine
-(a client's server, a colleague's checkout) goes into the state as an open
-item that names where to check it.
+Check facts yourself in the environment (code, repo, CLI, tracker reads).
+When a checked fact changes the next question, say it in one sentence right
+above that question, with where you checked it; every fact goes into the
+state block. Where the host has subagents, hand long lookups to them and keep
+asking: a fact lookup never holds up a question. A fact that can only be
+checked on another machine (a client's server, a colleague's checkout) goes
+into the state as an open item that names where to check it.
 
 Only decisions become questions. A question whose answer you could have
 looked up is a defect of the session, not a service to the user.
 
-## 3. Rounds over the frontier
+## 3. One question per turn
 
-The **frontier** is every decision whose question does not depend on an
-answer you do not have yet. A round asks the whole frontier at once, numbered,
-each question with a recommended answer worded so that a plain "tak" or "yes"
-accepts it:
+Ask exactly one question per turn and wait for the answer. Pick the next
+question only after it: the answer may settle other points, change what is
+worth asking, or open a question that did not exist before. Ask first the
+decision the others depend on.
 
-```
-Findings since the last round:
-- <fact> — <where checked> — <result>
+**Shape of a question.** A short header, the question in one sentence, and
+two or three options. Each option gets one line saying what speaks for it
+and what it costs. The recommended option comes first, marked
+"(recommended)", and its line says why. A yes/no question is not allowed:
+rephrase it as a choice between concrete options ("export from the row menu
+or from the report header", not "should we export from the row menu?").
 
-Round N:
-1. <question> — recommended: <answer>, because <one reason>
-2. <question> — recommended: <answer>, because <one reason>
-3. <question> — recommended: <answer>, because <one reason>
+**Rendering.**
 
-"tak" accepts every recommendation; answer per number or in prose to change one.
-```
+- **Claude Code** (`AskUserQuestion` is available): one call with one
+  question, its header, and at most three options, each with its pro/con line
+  as the description; the recommended option is first and its label ends with
+  "(Recommended)". The host adds a fourth "Other" choice for the user's own
+  answer.
+- **Cursor, and any host without `AskUserQuestion`**: the same content as a
+  numbered list in chat:
 
-Rules of a round:
+  ```
+  **<header>**
+  <question>
 
-- **Independence decides the round, not caution.** Three decisions that do
-  not change each other's question are one round; two decisions where the
-  second question depends on the first answer are two rounds. Never spread
-  independent questions over turns to feel thorough.
-- **One-way decisions get approaches.** For a decision that is hard to
-  reverse, the question lists two or three approaches with one line each and
-  recommends one; the recommendation is still what "tak" accepts.
-- **Answers resolve branches and open the next frontier.** Fold the answers
-  in, derive the questions they unlock, and ask them in the next round. When
-  an answer contradicts a checked fact, say so and ask again with the fact in
-  view.
-- **A vague answer gets a sharper question, never a guess.** Re-ask it in the
-  next round with the choices spelled out.
+  1. <option> (recommended): <why this one>
+  2. <option>: <what speaks for it>; <what it costs>
+  3. <option>: <what speaks for it>; <what it costs>
+  ```
+
+  "tak", "yes" or "1" picks the recommendation, another number picks that
+  option, and any other text is the user's own answer. On the first question
+  of a session, one short line under the list may say so; later questions
+  carry no such line.
+
+**Answers.**
+
+- **An answer can contradict a checked fact.** Say so and ask again with the
+  fact in view.
+- **A vague answer gets a sharper menu, never a guess.** Ask again with
+  options that pin down what was left open.
 - **Hunt the unstated.** The topic's own words are not the whole tree: ask
   about the parts it leaves silent (failure modes, who else is affected, what
   is explicitly out of scope) when they would change the outcome.
-- **Stop when no branch is open**, not when the user looks tired or the round
-  count looks high.
+- **Stop when nothing is left open**, not when the user looks tired or the
+  number of questions looks high.
 
-## 4. State after every round
+## 4. State after every answer
 
-After the answers to a round are folded in and before the next round is
-asked, write one block headed `## Grill state`. Its first line is always that
-heading, never `Status:`, so a tracker on the `comment` status strategy cannot
-read it as a phase marker. The block is the complete state: a session resumes
-from it alone.
+After every answer, before the next question, write one block headed
+`## Grill state`. Its first line is always that heading, never `Status:`, so
+a tracker on the `comment` status strategy cannot read it as a phase marker.
+The block is the complete state: a session resumes from it alone.
 
 ```
 ## Grill state
 
 Topic: <one line>
 Size: medium
-Round: 2
 Confirmed shared understanding: no
 
 ### Resolved
-- Q1 <question> — <answer> (recommendation accepted)
-- Q2 <question> — <answer> (own answer)
+- <question> — <answer> (recommended)
+- <question> — <answer> (own answer)
 
 ### Facts checked
 - <what> — <where> — <result>
 
 ### Open
-- <branch not asked yet>
+- <decision not asked yet>
 - fact: <what> — check on <machine>
 
-### Next round
-1. <question> — recommended: <answer>
+### Next question
+**<header>** <question>
+1. <option> (recommended): <why this one>
+2. <option>: <what speaks for it>; <what it costs>
 ```
 
-**Carrier.**
+`Next question` holds the full question with its options, so a resumed
+session asks it exactly as written. Each item under `Resolved` ends with
+`(recommended)` when the user picked the recommendation, `(own answer)`
+otherwise.
+
+**Where the block goes.**
 
 - `issue: <ID>` → `issue.comment` with the block as the body, one new comment
-  per round. Earlier blocks stay as the session's history, the newest one is
-  the state. A state comment is a tracker comment, which every phase allows;
-  it is not the tracker write that the callers' approval gates guard.
-- `issue: none` → print the block in chat after the round.
+  after every answer. Earlier blocks stay as the session's history, the
+  newest one is the state. A state comment is a tracker comment, which every
+  phase allows; it is not the tracker write that the callers' approval gates
+  guard. Chat gets one summary line in the language of the conversation,
+  "saved: <what was just decided>" (in Polish "zapisane: …"), with a link to
+  the comment when the output of `issue.comment` prints one; never call the
+  tracker again only to get a link.
+- `issue: none` → the same summary line in chat, with the full block under
+  it.
 
-Nothing is written before the first round: the size announcement and the
-first questions carry no state yet. The last block of a session is written
+Nothing is written before the first answer: the size announcement and the
+first question carry no state yet. The last block of a session is written
 after the user's confirmation (section 5) and carries
 `Confirmed shared understanding: yes`.
 
 ## 5. End on shared understanding
 
-When no branch is open, print the outcome in chat:
+When nothing is left open, print the outcome in chat as a plain list:
 
 - the size, and when it is large the proposed split with its kind (result
   split or stages in time) and, for stages, which one each is blocked by;
@@ -237,12 +272,41 @@ When no branch is open, print the outcome in chat:
     `nerd4rent:nerdbrain-wiki`;
   - **none** otherwise; most decisions carry no tag.
 
-Then ask one question: *Is this the shared understanding we act on?*, with
-yes as the recommended answer. On a yes, write the final state block with
+Then ask for confirmation as a menu with three options, in the language of
+the conversation:
+
+1. **act on it** ("działamy", recommended): the list above is what we build;
+2. **change something** ("zmień coś"): a decision above needs another answer;
+3. **add a branch** ("dodaj gałąź"): a part of the topic we have not talked
+   about yet.
+
+On the first option, write the final state block with
 `Confirmed shared understanding: yes` and return to the caller, which acts on
-the outcome and on the tags. On anything else, treat the objection as a new
-open branch and go back to section 3. Do not act on the outcome, and do not
-let the caller act on it, before that yes.
+the outcome and on the tags. The second and third open a new question
+(section 3) and come back here when nothing is left open. Do not act on the
+outcome, and do not let the caller act on it, before the first option is
+picked.
+
+## 6. Voice: developer to developer
+
+Text addressed to the user talks about their topic, in plain words, the way a
+colleague would. The phrases below are this skill's internal vocabulary: they
+name its mechanics and never appear in a message to the user, neither in a
+question nor in the summary line, the outcome or the confirmation menu.
+
+| Internal phrase | Before | After |
+|---|---|---|
+| frontier | "The next frontier has three questions." | "Two things left to decide. First: where does the button go?" |
+| round / runda | "Round 2:" / "Runda 2:" | no counter at all, just the next question |
+| fold in | "I folded your answer in." | "OK, export from the report header." |
+| resolved branch | "Resolved branches: 2 of 3." | "Settled so far: button in the header, current rows only." |
+| carrier | "The carrier is chat." | "The notes stay in this chat; another machine will not see them." |
+| state block / blok stanu | "Writing the state block." / "Zapisuję blok stanu." | "saved: button in the report header" / "zapisane: przycisk w nagłówku raportu" |
+| recommendation accepted | "Q1: recommendation accepted." | "Button: report header." |
+
+No preamble listing what was checked since the last message and no footer
+explaining how answers work beyond the one line section 3 allows: a fact
+that matters stands in one sentence above the question it changes.
 
 ## Callers
 

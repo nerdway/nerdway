@@ -80,3 +80,36 @@ test("with an issue the state goes to issue.comment after every answer", () => {
   assert.match(read(SKILL), /`issue: <ID>` → `issue\.comment`/);
   assert.match(read(SKILL), /after every answer/);
 });
+
+const EVALS = "skills/grill/evals/evals.json";
+
+type EvalCase = { id: string; prompt: string; expected_output: string; assertions: string[] };
+
+function evalCases(): EvalCase[] {
+  return JSON.parse(read(EVALS)).evals;
+}
+
+test("the evals cover one question at a time and resuming, and drop the two-batch case", () => {
+  const ids = evalCases().map((evalCase) => evalCase.id);
+  assert.ok(ids.includes("three-decisions-one-at-a-time"));
+  assert.ok(ids.includes("resume-from-grill-state"));
+  assert.ok(!ids.includes("three-decisions-two-rounds"));
+});
+
+const FORBIDS_INTERNAL_PHRASES = /^None of the internal phrases/;
+
+test("no eval prompt, expected output or assertion speaks of rounds, except to forbid the word", () => {
+  const offenders = evalCases().flatMap((evalCase) =>
+    [evalCase.prompt, evalCase.expected_output, ...evalCase.assertions]
+      .filter((text) => /\brounds?\b/i.test(text) && !FORBIDS_INTERNAL_PHRASES.test(text))
+      .map((text) => `${evalCase.id}: ${text.slice(0, 80)}`),
+  );
+  assert.deepEqual(offenders, []);
+});
+
+test("the resume eval pastes a block saved after a single question", () => {
+  const resume = evalCases().find((evalCase) => evalCase.id === "resume-from-grill-state");
+  assert.ok(resume);
+  assert.match(resume.prompt, /### Next question\n/);
+  assert.doesNotMatch(resume.prompt, /^Round:/m);
+});

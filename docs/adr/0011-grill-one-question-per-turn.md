@@ -32,7 +32,7 @@ carries a recommendation; the session ends only on shared understanding).
 A yes/no question is not allowed: it is rephrased as a choice between
 concrete options. The next question is picked only after the answer, so it
 may depend on it. The end of the session is a menu too: act on it
-(recommended), change something, add a branch.
+(recommended), change something, add something we missed.
 
 ## Considered Options
 

@@ -253,11 +253,11 @@ Do **not** hardcode the menu. The set of installed skills varies per user and gr
 
    Exclude: review skills (CEO/eng/design review), execution skills (implement-task, ship), debugging, and skills that operate on existing artifacts only.
 
-3. **Rank and present.** Item 1 is always **`nerd4rent:grill`** — the plugin's own interview in rounds until shared understanding, always available. Below it, show the filtered external skills (**3–9 total**), most general-purpose first, domain-specific lower. Skills whose frontmatter carries `disable-model-invocation: true` may be listed for reference but mark them **(manual — user runs the slash command)**; the agent cannot invoke them. Format:
+3. **Rank and present.** Item 1 is always **`nerd4rent:grill`** — the plugin's own interview, one question at a time, until shared understanding, always available. Below it, show the filtered external skills (**3–9 total**), most general-purpose first, domain-specific lower. Skills whose frontmatter carries `disable-model-invocation: true` may be listed for reference but mark them **(manual — user runs the slash command)**; the agent cannot invoke them. Format:
 
    ```
    Pick a spec skill to drive the next step:
-     1. nerd4rent:grill — interview in rounds until shared understanding
+     1. nerd4rent:grill — interview one question at a time until shared understanding
      2. /to-prd — turn current context into a PRD
      3. /office-hours — YC forcing questions + design brainstorm
      ...

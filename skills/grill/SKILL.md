@@ -68,7 +68,7 @@ up from this skill's base directory.
 line is `## Grill state`.
 
 - Its `Confirmed shared understanding` line reads `no` → resume. Say so in one
-  sentence, treat every item under `Resolved` as settled (never re-ask it),
+  sentence that repeats neither the size nor the settled decisions, treat every item under `Resolved` as settled (never re-ask it),
   ask the question under `Next question` first, exactly as written, then the
   items under `Open` one at a time, and re-check a fact only when `Open` names
   the machine you are on for it. Skip the size announcement: the block

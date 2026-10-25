@@ -41,7 +41,7 @@
       "expected_output": "The agent says it is resuming, does not re-announce the size or re-ask what the export covers, asks the button question from Next question first as a numbered menu, then the header-naming question on its own, prints a block after each answer that keeps the earlier Resolved entry, and ends with all three decisions and the closing menu.",
       "files": [],
       "assertions": [
-        "The agent states in one sentence that it resumes from the pasted `## Grill state` block",
+        "The agent says in one sentence that it continues from the notes pasted from the earlier session",
         "The agent does not re-ask what the export covers",
         "The agent does not announce a size classification again in its own words; the `Size:` line inside a printed `## Grill state` block does not count",
         "The first question is the button question from the block's Next question section, as a numbered menu with the report header first and marked as recommended",

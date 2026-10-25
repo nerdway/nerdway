@@ -98,7 +98,7 @@ question, so the user can override it, and the size picks the path:
 | Size the skill announces | Path |
 |--------|------|
 | **small** — one clear deliverable, outcome already stated | the skill returns at once: **draft straight away**, minimal template (Objective + Acceptance criteria) |
-| **medium** — one piece of work with open decisions | the skill interviews in rounds; draft with the full template from its confirmed outcome |
+| **medium** — one piece of work with open decisions | the skill interviews one question at a time; draft with the full template from its confirmed outcome |
 | **large** — plainly splits into stages | the outcome proposes the split, named as a result split or as stages in time; step 3 turns it into issues |
 
 The decisions the interview settles are the template's sections the request

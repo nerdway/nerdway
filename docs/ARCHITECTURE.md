@@ -125,7 +125,7 @@ Not every skill is a node. Like `bootstrap-clis`, the `project-continue` skill i
 
 The user-invoked `retro` skill stays off the axis for the same reason: it reads the session, proposes candidates and hands each accepted one to `issue-writer`, so the only write it leads to is the `issue-write` node's, behind that node's own gate.
 
-The axis is an **island graph**, not one graph end to end. The Claude Code workflow runtime takes no mid-run user input, so every step that needs a human (the grilling session, the "user sets In Progress" gate, the review menu) stays in the conversational main agent, and only the wide, independent, human-free stretches become workflow islands:
+The axis is an **island graph**, not one graph end to end. The Claude Code workflow runtime takes no mid-run user input, so every step that needs a human (the grilling session, which asks one question per turn through the host's question menu or a numbered list, the "user sets In Progress" gate, the review menu) stays in the conversational main agent, and only the wide, independent, human-free stretches become workflow islands:
 
 ```
 [main agent, conversational, status-driven]

@@ -5,7 +5,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { enforceBudget, projectDirectory, renderSession, trimPage, type SessionOptions } from "./session-start.ts";
+import {
+  enforceBudget,
+  projectDirectory,
+  renderSession,
+  renderSessionOutput,
+  trimPage,
+  type SessionOptions,
+} from "./session-start.ts";
 
 const ALWAYS_PAGE = [
   "preamble\n",
@@ -132,6 +139,50 @@ test("an existing page is trimmed into the inject and a missing vault stays a st
     assert.equal(page.includes("## Gotchas"), false);
     assert.equal(page.includes("[omitted: Gotchas, Decisions — read "), true);
     assert.equal(page.includes("nerdbrain-wiki"), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("in tier file the Claude Code inject carries exactly the Cursor context", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-"));
+  try {
+    const project = join(root, "demo");
+    const vault = join(root, "vault");
+    mkdirSync(join(vault, "5-wiki", "entities", "projects"), { recursive: true });
+    mkdirSync(project);
+    writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
+    writeFileSync(
+      join(vault, "5-wiki", "entities", "projects", "demo.md"),
+      ALWAYS_PAGE.replace("why\n", `why ${"ż".repeat(400)}\n`),
+    );
+    const markers = { 8192: "[omitted: Gotchas, Decisions — read ", 600: "[truncated — read full page: " };
+    for (const [budget, marker] of Object.entries(markers)) {
+      const shared = options(root, project, { budget: Number(budget) });
+      const cursorOutput = renderSessionOutput(shared, "cursor");
+      assert.equal(cursorOutput, renderSession(shared));
+      const claude: unknown = JSON.parse(renderSessionOutput(shared, "claude"));
+      assert.deepEqual(Object.keys(claude as object), ["hookSpecificOutput"]);
+      const output = (claude as { hookSpecificOutput: { hookEventName: unknown; additionalContext: unknown } })
+        .hookSpecificOutput;
+      assert.equal(output.hookEventName, "SessionStart");
+      const cursorContext = contextOf(cursorOutput);
+      assert.equal(cursorContext.includes("tier: `file`"), true);
+      assert.equal(cursorContext.includes(marker), true);
+      assert.equal(output.additionalContext, cursorContext);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("an empty Claude Code inject writes nothing", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-"));
+  try {
+    const project = join(root, "project");
+    mkdirSync(project);
+    writeFileSync(join(root, "kill"), "");
+    assert.equal(renderSessionOutput(options(root, project), "claude"), "");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

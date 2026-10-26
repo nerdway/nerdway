@@ -245,7 +245,7 @@ test("the script reads stdin and writes the stub for a project with no page", ()
   try {
     const project = join(root, "demo");
     mkdirSync(project);
-    const result = spawnSync(process.execPath, ["hooks/session-start.ts"], {
+    const result = spawnSync(process.execPath, ["hooks/session-start.ts", "--runtime", "cursor"], {
       input: JSON.stringify({ workspace_roots: [project] }),
       encoding: "utf8",
       env: {
@@ -260,6 +260,29 @@ test("the script reads stdin and writes the stub for a project with no page", ()
     const text = contextOf(result.stdout);
     assert.equal(text.includes("slug: `demo`"), true);
     assert.equal(text.includes("tier: `none`"), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("the script writes the Claude Code envelope for --runtime claude and by default", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-"));
+  try {
+    const project = join(root, "demo");
+    mkdirSync(project);
+    for (const args of [["--runtime", "claude"], []]) {
+      const result = spawnSync(process.execPath, ["hooks/session-start.ts", ...args], {
+        input: JSON.stringify({ cwd: project }),
+        encoding: "utf8",
+        env: { ...process.env, HOME: root, NERDBRAIN_VAULT: join(root, "missing-vault") },
+      });
+      assert.equal(result.status, 0);
+      const parsed = JSON.parse(result.stdout) as {
+        hookSpecificOutput: { hookEventName: string; additionalContext: string };
+      };
+      assert.equal(parsed.hookSpecificOutput.hookEventName, "SessionStart");
+      assert.equal(parsed.hookSpecificOutput.additionalContext.includes("slug: `demo`"), true);
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

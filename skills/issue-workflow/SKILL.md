@@ -619,15 +619,23 @@ read-only; this step runs in the main session.
 ## Close-out (on user request, or phase `done` set manually)
 
 Only when the user asks to close/merge (or set `done` manually with the PR still
-open):
+open). `personal-docs` depends on `wiki-write`: a Session summary comment
+without the Checkpoints write is not a finished session and not a green light
+for this close-out.
 
-1. **Guide for the user.** Invoke **`nerd4rent:nerd-personal-docs`** with the
+1. **Checkpoint must already exist.** The session's `## Checkpoints` entry on
+   the entity page — or an explicit skip (`skipped: tier=none` / `skipped: no
+   entity page`) named in the Session summary — is a precondition. If this
+   session posted `## Session summary` without that write, the session-summary
+   step failed: stop, write the checkpoint (or name the skip), and only then
+   continue. Do not treat the tracker comment as enough.
+2. **Guide for the user.** Invoke **`nerd4rent:nerd-personal-docs`** with the
    issue ID and the resolved platform, here in the main session, so the guide
    is written on the session model and not on `issue-close`'s Haiku. It writes
    or updates the guide in the nerdbrain vault and records the outcome as a
    `## Personal guide` comment on the issue, or says the machine has no vault.
    If it stops with an error, stop and report; do not call `issue-close`.
-2. **Close.** Invoke **`nerd4rent:issue-close`** with the issue ID. Its
+3. **Close.** Invoke **`nerd4rent:issue-close`** with the issue ID. Its
    Step 0 checks the guide from step 1 and stops the close-out without it;
    its Step 0b stops it while any child of the issue is not `done`; its
    Step 0c stops it while the PR/MR description is still the start draft
@@ -656,7 +664,10 @@ start with `## Session summary` and include:
 - validation / test results,
 - the criteria verification table, once implementation is complete,
 - open questions / next steps,
-- metrics, whenever an island ran this session.
+- metrics, whenever an island ran this session,
+- **Checkpoint** — the entity-page path that received the `## Checkpoints`
+  entry, or an explicit skip (`skipped: tier=none` or `skipped: no entity
+  page`).
 
 The summary must be enough to resume from the tracker alone. The `metrics` section is
 where a run's `PlanContext.stats` and `gaps` become durable — the comment is the
@@ -678,9 +689,20 @@ issue related to this one through `issue.read-relations` (parent, sibling,
 link), run on the issue and then on its parent; else the first other open
 issue `issue.list-open` returns, Backlog included (ID and title); else
 `none`. It is the same logical wiki write as any other entity-page update
-from this session, so bump `updated:` once and add one log line. Skip it silently when
-the vault is unreachable (`tier=none`) or the project has no entity page —
-the tracker comment already holds the full summary. This entry is what
+from this session, so bump `updated:` once and add one log line.
+
+This is the same step as the tracker comment, not a follow-up. Posting
+`## Session summary` without that write is an **incomplete failed step**:
+the session is not finished, and it is not a green light for
+`nerd-personal-docs` or `issue-close`. The frozen rule
+`session-summary-requires-checkpoint` holds it; `personal-docs` depends on
+`wiki-write`, and a failed write with a reachable vault kills the run.
+
+Skip only when the vault is unreachable (`tier=none`) or the project has
+no entity page — and name that skip in the summary's **Checkpoint** field
+and in the report (`skipped: tier=none` or `skipped: no entity page`).
+Never skip it silently; the tracker comment is not a substitute for the
+entity-page entry when the vault is in play. This entry is what
 `project-continue` reads back when the user asks "where were we" on this or
 another machine, so the branch and hash must be the real values after the
 session's last push.
@@ -695,7 +717,8 @@ session's last push.
   link it to the issue ID, e.g. `2026-05-05 — chose JWT (LIN-123)`.
 - The session-summary step writes a `## Checkpoints` entry (above); it rides
   the same `session-summary` → `wiki-write` edge of the graph as any other
-  entity-page update, so it needs no extra gate or node.
+  entity-page update. `personal-docs` depends on that write, so a comment
+  without the checkpoint is not a valid close-out when the vault is reachable.
 
 ## Related skills
 

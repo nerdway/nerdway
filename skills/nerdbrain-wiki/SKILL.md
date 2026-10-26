@@ -125,7 +125,14 @@ the adapter says.
 | every write | `page.bump-updated` |
 
 **If the probe gives `tier=none`**: wiki is unreachable this session. Do not attempt writes. Mention briefly if the
-user asks something the wiki would have answered.
+user asks something the wiki would have answered. When this skill is the
+`wiki-write` node after a Session summary, name that skip out loud
+(`skipped: tier=none`) in the summary and the report — never silently.
+
+When this skill is the `wiki-write` node after a Session summary, a failed
+write with a reachable vault and an entity page is a failed step, not a
+skip (`killsRun`). The only other allowed skip is a project with no entity
+page, also named out loud (`skipped: no entity page`).
 
 ## Checkpoints
 

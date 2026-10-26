@@ -76,3 +76,10 @@
 
 -
 -
+
+### Checkpoint
+
+<!-- Vault path of the entity page that received the Checkpoints entry in this
+     same step, or an explicit skip: `skipped: tier=none` or `skipped: no entity
+     page`. A Session summary without this field is an incomplete failed step —
+     not a finished session and not a green light for personal-docs or close. -->

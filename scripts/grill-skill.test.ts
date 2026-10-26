@@ -9,7 +9,9 @@ const root = join(import.meta.dirname, "..");
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 
 const SKILL = "skills/grill/SKILL.md";
-const VOICE_HEADING = "6. Voice: developer to developer";
+const REFERENCE = "skills/grill/reference.md";
+const SKILL_BUDGET_BYTES = 11_000;
+const VOICE_HEADING = "Voice: developer to developer";
 const INTERNAL_PHRASES = [
   ["frontier"],
   ["round", "runda"],
@@ -20,28 +22,40 @@ const INTERNAL_PHRASES = [
   ["recommendation accepted"],
 ];
 
-function linesOutsideVoiceSection(): string[] {
-  const lines = read(SKILL).split("\n");
-  const start = lines.indexOf(`## ${VOICE_HEADING}`);
-  assert.ok(start !== -1, `${SKILL} has a ## ${VOICE_HEADING} section`);
-  const end = lines.findIndex((line, index) => index > start && line.startsWith("## "));
-  return [...lines.slice(0, start), ...(end === -1 ? [] : lines.slice(end))];
-}
-
 function voiceRows(): string[][] {
-  const body = sectionBody(read(SKILL), VOICE_HEADING);
-  assert.ok(body !== undefined, `${SKILL} has a ## ${VOICE_HEADING} section`);
+  const body = sectionBody(read(REFERENCE), VOICE_HEADING);
+  assert.ok(body !== undefined, `${REFERENCE} has a ## ${VOICE_HEADING} section`);
   return tableRows(body);
 }
 
 function stateTemplate(): string {
-  const match = /```\n(## Grill state\n[\s\S]*?)\n```/.exec(read(SKILL));
-  assert.ok(match, `${SKILL} has a fenced block that opens with ## Grill state`);
+  const match = /```\n(## Grill state\n[\s\S]*?)\n```/.exec(read(REFERENCE));
+  assert.ok(match, `${REFERENCE} has a fenced block that opens with ## Grill state`);
   return match[1];
 }
 
-test("no frontier or round outside the voice section", () => {
-  const offenders = linesOutsideVoiceSection().filter((line) => /frontier|round/i.test(line));
+test("SKILL.md stays within the ~10 KB runtime budget", () => {
+  const bytes = Buffer.byteLength(read(SKILL));
+  assert.ok(
+    bytes <= SKILL_BUDGET_BYTES,
+    `${SKILL} is ${bytes} bytes; keep the runtime file at most ${SKILL_BUDGET_BYTES} after moving reference material`,
+  );
+});
+
+test("no frontier or round in the runtime skill", () => {
+  const offenders = read(SKILL)
+    .split("\n")
+    .filter((line) => /\bfrontier\b|\brounds?\b/i.test(line));
+  assert.deepEqual(offenders, []);
+});
+
+test("no frontier or round outside the voice section of the reference", () => {
+  const lines = read(REFERENCE).split("\n");
+  const start = lines.indexOf(`## ${VOICE_HEADING}`);
+  assert.ok(start !== -1, `${REFERENCE} has a ## ${VOICE_HEADING} section`);
+  const end = lines.findIndex((line, index) => index > start && line.startsWith("## "));
+  const outside = [...lines.slice(0, start), ...(end === -1 ? [] : lines.slice(end))];
+  const offenders = outside.filter((line) => /\bfrontier\b|\brounds?\b/i.test(line));
   assert.deepEqual(offenders, []);
 });
 
@@ -54,16 +68,39 @@ for (const forms of INTERNAL_PHRASES) {
   });
 }
 
-test("the question goes through AskUserQuestion with at most three options", () => {
-  const text = read(SKILL);
+test("the question prefers a native ask tool and falls back to a numbered list", () => {
+  const text = read(SKILL).replace(/\s+/g, " ");
   assert.match(text, /`AskUserQuestion`/);
-  assert.match(text, /three options/);
-});
-
-test("without AskUserQuestion the question is a numbered list where tak, yes or 1 picks the recommendation", () => {
-  const text = read(SKILL);
+  assert.match(text, /ask-question/);
   assert.match(text, /numbered list/);
   assert.match(text, /"tak", "yes" or "1"/);
+});
+
+test("option quality forbids a strawman third option and caps the header at 12 characters", () => {
+  const text = read(SKILL).replace(/\s+/g, " ");
+  assert.match(text, /Two options are enough/);
+  assert.match(text, /12 characters/);
+  assert.match(text, /mutually exclusive/);
+  assert.match(text, /only one path is sensible/);
+  assert.match(text, /no preference/);
+});
+
+test("a synthetic host skip is not a user decision", () => {
+  assert.match(read(SKILL), /Questions skipped by the user/);
+  assert.match(read(SKILL), /not an\nanswer|not an answer/);
+});
+
+test("vague answers escalate twice and the session stays on the current branch", () => {
+  const text = read(SKILL);
+  assert.match(text, /Vague once/);
+  assert.match(text, /Vague twice/);
+  assert.match(text, /stay on that branch/);
+});
+
+test("without an issue chat gets a compact note, not the full block", () => {
+  const text = read(SKILL);
+  assert.match(text, /compact note/);
+  assert.match(text, /Do not print\n  the full `## Grill state` block except/);
 });
 
 test("the state template opens with the heading, ends with the next question and has no Status or Round line", () => {
@@ -81,6 +118,16 @@ test("with an issue the state goes to issue.comment after every answer", () => {
   assert.match(read(SKILL), /after every answer/);
 });
 
+test("a bound issue upserts one living Grill decisions checklist", () => {
+  const skill = read(SKILL);
+  const reference = read(REFERENCE);
+  assert.match(skill, /## Grill decisions/);
+  assert.match(skill, /Tracker edits win/);
+  assert.match(reference, /- \[x\] /);
+  assert.match(reference, /- \[ \] /);
+  assert.match(reference, /source of truth/);
+});
+
 const EVALS = "skills/grill/evals/evals.json";
 
 type EvalCase = { id: string; prompt: string; expected_output: string; assertions: string[] };
@@ -89,10 +136,13 @@ function evalCases(): EvalCase[] {
   return JSON.parse(read(EVALS)).evals;
 }
 
-test("the evals cover one question at a time and resuming, and drop the two-batch case", () => {
+test("the evals cover one question at a time, resuming, option quality, a synthetic skip and the checklist", () => {
   const ids = evalCases().map((evalCase) => evalCase.id);
   assert.ok(ids.includes("three-decisions-one-at-a-time"));
   assert.ok(ids.includes("resume-from-grill-state"));
+  assert.ok(ids.includes("option-quality"));
+  assert.ok(ids.includes("synthetic-skip"));
+  assert.ok(ids.includes("checklist-checkpoint"));
   assert.ok(!ids.includes("three-decisions-two-rounds"));
 });
 
@@ -112,4 +162,25 @@ test("the resume eval pastes a block saved after a single question", () => {
   assert.ok(resume);
   assert.match(resume.prompt, /### Next question\n/);
   assert.doesNotMatch(resume.prompt, /^Round:/m);
+});
+
+test("the option-quality eval forbids a strawman third option", () => {
+  const optionQuality = evalCases().find((evalCase) => evalCase.id === "option-quality");
+  assert.ok(optionQuality);
+  assert.match(optionQuality.prompt, /CSV or TSV/);
+  assert.match(optionQuality.assertions.join("\n"), /two options/);
+});
+
+test("the synthetic-skip eval treats host skip text as not shown", () => {
+  const syntheticSkip = evalCases().find((evalCase) => evalCase.id === "synthetic-skip");
+  assert.ok(syntheticSkip);
+  assert.match(syntheticSkip.prompt, /Questions skipped by the user/);
+  assert.match(syntheticSkip.assertions.join("\n"), /numbered list/);
+});
+
+test("the checklist eval treats tracker edits as the source of truth", () => {
+  const checklist = evalCases().find((evalCase) => evalCase.id === "checklist-checkpoint");
+  assert.ok(checklist);
+  assert.match(checklist.prompt, /## Grill decisions/);
+  assert.match(checklist.assertions.join("\n"), /source of truth|checklist/);
 });

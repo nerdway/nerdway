@@ -17,7 +17,7 @@ test("plan happy path reduces five gatherers into typed context with zero gaps",
         slug: "nerd4rent-claude-plugin",
         decisions: ["2026-09-14 — Cursor reducer lives in scripts/lib/island-reducer.ts"],
         activeContext: "DEMO-331 in flight",
-        relatedPages: ["pwlazlo", "nerdbrain"],
+        relatedPages: ["example-person", "nerdbrain"],
       },
     },
     { maxRelatedPages: 3, maxPriorArt: 10 },
@@ -50,7 +50,7 @@ test("plan happy path reduces five gatherers into typed context with zero gaps",
     slug: "nerd4rent-claude-plugin",
     decisions: ["2026-09-14 — Cursor reducer lives in scripts/lib/island-reducer.ts"],
     activeContext: "DEMO-331 in flight",
-    relatedPages: ["pwlazlo", "nerdbrain"],
+    relatedPages: ["example-person", "nerdbrain"],
   });
 });
 

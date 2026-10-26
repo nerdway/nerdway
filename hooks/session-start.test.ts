@@ -144,6 +144,12 @@ test("projectDirectory prefers the first workspace root", () => {
   assert.equal(projectDirectory('{"workspace_roots":[]}', "/other"), "/other");
 });
 
+test("projectDirectory takes the Claude Code cwd before any workspace root", () => {
+  assert.equal(projectDirectory('{"cwd":"/claude/app"}', "/other"), "/claude/app");
+  assert.equal(projectDirectory('{"cwd":"/claude/app","workspace_roots":["/work/app"]}', "/other"), "/claude/app");
+  assert.equal(projectDirectory('{"cwd":""}', "/other"), "/other");
+});
+
 test("the script reads stdin and writes the stub for a project with no page", () => {
   const root = mkdtempSync(join(tmpdir(), "session-start-"));
   try {

@@ -228,7 +228,9 @@ export function projectDirectory(raw: string, cwd: string): string {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return cwd;
-    const roots = (parsed as { workspace_roots?: unknown }).workspace_roots;
+    const input = parsed as { cwd?: unknown; workspace_roots?: unknown };
+    if (typeof input.cwd === "string" && input.cwd.length > 0) return input.cwd;
+    const roots = input.workspace_roots;
     if (Array.isArray(roots) && typeof roots[0] === "string" && roots[0].length > 0) return roots[0];
   } catch (error) {
     if (!(error instanceof SyntaxError)) throw error;

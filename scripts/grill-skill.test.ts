@@ -158,6 +158,12 @@ test("the docs tags and the confirmation menu follow the briefing", () => {
   assert.ok(briefing < tags && tags < menu, "briefing, then tags, then menu");
 });
 
+test("resuming a confirmed session prints the section 5 briefing", () => {
+  const entry = sectionBody(read(SKILL), "Entry: resume or start");
+  assert.ok(entry !== undefined);
+  assert.match(entry.replace(/\s+/g, " "), /`yes` → print the outcome as section 5 gives it/);
+});
+
 const EVALS = "skills/grill/evals/evals.json";
 
 type EvalCase = { id: string; prompt: string; expected_output: string; assertions: string[] };

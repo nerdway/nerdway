@@ -59,8 +59,8 @@ deferred. Then take the newest comment whose first line is `## Grill state`.
   `Next question` from the newest block first, verbatim, unless the
   checklist already settled it; then `Open` one at a time. Re-check a fact
   only when `Open` names this machine. Skip the size announcement.
-- `yes` → print the outcome; menu: keep it (recommended) or reopen (settled
-  decisions become facts).
+- `yes` → print the outcome as section 5 gives it; menu: keep it
+  (recommended) or reopen (settled decisions become facts).
 - No such comment → start from section 1.
 
 A legacy block may list several next questions or a counter. Ignore the

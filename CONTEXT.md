@@ -63,9 +63,11 @@ _Avoid_: project note, wiki page (ambiguous)
 The vault-availability signal: `file` (vault directory present, access
 through the filesystem), `mcp` (directory absent, the vault reachable only
 through a configured MCP server, as in a Claude Code cloud session) or `none`
-(neither). The SessionStart hook probes `file` and `none`; `mcp` is found by
-the vault skills' own probe (`ToolSearch` for the connector tools when the
-directory is absent), because a cloud session runs no hook. The tier selects
+(neither). The plugin's SessionStart hook probes `file` and `none`; `mcp` is
+found by the vault skills' own probe (`ToolSearch` for the connector tools
+when the directory is absent), because the hook runs in a cloud session too
+but sees no connector tools, so there it injects only a hint pointing at that
+probe. The tier selects
 the vault adapter, `adapters/vault/<tier>.md`. The historical REST/CLI tiers
 are dropped.
 _Avoid_: mode, level

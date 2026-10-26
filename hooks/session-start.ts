@@ -214,6 +214,9 @@ function buildContext(options: SessionOptions): string {
     ctx += "## Project page from nerdbrain wiki\n\n";
     ctx += `${page}\n\n`;
     ctx += `_Path: \`5-wiki/entities/projects/${slug}.md\`. To update it, follow the write triggers in user rules / AGENTS.md / CLAUDE.md and invoke the \`nerdbrain-wiki\` skill for the procedure._\n`;
+  } else if (tier === "none") {
+    ctx += "## Nerdbrain vault not on this machine\n\n";
+    ctx += `No vault directory here. If \`ToolSearch\` with the query \`+nerdbrain\` lists \`mcp__claude_ai_nerdbrain__*\` tools, the tier is \`mcp\`: read the sections ${[...ALWAYS].join(", ")} of \`5-wiki/entities/projects/${slug}.md\` with the operation \`page.read-section\` of the nerd4rent plugin's \`adapters/vault/mcp.md\`, one section at a time, by the heading path \`<H1>::<Section>\`, where \`<H1>\` is the page's H1 text from the document map (\`page.read\`), not the slug. Without those tools the tier stays \`none\` and the wiki is off for this session.\n`;
   } else {
     ctx += "## Project not yet in nerdbrain wiki\n\n";
     ctx += `No page at \`5-wiki/entities/projects/${slug}.md\` yet. Build understanding during the session and, when a write trigger fires (see user rules / AGENTS.md / CLAUDE.md), invoke the \`nerdbrain-wiki\` skill to create it.\n`;

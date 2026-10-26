@@ -117,7 +117,7 @@ test("slug comes from the slug file, else the remote, else the directory name", 
     const fromDir = contextOf(renderSession(options(root, project, { gitRemote: () => "" })));
     assert.equal(fromDir.includes("slug: `myproject`"), true);
     assert.equal(fromDir.includes("tier: `none`"), true);
-    assert.equal(fromDir.includes("## Project not yet in nerdbrain wiki"), true);
+    assert.equal(fromDir.includes("## Project not yet in nerdbrain wiki"), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -183,6 +183,45 @@ test("an empty Claude Code inject writes nothing", () => {
     mkdirSync(project);
     writeFileSync(join(root, "kill"), "");
     assert.equal(renderSessionOutput(options(root, project), "claude"), "");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("without a vault directory the inject points at the mcp adapter", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-"));
+  try {
+    const project = join(root, "demo");
+    mkdirSync(project);
+    writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
+    const text = contextOf(renderSession(options(root, project)));
+    assert.equal(text.includes("slug: `demo`"), true);
+    assert.equal(text.includes("tier: `none`"), true);
+    assert.equal(text.includes("## Project not yet in nerdbrain wiki"), false);
+    assert.equal(text.includes("`mcp__claude_ai_nerdbrain__*`"), true);
+    assert.equal(text.includes("the tier is `mcp`"), true);
+    assert.equal(text.includes("Purpose, Stack, Commands, Conventions, Active context"), true);
+    assert.equal(text.includes("`5-wiki/entities/projects/demo.md`"), true);
+    assert.equal(text.includes("`page.read-section`"), true);
+    assert.equal(text.includes("`adapters/vault/mcp.md`"), true);
+    assert.equal(text.includes("`<H1>::<Section>`"), true);
+    assert.equal(text.includes("document map (`page.read`), not the slug"), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a vault without the project page keeps the create-page stub", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-"));
+  try {
+    const project = join(root, "demo");
+    mkdirSync(join(root, "vault"));
+    mkdirSync(project);
+    writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
+    const text = contextOf(renderSession(options(root, project)));
+    assert.equal(text.includes("tier: `file`"), true);
+    assert.equal(text.includes("## Project not yet in nerdbrain wiki"), true);
+    assert.equal(text.includes("page.read-section"), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

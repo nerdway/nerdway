@@ -4,6 +4,8 @@ import { homedir } from "node:os";
 import { basename, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { renderContextOutput, type Runtime } from "../scripts/lib/install-check.ts";
+
 const ALWAYS = new Set(["Purpose", "Stack", "Commands", "Conventions", "Active context"]);
 
 export interface SessionOptions {
@@ -212,6 +214,9 @@ function buildContext(options: SessionOptions): string {
     ctx += "## Project page from nerdbrain wiki\n\n";
     ctx += `${page}\n\n`;
     ctx += `_Path: \`5-wiki/entities/projects/${slug}.md\`. To update it, follow the write triggers in user rules / AGENTS.md / CLAUDE.md and invoke the \`nerdbrain-wiki\` skill for the procedure._\n`;
+  } else if (tier === "none") {
+    ctx += "## Nerdbrain vault not on this machine\n\n";
+    ctx += `No vault directory here. If \`ToolSearch\` with the query \`+nerdbrain\` lists \`mcp__claude_ai_nerdbrain__*\` tools, the tier is \`mcp\`: read the sections ${[...ALWAYS].join(", ")} of \`5-wiki/entities/projects/${slug}.md\` with the operation \`page.read-section\` of the nerd4rent plugin's \`adapters/vault/mcp.md\`, one section at a time, by the heading path \`<H1>::<Section>\`, where \`<H1>\` is the page's H1 text from the document map (\`page.read\`), not the slug. Without those tools the tier stays \`none\` and the wiki is off for this session.\n`;
   } else {
     ctx += "## Project not yet in nerdbrain wiki\n\n";
     ctx += `No page at \`5-wiki/entities/projects/${slug}.md\` yet. Build understanding during the session and, when a write trigger fires (see user rules / AGENTS.md / CLAUDE.md), invoke the \`nerdbrain-wiki\` skill to create it.\n`;
@@ -223,12 +228,19 @@ export function renderSession(options: SessionOptions): string {
   return sessionJson(buildContext(options));
 }
 
+export function renderSessionOutput(options: SessionOptions, runtime: Runtime): string {
+  if (runtime === "cursor") return renderSession(options);
+  return renderContextOutput(buildContext(options), "claude", { event: "SessionStart" });
+}
+
 export function projectDirectory(raw: string, cwd: string): string {
   if (raw.trim().length === 0) return cwd;
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return cwd;
-    const roots = (parsed as { workspace_roots?: unknown }).workspace_roots;
+    const input = parsed as { cwd?: unknown; workspace_roots?: unknown };
+    if (typeof input.cwd === "string" && input.cwd.length > 0) return input.cwd;
+    const roots = input.workspace_roots;
     if (Array.isArray(roots) && typeof roots[0] === "string" && roots[0].length > 0) return roots[0];
   } catch (error) {
     if (!(error instanceof SyntaxError)) throw error;
@@ -247,13 +259,14 @@ const invoked = process.argv[1];
 if (invoked !== undefined && import.meta.url === pathToFileURL(resolve(invoked)).href) {
   const raw = readFileSync(0, "utf8");
   const home = homedir();
-  process.stdout.write(
-    renderSession({
-      vault: process.env.NERDBRAIN_VAULT ?? join(home, "obsidian", "nerdbrain"),
-      aliasesPath: process.env.NERDBRAIN_ALIASES ?? join(home, ".claude", "nerdbrain.aliases"),
-      killSwitchPath: join(home, ".claude", "nerdbrain.disabled"),
-      budget: budgetFrom(process.env.NERDBRAIN_INJECT_BUDGET),
-      projectDir: projectDirectory(raw, process.cwd()),
-    }),
-  );
+  const args = process.argv.slice(2);
+  const runtime: Runtime = args[args.indexOf("--runtime") + 1] === "cursor" ? "cursor" : "claude";
+  const options: SessionOptions = {
+    vault: process.env.NERDBRAIN_VAULT ?? join(home, "obsidian", "nerdbrain"),
+    aliasesPath: process.env.NERDBRAIN_ALIASES ?? join(home, ".claude", "nerdbrain.aliases"),
+    killSwitchPath: join(home, ".claude", "nerdbrain.disabled"),
+    budget: budgetFrom(process.env.NERDBRAIN_INJECT_BUDGET),
+    projectDir: projectDirectory(raw, process.cwd()),
+  };
+  process.stdout.write(renderSessionOutput(options, runtime));
 }

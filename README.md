@@ -62,6 +62,8 @@ Then update the plugin and restart Claude Code:
 /plugin update nerd4rent@nerd4rent-claude-plugin
 ```
 
+At every session start the plugin injects the project's nerdbrain page (`hooks/session-start.ts`): the trimmed page when the vault directory is on the machine, and in a cloud session without it a pointer to reading the page through the `nerdbrain` connector.
+
 In the default permission mode each parallel planning or review run asks for consent first; answer "don't ask again" to silence the prompt for that workflow in that project.
 
 ### Cursor

@@ -50,6 +50,12 @@ Run the session-start install check by hand, the way the hooks in `hooks/hooks.j
 echo '{"cwd":"'"$PWD"'"}' | NERD4RENT_MAIN_VERSION=9.9.9 NERD4RENT_SKILL_DIRS= node scripts/check-install.ts --runtime claude
 ```
 
+Run the session-start nerdbrain inject by hand the same way. `NERDBRAIN_VAULT` points it at another vault directory (a missing one gives the `mcp` hint), `NERDBRAIN_INJECT_BUDGET` changes the byte budget, and `--runtime cursor` prints Cursor's envelope instead:
+
+```bash
+echo '{"cwd":"'"$PWD"'"}' | node hooks/session-start.ts --runtime claude
+```
+
 After editing a schema body in `workflow-graph.json`, regenerate the skill templates built from it. A test fails if one of them was edited by hand instead:
 
 ```bash

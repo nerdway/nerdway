@@ -3,7 +3,7 @@
   "hooks": {
     "sessionStart": [
       {
-        "command": "node ./hooks/session-start.ts"
+        "command": "node ./hooks/session-start.ts --runtime cursor"
       },
       {
         "command": "node ./scripts/check-install.ts --runtime cursor"

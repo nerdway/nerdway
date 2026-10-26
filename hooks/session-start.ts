@@ -259,13 +259,14 @@ const invoked = process.argv[1];
 if (invoked !== undefined && import.meta.url === pathToFileURL(resolve(invoked)).href) {
   const raw = readFileSync(0, "utf8");
   const home = homedir();
-  process.stdout.write(
-    renderSession({
-      vault: process.env.NERDBRAIN_VAULT ?? join(home, "obsidian", "nerdbrain"),
-      aliasesPath: process.env.NERDBRAIN_ALIASES ?? join(home, ".claude", "nerdbrain.aliases"),
-      killSwitchPath: join(home, ".claude", "nerdbrain.disabled"),
-      budget: budgetFrom(process.env.NERDBRAIN_INJECT_BUDGET),
-      projectDir: projectDirectory(raw, process.cwd()),
-    }),
-  );
+  const args = process.argv.slice(2);
+  const runtime: Runtime = args[args.indexOf("--runtime") + 1] === "cursor" ? "cursor" : "claude";
+  const options: SessionOptions = {
+    vault: process.env.NERDBRAIN_VAULT ?? join(home, "obsidian", "nerdbrain"),
+    aliasesPath: process.env.NERDBRAIN_ALIASES ?? join(home, ".claude", "nerdbrain.aliases"),
+    killSwitchPath: join(home, ".claude", "nerdbrain.disabled"),
+    budget: budgetFrom(process.env.NERDBRAIN_INJECT_BUDGET),
+    projectDir: projectDirectory(raw, process.cwd()),
+  };
+  process.stdout.write(renderSessionOutput(options, runtime));
 }

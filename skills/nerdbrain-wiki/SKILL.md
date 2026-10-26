@@ -125,7 +125,14 @@ the adapter says.
 | every write | `page.bump-updated` |
 
 **If the probe gives `tier=none`**: wiki is unreachable this session. Do not attempt writes. Mention briefly if the
-user asks something the wiki would have answered.
+user asks something the wiki would have answered. When this skill is the
+`wiki-write` node after a Session summary, name that skip out loud
+(`skipped: tier=none`) in the summary and the report — never silently.
+
+When this skill is the `wiki-write` node after a Session summary, a failed
+write with a reachable vault and an entity page is a failed step, not a
+skip (`killsRun`). The only other allowed skip is a project with no entity
+page, also named out loud (`skipped: no entity page`).
 
 ## Checkpoints
 
@@ -162,8 +169,17 @@ heading, before the existing ones, and drop entries beyond the newest **10**.
 The cap is what keeps the section from growing like `## Active context`; a
 project's older history is already in Linear's session-summary comments.
 
-**If the heading is missing** on an older page, add it between `## Decisions`
-and `## Active context` and treat the section as empty.
+The heading is the line that is exactly `## Checkpoints` at the start of a
+line. A mention of that string inside Gotchas, Decisions or any other body
+is not the heading and must not be used as the Edit or replace span — that
+substring match has truncated `## Active context` and the sections after it.
+The section ends at the next line-start `## ` (or EOF). On `file` the
+adapter's `page.prepend-capped` recipe is that span; on `mcp` the heading
+path is `<H1>::Checkpoints` (DEMO-454).
+
+**If the heading is missing** on an older page (no line that is exactly
+`## Checkpoints`), add it between the line-start `## Decisions` and the
+line-start `## Active context` and treat the section as empty.
 
 ## Index and log maintenance
 

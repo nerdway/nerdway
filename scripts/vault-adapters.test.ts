@@ -58,6 +58,59 @@ test(`${FILE_ADAPTER} lists exactly the vault operations`, () => {
   assert.deepEqual(operationRows(FILE_ADAPTER).map((row) => row[0]), VAULT_OPERATIONS);
 });
 
+const CHECKPOINTS_TRAP = [
+  "# nerd4rent-claude-plugin",
+  "",
+  "## Gotchas",
+  "",
+  "- A mention of `## Checkpoints` mid-document is not the section heading.",
+  "",
+  "## Decisions",
+  "",
+  "- keep the heading line-start only",
+  "",
+  "## Checkpoints",
+  "",
+  "- 2026-10-26 — OPS-20 · in-progress · feature/x @ abcdef1 — next: harden prepend-capped",
+  "",
+  "## Active context",
+  "",
+  "Keep this.",
+  "",
+  "## Dokumentacja",
+  "",
+  "- [[guide]]",
+  "",
+  "## References",
+  "",
+  "- keep this too",
+].join("\n");
+
+test("sectionBody treats only a line-start ## Checkpoints as the section heading", () => {
+  assert.ok(CHECKPOINTS_TRAP.indexOf("## Checkpoints") < CHECKPOINTS_TRAP.indexOf("\n## Checkpoints\n"));
+  const body = sectionBody(CHECKPOINTS_TRAP, "Checkpoints");
+  assert.ok(body !== undefined);
+  assert.match(body, /OPS-20/);
+  assert.doesNotMatch(body, /mention of/);
+  assert.doesNotMatch(body, /Active context/);
+  assert.doesNotMatch(body, /Dokumentacja/);
+  assert.doesNotMatch(body, /References/);
+});
+
+test(`${FILE_ADAPTER} prepend-capped locates ## Checkpoints at line start, not as a substring`, () => {
+  const row = operationRows(FILE_ADAPTER).find((entry) => entry[0] === "page.prepend-capped");
+  assert.ok(row);
+  assert.match(row[1], /recipe 5/);
+  const source = read(FILE_ADAPTER);
+  const heading = "### Recipe 5: `page.prepend-capped`";
+  const start = source.indexOf(heading);
+  assert.ok(start !== -1);
+  const recipe = source.slice(start, source.indexOf("\n## ", start));
+  assert.match(recipe, /exactly `## Checkpoints`/);
+  assert.match(recipe, /line-start/);
+  assert.match(recipe, /Gotchas/);
+});
+
 test(`${FILE_ADAPTER} is the only vault adapter that runs rg`, () => {
   assert.match(read(FILE_ADAPTER), /\brg /);
   assert.doesNotMatch(read(MCP_ADAPTER), /\brg /);

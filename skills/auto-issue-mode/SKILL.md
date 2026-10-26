@@ -180,7 +180,13 @@ number that proves it — before dispatching the next.
    answered, final test results, and whether the readiness description
    replaced the PR/MR description (`pr.edit-body`) or went out as a comment
    (`pr.comment`), with the reason.
-5. **Close-out.** First run `nerd4rent:nerd-personal-docs` with the ID and
+5. **Close-out.** `personal-docs` depends on `wiki-write`: do not start
+   `nerd-personal-docs` until this run has written the session's
+   `## Checkpoints` entry (or recorded an explicit skip: `tier=none` or no
+   entity page). If this run has not done that yet, write it first — the same
+   step as `issue-workflow`'s Session summary, with the pre-merge branch and
+   HEAD. A Session summary comment alone is not enough. Then run
+   `nerd4rent:nerd-personal-docs` with the ID and
    platform: this subagent runs on the session model, so the guide is not
    written on `issue-close`'s Haiku. It writes or updates the user's guide in
    the nerdbrain vault and records a `## Personal guide` comment on the

@@ -33,10 +33,10 @@ page is the same path with its own slug.
 | Operation | Recipe | Notes |
 |-----------|--------|-------|
 | `page.read` | `Read $PAGE` | the hook pre-loads only the always-in-inject sections; read the full page before editing a lazy section |
-| `page.read-section` | `Read $PAGE`, take the content under the section's `## ` heading | the file is the page: a section read costs the whole file |
+| `page.read-section` | `Read $PAGE`, take the lines after the line that is exactly `## <name>` up to the next line-start `## ` | the file is the page: a section read costs the whole file; a mention of the heading in body text is not the heading |
 | `page.replace-section` | `Edit $PAGE` | old_string = the section's current content, new_string = the updated content |
 | `page.append-section` | `Edit $PAGE` | old_string = the section's last existing line, new_string = that line + the new entry |
-| `page.prepend-capped` | `Edit $PAGE` | old_string = the `## Checkpoints` heading + current entries, new_string = heading + new entry + the newest 9 existing entries |
+| `page.prepend-capped` | recipe 5 below | heading is the line that is exactly `## Checkpoints`; a mention in Gotchas is not |
 | `page.create` | `Write $PAGE` | content = the filled entity-page-template.md; the file must not exist yet |
 | `page.bump-updated` | `Edit $PAGE` | old_string = the frontmatter `updated:` line, new_string = `updated: YYYY-MM-DD` |
 | `vault.search` | recipe 1 below | filenames first, then snippets capped at 40 lines |
@@ -85,6 +85,27 @@ rg -o '!?\[\[[^\]]+\]\]' "$PAGE"
 rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' ~/obsidian/nerdbrain/5-wiki/
 ```
 
+### Recipe 5: `page.prepend-capped`
+
+The same line-start rule as `## Platform` (read from disk as
+`adapters/platform.md` describes; the `mcp` equivalent is DEMO-454's heading
+path `<H1>::Checkpoints`):
+
+1. Split `$PAGE` into lines.
+2. The heading is the line whose text is exactly `## Checkpoints` after a
+   trailing-space trim. It starts with `## `. A substring `## Checkpoints`
+   inside Gotchas, Decisions, a bullet or backticks is not the heading.
+3. The section is that line through the line before the next line-start
+   `## ` (or EOF). `## Active context`, `## Dokumentacja` and `## References`
+   sit after that next heading and stay out of the span.
+4. `Edit $PAGE` with old_string = that whole span and new_string =
+   `## Checkpoints` plus the new entry plus the newest 9 existing bullets
+   from the span.
+
+If step 2 finds no such line, the heading is missing: insert `## Checkpoints`
+between the line-start `## Decisions` and the line-start `## Active context`
+and treat the section as empty.
+
 ## Limits
 
 - The leading `!?` of recipes 3 and 4 stays single-quoted rather than inside a
@@ -92,6 +113,9 @@ rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' ~/obsidian/nerdbrain/5-wiki/
   double-quoted string as history expansion and errors out (or, worse,
   silently empties the variable it is assigned to, turning the next `rg` into
   an unfiltered match-everything).
+- A `## ` heading is the line that is exactly that text at the start of the
+  line. A mention of the heading in body text is not the heading and must
+  not be used as an Edit span.
 - `page.read-section` reads the whole file. The caps on how much to read
   (related pages per session, search results before a full read) are the
   calling skill's, not this adapter's.

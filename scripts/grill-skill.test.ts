@@ -149,6 +149,15 @@ test("the outcome is a developer briefing in the conversation language, not a pl
   assert.match(text, /what is deliberately left out/);
 });
 
+test("the docs tags and the confirmation menu follow the briefing", () => {
+  const text = outcomeSection();
+  const briefing = text.indexOf("briefing for a fellow developer");
+  const tags = text.indexOf("docs-discipline tag");
+  const menu = text.indexOf("confirmation menu");
+  assert.ok(briefing !== -1 && tags !== -1 && menu !== -1, "briefing, tags and menu are all named");
+  assert.ok(briefing < tags && tags < menu, "briefing, then tags, then menu");
+});
+
 const EVALS = "skills/grill/evals/evals.json";
 
 type EvalCase = { id: string; prompt: string; expected_output: string; assertions: string[] };

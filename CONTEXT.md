@@ -219,11 +219,21 @@ answer of a grilling session: topic, size, the decisions resolved, the facts
 checked, the open branches and the next question with its options, closed by
 `Confirmed shared understanding: yes` or `no`. Its carrier is a comment on the
 issue when one exists (`issue: <ID>`), and chat then gets one summary line;
-only without an issue (`issue: none`) is the block printed in chat. A session
-resumes from the newest block alone. It never opens
+without an issue (`issue: none`) chat gets that line plus a compact
+Resolved/Next note, and the full block only on request, at the end, or as a
+paste-resume source. A session resumes from the newest block plus, when an
+issue is bound, the Grill decisions checklist. It never opens
 with `Status:`, so the `comment` status strategy cannot read it as a phase.
 _Avoid_: checkpoint, grill checkpoint (a **Checkpoint** records where the
 project stands on the entity page; this records where one interview stands)
+
+**Grill decisions**:
+The living markdown checklist headed `## Grill decisions` that `nerd4rent:grill`
+upserts on a bound tracker issue after every answer (`- [x] <label> — <choice>`
+settled, `- [ ]` deferred or open). One comment or description section,
+updated in place. On resume, tracker edits are the source of truth over chat
+and over an older Grill state block.
+_Avoid_: grill checklist (the heading is the name)
 
 **Platform config**:
 The project's tracker (`linear`, `github`, `gitlab`, `ado`, `none`) and VCS

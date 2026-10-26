@@ -60,8 +60,14 @@ agents used in Plan and Debug mode available in any conversation, and says a
 custom skill can use it when told to "use the ask question tool". Forum
 reports from 2026 show it is gated per model (some models do not get it),
 skipped in headless `cursor-agent -p` runs, and not offered over ACP or the
-SDK. The skill does not use it: the numbered list works on every host, and
-wiring the tool in is a separate change, not part of this decision.
+SDK. The first version of this ADR left the tool unwired: the numbered list
+works on every host.
+
+*Amended by DEMO-462: the skill uses the host's native ask when that tool is
+actually in the session (`AskUserQuestion`, Cursor ask-question, Codex
+`request_user_input`) and keeps the numbered list as the fallback (ADR-0007).
+A result that only says the questions were skipped by the user is not a
+decision.*
 
 ## Consequences
 
@@ -82,3 +88,8 @@ wiring the tool in is a separate change, not part of this decision.
   one state comment per answer instead of one per batch; the newest comment
   is still the state.
 - ADR-0009's note that the grill "asks in rounds" is amended to point here.
+
+*Amended by DEMO-462: two options are enough; a third that is not a real
+alternative is not added. The sources credited above have since moved
+(Pocock now asks a frontier by default; superpowers v7 asks open questions
+first). This ADR still chooses one menu per turn.*

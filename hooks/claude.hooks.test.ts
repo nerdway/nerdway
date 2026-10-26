@@ -10,6 +10,18 @@ const config = JSON.parse(readFileSync("hooks/hooks.json", "utf8")) as { hooks: 
 const GATE = 'node "${CLAUDE_PLUGIN_ROOT}/hooks/require-issue.ts" --runtime claude --event gate';
 const REMINDER = 'node "${CLAUDE_PLUGIN_ROOT}/hooks/require-issue.ts" --runtime claude --event reminder';
 
+test("SessionStart runs the install check and the nerdbrain inject on startup, resume and clear", () => {
+  assert.deepEqual(config.hooks.SessionStart, [
+    {
+      matcher: "startup|resume|clear",
+      hooks: [
+        { type: "command", command: '"${CLAUDE_PLUGIN_ROOT}/hooks/check-install.sh" claude', timeout: 10 },
+        { type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.ts" --runtime claude', timeout: 5 },
+      ],
+    },
+  ]);
+});
+
 test("UserPromptSubmit runs the issue reminder through node with a short timeout", () => {
   assert.deepEqual(config.hooks.UserPromptSubmit, [{ hooks: [{ type: "command", command: REMINDER, timeout: 5 }] }]);
 });

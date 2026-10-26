@@ -12,7 +12,7 @@ function commands(event: string): string[] {
 
 test("sessionStart calls node for the inject, the install check and the issue reminder", () => {
   assert.deepEqual(commands("sessionStart"), [
-    "node ./hooks/session-start.ts",
+    "node ./hooks/session-start.ts --runtime cursor",
     "node ./scripts/check-install.ts --runtime cursor",
     "node ./hooks/require-issue.ts --runtime cursor --event reminder",
   ]);

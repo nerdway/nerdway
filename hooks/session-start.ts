@@ -4,6 +4,8 @@ import { homedir } from "node:os";
 import { basename, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { renderContextOutput, type Runtime } from "../scripts/lib/install-check.ts";
+
 const ALWAYS = new Set(["Purpose", "Stack", "Commands", "Conventions", "Active context"]);
 
 export interface SessionOptions {
@@ -221,6 +223,11 @@ function buildContext(options: SessionOptions): string {
 
 export function renderSession(options: SessionOptions): string {
   return sessionJson(buildContext(options));
+}
+
+export function renderSessionOutput(options: SessionOptions, runtime: Runtime): string {
+  if (runtime === "cursor") return renderSession(options);
+  return renderContextOutput(buildContext(options), "claude", { event: "SessionStart" });
 }
 
 export function projectDirectory(raw: string, cwd: string): string {

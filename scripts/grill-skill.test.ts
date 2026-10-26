@@ -20,6 +20,8 @@ const INTERNAL_PHRASES = [
   ["carrier"],
   ["state block", "blok stanu"],
   ["recommendation accepted"],
+  ["question number"],
+  ["acceptance-criterion position"],
 ];
 
 function voiceRows(): string[][] {
@@ -126,6 +128,40 @@ test("a bound issue upserts one living Grill decisions checklist", () => {
   assert.match(reference, /- \[x\] /);
   assert.match(reference, /- \[ \] /);
   assert.match(reference, /source of truth/);
+});
+
+const OUTCOME_HEADING = "5. End on shared understanding";
+
+function outcomeSection(): string {
+  const body = sectionBody(read(SKILL), OUTCOME_HEADING);
+  assert.ok(body !== undefined, `${SKILL} has a ## ${OUTCOME_HEADING} section`);
+  return body.replace(/\s+/g, " ");
+}
+
+test("the outcome is a developer briefing in the conversation language, not a plain list", () => {
+  const text = outcomeSection();
+  assert.doesNotMatch(text, /plain list/);
+  assert.match(text, /briefing for a fellow developer/);
+  assert.match(text, /conversation language/);
+  assert.match(text, /what happened, with a concrete example/);
+  assert.match(text, /the cause/);
+  assert.match(text, /what will change/);
+  assert.match(text, /what is deliberately left out/);
+});
+
+test("the docs tags and the confirmation menu follow the briefing", () => {
+  const text = outcomeSection();
+  const briefing = text.indexOf("briefing for a fellow developer");
+  const tags = text.indexOf("docs-discipline tag");
+  const menu = text.indexOf("confirmation menu");
+  assert.ok(briefing !== -1 && tags !== -1 && menu !== -1, "briefing, tags and menu are all named");
+  assert.ok(briefing < tags && tags < menu, "briefing, then tags, then menu");
+});
+
+test("resuming a confirmed session prints the section 5 briefing", () => {
+  const entry = sectionBody(read(SKILL), "Entry: resume or start");
+  assert.ok(entry !== undefined);
+  assert.match(entry.replace(/\s+/g, " "), /`yes` → print the outcome as section 5 gives it/);
 });
 
 const EVALS = "skills/grill/evals/evals.json";

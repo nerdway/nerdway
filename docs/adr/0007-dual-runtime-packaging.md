@@ -1,5 +1,7 @@
 # Dual-runtime packaging and a Cursor-native SessionStart
 
+*Amended by DEMO-455: SessionStart is now one script, `hooks/session-start.ts`, with two JSON envelopes chosen by `--runtime claude|cursor`, the way the install check and the issue hooks already work through `renderContextOutput`. `hooks/hooks.json` runs it for Claude Code next to the install check, so a cloud session gets the inject too, and `~/.claude/hooks/nerdbrain-load.sh` is switched off by hand. The rejected alternative "One SessionStart script, two JSON envelopes" below no longer holds: the envelopes differ only in the wrapper, and the script lives in the plugin, not in `~/.claude`.*
+
 The plugin must load as a native plugin in Cursor (skills, agents, hooks)
 without changing Claude Code behaviour and without making `npx skills add`
 the only Cursor path. Cursor and Claude Code speak different manifest and

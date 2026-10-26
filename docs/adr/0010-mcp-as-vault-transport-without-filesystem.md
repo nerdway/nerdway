@@ -1,5 +1,7 @@
 # MCP as the vault transport where the vault filesystem is absent
 
+*Amended by DEMO-455: the plugin's SessionStart hook now runs in Claude Code as well, cloud sessions included. It still sees no connector tools, so without the vault directory it injects tier `none` with a hint naming the `mcp` probe and `page.read-section`; the tier itself is still set by the skill's probe.*
+
 *Amended by DEMO-454: the `mcp` tier is operational through `adapters/vault/mcp.md`. The skill's own probe finds it, not a SessionStart hook, because a cloud session runs no hook: the vault directory exists → `file`; otherwise `ToolSearch` for a `mcp__claude_ai_nerdbrain__*` tool → `mcp`, none → `none`. On `mcp` a page is read section by section through its heading path (`<H1>::<Section>`, root taken from the document map), never as a whole, since one untargeted read of an entity page cost 37.4k tokens; every patch carries the full heading path. The graph operations are unsupported on that tier and a recall degrades with an annotation instead of failing.*
 
 ADR-0001 made the filesystem the only path to the nerdbrain vault: every

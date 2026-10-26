@@ -5,7 +5,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { enforceBudget, projectDirectory, renderSession, trimPage, type SessionOptions } from "./session-start.ts";
+import {
+  enforceBudget,
+  projectDirectory,
+  renderSession,
+  renderSessionOutput,
+  trimPage,
+  type SessionOptions,
+} from "./session-start.ts";
 
 const ALWAYS_PAGE = [
   "preamble\n",
@@ -110,7 +117,7 @@ test("slug comes from the slug file, else the remote, else the directory name", 
     const fromDir = contextOf(renderSession(options(root, project, { gitRemote: () => "" })));
     assert.equal(fromDir.includes("slug: `myproject`"), true);
     assert.equal(fromDir.includes("tier: `none`"), true);
-    assert.equal(fromDir.includes("## Project not yet in nerdbrain wiki"), true);
+    assert.equal(fromDir.includes("## Project not yet in nerdbrain wiki"), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -137,6 +144,89 @@ test("an existing page is trimmed into the inject and a missing vault stays a st
   }
 });
 
+test("in tier file the Claude Code inject carries exactly the Cursor context", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-"));
+  try {
+    const project = join(root, "demo");
+    const vault = join(root, "vault");
+    mkdirSync(join(vault, "5-wiki", "entities", "projects"), { recursive: true });
+    mkdirSync(project);
+    writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
+    writeFileSync(
+      join(vault, "5-wiki", "entities", "projects", "demo.md"),
+      ALWAYS_PAGE.replace("why\n", `why ${"ż".repeat(400)}\n`),
+    );
+    const markers = { 8192: "[omitted: Gotchas, Decisions — read ", 600: "[truncated — read full page: " };
+    for (const [budget, marker] of Object.entries(markers)) {
+      const shared = options(root, project, { budget: Number(budget) });
+      const cursorOutput = renderSessionOutput(shared, "cursor");
+      assert.equal(cursorOutput, renderSession(shared));
+      const claude: unknown = JSON.parse(renderSessionOutput(shared, "claude"));
+      assert.deepEqual(Object.keys(claude as object), ["hookSpecificOutput"]);
+      const output = (claude as { hookSpecificOutput: { hookEventName: unknown; additionalContext: unknown } })
+        .hookSpecificOutput;
+      assert.equal(output.hookEventName, "SessionStart");
+      const cursorContext = contextOf(cursorOutput);
+      assert.equal(cursorContext.includes("tier: `file`"), true);
+      assert.equal(cursorContext.includes(marker), true);
+      assert.equal(output.additionalContext, cursorContext);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("an empty Claude Code inject writes nothing", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-"));
+  try {
+    const project = join(root, "project");
+    mkdirSync(project);
+    writeFileSync(join(root, "kill"), "");
+    assert.equal(renderSessionOutput(options(root, project), "claude"), "");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("without a vault directory the inject points at the mcp adapter", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-"));
+  try {
+    const project = join(root, "demo");
+    mkdirSync(project);
+    writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
+    const text = contextOf(renderSession(options(root, project)));
+    assert.equal(text.includes("slug: `demo`"), true);
+    assert.equal(text.includes("tier: `none`"), true);
+    assert.equal(text.includes("## Project not yet in nerdbrain wiki"), false);
+    assert.equal(text.includes("`mcp__claude_ai_nerdbrain__*`"), true);
+    assert.equal(text.includes("the tier is `mcp`"), true);
+    assert.equal(text.includes("Purpose, Stack, Commands, Conventions, Active context"), true);
+    assert.equal(text.includes("`5-wiki/entities/projects/demo.md`"), true);
+    assert.equal(text.includes("`page.read-section`"), true);
+    assert.equal(text.includes("`adapters/vault/mcp.md`"), true);
+    assert.equal(text.includes("`<H1>::<Section>`"), true);
+    assert.equal(text.includes("document map (`page.read`), not the slug"), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a vault without the project page keeps the create-page stub", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-"));
+  try {
+    const project = join(root, "demo");
+    mkdirSync(join(root, "vault"));
+    mkdirSync(project);
+    writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
+    const text = contextOf(renderSession(options(root, project)));
+    assert.equal(text.includes("tier: `file`"), true);
+    assert.equal(text.includes("## Project not yet in nerdbrain wiki"), true);
+    assert.equal(text.includes("page.read-section"), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("projectDirectory prefers the first workspace root", () => {
   assert.equal(projectDirectory('{"workspace_roots":["/work/app"]}', "/other"), "/work/app");
   assert.equal(projectDirectory("", "/other"), "/other");
@@ -144,12 +234,18 @@ test("projectDirectory prefers the first workspace root", () => {
   assert.equal(projectDirectory('{"workspace_roots":[]}', "/other"), "/other");
 });
 
+test("projectDirectory takes the Claude Code cwd before any workspace root", () => {
+  assert.equal(projectDirectory('{"cwd":"/claude/app"}', "/other"), "/claude/app");
+  assert.equal(projectDirectory('{"cwd":"/claude/app","workspace_roots":["/work/app"]}', "/other"), "/claude/app");
+  assert.equal(projectDirectory('{"cwd":""}', "/other"), "/other");
+});
+
 test("the script reads stdin and writes the stub for a project with no page", () => {
   const root = mkdtempSync(join(tmpdir(), "session-start-"));
   try {
     const project = join(root, "demo");
     mkdirSync(project);
-    const result = spawnSync(process.execPath, ["hooks/session-start.ts"], {
+    const result = spawnSync(process.execPath, ["hooks/session-start.ts", "--runtime", "cursor"], {
       input: JSON.stringify({ workspace_roots: [project] }),
       encoding: "utf8",
       env: {
@@ -164,6 +260,29 @@ test("the script reads stdin and writes the stub for a project with no page", ()
     const text = contextOf(result.stdout);
     assert.equal(text.includes("slug: `demo`"), true);
     assert.equal(text.includes("tier: `none`"), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("the script writes the Claude Code envelope for --runtime claude and by default", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-"));
+  try {
+    const project = join(root, "demo");
+    mkdirSync(project);
+    for (const args of [["--runtime", "claude"], []]) {
+      const result = spawnSync(process.execPath, ["hooks/session-start.ts", ...args], {
+        input: JSON.stringify({ cwd: project }),
+        encoding: "utf8",
+        env: { ...process.env, HOME: root, NERDBRAIN_VAULT: join(root, "missing-vault") },
+      });
+      assert.equal(result.status, 0);
+      const parsed = JSON.parse(result.stdout) as {
+        hookSpecificOutput: { hookEventName: string; additionalContext: string };
+      };
+      assert.equal(parsed.hookSpecificOutput.hookEventName, "SessionStart");
+      assert.equal(parsed.hookSpecificOutput.additionalContext.includes("slug: `demo`"), true);
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

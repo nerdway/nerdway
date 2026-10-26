@@ -1020,6 +1020,38 @@ test("rule 26: the real contract declares the vault axis and the three vault nod
   assert.equal(vault?.operations.length, 13);
 });
 
+test("the real contract freezes session-summary-requires-checkpoint and a gate enforces it", () => {
+  const rule = realContract.frozenRules?.find((entry) => entry.id === "session-summary-requires-checkpoint");
+  assert.ok(rule);
+  assert.match(rule.rule, /same step/);
+  assert.match(rule.rule, /never silent/);
+  const gated = realContract.nodes.filter((node) => node.gates.some((gate) => gate.rule === "session-summary-requires-checkpoint"));
+  assert.deepEqual(gated.map((node) => node.id), ["close"]);
+});
+
+test("the real contract will not close out on session-summary alone when the vault is in play", () => {
+  const personalDocs = realContract.nodes.find((node) => node.id === "personal-docs");
+  const wikiWrite = realContract.nodes.find((node) => node.id === "wiki-write");
+  assert.ok(personalDocs);
+  assert.ok(wikiWrite);
+  assert.deepEqual(personalDocs.dependsOn, ["session-summary", "wiki-write"]);
+  assert.ok(personalDocs.in.includes("EntityPageUpdate"));
+  assert.equal(wikiWrite.failure.killsRun, true);
+  assert.match(wikiWrite.failure.fallback, /never silent/);
+  assert.match(wikiWrite.failure.fallback, /tier=none/);
+});
+
+test("the real SessionSummary requires a Checkpoint field naming the write or the skip", () => {
+  const summary = realContract.schemas.find((entry) => entry.id === "SessionSummary");
+  assert.ok(summary);
+  const checkpoint = summary.schema.properties?.checkpoint;
+  assert.ok(checkpoint);
+  assert.equal(checkpoint.title, "Checkpoint");
+  assert.match(checkpoint.description ?? "", /skipped: tier=none/);
+  assert.match(checkpoint.description ?? "", /skipped: no entity page/);
+  assert.ok(summary.schema.required?.includes("checkpoint"));
+});
+
 const strategiesPlatformSchema = {
   ...platformSchema,
   schema: schemaBody({

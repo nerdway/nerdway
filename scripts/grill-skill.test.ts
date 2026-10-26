@@ -20,6 +20,8 @@ const INTERNAL_PHRASES = [
   ["carrier"],
   ["state block", "blok stanu"],
   ["recommendation accepted"],
+  ["question number"],
+  ["acceptance-criterion position"],
 ];
 
 function voiceRows(): string[][] {

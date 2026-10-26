@@ -128,6 +128,25 @@ test("a bound issue upserts one living Grill decisions checklist", () => {
   assert.match(reference, /source of truth/);
 });
 
+const OUTCOME_HEADING = "5. End on shared understanding";
+
+function outcomeSection(): string {
+  const body = sectionBody(read(SKILL), OUTCOME_HEADING);
+  assert.ok(body !== undefined, `${SKILL} has a ## ${OUTCOME_HEADING} section`);
+  return body.replace(/\s+/g, " ");
+}
+
+test("the outcome is a developer briefing in the conversation language, not a plain list", () => {
+  const text = outcomeSection();
+  assert.doesNotMatch(text, /plain list/);
+  assert.match(text, /briefing for a fellow developer/);
+  assert.match(text, /conversation language/);
+  assert.match(text, /what happened, with a concrete example/);
+  assert.match(text, /the cause/);
+  assert.match(text, /what will change/);
+  assert.match(text, /what is deliberately left out/);
+});
+
 const EVALS = "skills/grill/evals/evals.json";
 
 type EvalCase = { id: string; prompt: string; expected_output: string; assertions: string[] };

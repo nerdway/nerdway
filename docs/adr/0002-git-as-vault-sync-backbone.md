@@ -2,7 +2,7 @@
 
 *Superseded by ADR-0004 (DEMO-297).*
 
-Remote servers get the vault as a git checkout of `pawelwlazlo/nerdbrain`
+Remote servers get the vault as a git checkout of `example-org/nerdbrain`
 (no syncthing there), so server-side wiki writes must publish themselves.
 We adopt one uniform protocol on every tier, desktop included: `git pull
 --rebase` before the first wiki write of a session, then `git commit` +

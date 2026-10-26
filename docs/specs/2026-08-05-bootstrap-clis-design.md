@@ -305,7 +305,7 @@ Switching the `linear` CLI invalidates the Linear command syntax currently
 encoded in this repo: 25 call sites across 8 files (`linear-issue-workflow`,
 `linear-issue-writer`, `linear-issue-close`, `new-project-workflow`,
 `nerdbrain-wiki` templates, `README.md`), plus the `linear-cli` skill sourced
-from `pawelwlazlo/linear-skills`, which documents schpet's surface. Rewriting
+from `example-org/linear-skills`, which documents schpet's surface. Rewriting
 those is separate work and is not covered by this design.
 
 `linear skills install` ships Claude Code skills from the CLI itself and may

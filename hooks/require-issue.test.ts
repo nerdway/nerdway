@@ -34,7 +34,7 @@ function gate(command: string, platform: Platform | null, branch: string | null,
   return decideGate(command, "/repo", env, probe(platform, branch, refs)).decision;
 }
 
-const TAGS = ["refs/tags/v1.2.3", "refs/tags/client-modernization--v0.18.0", "refs/tags/both", "refs/heads/both"];
+const TAGS = ["refs/tags/v1.2.3", "refs/tags/acme-app--v0.18.0", "refs/tags/both", "refs/heads/both"];
 const isTag = (name: string) => TAGS.includes(`refs/tags/${name}`) && !TAGS.includes(`refs/heads/${name}`);
 
 test("Linear: the team key from the config, any letter case, anywhere in the branch", () => {
@@ -179,7 +179,7 @@ test("the gate allows a push of tags only from main or master, whatever the bran
     assert.equal(gate("git push --tags", LINEAR, branch), "allow", branch);
     assert.equal(gate("git push origin --tags", GITHUB, branch), "allow", branch);
     assert.equal(gate("git push origin v1.2.3", LINEAR, branch, {}, TAGS), "allow", branch);
-    assert.equal(gate("git push origin client-modernization--v0.18.0", LINEAR, branch, {}, TAGS), "allow", branch);
+    assert.equal(gate("git push origin acme-app--v0.18.0", LINEAR, branch, {}, TAGS), "allow", branch);
   }
 });
 
@@ -357,8 +357,8 @@ function commitAndTag(dir: string, tag: string) {
 
 test("the script reads tags from a real repo: a tag name pushes from master, a plain name is still denied", () => {
   const master = repo(PLATFORM_MD, "master");
-  commitAndTag(master, "client-modernization--v0.18.0");
-  const tag = run("claude", "gate", { cwd: master, tool_input: { command: "git push origin client-modernization--v0.18.0" } });
+  commitAndTag(master, "acme-app--v0.18.0");
+  const tag = run("claude", "gate", { cwd: master, tool_input: { command: "git push origin acme-app--v0.18.0" } });
   assert.equal(tag.stdout, "");
   const cursorTag = run("cursor", "gate", { command: "git push origin v1.2.3", cwd: master });
   assert.equal(JSON.parse(cursorTag.stdout).permission, "deny");

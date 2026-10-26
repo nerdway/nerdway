@@ -87,8 +87,9 @@ rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' ~/obsidian/nerdbrain/5-wiki/
 
 ### Recipe 5: `page.prepend-capped`
 
-The same line-start rule as `## Platform` in this repo (the `mcp` equivalent
-is DEMO-454's heading path `<H1>::Checkpoints`):
+The same line-start rule as `## Platform` (read from disk as
+`adapters/platform.md` describes; the `mcp` equivalent is DEMO-454's heading
+path `<H1>::Checkpoints`):
 
 1. Split `$PAGE` into lines.
 2. The heading is the line whose text is exactly `## Checkpoints` after a

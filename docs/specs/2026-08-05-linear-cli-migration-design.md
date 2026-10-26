@@ -8,7 +8,7 @@ Date: 2026-08-05
 `cli-dependencies.json` deklaruje już `joa23/linear-cli` (Go, „Light Linear")
 jako wymagane CLI `linear`, w wersji minimalnej 1.10.0. Skille tego repo dalej
 mówią składnią poprzedniego CLI (Node, v2.0.0) i delegują znajomość flag do
-skilla `linear-cli` z `pawelwlazlo/linear-skills`, który dokumentuje właśnie
+skilla `linear-cli` z `example-org/linear-skills`, który dokumentuje właśnie
 tamto stare CLI.
 
 Rozjazd nie ogranicza się do przemianowanych flag. Część komend, na których
@@ -34,7 +34,7 @@ go wywołać.
 - `skills/nerdbrain-wiki/entity-page-template.md`
 - `cli-dependencies.json`
 
-Poza zakresem: skill `linear-cli` w `pawelwlazlo/linear-skills` (obce repo),
+Poza zakresem: skill `linear-cli` w `example-org/linear-skills` (obce repo),
 `gitlab-to-linear`, kod pod `scripts/` poza samym JSON-em kontraktu, oraz
 jakakolwiek zmiana zachowania skilli wykraczająca poza to, czego wymusza nowe
 CLI.

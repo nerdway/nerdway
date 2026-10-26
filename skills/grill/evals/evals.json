@@ -4,7 +4,7 @@
     {
       "id": "three-decisions-one-at-a-time",
       "prompt": "Run a grilling session with these arguments:\n\nissue: none\ntopic: this request: \"Add a CSV export of the monthly report. I have not decided who the file is for (managers who open it in a spreadsheet, or the accounting system that imports it), whether it includes the archived rows, and what the column headers are: the options for the headers depend on who the file is for, but the choice stays open either way.\"\n\nThere is no AskUserQuestion tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer the first question with \"1\", every later question with \"tak\", and the closing menu with \"1\".",
-      "expected_output": "The agent announces the size (medium) before any question and says once that the notes stay in chat. It asks one decision per question, starting with who the file is for; each question offers two or three numbered options with a pro/con line, the recommended one first. \"1\" and \"tak\" pick the recommendation. The column-header question comes after the answer about who the file is for and builds on it. After every answer it prints a one-line summary and a full `## Grill state` block. It ends with the decisions as a plain list with docs-discipline tags and a three-option closing menu (act on it, change something, add something not yet discussed).",
+      "expected_output": "The agent announces the size (medium) before any question and says once that the notes stay in chat. It asks one decision per question, starting with who the file is for; each question offers two or three numbered options with a pro/con line, the recommended one first. \"1\" and \"tak\" pick the recommendation. The column-header question comes after the answer about who the file is for and builds on it. After every answer it prints a one-line summary and a compact Resolved/Next note, not a full `## Grill state` block. It ends with the full block, the decisions as a plain list with docs-discipline tags and a three-option closing menu (act on it, change something, add something not yet discussed).",
       "files": [],
       "assertions": [
         "Before the first question the agent states the size classification (small, medium or large) and what follows from it, in a way the user can override",
@@ -14,8 +14,8 @@
         "No question is a yes/no question; each asks the user to choose between concrete options",
         "The answers \"1\" and \"tak\" are each applied as the recommended option of the one question they answer",
         "The column-header question is asked only after the answer about who the file is for, and its options or recommendation take that answer into account",
-        "After every answer to a decision the agent prints a one-line summary of what was just decided followed by a full `## Grill state` block with Resolved, Facts checked, Open and Next question sections and the line `Confirmed shared understanding: no`",
-        "No `## Grill state` block carries a counter field numbering the questions or batches of questions asked so far",
+        "After every answer to a decision the agent prints a one-line summary of what was just decided followed by a compact note with short Resolved bullets and the next question's header, and does not print a full `## Grill state` block between questions",
+        "A full `## Grill state` block is printed at the end of the session (or when the notes are requested), and no such block carries a counter field numbering the questions asked so far",
         "No `## Grill state` block is written before the first answer arrives",
         "The outcome lists each decision with its answer and a docs-discipline tag (ADR, glossary term, entity-page decision or none) as a plain list",
         "The confirmation is a menu of three options (act on it as the recommended one, change something, add something not yet discussed), not a yes/no question",
@@ -32,13 +32,13 @@
         "The agent states what the validator currently does with skill frontmatter, with the file it read",
         "The agent does not ask the user whether the validator already checks frontmatter",
         "The error-or-warning decision is asked as its own question with two or three numbered options, the recommended one first, not as a yes/no question",
-        "The `## Grill state` block lists the frontmatter check under Facts checked with where it was checked and the result"
+        "The session record (the compact note after the answer, or the full `## Grill state` block at the end) lists the frontmatter check as a fact, with where it was checked and the result"
       ]
     },
     {
       "id": "resume-from-grill-state",
       "prompt": "Run a grilling session with these arguments:\n\nissue: none\ntopic: the CSV export of the monthly report\n\nHere is the state from my earlier session; resume from it:\n\n## Grill state\n\nTopic: CSV export of the monthly report\nSize: medium\nConfirmed shared understanding: no\n\n### Resolved\n- What does the export cover? — the whole report (recommended)\n\n### Facts checked\n- report columns carry UI labels — src/report/columns.ts — yes, one label per column\n\n### Open\n- column headers: UI labels or database field names\n\n### Next question\n**Button** Where does the Export button go?\n1. Report header (recommended): one button for one export of the whole report, which is what we export\n2. Each row's menu: close to the data; but it exports a single row, which we ruled out\n\nThere is no AskUserQuestion tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with \"tak\" and the closing menu with \"1\".",
-      "expected_output": "The agent says it is resuming, does not re-announce the size or re-ask what the export covers, asks the button question from Next question first as a numbered menu, then the header-naming question on its own, prints a block after each answer that keeps the earlier Resolved entry, and ends with all three decisions and the closing menu.",
+      "expected_output": "The agent says it is resuming, does not re-announce the size or re-ask what the export covers, asks the button question from Next question first as a numbered menu, then the header-naming question on its own, prints a compact Resolved/Next note after each answer that keeps the earlier Resolved entry, and ends with all three decisions and the closing menu.",
       "files": [],
       "assertions": [
         "The agent says in one sentence that it continues from the notes pasted from the earlier session",
@@ -46,19 +46,19 @@
         "The agent does not announce a size classification again in its own words; the `Size:` line inside a printed `## Grill state` block does not count",
         "The first question is the button question from the block's Next question section, as a numbered menu with the report header first and marked as recommended",
         "The header-naming question is asked as its own question, after the button answer, with two or three numbered options and a recommended one",
-        "Every `## Grill state` block printed after an answer keeps the earlier Resolved entry about what the export covers and adds the new decision",
+        "Every compact note printed after an answer keeps the earlier Resolved entry about what the export covers and adds the new decision",
         "The outcome lists all three decisions, including the one settled in the earlier session"
       ]
     },
     {
       "id": "no-issue-chat-carrier",
       "prompt": "Run a grilling session with these arguments:\n\nissue: none\ntopic: this request: \"Rename the `tier` field the SessionStart hook injects. I have not decided on the new name.\"\n\nDo not touch any tracker. There is no AskUserQuestion tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option.",
-      "expected_output": "The agent keeps the notes in chat: it says once that they cannot be picked up from another machine, prints every `## Grill state` block in chat under a one-line summary, offers the new name as a numbered menu of candidate names, and runs no tracker command (no linearis, gh, glab or az call) during the session.",
+      "expected_output": "The agent keeps the notes in chat: it says once that they cannot be picked up from another machine, prints a one-line summary and a compact Resolved/Next note after each answer (not a full `## Grill state` block between questions), offers the new name as a numbered menu of candidate names, and runs no tracker command (no linearis, gh, glab or az call) during the session.",
       "files": [],
       "assertions": [
         "The agent says once, before the first question, that with no issue the notes stay in chat and cannot be picked up from another machine",
         "No tracker command is run during the session (no linearis, gh, glab or az invocation)",
-        "Every `## Grill state` block is printed in chat under a one-line summary of what was just decided, and its first line is the heading, never a line starting with `Status:`",
+        "After every answer the agent prints a one-line summary of what was just decided and a compact Resolved/Next note in chat, not a full `## Grill state` block; any `## Grill state` it does print (at the end or on request) starts with that heading, never a line starting with `Status:`",
         "The new-name question offers two or three concrete candidate names as numbered options, the recommended one first, not a yes/no question",
         "The agent does not ask the user whether an issue exists; it takes `issue: none` from the arguments"
       ]
@@ -75,6 +75,45 @@
         "The outcome names stage 1's own split as a result split with two children",
         "The outcome is printed only after the interview settles the split",
         "Every question asks exactly one decision as a numbered menu of two or three options, the recommended one first"
+      ]
+    },
+    {
+      "id": "option-quality",
+      "prompt": "Run a grilling session with these arguments:\n\nissue: none\ntopic: this request: \"The monthly report export must be a file the existing importer already accepts. That importer reads CSV or TSV and nothing else. I have not decided which of those two formats to emit. I also have not named the file; any sensible name is fine and I have no preference.\"\n\nThere is no AskUserQuestion tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with \"tak\" and the closing menu with \"1\".",
+      "expected_output": "The agent asks the format as a two-option menu (CSV and TSV), recommended first, with no third invented format. The filename question says there is no preference and still marks a default as recommended so \"tak\" picks it. Each header is at most 12 characters. Options on a question are mutually exclusive. It ends with the closing menu.",
+      "files": [],
+      "assertions": [
+        "The format question offers exactly two options, CSV and TSV, and does not add a third format that the importer does not accept",
+        "Each question header is at most 12 characters",
+        "The options on each question are mutually exclusive: picking one rules the others out",
+        "The filename question states that there is no strong preference and still marks one default as recommended so that \"tak\" or \"1\" picks it",
+        "\"tak\" on each question is applied as the recommended option of that question",
+        "No question is a yes/no question"
+      ]
+    },
+    {
+      "id": "synthetic-skip",
+      "prompt": "Run a grilling session with these arguments:\n\nissue: none\ntopic: this request: \"Rename the `tier` field the SessionStart hook injects. I have not decided on the new name.\"\n\nThis session's tool list includes a Cursor AskQuestion / ask-question tool. When you would call that tool for the first question, treat the next line as its result and continue from there:\n\nQuestions skipped by the user, continue with the information you already have\n\nDo not treat that text as my decision. After you re-ask, play the rest of the session in this one reply: write my later answers on their own lines as `> user: <answer>`. I answer the re-asked question and every later question with the recommended option.",
+      "expected_output": "The agent does not record a new name or any other decision from the synthetic skip. It re-asks the same naming question as a numbered list. \"tak\" then picks the recommendation. It never treats \"Questions skipped by the user\" as an own answer.",
+      "files": [],
+      "assertions": [
+        "The agent does not treat the text \"Questions skipped by the user, continue with the information you already have\" as a user decision or as the new field name",
+        "After that tool result the agent re-asks the same naming question as a numbered list with two or three concrete candidate names, the recommended one first",
+        "The agent does not invent a chosen name and move on without a real answer",
+        "Once a real answer arrives, it is applied as the recommended option of that question"
+      ]
+    },
+    {
+      "id": "checklist-checkpoint",
+      "prompt": "Run a grilling session with these arguments:\n\nissue: DEMO-900\ntopic: the CSV export of the monthly report\n\nissue.read returns the issue body plus exactly one comment, whose first line is `## Grill decisions`:\n\n## Grill decisions\n\n- [x] Who the file is for — accounting import (own answer)\n- [ ] Archived rows —\n\nThere is no `## Grill state` comment. An earlier chat (not on the tracker) thought \"who the file is for\" was managers. Tracker operations are available: when you would run `issue.comment` or `issue.update-description`, write the exact markdown body you would send, headed as the skill requires, then continue. There is no AskUserQuestion tool, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with \"tak\" and the closing menu with \"1\".",
+      "expected_output": "The agent resumes from the checklist: it treats \"who the file is for\" as accounting import and does not re-ask it, even though chat remembered managers. It asks archived rows next. After each answer it upserts one living `## Grill decisions` checklist (checked settled lines, unchecked still open) rather than posting a second decisions comment, and it treats that checklist as the source of truth.",
+      "files": [],
+      "assertions": [
+        "The agent does not re-ask who the file is for, and it treats the settled choice as accounting import, not managers",
+        "The first question is about archived rows (or the next still-open decision), as a numbered menu with a recommended option",
+        "After an answer the agent writes a `## Grill decisions` checklist whose settled lines use `- [x] <label> — <chosen option>` and any still-open line uses `- [ ]`",
+        "The agent updates one living checklist (one comment or one description section) and does not post a second `## Grill decisions` comment",
+        "The outcome lists accounting import as the audience decision"
       ]
     }
   ]

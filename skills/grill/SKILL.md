@@ -59,8 +59,8 @@ deferred. Then take the newest comment whose first line is `## Grill state`.
   `Next question` from the newest block first, verbatim, unless the
   checklist already settled it; then `Open` one at a time. Re-check a fact
   only when `Open` names this machine. Skip the size announcement.
-- `yes` → print the outcome; menu: keep it (recommended) or reopen (settled
-  decisions become facts).
+- `yes` → print the outcome as section 5 gives it; menu: keep it
+  (recommended) or reopen (settled decisions become facts).
 - No such comment → start from section 1.
 
 A legacy block may list several next questions or a counter. Ignore the
@@ -199,10 +199,13 @@ second decisions comment.
 
 ## 5. End on shared understanding
 
-When nothing is left open, print the outcome as a plain list: size (and
-when large the split and its kind, with blockers for stages); every
-decision with its answer; facts checked (where and what); open items for
-another machine; for each decision a docs-discipline tag — **ADR**,
+When nothing is left open, print the outcome as a briefing for a fellow
+developer, in the conversation language: what happened, with a concrete
+example from the code or the request; the cause; what will change; what is
+deliberately left out. Add the size (when large the split and its kind,
+with blockers for stages), facts checked (where and what) and open items
+for another machine. Then every decision, named by what it is about (the
+voice table in `reference.md`), with its docs-discipline tag — **ADR**,
 **glossary term**, **entity-page decision**, or **none** — as
 `reference.md` defines.
 

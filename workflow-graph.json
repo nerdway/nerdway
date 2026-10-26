@@ -49,6 +49,10 @@
     {
       "id": "no-merge-without-green-verification",
       "rule": "No merge without green verification: tests and validators pass before close runs."
+    },
+    {
+      "id": "session-summary-requires-checkpoint",
+      "rule": "After a working session the Checkpoints entry on the entity page is mandatory in the same step as the Session summary comment. The only allowed skips are an unreachable vault (tier=none) or a project with no entity page, and those skips must be named in the Session summary — never silent. A Session summary without that write is not a finished session and is not a valid close-out."
     }
   ],
   "adapters": {
@@ -816,7 +820,7 @@
     },
     {
       "id": "SessionSummary",
-      "description": "The `## Session summary` comment: what changed, what remains, validation, next steps.",
+      "description": "The `## Session summary` comment: what changed, what remains, validation, next steps, and the Checkpoint field that names the entity-page write or an explicit skip.",
       "schema": {
         "type": "object",
         "title": "Session summary",
@@ -913,9 +917,14 @@
             "title": "Metrics",
             "description": "One line per figure the run already produced — `PlanContext.stats`, the gaps an island reported, the verifier rejection rate. Passive by construction: nothing is measured that the run did not emit anyway, and the comment is the only place it is stored. Omit when no island ran.",
             "items": { "type": "string" }
+          },
+          "checkpoint": {
+            "type": "string",
+            "title": "Checkpoint",
+            "description": "Vault path of the entity page that received the Checkpoints entry in this same step, or an explicit skip: `skipped: tier=none` or `skipped: no entity page`. A Session summary without this field is an incomplete failed step — not a finished session and not a green light for personal-docs or close."
           }
         },
-        "required": ["changed", "completed", "remaining", "status", "validation", "nextSteps"]
+        "required": ["changed", "completed", "remaining", "status", "validation", "nextSteps", "checkpoint"]
       }
     },
     {
@@ -1213,9 +1222,9 @@
       "adapters": ["vault"],
       "runtime": "conversational",
       "phase": "close",
-      "in": ["SessionSummary"],
+      "in": ["SessionSummary", "EntityPageUpdate"],
       "out": ["PersonalGuide"],
-      "dependsOn": ["session-summary"],
+      "dependsOn": ["session-summary", "wiki-write"],
       "failure": {
         "retries": 0,
         "fallback": "stop before issue-close and report; a machine without the vault reports no-vault instead of failing, and issue-close refuses to merge while the guide is missing",
@@ -1247,6 +1256,12 @@
           "mechanism": "tracker-status",
           "rule": "no-merge-without-green-verification",
           "description": "The human asks to close, or sets the issue to Done with the PR still open; the merge is irreversible."
+        },
+        {
+          "kind": "decision",
+          "mechanism": "tracker-status",
+          "rule": "session-summary-requires-checkpoint",
+          "description": "The human asks to close, or sets the issue to Done with the PR still open; close-out does not run until wiki-write has written the Checkpoints entry or recorded an explicit skip (tier=none or no entity page). A Session summary comment alone is not a finished session and not a valid close-out."
         }
       ]
     },
@@ -1261,8 +1276,8 @@
       "dependsOn": ["session-summary"],
       "failure": {
         "retries": 0,
-        "fallback": "skip the wiki write and report it to the user",
-        "killsRun": false,
+        "fallback": "stop and report: a reachable vault with an entity page must receive the Checkpoints entry; only an unreachable vault (tier=none) or a project with no entity page may skip, and that skip is named in the Session summary — never silent",
+        "killsRun": true,
         "reporting": "chat"
       },
       "budget": { "maxWidth": 1 },

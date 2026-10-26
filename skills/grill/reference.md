@@ -20,6 +20,8 @@ question nor in the summary line, the outcome or the confirmation menu.
 | carrier | "The carrier is chat." | "The notes stay in this chat; another machine will not see them." |
 | state block / blok stanu | "Writing the state block." / "Paste a `## Grill state` block." / "Zapisuję blok stanu." | "saved: button in the report header" / "Paste the notes from that chat." / "zapisane: przycisk w nagłówku raportu" |
 | recommendation accepted | "Q1: recommendation accepted." | "Button: report header." |
+| question number (`Q3`) | "Q4 → current rows only." | "Export: only the rows the report shows now." |
+| acceptance-criterion position ("criterion 6", "AC #2") | "Criterion 6 → stays." | "An empty report still refuses to export, as the issue asks." |
 
 ## Callers
 

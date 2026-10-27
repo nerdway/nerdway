@@ -87,8 +87,9 @@ sentences the user can override in the same turn:
 
 Large splits: **result split** (parts of one deliverable → parent with
 children; parent closes after them) or **stages in time** (siblings under
-a shared epic, each blocked by the stage before, never its child — a
-tracker's sub-issue auto-close). Both: say so per stage.
+a shared epic, each a distinct shippable deliverable blocked by the
+stage before, never its child — a tracker's sub-issue auto-close).
+Research then implement is one issue, not a split. Both: say so per stage.
 
 The user's override wins. Size only grows (say so and re-classify); never
 shrink silently to finish sooner.
@@ -216,8 +217,11 @@ Then a confirmation menu, in the conversation language:
 3. **add something we missed** ("dodaj gałąź"): a part not yet discussed.
 
 On the first option, write the final record with
-`Confirmed shared understanding: yes` and return to the caller. The
-second and third open a new question (section 3) and come back here.
+`Confirmed shared understanding: yes` and return to the caller. With
+`issue: <ID>`, that caller keeps spec, plan and implementation on
+`<ID>` — never a new issue only to implement this grill (`reference.md`
+Callers). The second and third open a new question (section 3) and
+come back here.
 Do not act, and do not let the caller act, before the first option.
 
 No preamble of what was checked, and no footer beyond the one line

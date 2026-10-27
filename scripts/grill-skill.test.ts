@@ -172,13 +172,14 @@ function evalCases(): EvalCase[] {
   return JSON.parse(read(EVALS)).evals;
 }
 
-test("the evals cover one question at a time, resuming, option quality, a synthetic skip and the checklist", () => {
+test("the evals cover one question at a time, resuming, option quality, a synthetic skip, the checklist and same-issue handoff", () => {
   const ids = evalCases().map((evalCase) => evalCase.id);
   assert.ok(ids.includes("three-decisions-one-at-a-time"));
   assert.ok(ids.includes("resume-from-grill-state"));
   assert.ok(ids.includes("option-quality"));
   assert.ok(ids.includes("synthetic-skip"));
   assert.ok(ids.includes("checklist-checkpoint"));
+  assert.ok(ids.includes("confirmed-same-issue-no-impl-follow-up"));
   assert.ok(!ids.includes("three-decisions-two-rounds"));
 });
 
@@ -219,4 +220,22 @@ test("the checklist eval treats tracker edits as the source of truth", () => {
   assert.ok(checklist);
   assert.match(checklist.prompt, /## Grill decisions/);
   assert.match(checklist.assertions.join("\n"), /source of truth|checklist/);
+});
+
+test("a confirmed bound session keeps spec, plan and implementation on that issue", () => {
+  const text = outcomeSection();
+  assert.match(text, /never a new issue only to implement this grill/);
+  assert.match(read(SKILL), /Research then implement is one issue, not a split/);
+  assert.match(read(REFERENCE), /never a new issue whose only purpose is implementing this grill/);
+  assert.match(read(REFERENCE), /załóż\nfollow-up na implementację|załóż follow-up na implementację/);
+});
+
+test("the same-issue eval fails a follow-up implementation issue after grill-on-X", () => {
+  const sameIssue = evalCases().find((evalCase) => evalCase.id === "confirmed-same-issue-no-impl-follow-up");
+  assert.ok(sameIssue);
+  assert.match(sameIssue.prompt, /issue: DEMO-466/);
+  assert.match(sameIssue.prompt, /Confirmed shared understanding: yes/);
+  const assertions = sameIssue.assertions.join("\n");
+  assert.match(assertions, /does not propose, draft or create a new tracker issue/);
+  assert.match(assertions, /returns to the caller on DEMO-466/);
 });

@@ -327,7 +327,15 @@ the repo itself, asks the decisions one question per turn, each as a menu of
 options with a recommended one, and records a `## Grill state` comment on the
 issue after every answer, so the session resumes from the tracker on any
 machine. Its confirmed
-outcome feeds step 0c (the refined spec) and step 1 (the plan).
+outcome feeds step 0c (the refined spec) and step 1 (the plan) **on the
+same `<ID>`**. After `Confirmed shared understanding: yes` with
+`issue: <ID>`, return to refining the spec and drafting the plan on
+that issue. No menu, widget or suggestion to "załóż follow-up na
+implementację" / "create an implementation issue" whose only purpose is
+implementing this grill's decisions. Out of scope in the spec or the
+plan may name a different topic — never "Out of scope: implementacja w
+osobnym issue", "implementation in a separate issue", or any line that
+only defers this issue's implementation elsewhere.
 
 Do not post the plan before the skill has returned a confirmed outcome. The
 outcome tags each decision for the docs discipline — ADR, glossary term in

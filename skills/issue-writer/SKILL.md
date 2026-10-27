@@ -99,7 +99,7 @@ question, so the user can override it, and the size picks the path:
 |--------|------|
 | **small** — one clear deliverable, outcome already stated | the skill returns at once: **draft straight away**, minimal template (Objective + Acceptance criteria) |
 | **medium** — one piece of work with open decisions | the skill interviews one question at a time; draft with the full template from its confirmed outcome |
-| **large** — plainly splits into stages | the outcome proposes the split, named as a result split or as stages in time; step 3 turns it into issues |
+| **large** — plainly splits into distinct shippable deliverables | the outcome proposes the split, named as a result split or as stages in time; step 3 turns it into issues. Research then implement is not large |
 
 The decisions the interview settles are the template's sections the request
 leaves open: objective, problem/context, acceptance criteria, scope (in/out),
@@ -128,10 +128,14 @@ deliverable in parts: the children together are the parent's result, and the
 parent closes once every child is done. **Stages in time** are separate
 deliverables, each shipping on its own: stage 2 starts after stage 1 is done,
 and closing stage 1 must leave stage 2 open. A stage is therefore never a
-child of the stage before it. The stages are siblings: children of a shared
-epic (the parent the user names, the parent of the issue being split, or a
-new epic issue proposed with them), else top-level issues of the project.
-The order is a `blocked by` relation from each stage to the one before.
+child of the stage before it. Stage 2 must be a distinct deliverable that
+ships on its own — never "implement what stage 1 decided". Classifying
+"research / decision now, implement later" as stages in time is forbidden:
+that work stays on one issue (research, grill and implementation of those
+decisions). The stages are siblings: children of a shared epic (the parent
+the user names, the parent of the issue being split, or a new epic issue
+proposed with them), else top-level issues of the project. The order is a
+`blocked by` relation from each stage to the one before.
 
 When proposing a split, name its kind first (*podział rezultatu* or *etapy w
 czasie*, in the issue's language) with the one-sentence reason, then present
@@ -152,6 +156,13 @@ editing the schema, not the file. Filling it stays prose — nothing here asks y
 or the user for JSON.
 
 Write the body to a temp file and **show it to the user**. Wait for approval.
+
+Out of scope names a *different topic* left to another issue (another bot,
+another runner, an unrelated feature). It never defers this issue's own
+implementation: ban the lines "Out of scope: implementacja w osobnym issue"
+and "implementation in a separate issue", and any Out of scope line whose
+only content is "do the implementation of this grill / these decisions
+elsewhere".
 
 ### 5. Create on the tracker (always in the backlog phase)
 
@@ -192,7 +203,12 @@ For a complex or still-fuzzy topic, ask the user: *Odpalić sesję grillowania
 dla tego issue?* If yes, invoke **`nerd4rent:grill`** with `issue: <ID>` (the
 issue step 5 created) and `topic: the created issue's body`; the skill records
 its state as comments on that issue, so the session can resume on another
-machine. Handle the confirmed outcome:
+machine. After `Confirmed shared understanding: yes` with `issue: <ID>`,
+stay on `<ID>`: refine the spec (update the description) and point at
+`nerd4rent:issue-workflow` for the plan and implementation of those
+decisions. No menu, widget or suggestion to "załóż follow-up na
+implementację" / "create an implementation issue". Handle the confirmed
+outcome:
 
 - sharpened requirements → update the issue description
   (`issue.update-description`) after showing the diff;
@@ -206,7 +222,10 @@ machine. Handle the confirmed outcome:
   `issue.create-child`; stages in time with `<ID>` as the first stage and
   the later stages as its siblings (under its parent with
   `issue.create-child`, else with `issue.create`), each blocked by the one
-  before through `issue.add-blocked-by`.
+  before through `issue.add-blocked-by`. A split is valid only for truly
+  separate shippable deliverables settled as large. "Research / decision
+  now, implement later" is not a split — implementation of this grill
+  stays on `<ID>`.
 
 Skip the offer when step 2 classified the topic as small.
 

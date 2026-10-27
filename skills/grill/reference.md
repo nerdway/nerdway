@@ -27,10 +27,20 @@ question nor in the summary line, the outcome or the confirmation menu.
 
 | Caller | Passes | Does with the outcome |
 |---|---|---|
-| `nerd4rent:issue-writer` step 2 | `issue: none`, topic = the user's request | drafts the issue body from the decisions; a large size becomes the split proposal of its step 3, of the kind the outcome named |
-| `nerd4rent:issue-writer` step 6 | `issue: <ID>`, topic = the created issue's body | updates the description after showing the diff, proposes sub-issues only after approval |
-| `nerd4rent:issue-workflow` step 1a | `issue: <ID>`, topic = the issue description | refines the spec (its step 0c) and drafts the plan; posts neither before the confirmed outcome |
+| `nerd4rent:issue-writer` step 2 | `issue: none`, topic = the user's request | drafts the issue body from the decisions; a large size becomes the split proposal of its step 3, of the kind the outcome named — never a draft whose Out of scope only defers this topic's implementation to another issue |
+| `nerd4rent:issue-writer` step 6 | `issue: <ID>`, topic = the created issue's body | updates the description after showing the diff; proposes sub-issues only after approval, and only for a large result split or stages in time of distinct shippable deliverables; never a new issue whose only purpose is implementing this grill; then ends at step 7 on `<ID>` |
+| `nerd4rent:issue-workflow` step 1a | `issue: <ID>`, topic = the issue description | refines the spec (its step 0c) and drafts the plan on `<ID>`; posts neither before the confirmed outcome; never offers a new issue for the implementation of those decisions |
 | `nerd4rent:new-project-workflow` step 5 | `issue: none`, topic = the scaffolded README and the project idea | hands the decisions to the first issue of the project |
+
+After `Confirmed shared understanding: yes` with `issue: <ID>`, every
+caller above returns to refining the spec, drafting the plan, or
+implementing **on that same ID**. No menu, widget or suggestion to
+create a follow-up whose only job is "implement this grill" / "załóż
+follow-up na implementację". Out of scope may name a *different topic*
+(another bot, another runner, an unrelated feature) — never "do the
+implementation of this grill elsewhere" and never the lines "Out of
+scope: implementacja w osobnym issue" or "implementation in a separate
+issue".
 
 ## Related skills
 

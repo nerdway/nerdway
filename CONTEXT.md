@@ -293,7 +293,11 @@ A topic divided into deliverables that ship one after another: sibling
 issues under a shared epic (or top-level), each stage after the first
 blocked by the one before through `issue.add-blocked-by`. A stage is never a
 child of the previous stage, since closing a parent can close its children.
-_Avoid_: phases (the canonical phases are something else), child stages
+Stage 2 must ship on its own as a distinct deliverable — never "implement
+what stage 1 decided". Research, grill and implementation of one decision
+stay on one issue; that sequence is not stages in time.
+_Avoid_: phases (the canonical phases are something else), child stages,
+research-then-impl split
 
 **Open issue**:
 An issue in any mapped canonical phase but `done`: `backlog`, `todo`,

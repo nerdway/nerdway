@@ -22,7 +22,9 @@
 
 **Out of scope:**
 
-<!-- What it deliberately leaves to another issue. -->
+<!-- What it deliberately leaves to another issue — a different topic, never
+     this issue's own implementation (not "implementacja w osobnym issue" /
+     "implementation in a separate issue"). -->
 
 -
 -

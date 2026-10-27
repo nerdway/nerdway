@@ -66,12 +66,13 @@
     },
     {
       "id": "large-outcome-names-split-kind",
-      "prompt": "issue: none\ntopic: Przenieść checkpointy z entity page do osobnego pliku. Najpierw nowy format i zapis w project-continue, wydany i używany przez tydzień; potem, w osobnym wydaniu, migracja starych wpisów i usunięcie sekcji z entity page. Pierwsza część ma dwie połowy, które mają sens tylko razem: format pliku i zapis w nerdbrain-wiki.\n\nThere is no AskUserQuestion tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option and the closing menu with \"1\".",
-      "expected_output": "The size is announced as large. The confirmed outcome proposes stages in time: stage 1 (new format and write) and stage 2 (migration and removal), stage 2 blocked by stage 1 and a sibling of it, not its child. Stage 1 is itself a result split into the file format and the nerdbrain-wiki write, as children of stage 1.",
+      "prompt": "issue: none\ntopic: Przenieść checkpointy z entity page do osobnego pliku. Najpierw nowy format i zapis w project-continue, wydany i używany przez tydzień; potem, w osobnym wydaniu, migracja starych wpisów i usunięcie sekcji z entity page. Etap 2 to osobny, samowystarczalny deliverable (migracja i usunięcie), nie implementacja decyzji etapu 1. Pierwsza część ma dwie połowy, które mają sens tylko razem: format pliku i zapis w nerdbrain-wiki.\n\nThere is no AskUserQuestion tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option and the closing menu with \"1\".",
+      "expected_output": "The size is announced as large. The confirmed outcome proposes stages in time: stage 1 (new format and write) and stage 2 (migration and removal — a distinct shippable deliverable, not \"implement what stage 1 decided\"), stage 2 blocked by stage 1 and a sibling of it, not its child. Stage 1 is itself a result split into the file format and the nerdbrain-wiki write, as children of stage 1.",
       "files": [],
       "assertions": [
         "The size is announced as large before the first question",
         "The outcome names the top-level split as stages in time",
+        "Stage 2 is a distinct shippable deliverable (migration and removal), not the implementation of stage 1's decisions",
         "Stage 2 is blocked by stage 1 and is not a child of stage 1",
         "The outcome names stage 1's own split as a result split with two children",
         "The outcome is printed only after the interview settles the split",
@@ -115,6 +116,19 @@
         "After an answer the agent writes a `## Grill decisions` checklist whose settled lines use `- [x] <label> — <chosen option>` and any still-open line uses `- [ ]`",
         "The agent updates one living checklist (one comment or one description section) and does not post a second `## Grill decisions` comment",
         "The outcome lists accounting import as the audience decision"
+      ]
+    },
+    {
+      "id": "confirmed-same-issue-no-impl-follow-up",
+      "prompt": "Run a grilling session with these arguments:\n\nissue: DEMO-466\ntopic: Research: local clone of nerd4rent.io — docker-compose in DevBox vs a VM\n\nissue.read returns the issue body (a research/decision topic) plus a newest comment whose first line is `## Grill state`:\n\n## Grill state\n\nTopic: local clone of nerd4rent.io\nSize: medium\nConfirmed shared understanding: yes\n\n### Resolved\n- Where the clone runs — docker-compose in the DevBox workspace (recommended)\n\n### Facts checked\n- DevBox workspaces already mount docker.sock — devbox.yaml — yes\n\n### Open\n\n### Next question\n\nThere is also one living `## Grill decisions` comment with every line checked. Tracker operations are available: when you would run `issue.comment` or `issue.update-description`, write the exact markdown body you would send, headed as the skill requires, then continue. There is no AskUserQuestion tool, so ask with the numbered list. Play this resume in this one reply. I answer the keep-or-reopen menu with \"1\" (keep it).\n\nA teammate habit after a research-titled grill is to offer a follow-up implementation issue and to write \"Out of scope: implementacja w osobnym issue\". Do not do that.",
+      "expected_output": "The agent prints the section 5 outcome and the keep-it / reopen menu. After \"1\" it treats the grill as finished on DEMO-466 and returns to the caller so spec, plan and implementation stay on DEMO-466. It does not propose, draft or create a new issue whose only purpose is implementing DEMO-466's decisions, and it does not write \"Out of scope: implementacja w osobnym issue\" or \"implementation in a separate issue\".",
+      "files": [],
+      "assertions": [
+        "The agent prints the section 5 outcome (briefing and decisions) and a keep-it / reopen menu, then treats \"1\" as keeping the confirmed understanding",
+        "The agent does not propose, draft or create a new tracker issue whose only purpose is implementing the decisions of DEMO-466",
+        "The agent does not offer a menu, widget or suggestion to create a follow-up implementation issue",
+        "The agent does not write \"Out of scope: implementacja w osobnym issue\" or \"implementation in a separate issue\"",
+        "The agent returns to the caller on DEMO-466 rather than starting a new issue for the implementation"
       ]
     }
   ]

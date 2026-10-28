@@ -53,6 +53,17 @@
         "The drafted or updated body does not contain \"Out of scope: implementacja w osobnym issue\" or \"implementation in a separate issue\"",
         "The handoff points at nerd4rent:issue-workflow for DEMO-466, not at issue-writer for a new implementation issue"
       ]
+    },
+    {
+      "id": "handoff-repeats-created-id",
+      "prompt": "Step 7: you just created DEMO-501 titled \"Modal faktury aktywuje Basic\" at https://linear.app/example/issue/DEMO-501/modal-faktury-aktywuje-basic, in Backlog. Grill was skipped (small). Print the output + handoff. Do not plan.",
+      "expected_output": "The message is Issue utworzone (DEMO-501) — w Backlogu: the issue url. Wpisz DEMO-501 w nowej sesji lub wiadomości, aby rozpocząć planowanie. Planning does not start in this session.",
+      "files": [],
+      "assertions": [
+        "The created-issue line names DEMO-501",
+        "The instruction to start planning names DEMO-501 itself (Wpisz DEMO-501 w nowej sesji), not a generic stand-in for the identifier",
+        "The agent does not draft or post an implementation plan in this session"
+      ]
     }
   ]
 }

@@ -233,10 +233,11 @@ Skip the offer when step 2 classified the topic as small.
 
 Print the created issue ID(s) — as step 5 captured them — each with its link
 from `issue.url`, in the shape *Asking the human to move a phase* in
-`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives. Then point at the
-status-driven flow — do **not** offer to plan it yourself in this session:
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives. Substitute the captured
+ID for every `DEMO-123` below. Then point at the status-driven flow — do
+**not** offer to plan it yourself in this session:
 
-> *Issue utworzone (DEMO-123) — w Backlogu: <link>. Wpisz ID issue w nowej
+> *Issue utworzone (DEMO-123) — w Backlogu: <link>. Wpisz DEMO-123 w nowej
 > sesji lub wiadomości, aby rozpocząć planowanie.*
 
 Planning, implementation, and review are driven by the issue's phase on the tracker in

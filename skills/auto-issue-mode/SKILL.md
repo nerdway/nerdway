@@ -43,6 +43,18 @@ for green tests and validators. Outside the run both rules stand unchanged.
 The single human stop is the drafted issue (entry A). After its approval the
 run asks nothing and stops only on a **stop condition** (below).
 
+## Hard stop: the plan comment before any Start
+
+A comment whose **first heading line is `## Implementation plan`** must
+already exist on the issue before stage 1 (Start), before any CloudAgent,
+and before any edit, commit or PR. If it is missing, run stage 2 and wait
+until `issue.read` shows that comment. Acceptance criteria already in the
+description, a handoff from another bot, or "do it now" / "zrób od razu"
+**do not waive** this. The plan may be short and quote the AC, but it must
+exist on the tracker. OPS-22 (2026-10-27) launched a CloudAgent without a
+posted plan; DEMO-473 (2026-10-28) posted a stub, set In Progress itself, and
+launched a CloudAgent — neither counts as this comment.
+
 ## Platform and adapters
 
 Tracker and VCS commands live in adapter files at the plugin root, never in
@@ -89,7 +101,7 @@ Follow `nerd4rent:issue-writer` steps 1, 4 and 5 with these fixed choices:
 
 Show the draft together with the resolved container and wait for **one**
 approval; it covers the container and the body. Then run `issue.create` and
-continue at stage 1 with the new ID.
+continue at stage 2 with the new ID (the issue has no plan comment yet).
 
 ### B. Issue ID — resume
 
@@ -97,9 +109,10 @@ Run `issue.read` and `issue.read-status`, then dispatch on the phase:
 
 | Phase | Continue at |
 |---|---|
-| `backlog` / `todo` | stage 1 (start), then stage 2 — or stage 3 when a comment starting with `## Implementation plan` is already present (`todo` means `issue-workflow` posted one) |
-| `in-progress`, no comment starting with `## Implementation plan` | stage 2 (plan) — stage 1 first when the issue has no branch or PR/MR yet |
-| `in-progress`, plan comment present | stage 3 (implementation) |
+| `backlog` / `todo`, no comment starting with `## Implementation plan` | stage 2 (plan) only — never stage 1, never stage 3, never a CloudAgent, until that comment exists; then continue as the plan-present row |
+| `backlog` / `todo`, plan comment present | stage 1 (start), then stage 3 |
+| `in-progress`, no comment starting with `## Implementation plan` | stage 2 (plan) only — never stage 1, never stage 3, never a CloudAgent, until that comment exists; then continue as the plan-present row |
+| `in-progress`, plan comment present | stage 3 (implementation) — stage 1 first when the issue has no branch or PR/MR yet |
 | `in-review` | stage 4 (review) |
 | `done`, no PR/MR, no trace of work | stop condition: the warning and the bug proposal of *A done issue without a trace of work* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`; the run creates no bug itself |
 | `done` | stage 5 (close-out) as verification: an open PR/MR is merged, an already merged one is only confirmed |
@@ -113,9 +126,11 @@ stages that the stage needs, and the report shape it must return. After each
 stage print a 1–3 line **progress** update — stage, outcome, the one link or
 number that proves it — before dispatching the next.
 
-1. **Start.** Write phase `in-progress` with `issue.set-status`, then run
-   `nerd4rent:issue-start` with the ID and a one-paragraph summary from the
-   issue's objective. Report: branch, PR/MR URL.
+1. **Start.** Only after a comment starting with `## Implementation plan` is
+   already on the issue. Write phase `in-progress` with `issue.set-status`,
+   then run `nerd4rent:issue-start` with the ID and a one-paragraph summary
+   from the issue's objective. Report: branch, PR/MR URL. If the plan comment
+   is missing, this stage does not run — go to stage 2.
 2. **Plan.** Draft the implementation plan from the issue following
    `issue-workflow/plan-template.md` (banner and guidance comments removed; the
    body starts with `## Implementation plan`). For context use
@@ -124,9 +139,13 @@ number that proves it — before dispatching the next.
    description is the spec and is not refined here (that needs the user); a
    criterion without a check gets one in the plan. The plan lists its
    Affected Files and sets its **Test approach**: `TDD` with the seams, or
-   `no tests` only with a reason and the stand-in check. Post the plan with `issue.comment`; the phase stays
-   `in-progress`. Report: the plan's objective and steps in brief, the comment
-   link.
+   `no tests` only with a reason and the stand-in check. This stage may run
+   while the issue is still `backlog` / `todo` or already `in-progress`. Post
+   the plan with `issue.comment`. Do not change the phase here: stage 1 writes
+   `in-progress` when Start runs. Do not Start, do not edit the repo, and
+   never a CloudAgent. After this stage reports, continue: stage 1 if there
+   is no branch or PR/MR, then stage 3. Report: the plan's objective and
+   steps in brief, the comment link.
 3. **Implementation.** Read the plan comment with `issue.read` and implement
    against it on the issue branch, in the mode its **Test approach** sets,
    without asking: `TDD` follows `nerd4rent:tdd` against the listed seams;

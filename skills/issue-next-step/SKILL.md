@@ -67,6 +67,7 @@ Pick the first matching row. The table mirrors the dispatch table of
 | `backlog` | any | planning — a plan already present gets refreshed, as `issue-workflow` dispatches it |
 | `todo` | no plan | planning |
 | `todo` | plan present | implementation — propose `in-progress` |
+| `in-progress` | no plan | planning |
 | `in-progress` | no branch or PR/MR | implementation, starting with the Start step |
 | `in-progress` | branch or PR/MR present | continue implementation |
 | `in-review` | any | review |
@@ -74,6 +75,9 @@ Pick the first matching row. The table mirrors the dispatch table of
 | `done` | no PR/MR, and the trace check finds no trace of work | done without a trace of work: a warning and a bug proposal through `issue-writer` (see below); the issue's phase stays as it is |
 | `done` | PR/MR merged, or none | the open issues `issue.read-relations` returns (parent, siblings, links; run on the issue, then on its parent) — list them as the next step and end, no handoff; with none, report that and end |
 | unknown | — | stop condition |
+
+An `in-progress` issue with no plan is planning, never implementation:
+acceptance criteria in the description and a handoff do not waive it.
 
 Print one compact block: the phase (raw value and canonical phase), the
 evidence, and the one next step.

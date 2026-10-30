@@ -7,10 +7,12 @@ description: >-
   GitLab Issues project; #123 or AB#123 in an Azure DevOps Boards project) to
   plan or implement. Dispatches on the
   issue's workflow phase, read through the tracker's status strategy:
-  backlog/todo → plan; in-progress (set manually by the user) → implement
-  (branch, empty commit, draft PR with magic words); in-review → code-review
-  menu; done → close-out. The user steers by changing the issue's status on
-  the tracker; the agent asks for that move and prints the issue link.
+  backlog/todo → plan; in-progress without a `## Implementation plan`
+  comment → plan first; in-progress with that comment (set manually by the
+  user) → implement (branch, empty commit, draft PR with magic words);
+  in-review → code-review menu; done → close-out. The user steers by
+  changing the issue's status on the tracker; the agent asks for that move
+  and prints the issue link.
   Invoke this skill FIRST; the tracker and VCS commands it needs come from
   the platform adapters.
 ---
@@ -130,19 +132,32 @@ in chat.
 
 ## Hard gates (do not skip)
 
-1. **Before any repo change** (edit, write, build, install, commit, PR): the
-   issue's phase must be **`in-progress`** — written by the user on the
-   tracker, whatever the strategy. Never write `in-progress` yourself to unlock
-   implementation; an explicit user instruction in chat to implement counts as
-   approval (then write `in-progress` with `issue.set-status` to reflect it).
-2. **Phase check every turn**: at the start of every turn that touches the
+1. **Before any repo change** (edit, write, build, install, commit, PR,
+   CloudAgent launch): two things must already be true on the tracker:
+   - the issue's phase is **`in-progress`** — written by the user on the
+     tracker, whatever the strategy. Never write `in-progress` yourself to
+     unlock implementation; an explicit user instruction in chat to implement
+     counts as approval (then write `in-progress` with `issue.set-status` to
+     reflect it);
+   - a comment whose **first heading line is `## Implementation plan`**
+     already exists on that same issue (`issue.read`). Acceptance criteria
+     already in the description, a handoff from another bot, or "do it now" /
+     "zrób od razu" **do not waive** this. The plan may be short and quote
+     the AC, but it must exist on the tracker. A stub that is not the
+     plan-template is not a substitute (DEMO-473, 2026-10-28).
+2. **Phase `in-progress` without that plan comment**: dispatch to **Planning**
+   first (post the plan, write phase `todo`, ask for In Progress again).
+   Never Start, never edit, never CloudAgent. OPS-22 (2026-10-27) launched a
+   CloudAgent without a posted plan.
+3. **Phase check every turn**: at the start of every turn that touches the
    issue, run `issue.read-status` and dispatch on the current phase. It may
    have changed since the last message.
-3. **After every working session** on the issue: post a `## Session summary`
+4. **After every working session** on the issue: post a `## Session summary`
    comment (see below).
 
 Allowed regardless of phase: tracker read operations, reading code for
 analysis, drafting plan text, posting tracker comments, answering questions.
+A CloudAgent launch is a repo change: it is not allowed here.
 
 ## Dispatch by phase
 
@@ -155,7 +170,8 @@ marker is in those comments), then:
 | Phase | What to do |
 |-------|------------|
 | `backlog` / `todo` | **Planning** — draft and post a plan (or refine the existing one); write phase **`todo`**; end the turn asking for `in-progress` (step 3) |
-| `in-progress` | **Implementation** — rebuild context from the description (the spec), the `## Implementation plan` comment and later comments (`## Spec change`, plan extensions); if branch/PR missing, run the Start step first |
+| `in-progress`, no comment starting with `## Implementation plan` | **Planning** first — same as `backlog` / `todo`: draft and post the plan, write phase **`todo`**, end the turn asking for `in-progress`. Never Start, never edit, never CloudAgent |
+| `in-progress`, plan comment present | **Implementation** — rebuild context from the description (the spec), the `## Implementation plan` comment and later comments (`## Spec change`, plan extensions); if branch/PR missing, run the Start step first |
 | `in-review` | **Code review** — present the code-review menu with the issue link (`issue.url`) |
 | `done` (set manually, PR unmerged) | **Close-out** — the user's guide (`nerd-personal-docs`), then push, merge PR, ask about switching to main/master |
 | `done`, no PR, no trace of work | **Warning and bug proposal** — the rule *A done issue without a trace of work* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`: report it with the issue link (`issue.url`), offer to draft the bug with `nerd4rent:issue-writer`, and stop; never a comment alone, never a phase change |
@@ -163,9 +179,10 @@ marker is in those comments), then:
 
 This table also governs a bare issue ID typed into a **fresh session**: check
 the phase and do what it says — do not restart planning for an issue already
-`in-progress`.
+`in-progress` that already has the plan comment; without that comment,
+Planning first even from `in-progress`.
 
-## Planning phase (`backlog` / `todo`)
+## Planning phase (`backlog` / `todo`, or `in-progress` with no plan)
 
 ### Context fan-out (workflow island, when available)
 
@@ -365,6 +382,10 @@ signals approval by making that move on the tracker (or by asking you to
 implement in chat); the request never lets you write `in-progress` yourself.
 
 ## Implementation phase (`in-progress`)
+
+Enter this phase only when a comment starting with `## Implementation plan`
+is already on the issue. If `issue.read` shows none, go to Planning — do not
+Start, do not edit, do not launch a CloudAgent.
 
 ### 4. Start (once per issue — skip if branch and PR already exist)
 

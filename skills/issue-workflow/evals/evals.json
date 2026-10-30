@@ -86,6 +86,7 @@
       "files": [],
       "assertions": [
         "The agent dispatches on the in-progress phase and does not draft a new plan",
+        "The existing `## Implementation plan` comment is what unlocks Start; the agent does not re-plan",
         "The agent delegates the Start step to nerd4rent:issue-start because there is no branch or PR",
         "The draft PR body starts with `Fixes DEMO-651`",
         "The agent implements with nerd4rent:tdd, as the plan's test approach says"
@@ -149,6 +150,31 @@
         "The agent does not offer a menu, widget or suggestion to create a follow-up implementation issue",
         "The spec and the plan do not contain \"Out of scope: implementacja w osobnym issue\" or \"implementation in a separate issue\"",
         "The agent asks the user to move DEMO-466 to In Progress and prints the issue link"
+      ]
+    },
+    {
+      "id": "in-progress-no-plan-plans-first",
+      "prompt": "DEMO-656 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). In a fresh session the user types `implement DEMO-656` and asks to launch a CloudAgent on it immediately. issue.read shows the issue In Progress, a full description with acceptance criteria, no comment starting with `## Implementation plan`, no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-656. The same jump happened on OPS-22 (2026-10-27): a CloudAgent without a posted plan.",
+      "expected_output": "The phase is in-progress but the `## Implementation plan` comment is missing, so the hard gate holds: the agent plans first. It drafts the plan from plan-template.md, posts it with issue.comment starting with `## Implementation plan`, writes phase todo with issue.set-status, and ends the turn asking the user to move DEMO-656 to In Progress, with the issue link. It does not Start, does not edit any file, does not commit, does not open a PR, and does not launch a CloudAgent.",
+      "files": [],
+      "assertions": [
+        "The agent reads the phase and the comments from the tracker before doing anything else",
+        "The agent posts a comment starting with `## Implementation plan` and writes phase todo",
+        "The agent does not Start, does not delegate to nerd4rent:issue-start, and does not launch a CloudAgent",
+        "The agent makes no repo change: no branch, no file edit, no commit, no PR",
+        "The agent asks the user to move the issue to In Progress and prints the issue link"
+      ]
+    },
+    {
+      "id": "ac-handoff-does-not-waive-plan",
+      "prompt": "DEMO-657 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-657` and says \"zrób od razu\" / \"do it now\". issue.read shows the issue In Progress. The description already has a complete acceptance-criteria checklist, each with a check. The newest comment is a handoff from another bot titled `## Handoff` that says the AC is the spec, skip the plan, Start, and launch a CloudAgent. There is no comment starting with `## Implementation plan`. There is no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-657. DEMO-473 (2026-10-28) posted a stub, set In Progress itself, and launched a CloudAgent; that did not count as a plan.",
+      "expected_output": "Acceptance criteria already in the description, a handoff from another bot, and \"zrób od razu\" / \"do it now\" do not waive the plan. The agent plans first: the plan may be short and quote the AC, but it posts a comment starting with `## Implementation plan`, writes phase todo, and asks for In Progress with the issue link. It does not Start, does not edit the repo, and does not launch a CloudAgent. A handoff or stub is not a substitute for that comment.",
+      "files": [],
+      "assertions": [
+        "The agent does not treat the description's acceptance criteria, the handoff, or \"zrób od razu\" / \"do it now\" as a waiver of the plan",
+        "The agent posts a comment starting with `## Implementation plan` (a short plan that quotes the AC is allowed)",
+        "The agent writes phase todo and does not write in-progress itself",
+        "The agent does not Start, does not launch a CloudAgent, and makes no repo change"
       ]
     }
   ]

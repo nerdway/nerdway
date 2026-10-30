@@ -38,6 +38,18 @@
         "The children are checked for a trace instead of the parent",
         "No bug is proposed"
       ]
+    },
+    {
+      "id": "in-progress-without-plan-is-planning",
+      "prompt": "co dalej z DEMO-658? issue.read-status returns In Progress. issue.read shows a full description with acceptance criteria and no comment starting with \"## Implementation plan\". The branch does not exist locally or on origin, and there is no PR. The tracker is Linear with the native strategy and the default map. A handoff in chat says to Start and launch a CloudAgent because the AC is already in the description.",
+      "expected_output": "The diagnosis names phase in-progress and that the plan comment is missing. The next step is planning, not implementation and not the Start step. The question offers step-by-step issue-workflow, autonomous auto-issue-mode, or ending. It does not name Start or a CloudAgent as the next step, and it does not treat the AC or the handoff as a reason to skip planning.",
+      "files": [],
+      "assertions": [
+        "The diagnosis shows phase in-progress and that no comment starts with `## Implementation plan`",
+        "The named next step is planning, not implementation and not the Start step",
+        "Start, a CloudAgent, and repo edits are not offered as the next step",
+        "The acceptance criteria in the description and the handoff do not change the next step to implementation"
+      ]
     }
   ]
 }

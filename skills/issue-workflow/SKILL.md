@@ -85,6 +85,35 @@ The tracker adapter's `## CLI` section carries the command gotchas (field
 paths, multi-line bodies), `## URL` the recipe behind `issue.url`, and
 `## Status strategies` the read and write recipe per status strategy.
 
+Host-specific interactive behaviour lives on a fourth axis, selected by a
+runtime detect, not by the platform config:
+
+```
+${CLAUDE_PLUGIN_ROOT}/adapters/hosts/<host>.md
+```
+
+`<host>` is `grok-bot`, `claude-code` or `cursor`. Run `host.detect` (below)
+then the operation the phase needs — today only `post-plan.after-plan`.
+`nerd4rent:auto-issue-mode` does not read this axis.
+
+### Host detect
+
+First match wins, same spirit as grill's ask-tool list. Look at this
+session's environment and tool list; do not read the platform config.
+
+1. `NERD4RENT_HOST` or `AGENT_HOST` if it is `grok-bot`, `claude-code` or
+   `cursor`
+2. `grok-bot` — `SendToUser` (or `send_to_user`) in the tool list, or
+   `GROK_BOT` set
+3. `claude-code` — `AskUserQuestion` in the tool list, or `CLAUDE_CODE` /
+   `CLAUDECODE` set
+4. `cursor` — `AskQuestion` / ask-question in the tool list, or
+   `CURSOR_TRACE_ID` / `CURSOR_AGENT` set
+5. else `claude-code` (the prose fallback)
+
+No adapter file → the prose path in `adapters/statuses.md` *Asking the
+human to move a phase*. The ordered probe is also `scripts/lib/host-detect.ts`.
+
 ## Phases and status strategy
 
 This skill dispatches on the five canonical phases — `backlog`, `todo`,
@@ -151,16 +180,18 @@ implement approval). A bare issue ID is not that command.
    - the agent is running via **`nerd4rent:auto-issue-mode`** and the plan
      comment already exists (AIM autonomy).
    A bare issue ID or a planning-only prompt is not an implement command:
-   post or refine the plan, ask for In Progress / implement, and do **not**
-   write `in-progress` yourself.
+   post or refine the plan, write `todo`, then run `post-plan.after-plan`
+   from the detected host adapter. Do **not** write `in-progress` yourself
+   unless that operation says so (Grok Bot **Implementuj teraz** is an
+   explicit implement approval).
 2. **No plan comment** (any phase, including `in-progress`, including
    `zaimplementuj` / `implement`): dispatch to **Planning** first. Post the
-   plan. On a bare-ID / planning-only turn write phase `todo` and ask for
-   In Progress. Never Start, never edit, never CloudAgent until the plan
-   comment exists — even when the user said `zaimplementuj`. OPS-22
-   (2026-10-27) launched a CloudAgent without a posted plan. Via
-   auto-issue-mode, after that comment exists, write `in-progress` and
-   continue (AIM autonomy).
+   plan. On a bare-ID / planning-only turn write phase `todo` and run
+   `post-plan.after-plan` of the detected host. Never Start, never edit,
+   never CloudAgent until the plan comment exists — even when the user said
+   `zaimplementuj`. OPS-22 (2026-10-27) launched a CloudAgent without a
+   posted plan. Via auto-issue-mode, after that comment exists, write
+   `in-progress` and continue (AIM autonomy). AIM does not read `hosts/`.
 3. **Phase check every turn**: at the start of every turn that touches the
    issue, run `issue.read-status` and dispatch on the current phase. It may
    have changed since the last message.
@@ -181,7 +212,7 @@ marker is in those comments), then:
 
 | Phase | What to do |
 |-------|------------|
-| `backlog` / `todo`, no implement command | **Planning** — draft and post a plan (or refine the existing one); write phase **`todo`**; end the turn asking for `in-progress` (step 3). Do not write `in-progress` yourself |
+| `backlog` / `todo`, no implement command | **Planning** — draft and post a plan (or refine the existing one); write phase **`todo`**; end the turn with the host's `post-plan.after-plan` (step 3). Do not write `in-progress` yourself unless that operation says so |
 | `backlog` / `todo`, implement command, plan comment present | write **`in-progress`** with `issue.set-status`, then **Implementation** (Start if branch/PR missing) |
 | `backlog` / `todo`, implement command, no plan comment | **Planning** first — post the plan, write **`todo`**, do not Start. Never Start, never edit, never CloudAgent |
 | `in-progress`, no comment starting with `## Implementation plan` | **Planning** first — same as `backlog` / `todo` without a plan: draft and post the plan, write phase **`todo`**. Never Start, never edit, never CloudAgent — even on `zaimplementuj` |
@@ -389,12 +420,25 @@ with, and mark any deviation as `Odstępstwo od decyzji YYYY-MM-DD — powód`.
 
 ### 3. End the turn
 
-If this turn posted the plan because it was missing, stop here: report that
-the plan is on the tracker. On a bare-ID / planning-only prompt, ask for the
-move to `in-progress` in the shape *Asking the human to move a phase* in
-`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives, and do **not** write
-`in-progress` yourself. An implement command that arrived **without** a
-plan does not unlock Start on this turn.
+If this turn posted the plan because it was missing, the phase is `todo`.
+On **`nerd4rent:auto-issue-mode`**, skip the hosts axis: write
+`in-progress` with `issue.set-status` (AIM autonomy) and continue Start —
+do not ask. Otherwise run `host.detect`, read
+`${CLAUDE_PLUGIN_ROOT}/adapters/hosts/<host>.md`, and run
+`post-plan.after-plan`:
+
+- **Grok Bot** — native ask/widget (`SendToUser` or equivalent):
+  **Implementuj teraz** / **Później**. Implementuj teraz → write
+  `in-progress` with `issue.set-status` and continue Start. Później →
+  stop, leave `todo`.
+- **Claude Code** and **Cursor** — stop. Ask for the move to
+  `in-progress` in the shape *Asking the human to move a phase* in
+  `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`, and do **not** write
+  `in-progress` yourself.
+
+An implement command that arrived **without** a plan does not unlock
+Start on this turn. The hard gate still holds: no Start, no repo edit,
+no CloudAgent without the `## Implementation plan` comment.
 
 If the plan comment **already existed** at the start of the turn and the
 user gave an explicit implement command (`zaimplementuj`, `implement`, a

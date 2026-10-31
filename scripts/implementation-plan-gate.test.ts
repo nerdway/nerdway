@@ -62,6 +62,29 @@ test("issue-workflow writes in-progress after an implement command when the plan
   assert.match(skill, /even when the user said `zaimplementuj`/);
 });
 
+test("issue-workflow post-plan branches on the detected host", () => {
+  const skill = compact("skills/issue-workflow/SKILL.md");
+  assert.match(skill, /adapters\/hosts/);
+  assert.match(skill, /host\.detect/);
+  assert.match(skill, /post-plan\.after-plan/);
+  assert.match(skill, /SendToUser/);
+  assert.match(skill, /AskUserQuestion/);
+  assert.match(skill, /AskQuestion/);
+  assert.match(skill, /Implementuj teraz/);
+  assert.match(skill, /Później/);
+  assert.match(skill, /Asking the human to move a phase/);
+  assert.match(skill, /AIM does not read `hosts\/`/);
+});
+
+test("auto-issue-mode does not read the hosts axis", () => {
+  const aim = read("skills/auto-issue-mode/SKILL.md");
+  assert.doesNotMatch(aim, /adapters\/hosts/);
+  assert.doesNotMatch(aim, /host\.detect/);
+  assert.doesNotMatch(aim, /post-plan\.after-plan/);
+  assert.doesNotMatch(aim, /SendToUser/);
+  assert.doesNotMatch(aim, /Implementuj teraz/);
+});
+
 test("issue-next-step names planning as next when in-progress has no plan", () => {
   const skill = compact("skills/issue-next-step/SKILL.md");
   assert.match(skill, /`in-progress` \| no plan \| planning/);
@@ -111,6 +134,34 @@ test("issue-workflow evals cover fail-jump, plan-then-Start, no-waiver, and AIM 
   assert.match(bodyOf(implFail), /no comment starting with `## Implementation plan`/);
   assert.match(bodyOf(implFail), /does not Start/);
   assert.match(bodyOf(implFail), /does not write in-progress/);
+
+  const grokNow = requiredCase("skills/issue-workflow/evals/evals.json", "post-plan-grok-bot-implement-now");
+  const grokLater = requiredCase("skills/issue-workflow/evals/evals.json", "post-plan-grok-bot-later");
+  const ccProse = requiredCase("skills/issue-workflow/evals/evals.json", "post-plan-claude-code-prose");
+  const cursorProse = requiredCase("skills/issue-workflow/evals/evals.json", "post-plan-cursor-prose");
+  const detect = requiredCase("skills/issue-workflow/evals/evals.json", "host-detect-prefers-sendtouser");
+
+  assert.match(bodyOf(grokNow), /SendToUser/);
+  assert.match(bodyOf(grokNow), /Implementuj teraz/);
+  assert.match(bodyOf(grokNow), /issue.set-status/);
+  assert.match(bodyOf(grokNow), /issue-start/);
+
+  assert.match(bodyOf(grokLater), /Później/);
+  assert.match(bodyOf(grokLater), /does not write in-progress/);
+  assert.match(bodyOf(grokLater), /todo/);
+
+  assert.match(bodyOf(ccProse), /AskUserQuestion/);
+  assert.match(bodyOf(ccProse), /Asking the human to move a phase|move the issue to In Progress/);
+  assert.match(bodyOf(ccProse), /does not write in-progress/);
+  assert.doesNotMatch(bodyOf(ccProse), /write phase in-progress with issue.set-status and Starts/);
+
+  assert.match(bodyOf(cursorProse), /AskQuestion/);
+  assert.match(bodyOf(cursorProse), /move the issue to In Progress/);
+  assert.match(bodyOf(cursorProse), /does not write in-progress/);
+
+  assert.match(bodyOf(detect), /SendToUser/);
+  assert.match(bodyOf(detect), /AskUserQuestion/);
+  assert.match(bodyOf(detect), /Grok Bot/);
 });
 
 test("issue-next-step eval names planning when in-progress has no plan", () => {

@@ -250,14 +250,16 @@ _Avoid_: platform settings, integration (both hide that it is one YAML object in
 
 **Adapter**:
 One markdown file per value per axis — `adapters/trackers/<name>.md`,
-`adapters/vcs/<name>.md` or `adapters/vault/<tier>.md` — holding that
-platform's or transport's recipes under the sections its axis requires. The
-tracker and VCS axes are selected by the platform config, the vault axis by
-the tier; read by core skills through `${CLAUDE_PLUGIN_ROOT}`, and by island
-agents through the absolute path the calling skill passes in
-`args.platform.adapters` (`tracker`, `vcs`, `vault`). A missing adapter stops
-the skill and becomes a gap in an island; it never falls back to another
-platform or transport.
+`adapters/vcs/<name>.md`, `adapters/vault/<tier>.md` or
+`adapters/hosts/<id>.md` — holding that platform's, transport's or host's
+recipes under the sections its axis requires. The tracker and VCS axes are
+selected by the platform config, the vault axis by the tier, the hosts axis
+by a runtime detect; read by core skills through `${CLAUDE_PLUGIN_ROOT}`,
+and by island agents through the absolute path the calling skill passes in
+`args.platform.adapters` (`tracker`, `vcs`, `vault`). A missing adapter
+stops the skill and becomes a gap in an island; it never falls back to
+another platform or transport. `auto-issue-mode` does not read the hosts
+axis.
 _Avoid_: driver, plugin (both suggest executable code)
 
 **Operation ID**:

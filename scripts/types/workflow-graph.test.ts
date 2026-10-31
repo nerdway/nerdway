@@ -1020,6 +1020,19 @@ test("rule 26: the real contract declares the vault axis and the three vault nod
   assert.equal(vault?.operations.length, 13);
 });
 
+test("rule 26: the real contract declares the hosts axis and plan-draft names it", () => {
+  const hostNodes = realContract.nodes.filter((node) => node.adapters?.includes("hosts")).map((node) => node.id);
+  assert.deepEqual(hostNodes, ["plan-draft"]);
+  const hosts = realContract.adapters?.hosts;
+  assert.equal(hosts?.config, "Host.id");
+  assert.deepEqual(hosts?.sections, ["Detection", "Operations"]);
+  assert.deepEqual(hosts?.operations, ["host.detect", "post-plan.after-plan"]);
+  assert.ok(!realContract.nodes.some((node) => node.id === "auto-issue-mode" && node.adapters?.includes("hosts")));
+  const host = realContract.schemas.find((entry) => entry.id === "Host");
+  assert.ok(host);
+  assert.deepEqual(host.schema.properties?.id?.enum, ["grok-bot", "claude-code", "cursor"]);
+});
+
 test("the real contract freezes session-summary-requires-checkpoint and a gate enforces it", () => {
   const rule = realContract.frozenRules?.find((entry) => entry.id === "session-summary-requires-checkpoint");
   assert.ok(rule);

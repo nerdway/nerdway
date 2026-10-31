@@ -134,11 +134,15 @@ in chat.
 
 1. **Before any repo change** (edit, write, build, install, commit, PR,
    CloudAgent launch): two things must already be true on the tracker:
-   - the issue's phase is **`in-progress`** — written by the user on the
-     tracker, whatever the strategy. Never write `in-progress` yourself to
-     unlock implementation; an explicit user instruction in chat to implement
-     counts as approval (then write `in-progress` with `issue.set-status` to
-     reflect it);
+   - the issue's phase is **`in-progress`**. On the **interactive** path
+     the user writes it on the tracker (or an explicit instruction in chat
+     to implement counts as approval, then write `in-progress` with
+     `issue.set-status` to reflect it). Never write `in-progress` yourself
+     on that path to unlock implementation. **Exception — auto-issue-mode:**
+     when the agent is running via `nerd4rent:auto-issue-mode` and the plan
+     comment already exists, writing `in-progress` with `issue.set-status`
+     is allowed (AIM autonomy); the run then continues Start → impl without
+     asking;
    - a comment whose **first heading line is `## Implementation plan`**
      already exists on that same issue (`issue.read`). Acceptance criteria
      already in the description, a handoff from another bot, or "do it now" /
@@ -146,9 +150,11 @@ in chat.
      the AC, but it must exist on the tracker. A stub that is not the
      plan-template is not a substitute (DEMO-473, 2026-10-28).
 2. **Phase `in-progress` without that plan comment**: dispatch to **Planning**
-   first (post the plan, write phase `todo`, ask for In Progress again).
-   Never Start, never edit, never CloudAgent. OPS-22 (2026-10-27) launched a
-   CloudAgent without a posted plan.
+   first. On the interactive path: post the plan, write phase `todo`, ask for
+   In Progress again. Via auto-issue-mode: post the plan, write `in-progress`
+   yourself, continue Start → impl without asking. Never Start, never edit,
+   never CloudAgent until the plan comment exists. OPS-22 (2026-10-27)
+   launched a CloudAgent without a posted plan.
 3. **Phase check every turn**: at the start of every turn that touches the
    issue, run `issue.read-status` and dispatch on the current phase. It may
    have changed since the last message.

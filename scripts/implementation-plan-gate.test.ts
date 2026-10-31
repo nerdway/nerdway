@@ -42,15 +42,34 @@ test("auto-issue-mode runs stage 2 before any Start or CloudAgent when the plan 
   assert.match(skill, /do not waive/);
 });
 
+test("auto-issue-mode writes in-progress after the plan comment and continues without asking", () => {
+  const skill = compact("skills/auto-issue-mode/SKILL.md");
+  assert.match(skill, /write phase `in-progress` with `issue.set-status` \(AIM autonomy after the plan\)/);
+  assert.match(skill, /without asking/);
+  assert.match(skill, /do not wait for a manual/);
+  assert.match(skill, /first heading line is `## Implementation plan`/);
+  assert.match(skill, /never stage 1/);
+});
+
+test("issue-workflow hard gates exempt AIM writing in-progress after the plan", () => {
+  const skill = compact("skills/issue-workflow/SKILL.md");
+  assert.match(skill, /Exception — auto-issue-mode/);
+  assert.match(skill, /plan comment already exists, writing `in-progress`/);
+  assert.match(skill, /Interactive path|interactive/);
+  assert.match(skill, /first heading line is `## Implementation plan`/);
+});
+
 test("issue-next-step names planning as next when in-progress has no plan", () => {
   const skill = compact("skills/issue-next-step/SKILL.md");
   assert.match(skill, /`in-progress` \| no plan \| planning/);
 });
 
-test("issue-workflow evals cover fail-jump, plan-then-Start, and no-waiver", () => {
+test("issue-workflow evals cover fail-jump, plan-then-Start, no-waiver, and AIM autonomy", () => {
   const failJump = requiredCase("skills/issue-workflow/evals/evals.json", "in-progress-no-plan-plans-first");
   const passStart = requiredCase("skills/issue-workflow/evals/evals.json", "dispatch-in-progress-starts");
   const noWaiver = requiredCase("skills/issue-workflow/evals/evals.json", "ac-handoff-does-not-waive-plan");
+  const aimPass = requiredCase("skills/issue-workflow/evals/evals.json", "aim-plan-then-set-in-progress-starts");
+  const aimFail = requiredCase("skills/issue-workflow/evals/evals.json", "aim-no-plan-no-start");
 
   assert.match(bodyOf(failJump), /In Progress/);
   assert.match(bodyOf(failJump), /no comment starting with `## Implementation plan`/);
@@ -67,6 +86,16 @@ test("issue-workflow evals cover fail-jump, plan-then-Start, and no-waiver", () 
   assert.match(bodyOf(noWaiver), /Handoff/);
   assert.match(bodyOf(noWaiver), /do not waive|does not treat/);
   assert.match(bodyOf(noWaiver), /makes no repo change/);
+
+  assert.match(bodyOf(aimPass), /auto-issue-mode/);
+  assert.match(bodyOf(aimPass), /issue.set-status/);
+  assert.match(bodyOf(aimPass), /does not ask/);
+  assert.match(bodyOf(aimPass), /issue-start/);
+
+  assert.match(bodyOf(aimFail), /auto-issue-mode/);
+  assert.match(bodyOf(aimFail), /no comment starting with `## Implementation plan`/);
+  assert.match(bodyOf(aimFail), /zrób od razu/);
+  assert.match(bodyOf(aimFail), /does not Start/);
 });
 
 test("issue-next-step eval names planning when in-progress has no plan", () => {

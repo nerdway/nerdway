@@ -176,6 +176,30 @@
         "The agent writes phase todo and does not write in-progress itself",
         "The agent does not Start, does not launch a CloudAgent, and makes no repo change"
       ]
+    },
+    {
+      "id": "aim-plan-then-set-in-progress-starts",
+      "prompt": "The user invoked `/nerd4rent:auto-issue-mode DEMO-659` (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read shows DEMO-659 in Todo with a comment starting with `## Implementation plan` whose Test approach is TDD. There is no branch and no PR. The local checkout is a clean `main`. The user is not asked anything after invocation.",
+      "expected_output": "This is the auto-issue-mode path: the plan comment already exists, so AIM writes phase in-progress with issue.set-status itself (AIM autonomy) and continues Start → impl without asking the user to move the status. It delegates Start to nerd4rent:issue-start with DEMO-659 and a one-paragraph summary, then implements with nerd4rent:tdd. It does not wait for a manual status flip and does not re-plan.",
+      "files": [],
+      "assertions": [
+        "The agent is on the auto-issue-mode path and does not ask the user to move the issue to In Progress",
+        "The agent writes phase in-progress with issue.set-status because the `## Implementation plan` comment already exists",
+        "The agent then Starts (nerd4rent:issue-start) and implements; it does not wait for a manual status flip",
+        "The agent does not draft a second plan"
+      ]
+    },
+    {
+      "id": "aim-no-plan-no-start",
+      "prompt": "The user invoked `/nerd4rent:auto-issue-mode DEMO-660` and said \"zrób od razu\". issue.read shows DEMO-660 In Progress, a full description with acceptance criteria, no comment starting with `## Implementation plan`, no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-660.",
+      "expected_output": "AIM hard-stops on the missing plan: it runs stage 2 (posts a comment starting with `## Implementation plan`) and does not Start, does not launch a CloudAgent, and edits no file until that comment exists. \"zrób od razu\" and the AC in the description do not waive the plan. After the comment is posted, AIM writes in-progress and may then continue Start — not before.",
+      "files": [],
+      "assertions": [
+        "The agent posts a comment starting with `## Implementation plan` before any Start or CloudAgent",
+        "The agent does not Start and does not launch a CloudAgent while the plan comment is missing",
+        "The agent makes no repo change until the plan comment exists",
+        "\"zrób od razu\" and the acceptance criteria do not skip stage 2"
+      ]
     }
   ]
 }

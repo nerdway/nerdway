@@ -126,35 +126,41 @@ number, often a PR) — in a fresh session or mid-conversation — with intent t
 arrives in a session already working an issue.
 
 The **issue's phase on the tracker is the single source of truth** for what to
-do. The user steers the workflow by changing it there — a state, a label, or a
-`Status:` marker comment, depending on the strategy — not by typing approvals
-in chat.
+do, together with an **explicit implement command** in chat when the user
+gives one. The user steers by changing the phase on the tracker — a state, a
+label, or a `Status:` marker comment, depending on the strategy — or by
+asking you to implement (`zaimplementuj`, `implement`, a clear Start /
+implement approval). A bare issue ID is not that command.
 
 ## Hard gates (do not skip)
 
 1. **Before any repo change** (edit, write, build, install, commit, PR,
-   CloudAgent launch): two things must already be true on the tracker:
-   - the issue's phase is **`in-progress`**. On the **interactive** path
-     the user writes it on the tracker (or an explicit instruction in chat
-     to implement counts as approval, then write `in-progress` with
-     `issue.set-status` to reflect it). Never write `in-progress` yourself
-     on that path to unlock implementation. **Exception — auto-issue-mode:**
-     when the agent is running via `nerd4rent:auto-issue-mode` and the plan
-     comment already exists, writing `in-progress` with `issue.set-status`
-     is allowed (AIM autonomy); the run then continues Start → impl without
-     asking;
-   - a comment whose **first heading line is `## Implementation plan`**
-     already exists on that same issue (`issue.read`). Acceptance criteria
-     already in the description, a handoff from another bot, or "do it now" /
-     "zrób od razu" **do not waive** this. The plan may be short and quote
-     the AC, but it must exist on the tracker. A stub that is not the
-     plan-template is not a substitute (DEMO-473, 2026-10-28).
-2. **Phase `in-progress` without that plan comment**: dispatch to **Planning**
-   first. On the interactive path: post the plan, write phase `todo`, ask for
-   In Progress again. Via auto-issue-mode: post the plan, write `in-progress`
-   yourself, continue Start → impl without asking. Never Start, never edit,
-   never CloudAgent until the plan comment exists. OPS-22 (2026-10-27)
-   launched a CloudAgent without a posted plan.
+   CloudAgent launch): a comment whose **first heading line is
+   `## Implementation plan`** must already exist on that same issue
+   (`issue.read`). Acceptance criteria already in the description, a
+   handoff from another bot, or "do it now" / "zrób od razu" **do not
+   waive** this. The plan may be short and quote the AC, but it must exist
+   on the tracker. A stub that is not the plan-template is not a substitute
+   (DEMO-473, 2026-10-28). The issue's phase must also be **`in-progress`**
+   before Start — written by the user on the tracker, **or** written by
+   you with `issue.set-status` when one of these is true:
+   - an **explicit implement command** in chat (`zaimplementuj <ID>`,
+     `implement <ID>`, a clear approval to Start / implement) **and** the
+     plan comment already exists — then write `in-progress` and continue
+     Start → impl; do not wait for a manual status click;
+   - the agent is running via **`nerd4rent:auto-issue-mode`** and the plan
+     comment already exists (AIM autonomy).
+   A bare issue ID or a planning-only prompt is not an implement command:
+   post or refine the plan, ask for In Progress / implement, and do **not**
+   write `in-progress` yourself.
+2. **No plan comment** (any phase, including `in-progress`, including
+   `zaimplementuj` / `implement`): dispatch to **Planning** first. Post the
+   plan. On a bare-ID / planning-only turn write phase `todo` and ask for
+   In Progress. Never Start, never edit, never CloudAgent until the plan
+   comment exists — even when the user said `zaimplementuj`. OPS-22
+   (2026-10-27) launched a CloudAgent without a posted plan. Via
+   auto-issue-mode, after that comment exists, write `in-progress` and
+   continue (AIM autonomy).
 3. **Phase check every turn**: at the start of every turn that touches the
    issue, run `issue.read-status` and dispatch on the current phase. It may
    have changed since the last message.
@@ -175,8 +181,10 @@ marker is in those comments), then:
 
 | Phase | What to do |
 |-------|------------|
-| `backlog` / `todo` | **Planning** — draft and post a plan (or refine the existing one); write phase **`todo`**; end the turn asking for `in-progress` (step 3) |
-| `in-progress`, no comment starting with `## Implementation plan` | **Planning** first — same as `backlog` / `todo`: draft and post the plan, write phase **`todo`**, end the turn asking for `in-progress`. Never Start, never edit, never CloudAgent |
+| `backlog` / `todo`, no implement command | **Planning** — draft and post a plan (or refine the existing one); write phase **`todo`**; end the turn asking for `in-progress` (step 3). Do not write `in-progress` yourself |
+| `backlog` / `todo`, implement command, plan comment present | write **`in-progress`** with `issue.set-status`, then **Implementation** (Start if branch/PR missing) |
+| `backlog` / `todo`, implement command, no plan comment | **Planning** first — post the plan, write **`todo`**, do not Start. Never Start, never edit, never CloudAgent |
+| `in-progress`, no comment starting with `## Implementation plan` | **Planning** first — same as `backlog` / `todo` without a plan: draft and post the plan, write phase **`todo`**. Never Start, never edit, never CloudAgent — even on `zaimplementuj` |
 | `in-progress`, plan comment present | **Implementation** — rebuild context from the description (the spec), the `## Implementation plan` comment and later comments (`## Spec change`, plan extensions); if branch/PR missing, run the Start step first |
 | `in-review` | **Code review** — present the code-review menu with the issue link (`issue.url`) |
 | `done` (set manually, PR unmerged) | **Close-out** — the user's guide (`nerd-personal-docs`), then push, merge PR, ask about switching to main/master |
@@ -381,17 +389,27 @@ with, and mark any deviation as `Odstępstwo od decyzji YYYY-MM-DD — powód`.
 
 ### 3. End the turn
 
-Report that the plan is on the tracker and ask for the move to `in-progress`,
-in the shape *Asking the human to move a phase* in
-`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives — then stop. The user
-signals approval by making that move on the tracker (or by asking you to
-implement in chat); the request never lets you write `in-progress` yourself.
+If this turn posted the plan because it was missing, stop here: report that
+the plan is on the tracker. On a bare-ID / planning-only prompt, ask for the
+move to `in-progress` in the shape *Asking the human to move a phase* in
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives, and do **not** write
+`in-progress` yourself. An implement command that arrived **without** a
+plan does not unlock Start on this turn.
+
+If the plan comment **already existed** at the start of the turn and the
+user gave an explicit implement command (`zaimplementuj`, `implement`, a
+clear Start / implement approval), do not stop: write `in-progress` with
+`issue.set-status` and continue to Implementation.
 
 ## Implementation phase (`in-progress`)
 
 Enter this phase only when a comment starting with `## Implementation plan`
 is already on the issue. If `issue.read` shows none, go to Planning — do not
-Start, do not edit, do not launch a CloudAgent.
+Start, do not edit, do not launch a CloudAgent, even on `zaimplementuj`.
+
+When the user gave an explicit implement command and that plan comment
+already exists, write `in-progress` with `issue.set-status` if the phase is
+not already that, then Start. Do not wait for a manual status click.
 
 ### 4. Start (once per issue — skip if branch and PR already exist)
 

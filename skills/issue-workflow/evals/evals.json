@@ -224,6 +224,70 @@
         "`zaimplementuj` does not skip planning when the plan comment is missing",
         "The agent does not write in-progress to unlock Start on this turn"
       ]
+    },
+    {
+      "id": "post-plan-grok-bot-implement-now",
+      "prompt": "DEMO-670 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-670` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-670.\n\nThis session is Grok Bot: the tool list includes `SendToUser` (native host ask/widget). There is no AskUserQuestion tool. After you post the plan, treat the next widget result as **Implementuj teraz** and continue from there. The local checkout is a clean `main`.",
+      "expected_output": "The agent plans first, posts a comment starting with `## Implementation plan`, writes phase todo, then asks with the native SendToUser widget whose options are Implementuj teraz and Później. On Implementuj teraz it writes in-progress with issue.set-status and continues Start (nerd4rent:issue-start). It does not wait for a manual status click and does not ask with the statuses.md prose shape.",
+      "files": [],
+      "assertions": [
+        "The agent posts a comment starting with `## Implementation plan` and writes phase todo before any Start",
+        "The agent asks with the native SendToUser widget (or equivalent host widget), not the statuses.md prose ask",
+        "The widget options are Implementuj teraz and Później",
+        "On Implementuj teraz the agent writes phase in-progress with issue.set-status and Starts (nerd4rent:issue-start)",
+        "The agent does not ask the user to move the issue to In Progress by hand"
+      ]
+    },
+    {
+      "id": "post-plan-grok-bot-later",
+      "prompt": "DEMO-671 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-671` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-671.\n\nThis session is Grok Bot: the tool list includes `SendToUser`. After you post the plan, treat the next widget result as **Później** and continue from there.",
+      "expected_output": "The agent plans, posts `## Implementation plan`, writes phase todo, asks with the SendToUser widget (Implementuj teraz / Później), and on Później stops. It leaves the phase todo, does not write in-progress, and does not Start or edit the repo.",
+      "files": [],
+      "assertions": [
+        "The agent posts a comment starting with `## Implementation plan` and writes phase todo",
+        "The agent asks with the native SendToUser widget whose options are Implementuj teraz and Później",
+        "On Później the agent does not write in-progress",
+        "The agent does not Start, does not launch a CloudAgent, and makes no repo change",
+        "The issue stays in todo"
+      ]
+    },
+    {
+      "id": "post-plan-claude-code-prose",
+      "prompt": "DEMO-672 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-672` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-672.\n\nThis session is Claude Code: the tool list includes `AskUserQuestion`. There is no SendToUser tool and GROK_BOT is unset.",
+      "expected_output": "Unchanged from 0.73.0: the agent posts `## Implementation plan`, writes phase todo, and ends the turn asking the user to move the issue to In Progress in the Asking the human to move a phase shape, with the issue link. It does not write in-progress, does not Start, and does not open a widget with Implementuj teraz / Później.",
+      "files": [],
+      "assertions": [
+        "The agent posts a comment starting with `## Implementation plan` and writes phase todo",
+        "The agent asks the user to move the issue to In Progress and prints the issue link",
+        "The agent does not write in-progress itself",
+        "The agent creates no branch, commit or PR and edits no file in the repository",
+        "The agent does not ask with Implementuj teraz / Później or SendToUser"
+      ]
+    },
+    {
+      "id": "post-plan-cursor-prose",
+      "prompt": "DEMO-673 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-673` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-673.\n\nThis session is Cursor: the tool list includes a Cursor AskQuestion / ask-question tool. There is no SendToUser tool and GROK_BOT is unset.",
+      "expected_output": "Unchanged from 0.73.0: the agent posts `## Implementation plan`, writes phase todo, and ends the turn asking the user to move the issue to In Progress in the Asking the human to move a phase shape, with the issue link. It does not write in-progress, does not Start, and does not open a widget with Implementuj teraz / Później.",
+      "files": [],
+      "assertions": [
+        "The agent posts a comment starting with `## Implementation plan` and writes phase todo",
+        "The agent asks the user to move the issue to In Progress and prints the issue link",
+        "The agent does not write in-progress itself",
+        "The agent creates no branch, commit or PR and edits no file in the repository",
+        "The agent does not ask with Implementuj teraz / Później or SendToUser"
+      ]
+    },
+    {
+      "id": "host-detect-prefers-sendtouser",
+      "prompt": "DEMO-674 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-674`. issue.read shows the issue in Backlog, no `## Implementation plan` comment. The issue is small and clear.\n\nThis session's tool list includes both `AskUserQuestion` and `SendToUser`. After you post the plan, treat the next widget result as **Później**.",
+      "expected_output": "host.detect prefers grok-bot when SendToUser is present, even if AskUserQuestion is also in the list. The agent asks with the SendToUser widget (Implementuj teraz / Później), not the Claude Code prose path. On Później it stops and leaves todo.",
+      "files": [],
+      "assertions": [
+        "The agent treats the session as Grok Bot because SendToUser is in the tool list",
+        "The agent asks with SendToUser and the options Implementuj teraz / Później",
+        "The agent does not use the statuses.md prose ask as the first after-plan prompt",
+        "On Później the agent leaves todo and does not Start"
+      ]
     }
   ]
 }

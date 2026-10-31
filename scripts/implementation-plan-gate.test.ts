@@ -51,12 +51,15 @@ test("auto-issue-mode writes in-progress after the plan comment and continues wi
   assert.match(skill, /never stage 1/);
 });
 
-test("issue-workflow hard gates exempt AIM writing in-progress after the plan", () => {
+test("issue-workflow writes in-progress after an implement command when the plan exists", () => {
   const skill = compact("skills/issue-workflow/SKILL.md");
-  assert.match(skill, /Exception — auto-issue-mode/);
-  assert.match(skill, /plan comment already exists, writing `in-progress`/);
-  assert.match(skill, /Interactive path|interactive/);
+  assert.match(skill, /zaimplementuj/);
+  assert.match(skill, /explicit implement command/);
+  assert.match(skill, /write `in-progress` and continue Start/);
+  assert.match(skill, /do not wait for a manual status click/);
+  assert.match(skill, /auto-issue-mode/);
   assert.match(skill, /first heading line is `## Implementation plan`/);
+  assert.match(skill, /even when the user said `zaimplementuj`/);
 });
 
 test("issue-next-step names planning as next when in-progress has no plan", () => {
@@ -70,6 +73,8 @@ test("issue-workflow evals cover fail-jump, plan-then-Start, no-waiver, and AIM 
   const noWaiver = requiredCase("skills/issue-workflow/evals/evals.json", "ac-handoff-does-not-waive-plan");
   const aimPass = requiredCase("skills/issue-workflow/evals/evals.json", "aim-plan-then-set-in-progress-starts");
   const aimFail = requiredCase("skills/issue-workflow/evals/evals.json", "aim-no-plan-no-start");
+  const implPass = requiredCase("skills/issue-workflow/evals/evals.json", "implement-command-with-plan-starts");
+  const implFail = requiredCase("skills/issue-workflow/evals/evals.json", "implement-command-without-plan-plans-only");
 
   assert.match(bodyOf(failJump), /In Progress/);
   assert.match(bodyOf(failJump), /no comment starting with `## Implementation plan`/);
@@ -96,6 +101,16 @@ test("issue-workflow evals cover fail-jump, plan-then-Start, no-waiver, and AIM 
   assert.match(bodyOf(aimFail), /no comment starting with `## Implementation plan`/);
   assert.match(bodyOf(aimFail), /zrób od razu/);
   assert.match(bodyOf(aimFail), /does not Start/);
+
+  assert.match(bodyOf(implPass), /zaimplementuj DEMO-661/);
+  assert.match(bodyOf(implPass), /issue.set-status/);
+  assert.match(bodyOf(implPass), /does not ask/);
+  assert.match(bodyOf(implPass), /issue-start/);
+
+  assert.match(bodyOf(implFail), /zaimplementuj DEMO-662/);
+  assert.match(bodyOf(implFail), /no comment starting with `## Implementation plan`/);
+  assert.match(bodyOf(implFail), /does not Start/);
+  assert.match(bodyOf(implFail), /does not write in-progress/);
 });
 
 test("issue-next-step eval names planning when in-progress has no plan", () => {

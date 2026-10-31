@@ -200,6 +200,30 @@
         "The agent makes no repo change until the plan comment exists",
         "\"zrób od razu\" and the acceptance criteria do not skip stage 2"
       ]
+    },
+    {
+      "id": "implement-command-with-plan-starts",
+      "prompt": "The user types `zaimplementuj DEMO-661` (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read shows DEMO-661 in Todo with a comment starting with `## Implementation plan` whose Test approach is TDD. There is no branch and no PR. The local checkout is a clean `main`. issue.url gives https://linear.app/example/issue/DEMO-661.",
+      "expected_output": "The user gave an explicit implement command and the plan comment already exists, so the agent writes phase in-progress with issue.set-status itself and continues Start → impl. It does not ask the user to move the status. It delegates Start to nerd4rent:issue-start with DEMO-661 and a one-paragraph summary, then implements with nerd4rent:tdd.",
+      "files": [],
+      "assertions": [
+        "The agent treats `zaimplementuj DEMO-661` as an explicit implement command",
+        "The agent writes phase in-progress with issue.set-status because the `## Implementation plan` comment already exists",
+        "The agent does not ask the user to move the issue to In Progress",
+        "The agent Starts (nerd4rent:issue-start) and implements"
+      ]
+    },
+    {
+      "id": "implement-command-without-plan-plans-only",
+      "prompt": "The user types `zaimplementuj DEMO-662` (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read shows DEMO-662 in Todo, a full description with acceptance criteria, no comment starting with `## Implementation plan`, no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-662.",
+      "expected_output": "The implement command does not waive the plan. The agent plans first: it posts a comment starting with `## Implementation plan`, writes phase todo, and does not Start, does not launch a CloudAgent, and edits no file. `zaimplementuj` without a plan comment is planning only.",
+      "files": [],
+      "assertions": [
+        "The agent posts a comment starting with `## Implementation plan`",
+        "The agent does not Start, does not launch a CloudAgent, and makes no repo change",
+        "`zaimplementuj` does not skip planning when the plan comment is missing",
+        "The agent does not write in-progress to unlock Start on this turn"
+      ]
     }
   ]
 }

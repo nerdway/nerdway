@@ -1020,9 +1020,9 @@ test("rule 26: the real contract declares the vault axis and the three vault nod
   assert.equal(vault?.operations.length, 13);
 });
 
-test("rule 26: the real contract declares the hosts axis and plan-draft names it", () => {
+test("rule 26: the real contract declares the hosts axis and plan-draft plus nerd-orchestrate name it", () => {
   const hostNodes = realContract.nodes.filter((node) => node.adapters?.includes("hosts")).map((node) => node.id);
-  assert.deepEqual(hostNodes, ["plan-draft"]);
+  assert.deepEqual(hostNodes, ["plan-draft", "nerd-orchestrate"]);
   const hosts = realContract.adapters?.hosts;
   assert.equal(hosts?.config, "Host.id");
   assert.deepEqual(hosts?.sections, ["Detection", "Operations"]);
@@ -1031,6 +1031,21 @@ test("rule 26: the real contract declares the hosts axis and plan-draft names it
   const host = realContract.schemas.find((entry) => entry.id === "Host");
   assert.ok(host);
   assert.deepEqual(host.schema.properties?.id?.enum, ["grok-bot", "claude-code", "cursor"]);
+});
+
+test("nerd-orchestrate is a conversational orchestrate node with width 2 and no new host operation", () => {
+  const node = realContract.nodes.find((entry) => entry.id === "nerd-orchestrate");
+  assert.ok(node);
+  assert.equal(node.skill, "nerd-orchestrate");
+  assert.equal(node.runtime, "conversational");
+  assert.equal(node.phase, "orchestrate");
+  assert.equal(node.irreversible, undefined);
+  assert.equal(node.budget.maxWidth, 2);
+  assert.deepEqual(node.adapters, ["hosts"]);
+  assert.deepEqual(node.dependsOn, ["platform-determine"]);
+  assert.equal(node.gates.length, 2);
+  assert.ok(node.gates.every((gate) => gate.kind === "decision" && gate.mechanism === "chat-approval"));
+  assert.ok(!realContract.adapters?.hosts.operations.includes("orchestrate.parallel"));
 });
 
 test("the real contract freezes session-summary-requires-checkpoint and a gate enforces it", () => {

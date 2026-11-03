@@ -231,6 +231,11 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 - **Say:** `/bootstrap-clis` / `/nerd4rent:bootstrap-clis`, or just let a skill fail because a CLI is missing.
 - **What happens:** every dependency from the table above is probed, installed, or updated (with checksum verification for downloads). Authentication is never done for you - the skill ends with the exact steps you need to run yourself.
 
+### `nerd-orchestrate` - plan the unplanned issues and offer AIM
+
+- **Say:** *"orkiestruj projekt"*, *"orchestrate"*, *"zaplanuj projekt"*, *"worktrees"*, or `/nerd4rent:nerd-orchestrate`. An optional path or tracker project id selects the project; without it, the current directory.
+- **What happens:** the agent reports progress through `project-continue` (it does not write a checkpoint unless you already agreed to that skill's own question), then lists every unplanned issue: Backlog, Todo or In Progress with no comment whose first line is exactly `## Implementation plan`. In Review is skipped. It always asks whether to plan them all first (batch) or one by one (just-in-time). Each plan is the Planning phase of `issue-workflow` only - a `## Implementation plan` comment and Todo, no branch, no edits. After every posted plan it asks before `auto-issue-mode` for that id; a skip leaves the issue in Todo. Approved AIM runs go to subagents: at most two `git worktree` checkouts in parallel on Claude Code and Cursor, and on Grok Bot one after another in this session or as a CloudAgent, never two checkouts of the same repo as local worktrees.
+
 ### `project-continue` - pick up where you left off
 
 - **Say:** *"where were we"*, *"continue"*, *"gdzie jesteśmy"*, *"na czym stanęliśmy"* - after switching to a project, on this machine or another one.

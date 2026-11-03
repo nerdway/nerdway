@@ -259,7 +259,8 @@ and by island agents through the absolute path the calling skill passes in
 `args.platform.adapters` (`tracker`, `vcs`, `vault`). A missing adapter
 stops the skill and becomes a gap in an island; it never falls back to
 another platform or transport. `auto-issue-mode` does not read the hosts
-axis.
+axis. `nerd-orchestrate` reads `host.detect` for AIM dispatch and does
+not run `post-plan.after-plan`.
 _Avoid_: driver, plugin (both suggest executable code)
 
 **Operation ID**:
@@ -310,6 +311,15 @@ An issue in any mapped canonical phase but `done`: `backlog`, `todo`,
 open.
 _Avoid_: active issue (narrower: the board only), backlog item (one phase of
 four)
+
+**Unplanned issue**:
+An open issue in canonical phase `backlog`, `todo` or `in-progress` that
+has no comment whose first line is exactly `## Implementation plan`. What
+`nerd-orchestrate` plans next; `in-review` is open and never unplanned.
+Acceptance criteria in the description, a handoff, or a heading that is
+not that first line do not count. The filter is
+`scripts/lib/implementation-plan.ts`.
+_Avoid_: unplanned work, backlog issue (one phase of three)
 
 **Status strategy**:
 How a tracker shows a canonical phase: `native` (its own state field),

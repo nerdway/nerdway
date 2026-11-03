@@ -315,3 +315,5 @@ checkpoint line stage 6 wrote (or why none was).
 - `nerdway:nerdbrain-wiki` — the write path of stage 6, checkpoint included.
 - `nerdway:issue-next-step` — may start a run at entry B for an issue ID
   once the user picks the autonomous mode in chat.
+- `nerdway:nerd-orchestrate` — may start a run at entry B for each
+  unplanned issue the user approved after its plan was posted.

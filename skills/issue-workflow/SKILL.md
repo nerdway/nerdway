@@ -840,6 +840,9 @@ session's last push.
 - `nerdway:project-continue` — reads the checkpoint this skill writes and
   answers "where were we" for the project; it hints at the issue ID to type
   here, never enters this workflow by itself.
+- `nerdway:nerd-orchestrate` — planning for every unplanned issue in a
+  project, then a yes before `auto-issue-mode`; it runs this skill's
+  Planning phase only and stops before `post-plan.after-plan`.
 - `nerdway:tdd` — the implementation loop step 5 hands off to under
   `mode: TDD`.
 - `nerdway:debug` — the cause-finding loop an issue labelled Bug is planned

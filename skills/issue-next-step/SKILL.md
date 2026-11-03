@@ -148,5 +148,7 @@ with nothing written, when:
   entry B.
 - `nerd4rent:project-continue` — answers "where are we" for the whole
   project; this skill answers "what next" for one issue.
+- `nerd4rent:nerd-orchestrate` — the same progress-plus-plans-plus-AIM
+  loop for every unplanned issue in the project, not one id.
 - `nerd4rent:bind-statuses` — binds the phases this skill reads and the
   `in-progress` value it writes.

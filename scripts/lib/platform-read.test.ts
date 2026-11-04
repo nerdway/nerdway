@@ -25,7 +25,7 @@ test("trackerAdapterSources loads every tracker adapter by name", () => {
 test("readPlatformFile reads this repo's CLAUDE.md and reports a missing file as absent", () => {
   const read = readPlatformFile(pluginRoot, join(pluginRoot, "CLAUDE.md"));
   assert.equal(read.status, "found");
-  assert.equal(read.status === "found" ? read.value.tracker : undefined, "linear");
+  assert.equal(read.status === "found" ? read.value.tracker : undefined, "github");
   assert.equal(readPlatformFile(pluginRoot, join(dir, "missing.md")).status, "absent");
 });
 

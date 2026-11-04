@@ -1,6 +1,6 @@
 # Contributing
 
-This document is for developers who change the plugin itself: how to check a change locally and how to cut a release. How the pieces fit together is in [ARCHITECTURE](ARCHITECTURE.md); the coding standards a review checks a change against are the `## Standards` section of [`CONTEXT.md`](../CONTEXT.md), and the decisions behind the design are in [`docs/adr/`](adr/).
+This document is for developers who change the plugin itself: how to check a change locally and how to cut a release. How the pieces fit together is in [ARCHITECTURE](ARCHITECTURE.md); the coding standards a review checks a change against are the `## Standards` section of [`CONTEXT.md`](../CONTEXT.md), and the decisions behind the design are in [`docs/adr/`](adr/). Publishing a new cut of this public tree from the private track is [DUAL-TRACK](DUAL-TRACK.md).
 
 ## Checking a change
 
@@ -130,6 +130,12 @@ Check that the documentation for humans (`README.md` and the files directly in `
 
 ```bash
 node scripts/validate-human-docs.ts
+```
+
+Check that tracked files other than the dual-track guide and the scrub checker do not contain the private-track strings an export must strip ([DUAL-TRACK](DUAL-TRACK.md)):
+
+```bash
+node scripts/scrub-check.ts
 ```
 
 Merging to `main` does not update anyone's install on its own. An installed copy is refreshed only by `/plugin marketplace update <marketplace>`, followed by `/plugin update <plugin>@<marketplace>`.

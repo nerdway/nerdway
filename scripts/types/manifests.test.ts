@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { validateClaudeCodeIsolation, validateManifests } from "./manifests.ts";
 
 function claudePlugin(overrides: Record<string, unknown> = {}) {
-  return { name: "nerd4rent", version: "0.29.0", ...overrides };
+  return { name: "nerdway", version: "0.29.0", ...overrides };
 }
 
 function marketplace(overrides: Record<string, unknown> = {}) {
@@ -13,7 +13,7 @@ function marketplace(overrides: Record<string, unknown> = {}) {
 
 function cursorPlugin(overrides: Record<string, unknown> = {}) {
   return {
-    name: "nerd4rent",
+    name: "nerdway",
     version: "0.29.0",
     skills: "./skills/",
     agents: "./agents/",

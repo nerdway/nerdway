@@ -1,5 +1,7 @@
 # Host adapters as a fourth axis for post-plan behaviour
 
+*Amended by ADR-0013 (DEMO-481): `nerd-orchestrate` reuses `host.detect` for AIM dispatch and does not add an `orchestrate.parallel` operation; see ADR-0013.*
+
 Interactive `issue-workflow` used one host-agnostic close of the planning
 turn: stop, write `todo`, and ask the human to move the issue to
 `in-progress` in the shape *Asking the human to move a phase*

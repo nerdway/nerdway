@@ -1027,7 +1027,7 @@
     },
     {
       "id": "Host",
-      "description": "The agent host running this session, as the skill's detect heuristic found it. Names the file under `adapters/hosts/`. Not part of the platform config and not an island payload: a repo does not know which host will open it, and auto-issue-mode never reads this axis.",
+      "description": "The agent host running this session, as the skill's detect heuristic found it. Names the file under `adapters/hosts/`. Not part of the platform config and not an island payload: a repo does not know which host will open it, and auto-issue-mode never reads this axis. nerd-orchestrate reads `host.detect` for AIM dispatch (worktrees versus sequential or CloudAgent) and does not run `post-plan.after-plan`.",
       "schema": {
         "type": "object",
         "title": "Host",
@@ -1358,6 +1358,35 @@
           "mechanism": "chat-approval",
           "rule": "no-repo-change-before-in-progress",
           "description": "The user agrees in chat to move the issue to In Progress when the next step is implementation; a refusal ends the skill with nothing written, and the repo change itself waits for the skill it hands off to."
+        }
+      ]
+    },
+    {
+      "id": "nerd-orchestrate",
+      "skill": "nerd-orchestrate",
+      "adapters": ["hosts"],
+      "runtime": "conversational",
+      "phase": "orchestrate",
+      "in": ["PlatformConfig"],
+      "out": ["PlatformConfig"],
+      "dependsOn": ["platform-determine"],
+      "failure": {
+        "retries": 0,
+        "fallback": "stop and report what is done, what is pending, the exact error and how to resume from the issue ID",
+        "killsRun": true,
+        "reporting": "chat"
+      },
+      "budget": { "maxWidth": 2 },
+      "gates": [
+        {
+          "kind": "decision",
+          "mechanism": "chat-approval",
+          "description": "The user picks batch planning of every unplanned issue or just-in-time plan then AIM, one issue at a time."
+        },
+        {
+          "kind": "decision",
+          "mechanism": "chat-approval",
+          "description": "After every posted plan the user agrees in chat before auto-issue-mode runs for that issue; a skip leaves the issue todo and continues the queue."
         }
       ]
     }

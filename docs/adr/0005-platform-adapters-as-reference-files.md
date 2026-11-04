@@ -8,7 +8,7 @@
 
 *Amended by DEMO-454: the vault is a third axis, `adapters/vault/<tier>.md`, selected by the tier rather than by the platform config, because a repo does not know where its vault is; the selector enum is `EntityPageUpdate.tier` (`file`, `mcp`), so rule 24 holds unchanged with an enum outside `PlatformConfig`. `nerdbrain-wiki` and `nerdbrain-search` name operation IDs (`page.read-section`, `page.replace-section`, `vault.search`, `graph.hop1`, ...) and the recipes moved out of them verbatim. A node that runs through an axis names it in `adapters` and the validator rejects an undeclared axis (rule 26). The planning island receives the vault adapter path as `args.platform.adapters.vault`, like the two others.*
 
-*Amended by DEMO-478: hosts are a fourth axis, `adapters/hosts/<id>.md`, selected by a runtime detect rather than by the platform config, because a repo does not know which agent host will open it; the selector enum is `Host.id` (`grok-bot`, `claude-code`, `cursor`). Today the axis covers only post-plan behaviour of interactive `issue-workflow`. `auto-issue-mode` does not read it. See ADR-0012.*
+*Amended by DEMO-478: hosts are a fourth axis, `adapters/hosts/<id>.md`, selected by a runtime detect rather than by the platform config, because a repo does not know which agent host will open it; the selector enum is `Host.id` (`grok-bot`, `claude-code`, `cursor`). Today the axis covers post-plan behaviour of interactive `issue-workflow`. `auto-issue-mode` does not read it. `nerd-orchestrate` reuses `host.detect` without a new operation; see ADR-0012 and ADR-0013.*
 
 Every core skill used to carry its Linear, GitHub and GitLab commands inline,
 so supporting another tracker (GitHub Issues, GitLab Issues, Azure DevOps

@@ -48,6 +48,12 @@ a rule that cannot be verified from the diff does not belong here.
 
 ## Language
 
+**nerdway**:
+The public name of the open-source cut of this plugin: the `nerdway/nerdway`
+repository and the package and marketplace id it moves to. Dual-track with the
+private `nerd4rent` plugin; until the rename the manifests keep `nerd4rent`.
+_Avoid_: nerd4rent (the private track), nerdway-plugin
+
 **Vault**:
 The nerdbrain Obsidian vault, present on every machine where wiki skills
 run and propagated between them by Obsidian Sync.

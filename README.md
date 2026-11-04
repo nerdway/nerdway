@@ -2,7 +2,7 @@
 
 Open-source skills for Claude Code, Cursor and other coding agents that take a tracker issue from specification to a merged pull request, built for the daily developer workflow at [Nerdway](https://nerdway.si).
 
-**Name and IDs.** The public project is `nerdway`. The plugin and marketplace IDs are still `nerdway` and `nerdway` until the rename lands, so the install commands below use those IDs with this repository's URL.
+**Name and IDs.** The public project, the plugin, and the marketplace listing all use the id `nerdway`. Slash commands still use the `/nerdway:` prefix. If you already installed `nerdway@nerdway`, remove that marketplace and install `nerdway` with the commands below.
 
 ## Spec in the tracker
 

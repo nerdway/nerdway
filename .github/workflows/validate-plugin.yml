@@ -22,6 +22,8 @@ jobs:
         run: node scripts/validate-external-references.ts
       - name: No em dash in documentation for humans
         run: node scripts/validate-human-docs.ts
+      - name: No private-track strings in the public tree
+        run: node scripts/scrub-check.ts
       - name: Test suite
         run: node --test 'scripts/**/*.test.ts' 'hooks/*.test.ts'
       - name: Workflow contract and adapters

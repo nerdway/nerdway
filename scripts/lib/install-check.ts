@@ -49,19 +49,19 @@ const REPEAT_INSTRUCTION =
 
 function updateRemedy(runtime: Runtime, pluginRoot: string): string {
   if (runtime === "claude") {
-    return "run /plugin marketplace update nerd4rent-claude-plugin, then /plugin update nerd4rent@nerd4rent-claude-plugin, then restart";
+    return "run /plugin marketplace update nerdway, then /plugin update nerdway@nerdway, then restart";
   }
   if (pluginRoot.includes("/.cursor/plugins/local/")) {
     return `run git -C ${pluginRoot} pull --ff-only, then Reload Window`;
   }
-  return "run agent plugin marketplace remove nerd4rent-claude-plugin, then agent plugin marketplace add nerd4rent/nerd4rent-claude-plugin, then reinstall the nerd4rent card in Customize";
+  return "run agent plugin marketplace remove nerdway, then agent plugin marketplace add nerdway/nerdway, then reinstall the nerdway card in Customize";
 }
 
 function describe(finding: Finding, runtime: Runtime, pluginRoot: string): string {
   if (finding.kind === "version-drift") {
-    return `nerd4rent plugin ${finding.installed} is installed, main is ${finding.main}: ${updateRemedy(runtime, pluginRoot)}`;
+    return `nerdway plugin ${finding.installed} is installed, main is ${finding.main}: ${updateRemedy(runtime, pluginRoot)}`;
   }
-  return `stale copy of the nerd4rent skill ${finding.name} at ${finding.path}: remove it, the plugin ships the current version`;
+  return `stale copy of the nerdway skill ${finding.name} at ${finding.path}: remove it, the plugin ships the current version`;
 }
 
 export type ContextEvent = "SessionStart" | "UserPromptSubmit";
@@ -94,7 +94,7 @@ function versionOrNull(value: unknown): string | null {
 }
 
 export const MAIN_MANIFEST_URL =
-  "https://raw.githubusercontent.com/nerd4rent/nerd4rent-claude-plugin/main/.claude-plugin/plugin.json";
+  "https://raw.githubusercontent.com/nerdway/nerdway/main/.claude-plugin/plugin.json";
 
 export async function fetchMainVersion(fetchImpl: typeof fetch, timeoutMs = 3000): Promise<string | null> {
   try {

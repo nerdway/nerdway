@@ -69,26 +69,26 @@ const DRIFT = { kind: "version-drift", installed: "0.45.0", main: "0.51.0" } as 
 const COPY = { kind: "stale-skill-copy", path: "/home/u/.agents/skills/linear-issue-workflow", name: "linear-issue-workflow" } as const;
 
 test("renderHookOutput wraps a version drift in the Claude Code SessionStart envelope with the update commands", () => {
-  const out = JSON.parse(renderHookOutput([DRIFT], "claude", "/home/u/.claude/plugins/cache/nerd4rent-claude-plugin/nerd4rent/0.45.0"));
+  const out = JSON.parse(renderHookOutput([DRIFT], "claude", "/home/u/.claude/plugins/cache/nerdway/nerdway/0.45.0"));
   assert.equal(out.hookSpecificOutput.hookEventName, "SessionStart");
-  assert.match(out.systemMessage, /nerd4rent plugin 0\.45\.0 is installed, main is 0\.51\.0/);
-  assert.match(out.systemMessage, /\/plugin marketplace update nerd4rent-claude-plugin/);
-  assert.match(out.systemMessage, /\/plugin update nerd4rent@nerd4rent-claude-plugin/);
+  assert.match(out.systemMessage, /nerdway plugin 0\.45\.0 is installed, main is 0\.51\.0/);
+  assert.match(out.systemMessage, /\/plugin marketplace update nerdway/);
+  assert.match(out.systemMessage, /\/plugin update nerdway@nerdway/);
   assert.match(out.hookSpecificOutput.additionalContext, /^Repeat the following warning to the user verbatim in your first reply/);
   assert.ok(out.hookSpecificOutput.additionalContext.includes(out.systemMessage));
 });
 
 test("renderHookOutput tells a Cursor local clone to fast-forward itself", () => {
-  const out = JSON.parse(renderHookOutput([DRIFT], "cursor", "/home/u/.cursor/plugins/local/nerd4rent"));
+  const out = JSON.parse(renderHookOutput([DRIFT], "cursor", "/home/u/.cursor/plugins/local/nerdway"));
   assert.equal(Object.keys(out).join(","), "additional_context");
   assert.match(out.additional_context, /^Repeat the following warning to the user verbatim in your first reply/);
-  assert.match(out.additional_context, /git -C \/home\/u\/\.cursor\/plugins\/local\/nerd4rent pull --ff-only/);
+  assert.match(out.additional_context, /git -C \/home\/u\/\.cursor\/plugins\/local\/nerdway pull --ff-only/);
 });
 
 test("renderHookOutput tells a Cursor marketplace install to re-add the marketplace and reinstall the card", () => {
-  const out = JSON.parse(renderHookOutput([DRIFT], "cursor", "/home/u/.cursor/plugins/cache/nerd4rent/abc"));
-  assert.match(out.additional_context, /agent plugin marketplace remove nerd4rent-claude-plugin/);
-  assert.match(out.additional_context, /agent plugin marketplace add nerd4rent\/nerd4rent-claude-plugin/);
+  const out = JSON.parse(renderHookOutput([DRIFT], "cursor", "/home/u/.cursor/plugins/cache/nerdway/abc"));
+  assert.match(out.additional_context, /agent plugin marketplace remove nerdway/);
+  assert.match(out.additional_context, /agent plugin marketplace add nerdway\/nerdway/);
   assert.match(out.additional_context, /Customize/);
 });
 
@@ -96,7 +96,7 @@ test("renderHookOutput names a stale copy by path and asks to remove it, one lin
   const out = JSON.parse(renderHookOutput([DRIFT, COPY], "claude", "/plugin"));
   const lines = out.systemMessage.split("\n");
   assert.equal(lines.length, 2);
-  assert.match(lines[1], /^stale copy of the nerd4rent skill linear-issue-workflow at \/home\/u\/\.agents\/skills\/linear-issue-workflow: remove it/);
+  assert.match(lines[1], /^stale copy of the nerdway skill linear-issue-workflow at \/home\/u\/\.agents\/skills\/linear-issue-workflow: remove it/);
 });
 
 test("renderHookOutput prints nothing when there is nothing to report", () => {
@@ -113,7 +113,7 @@ test("fetchMainVersion returns null when the network call rejects", async () => 
 
 test("fetchMainVersion returns null on a non-2xx response or a manifest without a version", async () => {
   const notFound = async () => new Response("not found", { status: 404 });
-  const noVersion = async () => new Response(JSON.stringify({ name: "nerd4rent" }), { status: 200 });
+  const noVersion = async () => new Response(JSON.stringify({ name: "nerdway" }), { status: 200 });
   assert.equal(await fetchMainVersion(notFound as unknown as typeof fetch), null);
   assert.equal(await fetchMainVersion(noVersion as unknown as typeof fetch), null);
 });
@@ -122,10 +122,10 @@ test("fetchMainVersion reads the version of the raw main manifest", async () => 
   let requested = "";
   const ok = async (url: string | URL | Request) => {
     requested = String(url);
-    return new Response(JSON.stringify({ name: "nerd4rent", version: "0.51.0" }), { status: 200 });
+    return new Response(JSON.stringify({ name: "nerdway", version: "0.51.0" }), { status: 200 });
   };
   assert.equal(await fetchMainVersion(ok as unknown as typeof fetch), "0.51.0");
-  assert.equal(requested, "https://raw.githubusercontent.com/nerd4rent/nerd4rent-claude-plugin/main/.claude-plugin/plugin.json");
+  assert.equal(requested, "https://raw.githubusercontent.com/nerdway/nerdway/main/.claude-plugin/plugin.json");
 });
 
 const NOW = Date.parse("2026-10-11T12:00:00Z");

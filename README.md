@@ -1,6 +1,8 @@
-# nerd4rent-claude-plugin
+# nerdway
 
 Open-source skills for Claude Code, Cursor and other coding agents that take a tracker issue from specification to a merged pull request, built for the daily developer workflow at [Nerd4Rent](https://nerd4rent.io).
+
+**Name and IDs.** The public project is `nerdway`. The plugin and marketplace IDs are still `nerd4rent` and `nerd4rent-claude-plugin` until the rename lands, so the install commands below use those IDs with this repository's URL.
 
 ## Spec in the tracker
 
@@ -41,7 +43,7 @@ You don't have to install the CLIs by hand: once the plugin is installed, `/boot
 Add the marketplace:
 
 ```
-/plugin marketplace add https://github.com/nerd4rent/nerd4rent-claude-plugin
+/plugin marketplace add https://github.com/nerdway/nerdway
 ```
 
 Install the plugin:
@@ -68,7 +70,7 @@ In the default permission mode each parallel planning or review run asks for con
 
 ### Cursor
 
-**Recommended: team marketplace (updates follow `main`).** In the Cursor dashboard, open **Plugins & MCPs** → **Team Marketplaces** → **Add Marketplace** → **Import from Repo** and paste `https://github.com/nerd4rent/nerd4rent-claude-plugin`. Cursor reads `.cursor-plugin/marketplace.json`. Install the [Cursor GitHub App](https://github.com/apps/cursor) on this repository, then turn on **Enable Auto Refresh** under Marketplace Settings. Each push to `main` is re-indexed within about 10 minutes, and clients pick it up on their next restart or window focus; **Refresh** forces a re-index. Install `nerd4rent` from that marketplace in **Customize**.
+**Recommended: team marketplace (updates follow `main`).** In the Cursor dashboard, open **Plugins & MCPs** → **Team Marketplaces** → **Add Marketplace** → **Import from Repo** and paste `https://github.com/nerdway/nerdway`. Cursor reads `.cursor-plugin/marketplace.json`. Install the [Cursor GitHub App](https://github.com/apps/cursor) on this repository, then turn on **Enable Auto Refresh** under Marketplace Settings. Each push to `main` is re-indexed within about 10 minutes, and clients pick it up on their next restart or window focus; **Refresh** forces a re-index. Install `nerd4rent` from that marketplace in **Customize**.
 
 **Do not use `/add-plugin <this repo URL>`** (the personal GitHub import). Cursor pins that install to the commit it resolved on first import, and Update, Reinstall and running `/add-plugin` again all reuse that snapshot ([forum thread](https://forum.cursor.com/t/add-plugin-github-imports-can-get-stuck-on-stale-plugin-versions/163895)). If you already have that card, uninstall it and remove its marketplace in **Customize** before you install from the team marketplace.
 
@@ -83,7 +85,7 @@ mkdir -p ~/.cursor/plugins/local
 Clone the plugin into it:
 
 ```bash
-git clone https://github.com/nerd4rent/nerd4rent-claude-plugin ~/.cursor/plugins/local/nerd4rent
+git clone https://github.com/nerdway/nerdway ~/.cursor/plugins/local/nerd4rent
 ```
 
 Then run **Developer: Reload Window** and open **Customize**. The `nerd4rent` card should list the skills, the five agents, and the hooks: SessionStart and the issue gate (sessionStart reminder and beforeShellExecution on `git commit`/`git push`). If a marketplace plugin with the same name `nerd4rent` is installed, it takes precedence over the local copy, so uninstall it first.
@@ -109,13 +111,13 @@ The skills follow the shared [Agent Skills specification](https://github.com/ver
 Install all skills globally into the agents it detects:
 
 ```bash
-npx skills add nerd4rent/nerd4rent-claude-plugin -g
+npx skills add nerdway/nerdway -g
 ```
 
 Or target a specific agent:
 
 ```bash
-npx skills add nerd4rent/nerd4rent-claude-plugin -g -a cursor -s '*'
+npx skills add nerdway/nerdway -g -a cursor -s '*'
 ```
 
 Keep them current:
@@ -153,6 +155,10 @@ The [User Guide](docs/USER-GUIDE.md#a-day-with-the-plugin) follows one feature t
 - [Architecture](docs/ARCHITECTURE.md): the platform config and adapters, the plugin's agents, and the workflow contract.
 - [Contributing](docs/CONTRIBUTING.md): checking a change and releasing a version.
 - [Architecture decision records](docs/adr/): why the design is the way it is.
+
+## Issues and contributions
+
+Report bugs and propose changes in [GitHub Issues](https://github.com/nerdway/nerdway/issues). This repository tracks its own work there, with `tracker: github` in its [`CLAUDE.md`](CLAUDE.md). Pull requests are welcome; [Contributing](docs/CONTRIBUTING.md) lists the checks a change must pass.
 
 ## License
 

@@ -282,3 +282,5 @@ If the page has `## Decisions` and `## Active context` but no
   of work, after the user picks that option.
 - `nerd4rent:issue-next-step` — takes the issue ID this report hints at,
   names its next step and hands off to the flow the user picks.
+- `nerd4rent:nerd-orchestrate` — invokes this skill for the progress
+  report, then plans every unplanned issue and asks before auto-issue-mode.

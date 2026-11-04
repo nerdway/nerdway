@@ -1,0 +1,118 @@
+{
+  "skill_name": "nerd-orchestrate",
+  "evals": [
+    {
+      "id": "resolve-optional-path-defaults-to-cwd",
+      "prompt": "The user typed `/nerd4rent:nerd-orchestrate` with no argument, in a git checkout whose CLAUDE.md has tracker: linear and vcs: github. A second session types `/nerd4rent:nerd-orchestrate ../other-app` where that path has its own CLAUDE.md with tracker: github.",
+      "expected_output": "With no argument the skill resolves the platform from the current working directory's CLAUDE.md. With a path argument it reads that repo's CLAUDE.md instead. A tracker project id would keep the current tracker and select that project. It does not invent a project without reading the platform sources issue-writer step 1 names.",
+      "files": [],
+      "assertions": [
+        "No argument uses the current working directory and its CLAUDE.md platform",
+        "A filesystem path argument resolves the platform from that path",
+        "The skill does not skip determine-platform when neither CLAUDE.md nor the entity page has a platform"
+      ]
+    },
+    {
+      "id": "unplanned-filter-first-line-exactly",
+      "prompt": "After project-continue, issue.list-open returns four issues of the Linear project: DEMO-501 Backlog with no comments; DEMO-502 Todo with a comment whose first line is exactly `## Implementation plan`; DEMO-503 In Progress whose description has acceptance criteria and a `## Handoff` comment that says skip the plan, and no comment starting with `## Implementation plan`; DEMO-504 In Review with no plan comment. The user said \"zrób od razu\".",
+      "expected_output": "The unplanned list is DEMO-501 and DEMO-503. DEMO-502 already has the plan heading as the comment's first line. DEMO-504 is in-review, so it is open but never unplanned. DEMO-503 stays unplanned: the AC and the handoff do not count, and a comment that does not open with exactly `## Implementation plan` does not count. \"zrób od razu\" does not waive the filter.",
+      "files": [],
+      "assertions": [
+        "DEMO-501 (backlog, no plan comment) is unplanned",
+        "DEMO-503 (in-progress, no comment whose first line is exactly `## Implementation plan`) is unplanned",
+        "DEMO-502 is not unplanned because its comment's first line is exactly `## Implementation plan`",
+        "DEMO-504 is not unplanned because in-review is never unplanned",
+        "Acceptance criteria, a handoff and \"zrób od razu\" do not take DEMO-503 off the unplanned list"
+      ]
+    },
+    {
+      "id": "progress-invokes-project-continue-read-only",
+      "prompt": "The user says \"orkiestruj projekt\". The newest checkpoint exists and git and the tracker are in sync. project-continue would ask about a new checkpoint only on drift.",
+      "expected_output": "The skill invokes nerd4rent:project-continue, prints its report, then filters unplanned issues from the open list. It does not write a checkpoint itself and does not answer yes to project-continue's checkpoint question on the user's behalf.",
+      "files": [],
+      "assertions": [
+        "The skill invokes nerd4rent:project-continue before asking the planning-mode question",
+        "No checkpoint is written without the user's yes to project-continue's own question"
+      ]
+    },
+    {
+      "id": "planning-mode-always-asks-batch-vs-jit",
+      "prompt": "Unplanned issues: DEMO-601 (Backlog) and DEMO-602 (Todo), neither with a `## Implementation plan` comment. The host has AskUserQuestion. The user has not said how to plan.",
+      "expected_output": "The skill asks one planning-mode question as a native AskUserQuestion (else a numbered list): (1) batch plans for every unplanned issue then AIM the approved ones, (2) just-in-time plan → ask AIM → AIM one by one. It does not start planning or AIM before that answer. Batch is recommended because there is more than one unplanned issue.",
+      "files": [],
+      "assertions": [
+        "The skill asks batch versus just-in-time before posting any plan",
+        "The question is a native host ask or a numbered list with a recommendation",
+        "It does not default to batch or just-in-time without asking"
+      ]
+    },
+    {
+      "id": "ask-before-aim-after-every-posted-plan",
+      "prompt": "The user picked batch. The skill has just posted a `## Implementation plan` comment on DEMO-601 and written Todo. DEMO-602 is still unplanned. The host has AskUserQuestion.",
+      "expected_output": "Before starting auto-issue-mode for DEMO-601, and before planning DEMO-602 is required to skip this ask, the skill asks whether to run auto-issue-mode for DEMO-601. Option 1 runs AIM (recommended). Option 2 skips AIM for DEMO-601 and continues. A skip leaves DEMO-601 at todo with the plan. The planning-mode answer is not AIM consent. In batch, AIM dispatch waits until every plan has been posted and asked.",
+      "files": [],
+      "assertions": [
+        "After the DEMO-601 plan comment exists the skill asks before auto-issue-mode",
+        "Skip leaves the issue todo and does not start AIM",
+        "The earlier batch-versus-JIT answer is not treated as AIM consent for DEMO-601"
+      ]
+    },
+    {
+      "id": "plan-phase-only-no-start",
+      "prompt": "Just-in-time. DEMO-611 is Backlog, no `## Implementation plan` comment. The user already picked just-in-time and has not yet answered the AIM question.",
+      "expected_output": "The skill runs issue-workflow Planning only: posts a comment starting with `## Implementation plan`, writes todo, and does not Start, does not edit the repo, does not write in-progress, does not launch a CloudAgent, and does not run post-plan.after-plan.",
+      "files": [],
+      "assertions": [
+        "The skill posts a comment starting with `## Implementation plan` and writes todo",
+        "The skill does not Start, does not edit the repo, and does not launch a CloudAgent",
+        "The skill does not write in-progress during planning",
+        "The skill does not run post-plan.after-plan; it asks about AIM instead"
+      ]
+    },
+    {
+      "id": "host-worktree-cap-claude-code",
+      "prompt": "Host detect: AskUserQuestion present, NERD4RENT_HOST unset. git worktree list succeeds. The user approved AIM for DEMO-701, DEMO-702 and DEMO-703 after their plans were posted (batch).",
+      "expected_output": "Claude Code. AIM runs in git worktrees, at most two in flight. DEMO-703 waits for a slot. Each worktree is a sibling checkout on the default branch; two AIM runs never share one cwd. After a run finishes its worktree is removed. auto-issue-mode is started from entry B in a subagent by reading its SKILL.md, because disable-model-invocation blocks the Skill tool.",
+      "files": [],
+      "assertions": [
+        "The detected host is Claude Code",
+        "At most two git worktrees run AIM at once",
+        "The third approved issue waits for a free slot",
+        "Two AIM runs are not started in the same cwd"
+      ]
+    },
+    {
+      "id": "host-cursor-worktree-and-fallback",
+      "prompt": "Host detect: AskQuestion present. In session A git worktree list works and two AIM yeses are queued. In session B `git worktree add` is unavailable and two AIM yeses are queued.",
+      "expected_output": "Cursor. Session A uses worktrees with max 2. Session B falls back to sequential AIM in the original checkout and does not pretend to run them in parallel.",
+      "files": [],
+      "assertions": [
+        "Cursor with worktrees available runs AIM in worktrees at cap 2",
+        "Cursor without worktrees runs AIM sequentially",
+        "The fallback does not share one cwd across two parallel AIM runs"
+      ]
+    },
+    {
+      "id": "host-grok-bot-sequential-or-cloud-agent",
+      "prompt": "Host detect: SendToUser is in the tool list, AskUserQuestion is also present. git worktree list works. The user approved AIM for DEMO-711 and DEMO-712 after their plans were posted.",
+      "expected_output": "Grok Bot wins detect. AIM runs sequentially in this session or as one CloudAgent per issue, waiting before the next. The skill does not git worktree add to run the two issues in parallel locally, even though worktrees work.",
+      "files": [],
+      "assertions": [
+        "SendToUser selects Grok Bot even when AskUserQuestion is also present",
+        "AIM is sequential or CloudAgent, max one in flight",
+        "The skill does not use local git worktrees as the parallel path on Grok Bot"
+      ]
+    },
+    {
+      "id": "zero-unplanned-stops-without-menu",
+      "prompt": "project-continue lists three open issues, all with a comment whose first line is exactly `## Implementation plan`, plus one In Review. The user said orchestrate.",
+      "expected_output": "The unplanned list is empty. The skill reports that and stops. It does not ask batch versus just-in-time and does not start AIM.",
+      "files": [],
+      "assertions": [
+        "The skill reports that there are no unplanned issues",
+        "The planning-mode question is not asked",
+        "auto-issue-mode is not started"
+      ]
+    }
+  ]
+}

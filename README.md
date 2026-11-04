@@ -153,12 +153,17 @@ The [User Guide](docs/USER-GUIDE.md#a-day-with-the-plugin) follows one feature t
 
 - [User Guide](docs/USER-GUIDE.md): the ideas behind the plugin, a day with it, steering with statuses, and the reference of every skill with its trigger phrases.
 - [Architecture](docs/ARCHITECTURE.md): the platform config and adapters, the plugin's agents, and the workflow contract.
+- [Support](docs/SUPPORT.md): MIT license, paid support, and paid onboarding.
 - [Contributing](docs/CONTRIBUTING.md): checking a change and releasing a version.
 - [Architecture decision records](docs/adr/): why the design is the way it is.
 
 ## Issues and contributions
 
 Report bugs and propose changes in [GitHub Issues](https://github.com/nerdway/nerdway/issues). This repository tracks its own work there, with `tracker: github` in its [`CLAUDE.md`](CLAUDE.md). Pull requests are welcome; [Contributing](docs/CONTRIBUTING.md) lists the checks a change must pass.
+
+## Support
+
+The source is MIT. Nerd4Rent offers paid support and paid onboarding on top of it; details are in [Support](docs/SUPPORT.md). Bugs and proposals still go in [GitHub Issues](https://github.com/nerdway/nerdway/issues).
 
 ## License
 

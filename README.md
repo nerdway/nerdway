@@ -2,6 +2,8 @@
 
 Open-source skills for Claude Code, Cursor and other coding agents that take a tracker issue from specification to a merged pull request, built for the daily developer workflow at [Nerdway](https://nerdway.si).
 
+**Name and IDs.** The public project is `nerdway`. The plugin and marketplace IDs are still `nerdway` and `nerdway` until the rename lands, so the install commands below use those IDs with this repository's URL.
+
 ## Spec in the tracker
 
 Spec-driven frameworks keep the specification and the plan as files in the repository. This plugin keeps them in the tracker (Linear, GitHub Issues, GitLab Issues or Azure DevOps Boards), where the rest of the work already lives:
@@ -153,6 +155,10 @@ The [User Guide](docs/USER-GUIDE.md#a-day-with-the-plugin) follows one feature t
 - [Architecture](docs/ARCHITECTURE.md): the platform config and adapters, the plugin's agents, and the workflow contract.
 - [Contributing](docs/CONTRIBUTING.md): checking a change and releasing a version.
 - [Architecture decision records](docs/adr/): why the design is the way it is.
+
+## Issues and contributions
+
+Report bugs and propose changes in [GitHub Issues](https://github.com/nerdway/nerdway/issues). This repository tracks its own work there, with `tracker: github` in its [`CLAUDE.md`](CLAUDE.md). Pull requests are welcome; [Contributing](docs/CONTRIBUTING.md) lists the checks a change must pass.
 
 ## License
 

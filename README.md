@@ -2,7 +2,7 @@
 
 Open-source skills for Claude Code, Cursor and other coding agents that take a tracker issue from specification to a merged pull request, built for the daily developer workflow at [Nerd4Rent](https://nerd4rent.io).
 
-**Name and IDs.** The public project is `nerdway`. The plugin and marketplace IDs are still `nerd4rent` and `nerd4rent-claude-plugin` until the rename lands, so the install commands below use those IDs with this repository's URL.
+**Name and IDs.** The public project, the plugin, and the marketplace listing all use the id `nerdway`. Slash commands still use the `/nerd4rent:` prefix. If you already installed `nerd4rent@nerd4rent-claude-plugin`, remove that marketplace and install `nerdway` with the commands below.
 
 ## Spec in the tracker
 
@@ -49,19 +49,19 @@ Add the marketplace:
 Install the plugin:
 
 ```
-/plugin install nerd4rent@nerd4rent-claude-plugin
+/plugin install nerdway@nerdway
 ```
 
 Merges to `main` don't update your install on their own. To pick up a new release, refresh the marketplace first:
 
 ```
-/plugin marketplace update nerd4rent-claude-plugin
+/plugin marketplace update nerdway
 ```
 
 Then update the plugin and restart Claude Code:
 
 ```
-/plugin update nerd4rent@nerd4rent-claude-plugin
+/plugin update nerdway@nerdway
 ```
 
 At every session start the plugin injects the project's nerdbrain page (`hooks/session-start.ts`): the trimmed page when the vault directory is on the machine, and in a cloud session without it a pointer to reading the page through the `nerdbrain` connector.
@@ -70,7 +70,7 @@ In the default permission mode each parallel planning or review run asks for con
 
 ### Cursor
 
-**Recommended: team marketplace (updates follow `main`).** In the Cursor dashboard, open **Plugins & MCPs** → **Team Marketplaces** → **Add Marketplace** → **Import from Repo** and paste `https://github.com/nerdway/nerdway`. Cursor reads `.cursor-plugin/marketplace.json`. Install the [Cursor GitHub App](https://github.com/apps/cursor) on this repository, then turn on **Enable Auto Refresh** under Marketplace Settings. Each push to `main` is re-indexed within about 10 minutes, and clients pick it up on their next restart or window focus; **Refresh** forces a re-index. Install `nerd4rent` from that marketplace in **Customize**.
+**Recommended: team marketplace (updates follow `main`).** In the Cursor dashboard, open **Plugins & MCPs** → **Team Marketplaces** → **Add Marketplace** → **Import from Repo** and paste `https://github.com/nerdway/nerdway`. Cursor reads `.cursor-plugin/marketplace.json`. Install the [Cursor GitHub App](https://github.com/apps/cursor) on this repository, then turn on **Enable Auto Refresh** under Marketplace Settings. Each push to `main` is re-indexed within about 10 minutes, and clients pick it up on their next restart or window focus; **Refresh** forces a re-index. Install `nerdway` from that marketplace in **Customize**.
 
 **Do not use `/add-plugin <this repo URL>`** (the personal GitHub import). Cursor pins that install to the commit it resolved on first import, and Update, Reinstall and running `/add-plugin` again all reuse that snapshot ([forum thread](https://forum.cursor.com/t/add-plugin-github-imports-can-get-stuck-on-stale-plugin-versions/163895)). If you already have that card, uninstall it and remove its marketplace in **Customize** before you install from the team marketplace.
 
@@ -85,24 +85,24 @@ mkdir -p ~/.cursor/plugins/local
 Clone the plugin into it:
 
 ```bash
-git clone https://github.com/nerdway/nerdway ~/.cursor/plugins/local/nerd4rent
+git clone https://github.com/nerdway/nerdway ~/.cursor/plugins/local/nerdway
 ```
 
-Then run **Developer: Reload Window** and open **Customize**. The `nerd4rent` card should list the skills, the five agents, and the hooks: SessionStart and the issue gate (sessionStart reminder and beforeShellExecution on `git commit`/`git push`). If a marketplace plugin with the same name `nerd4rent` is installed, it takes precedence over the local copy, so uninstall it first.
+Then run **Developer: Reload Window** and open **Customize**. The `nerdway` card should list the skills, the five agents, and the hooks: SessionStart and the issue gate (sessionStart reminder and beforeShellExecution on `git commit`/`git push`). If a marketplace plugin with the same name `nerdway` is installed, it takes precedence over the local copy, so uninstall it first.
 
 To update the local copy later, pull and reload the window again:
 
 ```bash
-git -C ~/.cursor/plugins/local/nerd4rent pull
+git -C ~/.cursor/plugins/local/nerdway pull
 ```
 
 **Third-Party Imports.** Keep **Cursor Settings → Agents → Third-Party Imports** ("Include Third-Party Plugins, Skills, and Other Configs") on, which is the default. Cursor then loads the repo `CLAUDE.md` into context as an always-applied rule, so the project's general instructions apply in Cursor too. The plugin's workflow does not depend on it: every skill reads the project's platform settings from `CLAUDE.md` on disk, so they resolve the same way with the setting off.
 
-**Plugin agents in Customize.** The agents from `agents/` show on the `nerd4rent` card and in the `/` menu, and the main agent spawns them through `Task` with `subagent_type`. **Customize → Subagents** does not list plugin agents. It shows only the subagents you configure yourself, globally in `~/.cursor/agents/` or per project in `.cursor/agents/`, plus their `.claude/` and `.codex/` counterparts. An empty list there is expected and does not mean the plugin agents are missing.
+**Plugin agents in Customize.** The agents from `agents/` show on the `nerdway` card and in the `/` menu, and the main agent spawns them through `Task` with `subagent_type`. **Customize → Subagents** does not list plugin agents. It shows only the subagents you configure yourself, globally in `~/.cursor/agents/` or per project in `.cursor/agents/`, plus their `.claude/` and `.codex/` counterparts. An empty list there is expected and does not mean the plugin agents are missing.
 
-**Claude Code install on the same machine.** With Third-Party Imports on, Cursor also imports `nerd4rent@nerd4rent-claude-plugin` from `~/.claude/plugins` as a second card. Skills and agents with the same name then load from that copy, not from the local clone in `~/.cursor/plugins/local/nerd4rent`, so an outdated Claude Code install hides a fresh `git pull`. Keep it current with `claude plugin marketplace update nerd4rent-claude-plugin` and `claude plugin update nerd4rent@nerd4rent-claude-plugin`, or uninstall it from Claude Code on a machine where you only use Cursor. The Uninstall button on the imported card only leads to the Third-Party Imports setting.
+**Claude Code install on the same machine.** With Third-Party Imports on, Cursor also imports `nerdway@nerdway` from `~/.claude/plugins` as a second card. Skills and agents with the same name then load from that copy, not from the local clone in `~/.cursor/plugins/local/nerdway`, so an outdated Claude Code install hides a fresh `git pull`. Keep it current with `claude plugin marketplace update nerdway` and `claude plugin update nerdway@nerdway`, or uninstall it from Claude Code on a machine where you only use Cursor. The Uninstall button on the imported card only leads to the Third-Party Imports setting.
 
-**Which copy is active.** Compare the version on the `nerd4rent` cards in **Customize** with the one in the clone: `grep '"version"' ~/.cursor/plugins/local/nerd4rent/.cursor-plugin/plugin.json`. For the Claude Code copy, `claude plugin list` shows the installed version. If two cards are listed and their versions differ, update or remove the older one and reload the window. The session start check also reports an outdated install, see [the user guide](docs/USER-GUIDE.md#the-plugin-tells-you-when-it-is-out-of-date).
+**Which copy is active.** Compare the version on the `nerdway` cards in **Customize** with the one in the clone: `grep '"version"' ~/.cursor/plugins/local/nerdway/.cursor-plugin/plugin.json`. For the Claude Code copy, `claude plugin list` shows the installed version. If two cards are listed and their versions differ, update or remove the older one and reload the window. The session start check also reports an outdated install, see [the user guide](docs/USER-GUIDE.md#the-plugin-tells-you-when-it-is-out-of-date).
 
 ### Other agents
 

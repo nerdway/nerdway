@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { validateContract } from "./cli-dependencies.ts";
+import { parseBootstrapArgs, resolveCliSubset, validateContract } from "./cli-dependencies.ts";
 
 const skillDirs = ["issue-workflow", "nerdbrain-search"];
 
@@ -121,4 +121,63 @@ test("rejects a malformed versionRegex", () => {
   const errors = validateContract({ clis: [entry({ versionRegex: "linear version (" })] }, skillDirs);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /versionRegex/);
+});
+
+test("resolveCliSubset keeps entries whose requiredBy intersects the skill set", () => {
+  const gh = entry({ id: "gh", requiredBy: ["issue-writer", "issue-workflow"] });
+  const rg = entry({ id: "rg", requiredBy: ["nerdbrain-search"] });
+  const result = resolveCliSubset({ clis: [gh, rg] }, { mode: "skills", names: ["issue-writer"] });
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.entries.map((item) => item.id), ["gh"]);
+});
+
+test("resolveCliSubset keeps only the named ids in contract order", () => {
+  const node = entry({ id: "node" });
+  const gh = entry({ id: "gh" });
+  const rg = entry({ id: "rg" });
+  const result = resolveCliSubset({ clis: [node, gh, rg] }, { mode: "only", ids: ["rg", "node"] });
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.entries.map((item) => item.id), ["node", "rg"]);
+});
+
+test("resolveCliSubset names unknown --only ids instead of dropping them", () => {
+  const result = resolveCliSubset({ clis: [entry({ id: "node" })] }, { mode: "only", ids: ["node", "ghost"] });
+  assert.equal(result.entries.length, 0);
+  assert.equal(result.errors.length, 1);
+  assert.match(result.errors[0], /ghost/);
+});
+
+test("parseBootstrapArgs reads --check and comma-separated --only ids", () => {
+  const parsed = parseBootstrapArgs(["--check", "--only", "rg,node"]);
+  assert.deepEqual(parsed, { ok: true, check: true, filter: { mode: "only", ids: ["rg", "node"] } });
+});
+
+test("parseBootstrapArgs collects repeatable --skills names", () => {
+  const parsed = parseBootstrapArgs(["--skills", "issue-writer", "--skills", "nerdbrain-search"]);
+  assert.deepEqual(parsed, {
+    ok: true,
+    check: false,
+    filter: { mode: "skills", names: ["issue-writer", "nerdbrain-search"] },
+  });
+});
+
+test("parseBootstrapArgs treats a bare invocation as the full set", () => {
+  assert.deepEqual(parseBootstrapArgs([]), { ok: true, check: false, filter: { mode: "all" } });
+});
+
+test("parseBootstrapArgs rejects --all combined with a subset filter", () => {
+  const parsed = parseBootstrapArgs(["--all", "--only", "node"]);
+  assert.deepEqual(parsed, { ok: false, errors: ["--all cannot be combined with --only or --skills"] });
+});
+
+test("parseBootstrapArgs rejects --only combined with --skills", () => {
+  const parsed = parseBootstrapArgs(["--only", "node", "--skills", "issue-writer"]);
+  assert.deepEqual(parsed, { ok: false, errors: ["--only cannot be combined with --skills"] });
+});
+
+test("parseBootstrapArgs rejects --only without a value", () => {
+  const parsed = parseBootstrapArgs(["--only"]);
+  assert.ok(!parsed.ok);
+  if (parsed.ok) return;
+  assert.match(parsed.errors[0], /--only/);
 });

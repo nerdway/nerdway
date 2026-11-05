@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": "candidates-by-category-nothing-applied",
-      "prompt": "/nerdway:retro\n\nIn this session: the agent searched three times for the command that bumps the manifests before the user pointed at CONTRIBUTING.md; a PR body went out with a Co-authored-by line and the user had to edit it, though no check looks for it; and the agent read the 2000-line output of claude plugin validate in full twice. The tracker is Linear, team DEMO, project nerd4rent-claude-plugin; issue.list-open returns no issue about any of these.",
+      "prompt": "/nerdway:retro\n\nIn this session: the agent searched three times for the command that bumps the manifests before the user pointed at CONTRIBUTING.md; a PR body went out with a Co-authored-by line and the user had to edit it, though no check looks for it; and the agent read the 2000-line output of claude plugin validate in full twice. The tracker is Linear, team DEMO, project nerdway; issue.list-open returns no issue about any of these.",
       "expected_output": "Three candidates, numbered and grouped: navigation (a pointer to the bump command), automated checks (a check for attribution lines in PR bodies), tool economy (read only the summary of the validator). Each has the evidence from the session, the change and where it lands, and a recommendation. One question asks which become issues. No file is edited and nothing is created yet.",
       "files": [],
       "assertions": [

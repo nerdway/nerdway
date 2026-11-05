@@ -14,7 +14,7 @@ test("plan happy path reduces five gatherers into typed context with zero gaps",
       priorPlans: { items: ["docs/plans/demo-311.md — dual manifests"] },
       trackerRelations: { items: ["DEMO-311 (Done): Cursor packaging — the base this builds on"] },
       vault: {
-        slug: "nerd4rent-claude-plugin",
+        slug: "nerdway",
         decisions: ["2026-09-14 — Cursor reducer lives in scripts/lib/island-reducer.ts"],
         activeContext: "DEMO-331 in flight",
         relatedPages: ["example-person", "nerdbrain"],
@@ -47,7 +47,7 @@ test("plan happy path reduces five gatherers into typed context with zero gaps",
     gapsCount: 0,
   });
   assert.deepEqual(result.projectContext, {
-    slug: "nerd4rent-claude-plugin",
+    slug: "nerdway",
     decisions: ["2026-09-14 — Cursor reducer lives in scripts/lib/island-reducer.ts"],
     activeContext: "DEMO-331 in flight",
     relatedPages: ["example-person", "nerdbrain"],

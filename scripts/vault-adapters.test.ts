@@ -59,7 +59,7 @@ test(`${FILE_ADAPTER} lists exactly the vault operations`, () => {
 });
 
 const CHECKPOINTS_TRAP = [
-  "# nerd4rent-claude-plugin",
+  "# nerdway",
   "",
   "## Gotchas",
   "",

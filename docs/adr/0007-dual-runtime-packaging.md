@@ -19,7 +19,7 @@ Code reads some paths by convention, whatever `.claude-plugin/plugin.json`
 declares: `hooks/hooks.json` is auto-discovered and merged with the
 manifest's `hooks`, and a root `plugin.json` is its fallback manifest.
 Those paths stay empty of Cursor files. `.cursor-plugin/plugin.json` names
-`name: nerd4rent` and explicit `./skills/`, `./agents/` and
+`name: nerdway` and explicit `./skills/`, `./agents/` and
 `./hooks/cursor.hooks.json` paths (an explicit field *replaces* Cursor's
 auto-discovery, so Cursor never falls back to `hooks/hooks.json`).
 `.cursor-plugin/marketplace.json` lists the single plugin (`source: "./"`)
@@ -91,7 +91,7 @@ of `main`, fetched with a 3 second timeout and cached for 24 hours in
 plugin's skills sit in the user's skill directories (`~/.claude/skills`,
 `~/.cursor/skills`, `~/.agents/skills` and the same three under the project;
 a copy is a `SKILL.md` whose `name` is a historical plugin skill name, or a
-current one with `nerd4rent` or `nerdbrain` in the text). Neither runtime
+current one with `nerdway` or `nerdbrain` in the text). Neither runtime
 signals a newer version itself: Claude Code auto-updates only Anthropic
 marketplaces, and the Cursor CLI has no plugin update command. On 2026-10-10
 Claude Code ran six releases behind `main` and Cursor loaded four June
@@ -228,9 +228,9 @@ model IDs are not substituted in.
 - Cursor `sessionStart` is fire-and-forget; the inject may arrive after
   the first turn. Skills already know to `Read` the entity page from disk
   when the inject is missing (nerdbrain-wiki lazy-section contract).
-- A Cursor marketplace card with `name: nerd4rent` wins over a local
+- A Cursor marketplace card with `name: nerdway` wins over a local
   copy. Local install is a `git clone` straight into
-  `~/.cursor/plugins/local/nerd4rent`, not a symlink. Cursor skips symlinks
+  `~/.cursor/plugins/local/nerdway`, not a symlink. Cursor skips symlinks
   that point outside that folder. Uninstall the marketplace card first.
 - `~/.claude/hooks/nerdbrain-load.sh` and the Claude Code vault-MCP deny
   in `~/.claude/settings.json` stay outside this repo.

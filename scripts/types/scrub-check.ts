@@ -7,7 +7,15 @@ export interface SourceFile {
   source: string;
 }
 
-export const SCRUB_PATTERN_SOURCE = "NER-|GRO-|Proxmox|Coder|pve|linear\\.app/nerd4rent";
+const PRIVATE_ORG = ["nerd", "4rent"].join("");
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const PRIVATE_ORG_PATTERN = escapeRegExp(PRIVATE_ORG);
+
+export const SCRUB_PATTERN_SOURCE = `NER-|GRO-|Proxmox|Coder|pve|linear\\.app/${PRIVATE_ORG_PATTERN}|${PRIVATE_ORG_PATTERN}`;
 
 export const EXEMPT_PATHS = [
   "docs/DUAL-TRACK.md",
@@ -21,7 +29,7 @@ function isExempt(path: string): boolean {
 }
 
 function lineHasPrivateTrackString(line: string): boolean {
-  return new RegExp(SCRUB_PATTERN_SOURCE).test(line);
+  return new RegExp(SCRUB_PATTERN_SOURCE, "i").test(line);
 }
 
 export function scrubCheckErrors(files: SourceFile[]): string[] {

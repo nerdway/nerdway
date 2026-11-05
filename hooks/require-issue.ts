@@ -239,7 +239,7 @@ function prefixList(): string {
 function denyMessages(invocation: GitInvocation, branch: string, platform: Platform): { agent: string; user: string } {
   const tracker = trackerOf(platform);
   const agent =
-    `nerd4rent blocked git ${invocation.subcommand}: this repository tracks work in ${tracker} (## Platform in CLAUDE.md) ` +
+    `nerdway blocked git ${invocation.subcommand}: this repository tracks work in ${tracker} (## Platform in CLAUDE.md) ` +
     `and the branch \`${branch}\` carries no issue ID (expected a name like \`${example(platform)}\`). ` +
     "Every change needs an issue first: find or create it (nerdway:issue-writer), tell the user its number, " +
     "then work on its branch (nerdway:issue-start) and commit there. " +

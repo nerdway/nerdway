@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": "stage-one-and-stage-two",
-      "prompt": "Utwórz issue: natywne skille praktyk. Etap 1: skille tdd i debug. Etap 2, dopiero po wydaniu etapu 1: skille dispatch-agents i model-domain. Każdy etap wychodzi osobnym wydaniem i jest osobnym, samowystarczalnym deliverable — etap 2 to nie \"zaimplementuj to, co ustalił etap 1\". The tracker is Linear, team DEMO, project nerd4rent-claude-plugin; there is no parent epic yet. grill announced the size as large and its confirmed outcome named the split as stages in time.",
+      "prompt": "Utwórz issue: natywne skille praktyk. Etap 1: skille tdd i debug. Etap 2, dopiero po wydaniu etapu 1: skille dispatch-agents i model-domain. Każdy etap wychodzi osobnym wydaniem i jest osobnym, samowystarczalnym deliverable — etap 2 to nie \"zaimplementuj to, co ustalił etap 1\". The tracker is Linear, team DEMO, project nerdway; there is no parent epic yet. grill announced the size as large and its confirmed outcome named the split as stages in time.",
       "expected_output": "The proposal names the split as etapy w czasie with its reason, and lists an epic plus two stage issues, stage 2 blocked by stage 1. After approval the epic is created with issue.create, both stages with issue.create-child under the epic, and issue.add-blocked-by makes stage 2 blocked by stage 1. Stage 2 is never created as a child of stage 1.",
       "files": [],
       "assertions": [
@@ -18,7 +18,7 @@
     },
     {
       "id": "parts-of-one-result",
-      "prompt": "Utwórz issue: adapter trackera Jira. Składa się z sekcji Operations, sekcji Statuses i przepisu URL; dopiero wszystkie trzy razem dają działający adapter, wydawany jednym PR-em. The tracker is Linear, team DEMO, project nerd4rent-claude-plugin. grill announced large, and its confirmed outcome named the split as a result split.",
+      "prompt": "Utwórz issue: adapter trackera Jira. Składa się z sekcji Operations, sekcji Statuses i przepisu URL; dopiero wszystkie trzy razem dają działający adapter, wydawany jednym PR-em. The tracker is Linear, team DEMO, project nerdway. grill announced large, and its confirmed outcome named the split as a result split.",
       "expected_output": "The proposal names the split as podział rezultatu: one parent issue for the Jira adapter and three children, the parent closing after the children. No blocked-by relation is proposed between the children.",
       "files": [],
       "assertions": [
@@ -43,7 +43,7 @@
     },
     {
       "id": "grill-outcome-stays-on-same-issue",
-      "prompt": "Step 6: the grilling session on DEMO-466 (just created, title \"Research: lokalny klon nerd4rent.io — docker-compose w DevBox vs VM\", no parent) returned Confirmed shared understanding: yes, size medium. Settled decision: docker-compose in the DevBox workspace. The outcome named no large split. A teammate habit is to put \"Out of scope: implementacja w osobnym issue\" and offer a widget to create a follow-up implementation issue.",
+      "prompt": "Step 6: the grilling session on DEMO-466 (just created, title \"Research: lokalny klon nerdway.si — docker-compose w DevBox vs VM\", no parent) returned Confirmed shared understanding: yes, size medium. Settled decision: docker-compose in the DevBox workspace. The outcome named no large split. A teammate habit is to put \"Out of scope: implementacja w osobnym issue\" and offer a widget to create a follow-up implementation issue.",
       "expected_output": "The agent updates DEMO-466's description from the decisions after showing the diff. It does not propose or create any new issue, does not write \"Out of scope: implementacja w osobnym issue\" or \"implementation in a separate issue\", and hands off to issue-workflow on DEMO-466 so the plan and implementation stay on that ID.",
       "files": [],
       "assertions": [

@@ -1,6 +1,6 @@
-# nerd4rent-claude-plugin
+# nerdway
 
-Claude Code plugin bundling the skills that run the Nerd4Rent daily developer
+Claude Code plugin bundling the skills that run the nerdway daily developer
 workflow: Linear issue lifecycle and the nerdbrain second-brain wiki.
 
 ## Standards
@@ -51,8 +51,8 @@ a rule that cannot be verified from the diff does not belong here.
 **nerdway**:
 The public name of the open-source cut of this plugin: the `nerdway/nerdway`
 repository, and the package and marketplace id (`nerdway`). Dual-track with the
-private `nerd4rent` plugin.
-_Avoid_: nerd4rent (the private track), nerdway-plugin
+private plugin.
+_Avoid_: the private plugin name, nerdway-plugin
 
 **Vault**:
 The nerdbrain Obsidian vault, present on every machine where wiki skills

@@ -1,6 +1,6 @@
 ---
 name: new-project-workflow
-description: Bootstrap a new development project end-to-end — resolve the target directory, initialize git, scaffold README.md, create a GitHub repo via gh, create a matching Linear project, optionally record the project in a nerdbrain wiki, then route the user to a spec-creating skill of their choice. Use whenever the user wants to "start a new project", "bootstrap a project", "kick off a new repo", "set up a new project the nerd4rent way", or invokes /new-project-workflow / /nerdway:new-project-workflow. Also use proactively when the user is sitting in an empty or near-empty directory and signals they're about to begin fresh work (e.g. "let's build X", "new idea I want to start on"), even if they don't say "workflow" explicitly.
+description: Bootstrap a new development project end-to-end — resolve the target directory, initialize git, scaffold README.md, create a GitHub repo via gh, create a matching Linear project, optionally record the project in a nerdbrain wiki, then route the user to a spec-creating skill of their choice. Use whenever the user wants to "start a new project", "bootstrap a project", "kick off a new repo", "set up a new project the nerdway way", or invokes /new-project-workflow / /nerdway:new-project-workflow. Also use proactively when the user is sitting in an empty or near-empty directory and signals they're about to begin fresh work (e.g. "let's build X", "new idea I want to start on"), even if they don't say "workflow" explicitly.
 ---
 
 # new-project-workflow
@@ -158,7 +158,7 @@ Only create if absent. **Use a title-cased project name** in the heading:
 - Join with spaces.
 
 Examples:
-- `nerd4rent-repo` → `Nerd4rent Repo`
+- `nerdway-repo` → `Nerdway Repo`
 - `my_cool_project` → `My Cool Project`
 - `MyAPI` → `MyAPI`
 - `cool-app` → `Cool App`
@@ -300,7 +300,7 @@ A hardcoded list rots within weeks: skills get renamed, new ones appear, the use
 User: /nerdway:new-project-workflow ~/src/my-side-project --public
 Claude: [inspects: empty dir, GitHub CLI authed, nerdbrain reachable]
         Linear teams:
-          1. nerd4rent
+          1. nerdway
           2. open-source
         Team [1]: 1
         [Linear existence check: no match]
@@ -314,11 +314,11 @@ Claude: [inspects: empty dir, GitHub CLI authed, nerdbrain reachable]
 **Example 2 — existing repo with README, GitHub repo also already created:**
 
 ```
-User: bootstrap this folder as a nerd4rent project
+User: bootstrap this folder as a nerdway project
 Claude: [inspects: git repo on main with commits, README exists,
          GitHub repo 'mything' exists under user, no local origin]
         Visibility (public/private) [public]: <enter>
-        Linear team: nerd4rent
+        Linear team: nerdway
         [Linear existence: project 'mything' already exists → uuid X]
         Plan:
           1. git init   [skip — already a repo on main]

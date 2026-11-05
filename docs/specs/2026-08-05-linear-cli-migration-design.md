@@ -42,7 +42,7 @@ CLI.
 ## Ustalenia faktograficzne
 
 Wszystkie poniższe zweryfikowane przez `--help` i realne wywołania na
-`linear version 1.10.0`, workspace `nerd4rent`. Nie przepisywać ich z pamięci
+`linear version 1.10.0`, workspace `<private-org>`. Nie przepisywać ich z pamięci
 o starym CLI.
 
 ### Tabela tłumaczenia

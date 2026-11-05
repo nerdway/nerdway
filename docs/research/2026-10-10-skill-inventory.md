@@ -67,7 +67,7 @@ The other installed plugins get one row each. They were listed with:
 for host in claude cursor; do
   for dir in ~/."$host"/plugins/cache/*/*/; do
     marketplace=$(basename "$(dirname "$dir")"); plugin=$(basename "$dir")
-    case "$marketplace/$plugin" in superpowers-marketplace/*|mattpocock/*|cursor-public/pstack|nerd4rent-claude-plugin/nerd4rent) continue;; esac
+    case "$marketplace/$plugin" in superpowers-marketplace/*|mattpocock/*|cursor-public/pstack|nerdway/nerdway) continue;; esac
     printf '%s\t%s\t%s\t%s\n' "$host" "$marketplace" "$plugin" "$(find "$dir" -name SKILL.md | wc -l | tr -d ' ')"
   done
 done

@@ -1,11 +1,10 @@
 {
   "name": "nerdway",
   "owner": {
-    "name": "Paweł Wlazło",
-    "email": "pawel@nerd4rent.io"
+    "name": "Paweł Wlazło"
   },
   "metadata": {
-    "description": "Nerd4Rent open-source Claude Code skills for daily developer workflows.",
+    "description": "nerdway open-source Claude Code skills for daily developer workflows.",
     "version": "0.76.0"
   },
   "plugins": [

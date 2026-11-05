@@ -33,7 +33,7 @@ export function findStaleSkillCopies(entries: SkillEntry[], currentNames: string
     const name = frontmatterName(entry.text);
     if (name === null) continue;
     const isHistorical = historical.has(name);
-    const isPluginCopy = current.has(name) && /nerd4rent|nerdbrain/i.test(entry.text);
+    const isPluginCopy = current.has(name) && /nerdway|nerdbrain/i.test(entry.text);
     if (isHistorical || isPluginCopy) {
       findings.push({ kind: "stale-skill-copy", path: entry.path, name });
     }

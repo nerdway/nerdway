@@ -1,6 +1,8 @@
 # Support
 
-nerdway is open-source software under the MIT License. The commercial offering around it is paid support and paid onboarding from [Nerd4Rent](https://nerd4rent.io).
+nerdway is open-source software under the MIT License. Get help through
+[GitHub Issues](https://github.com/nerdway/nerdway/issues) and
+[nerdway.si](https://nerdway.si).
 
 ## License
 
@@ -24,6 +26,6 @@ What that engagement includes is agreed up front. It is not a second license and
 
 Bugs, feature requests, and other public work on this repository go in [GitHub Issues](https://github.com/nerdway/nerdway/issues).
 
-For paid support or paid onboarding, start from [Nerd4Rent](https://nerd4rent.io), or open a GitHub Issue that says you want a paid engagement. Details of an engagement are arranged from there.
+For paid support or paid onboarding, start from [nerdway.si](https://nerdway.si), or open a GitHub Issue that says you want a paid engagement. Details of an engagement are arranged from there.
 
 GitHub Issues remains the public tracker for the project itself. It is not a substitute for a paid onboarding.

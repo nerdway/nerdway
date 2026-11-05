@@ -51,7 +51,7 @@ function installedVersion(): string {
 function cacheDir(): string {
   if (process.env.NERDWAY_CACHE_DIR) return process.env.NERDWAY_CACHE_DIR;
   if (process.env.CLAUDE_PLUGIN_DATA) return process.env.CLAUDE_PLUGIN_DATA;
-  return join(process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache"), "nerd4rent");
+  return join(process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache"), "nerdway");
 }
 
 async function mainVersion(): Promise<string | null> {

@@ -1,10 +1,8 @@
 # nerdway
 
-Open-source skills for Claude Code, Cursor, and other coding agents that take a tracker issue from a written spec to a merged pull request. Built for the daily developer workflow at [Nerd4Rent](https://nerd4rent.io).
+Open-source skills for Claude Code, Cursor, and other coding agents that take a tracker issue from a written spec to a merged pull request. Built for the daily developer workflow at [nerdway](https://nerdway.si).
 
 You describe the work in Linear, GitHub Issues, GitLab Issues, or Azure DevOps Boards. The plugin plans from that issue, implements after you move it to In Progress, reviews the change, and merges when you say so. The repository stays code; the spec and the plan live on the tracker.
-
-The public project, the plugin, and the marketplace listing all use the id `nerdway`. Slash commands still use the `/nerdway:` prefix. If you already installed `nerd4rent@nerd4rent-claude-plugin`, remove that marketplace and install `nerdway` with the commands below.
 
 ## Install
 
@@ -217,12 +215,12 @@ Install notes, day-to-day steering, and the full skill reference are in the [Use
 ## Docs, support, and contributing
 
 - [User Guide](docs/USER-GUIDE.md): a day with the plugin, steering with statuses, and the reference of every skill with its trigger phrases.
-- [Support](docs/SUPPORT.md): MIT license, paid support, and paid onboarding.
+- [Support](docs/SUPPORT.md): MIT license, GitHub Issues, and https://nerdway.si.
 - [Contributing](docs/CONTRIBUTING.md): checking a change and releasing a version.
 
 Report bugs and propose changes in [GitHub Issues](https://github.com/nerdway/nerdway/issues). Pull requests are welcome.
 
-The source is MIT. Nerd4Rent offers paid support and paid onboarding on top of it; details are in [Support](docs/SUPPORT.md).
+The source is MIT. Details are in [Support](docs/SUPPORT.md).
 
 ## License
 

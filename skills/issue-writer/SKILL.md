@@ -89,6 +89,23 @@ block has no `workItemType`, stop and run `nerd4rent:bind-statuses` first — it
 picks the team, board and type — never guess a type. Sub-issues are the same
 type with a parent link, so they land on the same board.
 
+**Missing tracker CLI.** The adapter's `## CLI` names the binary (`linearis`,
+`gh`, `glab`, or `az`). After the tracker is known, probe just that tool:
+
+```
+node ${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap-clis.ts --check --only <id>
+```
+
+If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
+directories up from this skill's base directory (the same rule as the
+adapter path above). Exit 0 → continue. `MISSING` or
+`OUTDATED` → say that this tracker needs that CLI and ask **yes/no** to
+install it. That is the whole ask; do not mention `/bootstrap-clis` or send
+the user into a full bootstrap. Yes → run the same command without `--check`.
+No → stop with the printed `manualInstall` hint. `NEEDS_AUTH` → print the
+auth command; do not run it. If a later GitLab or Azure DevOps command fails
+because `jq` is missing, offer `--only jq` the same way.
+
 ### 2. Assess complexity (out loud)
 
 Invoke **`nerd4rent:grill`** with the two argument lines `issue: none` and

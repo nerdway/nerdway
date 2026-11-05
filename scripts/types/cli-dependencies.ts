@@ -33,6 +33,97 @@ export interface CliContract {
   clis: CliEntry[];
 }
 
+export type CliSubsetFilter =
+  | { mode: "all" }
+  | { mode: "skills"; names: readonly string[] }
+  | { mode: "only"; ids: readonly string[] };
+
+export type BootstrapArgs =
+  | { ok: true; check: boolean; filter: CliSubsetFilter }
+  | { ok: false; errors: string[] };
+
+function splitFlag(arg: string): [string, string | undefined] {
+  const at = arg.indexOf("=");
+  return arg.startsWith("--") && at !== -1 ? [arg.slice(0, at), arg.slice(at + 1)] : [arg, undefined];
+}
+
+function takeList(inline: string | undefined, argv: readonly string[], index: number): { values: string[]; next: number } | { error: string } {
+  const raw = inline ?? argv[index];
+  if (raw === undefined || raw.startsWith("-")) return { error: "needs a value" };
+  const values = raw.split(",").map((item) => item.trim()).filter((item) => item.length > 0);
+  if (values.length === 0) return { error: "needs a value" };
+  return { values, next: inline === undefined ? index + 1 : index };
+}
+
+export function parseBootstrapArgs(argv: readonly string[]): BootstrapArgs {
+  let check = false;
+  let all = false;
+  const only: string[] = [];
+  const skills: string[] = [];
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const [flag, inline] = splitFlag(argv[i]);
+    if (flag === "--check") {
+      check = true;
+      continue;
+    }
+    if (flag === "--all") {
+      all = true;
+      continue;
+    }
+    if (flag === "--only") {
+      const taken = takeList(inline, argv, i + 1);
+      if ("error" in taken) return { ok: false, errors: [`--only ${taken.error}`] };
+      only.push(...taken.values);
+      i = taken.next - 1;
+      continue;
+    }
+    if (flag === "--skills") {
+      const taken = takeList(inline, argv, i + 1);
+      if ("error" in taken) return { ok: false, errors: [`--skills ${taken.error}`] };
+      skills.push(...taken.values);
+      i = taken.next - 1;
+      continue;
+    }
+  }
+
+  if (all && (only.length > 0 || skills.length > 0)) {
+    return { ok: false, errors: ["--all cannot be combined with --only or --skills"] };
+  }
+  if (only.length > 0 && skills.length > 0) {
+    return { ok: false, errors: ["--only cannot be combined with --skills"] };
+  }
+  if (only.length > 0) return { ok: true, check, filter: { mode: "only", ids: only } };
+  if (skills.length > 0) return { ok: true, check, filter: { mode: "skills", names: skills } };
+  return { ok: true, check, filter: { mode: "all" } };
+}
+
+export function resolveCliSubset(
+  contract: CliContract,
+  filter: CliSubsetFilter,
+): { entries: CliEntry[]; errors: string[] } {
+  if (filter.mode === "skills") {
+    const wanted = new Set(filter.names);
+    return {
+      entries: contract.clis.filter((item) => item.requiredBy.some((name) => wanted.has(name))),
+      errors: [],
+    };
+  }
+  if (filter.mode === "only") {
+    const known = new Set(contract.clis.map((item) => item.id));
+    const unknown = [...new Set(filter.ids)].filter((id) => !known.has(id));
+    if (unknown.length > 0) {
+      return { entries: [], errors: unknown.map((id) => `unknown CLI id: ${id}`) };
+    }
+    const wanted = new Set(filter.ids);
+    return {
+      entries: contract.clis.filter((item) => wanted.has(item.id)),
+      errors: [],
+    };
+  }
+  return { entries: contract.clis, errors: [] };
+}
+
 const VERSION_SHAPE = /^\d+\.\d+\.\d+$/;
 
 function isStringArray(value: unknown): value is string[] {

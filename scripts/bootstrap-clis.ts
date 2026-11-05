@@ -2,13 +2,27 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { validateContract, type CliContract, type CliEntry, type InstallStrategy } from "./types/cli-dependencies.ts";
+import {
+  parseBootstrapArgs,
+  resolveCliSubset,
+  validateContract,
+  type CliContract,
+  type CliEntry,
+  type InstallStrategy,
+} from "./types/cli-dependencies.ts";
 import { applyInstall, applyNpmInstall, installDir } from "./lib/install.ts";
 import { platformKey } from "./lib/platform.ts";
 import { probe, runCommand } from "./lib/probe.ts";
 import { SATISFIED, decideAfterInstall, formatReport, type Outcome, type Status } from "./lib/status.ts";
 
-const checkOnly = process.argv.includes("--check");
+const parsed = parseBootstrapArgs(process.argv.slice(2));
+if (!parsed.ok) {
+  console.error("bootstrap-clis: invalid arguments:");
+  for (const error of parsed.errors) console.error(`  - ${error}`);
+  process.exit(1);
+}
+
+const checkOnly = parsed.check;
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..");
 
@@ -29,6 +43,17 @@ if (contractErrors.length > 0) {
 }
 
 const contract = raw as CliContract;
+const subset = resolveCliSubset(contract, parsed.filter);
+if (subset.errors.length > 0) {
+  console.error("bootstrap-clis: invalid selection:");
+  for (const error of subset.errors) console.error(`  - ${error}`);
+  process.exit(1);
+}
+if (subset.entries.length === 0) {
+  console.error("bootstrap-clis: selection matched no CLI entries");
+  process.exit(1);
+}
+const selected = subset.entries;
 const key = platformKey(process.platform, process.arch);
 
 async function withAuth(entry: CliEntry, status: Status, detail: string): Promise<Outcome> {
@@ -71,7 +96,7 @@ async function reconcileEntry(entry: CliEntry): Promise<Outcome> {
 }
 
 const outcomes: Outcome[] = [];
-for (const entry of contract.clis) {
+for (const entry of selected) {
   outcomes.push(await reconcileEntry(entry));
 }
 

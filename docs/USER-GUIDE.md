@@ -228,8 +228,8 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 
 ### `bootstrap-clis` - set up a machine
 
-- **Say:** `/bootstrap-clis` / `/nerd4rent:bootstrap-clis`, or just let a skill fail because a CLI is missing.
-- **What happens:** every dependency from the table above is probed, installed, or updated (with checksum verification for downloads). Authentication is never done for you - the skill ends with the exact steps you need to run yourself.
+- **Say:** `/bootstrap-clis` / `/nerd4rent:bootstrap-clis`. Optional: a skill that needs a missing CLI (for example `issue-writer` after you pick GitHub) will offer that one tool itself.
+- **What happens:** the skill lists the tools from the requirements table and you multi-select which to install. Only those are probed and, after a yes, installed. You do not have to know this skill exists: another skill that hits a missing CLI asks a plain yes/no for that tool. Power users who want every entry use select-all or `scripts/bootstrap-clis.ts --all`. Authentication is never done for you - the skill ends with the exact steps you need to run yourself.
 
 ### `nerd-orchestrate` - plan the unplanned issues and offer AIM
 

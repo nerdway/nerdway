@@ -313,7 +313,7 @@ const mapped = await parallel(
         `${diffInstruction}\n\n` +
         `Stay strictly on your axis — the other three are covered by other reviewers. ` +
         `Return an empty findings list rather than padding with weak findings.`,
-      { label: `map:${axisId}`, phase: 'Map', schema: findingListShape, agentType: 'nerd4rent:review-mapper' },
+      { label: `map:${axisId}`, phase: 'Map', schema: findingListShape, agentType: 'nerdway:review-mapper' },
     ),
   ),
 )
@@ -393,7 +393,7 @@ for (let start = 0; start < pairs.length; start += BATCH) {
           `Check the claim against the actual diff and repo. Refute it if the defect is not real, ` +
           `not introduced by this change, not at the stated location, or the evidence does not hold. ` +
           `When genuinely uncertain, refute.`,
-        { label: `verify:${pair.findingIndex + 1}/${candidates.length} vote ${pair.voteIndex + 1}`, phase: 'Verify', schema: voteShape, agentType: 'nerd4rent:review-sceptic' },
+        { label: `verify:${pair.findingIndex + 1}/${candidates.length} vote ${pair.voteIndex + 1}`, phase: 'Verify', schema: voteShape, agentType: 'nerdway:review-sceptic' },
       ),
     ),
   )
@@ -469,7 +469,7 @@ if (collisions.length > 0) {
               },
               required: ['prevails', 'reason'],
             },
-            agentType: 'nerd4rent:review-judge',
+            agentType: 'nerdway:review-judge',
           },
         )
       }),
@@ -513,7 +513,7 @@ const synthesis = await agent(
     `Verified findings (the only ones that survived adversarial verification and, where axes collided, the judge):\n${JSON.stringify(findings, null, 2)}\n\n` +
     `Stats: ${JSON.stringify(stats)}\n\n` +
     `Do not restate the findings as a list — they travel separately. Judge readiness from their severity and the stats.`,
-  { label: 'synthesize:summary', phase: 'Synthesize', schema: summaryShape, agentType: 'nerd4rent:review-synthesizer' },
+  { label: 'synthesize:summary', phase: 'Synthesize', schema: summaryShape, agentType: 'nerdway:review-synthesizer' },
 )
 
 let summary

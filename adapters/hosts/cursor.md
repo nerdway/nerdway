@@ -9,7 +9,7 @@ as in 0.73.0. `auto-issue-mode` does not read this file.
 First match wins, same spirit as grill's ask-tool list. This file is selected
 when:
 
-1. `NERD4RENT_HOST` or `AGENT_HOST` is `cursor`; or
+1. `NERDWAY_HOST` or `AGENT_HOST` is `cursor`; or
 2. no earlier host matched, and the session's tool list includes
    `AskQuestion` or the ask-question tool; or
 3. no earlier host matched, and `CURSOR_TRACE_ID` or `CURSOR_AGENT` is set.

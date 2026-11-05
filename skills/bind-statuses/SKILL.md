@@ -183,7 +183,7 @@ Running the skill twice with the same answers must leave `git diff` empty.
 
 **Entity page** — only when the vault is reachable (`tier=file`) and the page
 exists: set `platform.statuses` (and `platform.ado`'s three keys) in the frontmatter to the same object,
-following `nerd4rent:nerdbrain-wiki` (filesystem only, `updated:` bump, one
+following `nerdway:nerdbrain-wiki` (filesystem only, `updated:` bump, one
 `log.md` line). Nothing else on the page changes. Skip silently otherwise.
 
 ## Step 7 — Validate
@@ -218,8 +218,8 @@ only with Third-Party Imports on.
 
 ## Related skills
 
-- `nerd4rent:determine-platform` — chains here once the platform is recorded.
-- `nerd4rent:issue-workflow`, `nerd4rent:issue-start`, `nerd4rent:issue-close`,
-  `nerd4rent:project-continue` — read and write phases through the strategy
+- `nerdway:determine-platform` — chains here once the platform is recorded.
+- `nerdway:issue-workflow`, `nerdway:issue-start`, `nerdway:issue-close`,
+  `nerdway:project-continue` — read and write phases through the strategy
   this skill binds.
-- `nerd4rent:nerdbrain-wiki` — the write procedure for the entity-page mirror.
+- `nerdway:nerdbrain-wiki` — the write procedure for the entity-page mirror.

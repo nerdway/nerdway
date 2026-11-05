@@ -4,7 +4,7 @@ Open-source skills for Claude Code, Cursor, and other coding agents that take a 
 
 You describe the work in Linear, GitHub Issues, GitLab Issues, or Azure DevOps Boards. The plugin plans from that issue, implements after you move it to In Progress, reviews the change, and merges when you say so. The repository stays code; the spec and the plan live on the tracker.
 
-The public project, the plugin, and the marketplace listing all use the id `nerdway`. Slash commands still use the `/nerd4rent:` prefix. If you already installed `nerd4rent@nerd4rent-claude-plugin`, remove that marketplace and install `nerdway` with the commands below.
+The public project, the plugin, and the marketplace listing all use the id `nerdway`. Slash commands still use the `/nerdway:` prefix. If you already installed `nerd4rent@nerd4rent-claude-plugin`, remove that marketplace and install `nerdway` with the commands below.
 
 ## Install
 
@@ -136,12 +136,12 @@ The [User Guide](docs/USER-GUIDE.md#a-day-with-the-plugin) follows one feature t
 Other starting points:
 
 - A new repo from an empty directory: say *"start a new project"* ([`new-project-workflow`](skills/new-project-workflow/SKILL.md)).
-- One issue, unattended after you approve the draft: `/nerd4rent:auto-issue-mode` plus a description or an existing ID ([`auto-issue-mode`](skills/auto-issue-mode/SKILL.md)).
+- One issue, unattended after you approve the draft: `/nerdway:auto-issue-mode` plus a description or an existing ID ([`auto-issue-mode`](skills/auto-issue-mode/SKILL.md)).
 - "What's next for this issue?": type the ID with that intent ([`issue-next-step`](skills/issue-next-step/SKILL.md)).
 
 ## Skills
 
-Twenty skills ship in `skills/`. Invoke one with `/<name>` or `/nerd4rent:<name>`.
+Twenty skills ship in `skills/`. Invoke one with `/<name>` or `/nerdway:<name>`.
 
 ### Workflow
 

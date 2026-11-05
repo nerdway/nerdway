@@ -58,7 +58,7 @@
 
 **Mode:**
 
-<!-- TDD runs nerd4rent:tdd; no tests is a plain implementation backed by the
+<!-- TDD runs nerdway:tdd; no tests is a plain implementation backed by the
      reason below. -->
 
 <!-- one of: TDD | no tests -->

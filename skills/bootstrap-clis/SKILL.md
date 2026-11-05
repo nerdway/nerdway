@@ -4,7 +4,7 @@ description: >-
   Install only the CLIs the user picks, or the one CLI another skill is missing.
   Default /bootstrap-clis lists the tools in cli-dependencies.json and uses a
   multi-select; a skill that needs a missing tracker or VCS CLI suggests that
-  one tool and asks yes/no. Use for `/bootstrap-clis` / `/nerd4rent:bootstrap-clis`,
+  one tool and asks yes/no. Use for `/bootstrap-clis` / `/nerdway:bootstrap-clis`,
   when a command like `gh` or `linearis` is missing, or when a power user wants
   a full reconcile with `--all`.
 ---

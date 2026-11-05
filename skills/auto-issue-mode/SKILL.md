@@ -73,10 +73,10 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/vcs/<vcs>.md
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory.
 
-Resolve the platform exactly as `nerd4rent:issue-writer` step 1 does (repo
+Resolve the platform exactly as `nerdway:issue-writer` step 1 does (repo
 `CLAUDE.md` `## Platform`, read from disk as
 `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes → entity page
-`platform:` / legacy `linear:` → `nerd4rent:determine-platform`), and the status strategy and map as
+`platform:` / legacy `linear:` → `nerdway:determine-platform`), and the status strategy and map as
 `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` describes. A missing adapter file
 is a stop condition. Hand every subagent the same resolved block:
 
@@ -94,7 +94,7 @@ the tracker adapter's `## Issue ID` section gives.
 
 ### A. Task description — create the issue
 
-Follow `nerd4rent:issue-writer` steps 1, 4 and 5 with these fixed choices:
+Follow `nerdway:issue-writer` steps 1, 4 and 5 with these fixed choices:
 
 - no interview and no grilling session: draft from the description, and
   resolve gaps by reading the repo yourself;
@@ -133,13 +133,13 @@ number that proves it — before dispatching the next.
 1. **Start.** Only after a comment starting with `## Implementation plan` is
    already on the issue. Write phase `in-progress` with `issue.set-status`
    (AIM autonomy — do not ask the user to move the status), then run
-   `nerd4rent:issue-start` with the ID and a one-paragraph summary from the
+   `nerdway:issue-start` with the ID and a one-paragraph summary from the
    issue's objective. Report: branch, PR/MR URL. If the plan comment is
    missing, this stage does not run — go to stage 2.
 2. **Plan.** Draft the implementation plan from the issue following
    `issue-workflow/plan-template.md` (banner and guidance comments removed; the
    body starts with `## Implementation plan`). For context use
-   `nerd4rent:plan-context-fanout` when the `Workflow` tool is available to the
+   `nerdway:plan-context-fanout` when the `Workflow` tool is available to the
    subagent, otherwise `issue-workflow`'s sequential steps 0 and 0b. The
    description is the spec and is not refined here (that needs the user); a
    criterion without a check gets one in the plan. The plan lists its
@@ -155,14 +155,14 @@ number that proves it — before dispatching the next.
    link.
 3. **Implementation.** Read the plan comment with `issue.read` and implement
    against it on the issue branch, in the mode its **Test approach** sets,
-   without asking: `TDD` follows `nerd4rent:tdd` against the listed seams;
+   without asking: `TDD` follows `nerdway:tdd` against the listed seams;
    `no tests` is a plain implementation that runs the stand-in check the
    reason names; a plan without a test approach is implemented with TDD and
    the assumption is reported. Run the repo's tests and validators
    **before** touching code (baseline) and after; commit atomically per the
    repo's conventions (`CLAUDE.md`, `CONTEXT.md`, the entity page); push.
    Tests or validators red after the implementation, with no cause the
-   subagent can name, go through `nerd4rent:debug` (`issue: <ID>`) before the
+   subagent can name, go through `nerdway:debug` (`issue: <ID>`) before the
    run declares its red-tests stop: the stop fires only after the skill's
    three failed fixes, and its report of hypotheses and evidence is the stop
    report.
@@ -182,7 +182,7 @@ number that proves it — before dispatching the next.
    `review-verify` exactly as `issue-workflow`'s **Code review phase** does,
    on the range `<base>...<issue branch>` (the PR/MR base, else `main`),
    without the range confirmation: invoking this skill is the user's consent.
-   With `Workflow`, call `nerd4rent:review-verify`; without it, run the `Task`
+   With `Workflow`, call `nerdway:review-verify`; without it, run the `Task`
    path stage by stage with `node scripts/island-reduce.ts review`. Keep its
    `ReviewFindings` (`summary`, `findings`, `stats`, `conflicts`) and its
    `gaps` verbatim. Only with neither tool, the subagent runs
@@ -212,12 +212,12 @@ number that proves it — before dispatching the next.
    entity page). If this run has not done that yet, write it first — the same
    step as `issue-workflow`'s Session summary, with the pre-merge branch and
    HEAD. A Session summary comment alone is not enough. Then run
-   `nerd4rent:nerd-personal-docs` with the ID and
+   `nerdway:nerd-personal-docs` with the ID and
    platform: this subagent runs on the session model, so the guide is not
    written on `issue-close`'s Haiku. It writes or updates the user's guide in
    the nerdbrain vault and records a `## Personal guide` comment on the
    issue, or says the machine has no vault. Then run
-   `nerd4rent:issue-close` with the ID and platform (its Step 0 checks the
+   `nerdway:issue-close` with the ID and platform (its Step 0 checks the
    guide, its Step 0b that every child of the issue is `done` and its
    Step 0c that stage 4 replaced the start draft of the PR/MR description;
    then it
@@ -229,7 +229,7 @@ number that proves it — before dispatching the next.
    written), merge commit (short), base branch.
 6. **Nerdbrain.** Dispatched only after stage 5's report arrives, so it knows
    the merge; its prompt carries stage 5's merge commit and base branch. It
-   makes one logical wiki write with `nerd4rent:nerdbrain-wiki` (one
+   makes one logical wiki write with `nerdway:nerdbrain-wiki` (one
    `updated:` bump, one `log.md` line, as `issue-workflow`'s session-summary
    step does) that holds two things:
    - the write triggers of the user's global `CLAUDE.md`, applied to the
@@ -281,7 +281,7 @@ Stop the run, never force it, when:
 - the spec turns out wrong and would have to change — a spec change needs
   the user's acceptance, which the run cannot ask for;
 - a criterion stays `fail` after stage 3 and its subagent could not fix it;
-- tests are red after stage 3 or stage 4 and `nerd4rent:debug`, run by the
+- tests are red after stage 3 or stage 4 and `nerdway:debug`, run by the
   stage's subagent, stopped after three failed fixes;
 - the merge has a conflict or a branch policy blocks it;
 - a permission or classifier denial blocks a tool a stage needs;
@@ -289,7 +289,7 @@ Stop the run, never force it, when:
   work (entry B).
 
 On a stop, report what is done, what is pending, the exact error, and how to
-resume: fix the cause, then run `/nerd4rent:auto-issue-mode <ID>` — entry B
+resume: fix the cause, then run `/nerdway:auto-issue-mode <ID>` — entry B
 picks the run up from the issue's phase.
 
 ## Final report
@@ -302,18 +302,18 @@ checkpoint line stage 6 wrote (or why none was).
 
 ## Related skills
 
-- `nerd4rent:issue-writer` — the creation flow entry A runs without grilling.
-- `nerd4rent:issue-workflow` — the human-steered flow whose status gate this
+- `nerdway:issue-writer` — the creation flow entry A runs without grilling.
+- `nerdway:issue-workflow` — the human-steered flow whose status gate this
   mode suspends for the run; its plan template and its review island
   (`review-verify`) are reused here.
-- `nerd4rent:issue-start` / `nerd4rent:issue-close` — the chains of stages 1
+- `nerdway:issue-start` / `nerdway:issue-close` — the chains of stages 1
   and 5.
-- `nerd4rent:plan-context-fanout` — optional context island for stage 2.
-- `nerd4rent:tdd` — the implementation loop of stage 3 under `mode: TDD`.
-- `nerd4rent:debug` — the cause-finding loop stage 3 runs on red tests before
+- `nerdway:plan-context-fanout` — optional context island for stage 2.
+- `nerdway:tdd` — the implementation loop of stage 3 under `mode: TDD`.
+- `nerdway:debug` — the cause-finding loop stage 3 runs on red tests before
   the red-tests stop condition fires.
-- `nerd4rent:nerdbrain-wiki` — the write path of stage 6, checkpoint included.
-- `nerd4rent:issue-next-step` — may start a run at entry B for an issue ID
+- `nerdway:nerdbrain-wiki` — the write path of stage 6, checkpoint included.
+- `nerdway:issue-next-step` — may start a run at entry B for an issue ID
   once the user picks the autonomous mode in chat.
-- `nerd4rent:nerd-orchestrate` — may start a run at entry B for each
+- `nerdway:nerd-orchestrate` — may start a run at entry B for each
   unplanned issue the user approved after its plan was posted.

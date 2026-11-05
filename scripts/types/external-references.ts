@@ -27,7 +27,7 @@ export function externalReferenceErrors(files: SourceFile[]): string[] {
     if (isExempt(file.path)) continue;
     file.source.split("\n").forEach((line, index) => {
       for (const match of line.matchAll(EXTERNAL_SKILL_CALL)) {
-        errors.push(`${file.path}:${index + 1}: calls the external skill \`${match[0]}\` — the plugin ships its own practices, so name a \`nerd4rent:\` skill or describe the step inline`);
+        errors.push(`${file.path}:${index + 1}: calls the external skill \`${match[0]}\` — the plugin ships its own practices, so name a \`nerdway:\` skill or describe the step inline`);
       }
     });
   }

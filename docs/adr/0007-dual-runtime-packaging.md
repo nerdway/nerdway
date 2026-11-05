@@ -11,7 +11,7 @@ We keep **two runtime manifests, one `skills/` and one `agents/`**:
 
 | Runtime | Manifest | Loads |
 |---------|----------|-------|
-| Claude Code | `.claude-plugin/plugin.json` + `marketplace.json` | skills, agents, `workflows/*.js` islands, `/nerd4rent:` slashes |
+| Claude Code | `.claude-plugin/plugin.json` + `marketplace.json` | skills, agents, `workflows/*.js` islands, `/nerdway:` slashes |
 | Cursor | `.cursor-plugin/plugin.json` | `skills/`, `agents/`, `hooks/cursor.hooks.json` |
 
 **Claude Code must never see a file in another runtime's format.** Claude
@@ -87,7 +87,7 @@ directly (DEMO-394). The detection itself is pure functions in
 The check answers two questions before a session works on the skills: is
 the installed plugin older than `main` (the raw `.claude-plugin/plugin.json`
 of `main`, fetched with a 3 second timeout and cached for 24 hours in
-`CLAUDE_PLUGIN_DATA`, else `~/.cache/nerd4rent`), and do stale copies of the
+`CLAUDE_PLUGIN_DATA`, else `~/.cache/nerdway`), and do stale copies of the
 plugin's skills sit in the user's skill directories (`~/.claude/skills`,
 `~/.cursor/skills`, `~/.agents/skills` and the same three under the project;
 a copy is a `SKILL.md` whose `name` is a historical plugin skill name, or a
@@ -116,8 +116,8 @@ silent there. Missing `node` in the hook's PATH exits silently too.
 The isolation guard in `scripts/validate-manifests.ts` changed in the same
 PR: `hooks/hooks.json` is accepted when it has Claude Code's shape and still
 rejected in Cursor's shape (`version: 1`, camelCase events); a root
-`plugin.json` stays forbidden. Only `NERD4RENT_MAIN_VERSION`,
-`NERD4RENT_SKILL_DIRS` and `NERD4RENT_CACHE_DIR` override the check, for the
+`plugin.json` stays forbidden. Only `NERDWAY_MAIN_VERSION`,
+`NERDWAY_SKILL_DIRS` and `NERDWAY_CACHE_DIR` override the check, for the
 acceptance runs; there is no kill switch. The one risk is the claude.ai
 sync: it rejected unknown hook events in DEMO-364, and a `SessionStart` entry
 in Claude Code's format has not been through it before 0.55.0. If it fails,
@@ -224,7 +224,7 @@ model IDs are not substituted in.
   description identical in all four manifests.
 - `.claude-plugin/` is edited only for that lockstep version and the
   shared plugin description. Islands
-  (`workflows/*.js`) and `/nerd4rent:` slashes stay Claude Code's runtime.
+  (`workflows/*.js`) and `/nerdway:` slashes stay Claude Code's runtime.
 - Cursor `sessionStart` is fire-and-forget; the inject may arrive after
   the first turn. Skills already know to `Read` the entity page from disk
   when the inject is missing (nerdbrain-wiki lazy-section contract).

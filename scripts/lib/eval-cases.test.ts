@@ -104,9 +104,9 @@ test("a skill-fired grader checks that the skill under test was invoked", () => 
   assert.equal(fields.type, "tool_used");
   assert.equal(fields.tool, "Skill");
   const pattern = new RegExp(String(fields.input_match));
-  assert.ok(pattern.test('{"skill":"nerd4rent:issue-close"}'));
+  assert.ok(pattern.test('{"skill":"nerdway:issue-close"}'));
   assert.ok(pattern.test('{"skill": "issue-close"}'));
-  assert.equal(pattern.test('{"skill":"nerd4rent:issue-close-extra"}'), false);
+  assert.equal(pattern.test('{"skill":"nerdway:issue-close-extra"}'), false);
 });
 
 test("an eval without expected output gets no outcome grader", () => {

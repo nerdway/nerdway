@@ -23,7 +23,7 @@ description: >-
 
 The first step after accepting a task is an issue in the tracker, and its
 number in your reply, before any work starts. Find the issue the task belongs
-to or create it with `nerd4rent:issue-writer`, tell the user its ID, and only
+to or create it with `nerdway:issue-writer`, tell the user its ID, and only
 then plan, edit or run anything that changes the repo. Questions, analysis and
 reading code need no issue.
 
@@ -31,7 +31,7 @@ This rule binds every agent that reads this skill, including bots that run no
 hooks: for them nothing else checks it. Where the plugin's hooks run (Claude
 Code, Cursor), a repo with a configured tracker gets a reminder at the start
 of work, and `git commit` and `git push` are blocked on a branch whose name
-carries no issue ID; `NERD4RENT_NO_ISSUE=1` in the agent's environment turns
+carries no issue ID; `NERDWAY_NO_ISSUE=1` in the agent's environment turns
 both off. A push of tags only (`git push origin <tag>`, `git push --tags`)
 always passes, and a `feature/` or `hotfix/` branch needs no issue ID for
 commit or push.
@@ -57,7 +57,7 @@ Pick `<tracker>` and `<vcs>` from the first source that has them:
 2. the entity page frontmatter `platform:` — a legacy `linear:` block there
    means `tracker: linear`, with `vcs` detected from `git remote get-url
    origin` by the `## Detection` rules of the VCS adapters;
-3. neither → invoke `nerd4rent:determine-platform` and take the platform from
+3. neither → invoke `nerdway:determine-platform` and take the platform from
    its output.
 
 No adapter file for the value → stop and report: "adapter
@@ -94,14 +94,14 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/hosts/<host>.md
 
 `<host>` is `grok-bot`, `claude-code` or `cursor`. Run `host.detect` (below)
 then the operation the phase needs — today only `post-plan.after-plan`.
-`nerd4rent:auto-issue-mode` does not read this axis.
+`nerdway:auto-issue-mode` does not read this axis.
 
 ### Host detect
 
 First match wins, same spirit as grill's ask-tool list. Look at this
 session's environment and tool list; do not read the platform config.
 
-1. `NERD4RENT_HOST` or `AGENT_HOST` if it is `grok-bot`, `claude-code` or
+1. `NERDWAY_HOST` or `AGENT_HOST` if it is `grok-bot`, `claude-code` or
    `cursor`
 2. `grok-bot` — `SendToUser` (or `send_to_user`) in the tool list, or
    `GROK_BOT` set
@@ -177,7 +177,7 @@ implement approval). A bare issue ID is not that command.
      `implement <ID>`, a clear approval to Start / implement) **and** the
      plan comment already exists — then write `in-progress` and continue
      Start → impl; do not wait for a manual status click;
-   - the agent is running via **`nerd4rent:auto-issue-mode`** and the plan
+   - the agent is running via **`nerdway:auto-issue-mode`** and the plan
      comment already exists (AIM autonomy).
    A bare issue ID or a planning-only prompt is not an implement command:
    post or refine the plan, write `todo`, then run `post-plan.after-plan`
@@ -219,7 +219,7 @@ marker is in those comments), then:
 | `in-progress`, plan comment present | **Implementation** — rebuild context from the description (the spec), the `## Implementation plan` comment and later comments (`## Spec change`, plan extensions); if branch/PR missing, run the Start step first |
 | `in-review` | **Code review** — present the code-review menu with the issue link (`issue.url`) |
 | `done` (set manually, PR unmerged) | **Close-out** — the user's guide (`nerd-personal-docs`), then push, merge PR, ask about switching to main/master |
-| `done`, no PR, no trace of work | **Warning and bug proposal** — the rule *A done issue without a trace of work* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`: report it with the issue link (`issue.url`), offer to draft the bug with `nerd4rent:issue-writer`, and stop; never a comment alone, never a phase change |
+| `done`, no PR, no trace of work | **Warning and bug proposal** — the rule *A done issue without a trace of work* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`: report it with the issue link (`issue.url`), offer to draft the bug with `nerdway:issue-writer`, and stop; never a comment alone, never a phase change |
 | unknown | report the raw value read from the tracker with the issue link (`issue.url`) and stop |
 
 This table also governs a bare issue ID typed into a **fresh session**: check
@@ -233,8 +233,8 @@ Planning first even from `in-progress`.
 
 When the `Workflow` tool is available, gather the planning context through the
 island instead of reading sequentially: run `workflows/plan-context-fanout.js`
-(as `/plan-context-fanout` / `/nerd4rent:plan-context-fanout`, or directly via
-`Workflow({name: "nerd4rent:plan-context-fanout", args: {issueId: "<ID>", spec: <IssueSpec>, platform: <platform>}})`
+(as `/plan-context-fanout` / `/nerdway:plan-context-fanout`, or directly via
+`Workflow({name: "nerdway:plan-context-fanout", args: {issueId: "<ID>", spec: <IssueSpec>, platform: <platform>}})`
 — pass `args` as a real JSON object, never as a JSON-encoded string). One
 script realises both contract nodes (`wiki-recall` + `plan-context-fanout`):
 five gatherers run concurrently, a deterministic reducer (plain code, not an
@@ -363,7 +363,7 @@ that stands in for a test — a change with no behaviour to drive, such as pure
 prose. The user approves the mode together with the plan; step 5 reads it.
 
 An issue labelled **Bug** (the label is in the `issue.read` JSON) is planned
-around `nerd4rent:debug`: the first implementation step is its feedback loop
+around `nerdway:debug`: the first implementation step is its feedback loop
 (one command, already run, red on this bug), the regression test for the
 confirmed cause is the first red of `tdd`, and the fix comes after both. The
 plan says so in Implementation Steps; the test approach stays `TDD`.
@@ -374,7 +374,7 @@ plan says so in Implementation Steps; the test approach stays `TDD`.
 the file. Filling them stays prose — no step in this skill asks anyone for JSON.
 
 For ambiguous requirements, run the **grilling session** of 1a through
-`nerd4rent:grill` before posting the plan. The skill says the size of the
+`nerdway:grill` before posting the plan. The skill says the size of the
 issue out loud first; a small, clear issue gets no interview — go straight to
 the plan.
 
@@ -383,7 +383,7 @@ than duplicating it.
 
 ### 1a. Grilling session (adaptive, before the plan is posted)
 
-Invoke **`nerd4rent:grill`** with the two argument lines `issue: <ID>` and
+Invoke **`nerdway:grill`** with the two argument lines `issue: <ID>` and
 `topic: the issue description`. The skill announces the size, checks facts in
 the repo itself, asks the decisions one question per turn, each as a menu of
 options with a recommended one, and records a `## Grill state` comment on the
@@ -421,7 +421,7 @@ with, and mark any deviation as `Odstępstwo od decyzji YYYY-MM-DD — powód`.
 ### 3. End the turn
 
 If this turn posted the plan because it was missing, the phase is `todo`.
-On **`nerd4rent:auto-issue-mode`**, skip the hosts axis: write
+On **`nerdway:auto-issue-mode`**, skip the hosts axis: write
 `in-progress` with `issue.set-status` (AIM autonomy) and continue Start —
 do not ask. Otherwise run `host.detect`, read
 `${CLAUDE_PLUGIN_ROOT}/adapters/hosts/<host>.md`, and run
@@ -464,13 +464,13 @@ invoke `nerdbrain-wiki` to append/update the superseding decision under
 
 The mechanical part of Start — branch from the issue's native `branchName`,
 empty start commit, push with upstream, draft PR/MR carrying the `Fixes <ID>`
-magic word — is the **`nerd4rent:issue-start`** chain (Haiku), the mirror of
+magic word — is the **`nerdway:issue-start`** chain (Haiku), the mirror of
 `issue-close` at the other end of the issue. The chain asks no questions and
 requires a clean checkout on `main`/`master`, so settle the branch question
 here first:
 
 1. **Branch policy** — existing policy unchanged:
-   - On `main`/`master`: delegate — invoke `nerd4rent:issue-start` with
+   - On `main`/`master`: delegate — invoke `nerdway:issue-start` with
      `<ID>` and a one-paragraph summary for the PR body (from the plan's
      Objective). It reads `branchName` itself, creates the branch, makes the
      start commit, pushes, opens the draft PR/MR and reports the branch and
@@ -502,7 +502,7 @@ here first:
 There is no menu of implementation modes: the plan's **Test approach**,
 approved with the move to `in-progress`, already decided it.
 
-- `mode: TDD` → invoke `nerd4rent:tdd` and implement against the seams the
+- `mode: TDD` → invoke `nerdway:tdd` and implement against the seams the
   plan lists.
 - `mode: no tests` → implement plainly and run the stand-in check the plan's
   reason names. A `no tests` plan without a reason is not approved for
@@ -559,7 +559,7 @@ language, the marker — is defined once in the bundled
 
    It prints one word: `draft` (the start draft — the magic-word lines and at
    most one paragraph — or an empty description), `readiness` (a description
-   carrying the marker `<!-- nerd4rent:pr-body -->`), or `manual` (anything
+   carrying the marker `<!-- nerdway:pr-body -->`), or `manual` (anything
    else: someone changed the description by hand).
 3. **Overwrite only what the workflow wrote.** `draft` or `readiness` → run
    `pr.edit-body` with the file. `manual` → leave the description as it is,
@@ -605,7 +605,7 @@ an axis, and `/code-review` stays outside this flow.
 
 **Run the island.** With the `Workflow` tool available, run
 `workflows/review-verify.js` via
-`Workflow({name: "nerd4rent:review-verify", args: {issueId: "<ID>", request: {range: "..."}, platform: <platform>}})`
+`Workflow({name: "nerdway:review-verify", args: {issueId: "<ID>", request: {range: "..."}, platform: <platform>}})`
 — `args` as a real JSON object, never a JSON-encoded string. The island does:
 
 1. **Map** — one mapper per axis, all four concurrent, each confined to its
@@ -726,13 +726,13 @@ for this close-out.
    session posted `## Session summary` without that write, the session-summary
    step failed: stop, write the checkpoint (or name the skip), and only then
    continue. Do not treat the tracker comment as enough.
-2. **Guide for the user.** Invoke **`nerd4rent:nerd-personal-docs`** with the
+2. **Guide for the user.** Invoke **`nerdway:nerd-personal-docs`** with the
    issue ID and the resolved platform, here in the main session, so the guide
    is written on the session model and not on `issue-close`'s Haiku. It writes
    or updates the guide in the nerdbrain vault and records the outcome as a
    `## Personal guide` comment on the issue, or says the machine has no vault.
    If it stops with an error, stop and report; do not call `issue-close`.
-3. **Close.** Invoke **`nerd4rent:issue-close`** with the issue ID. Its
+3. **Close.** Invoke **`nerdway:issue-close`** with the issue ID. Its
    Step 0 checks the guide from step 1 and stops the close-out without it;
    its Step 0b stops it while any child of the issue is not `done`; its
    Step 0c stops it while the PR/MR description is still the start draft
@@ -819,34 +819,34 @@ session's last push.
 
 ## Related skills
 
-- `nerd4rent:issue-writer` — upstream: creates the issue (in Backlog)
+- `nerdway:issue-writer` — upstream: creates the issue (in Backlog)
   that this skill plans and implements.
-- `nerd4rent:issue-start` — the Start chain step 4 delegates to once the
+- `nerdway:issue-start` — the Start chain step 4 delegates to once the
   user has set `in-progress` (branch, start commit, push, draft PR/MR);
   mirror of `issue-close`.
-- `nerd4rent:bind-statuses` — binds the phases to the tracker (strategy and
+- `nerdway:bind-statuses` — binds the phases to the tracker (strategy and
   map) this skill reads and writes.
-- `nerd4rent:nerd-personal-docs` — the user's guide in nerdbrain, written in
+- `nerdway:nerd-personal-docs` — the user's guide in nerdbrain, written in
   the close-out before `issue-close`.
-- `nerd4rent:issue-close` — the close-out chain (commit, push, merge,
+- `nerdway:issue-close` — the close-out chain (commit, push, merge,
   switch to base, write `done`).
-- `nerd4rent:auto-issue-mode` — user-invoked autonomous run of the same
+- `nerdway:auto-issue-mode` — user-invoked autonomous run of the same
   lifecycle; the one place the agent writes `in-progress` itself.
-- `nerd4rent:issue-next-step` — diagnoses an issue's phase, names the next
+- `nerdway:issue-next-step` — diagnoses an issue's phase, names the next
   step and hands off here (or to `auto-issue-mode`) without retyping the ID;
   it may write `in-progress` after the user agrees in chat.
-- `nerd4rent:nerdbrain-search` — rg recipes underlying `nerdbrain-wiki`'s
+- `nerdway:nerdbrain-search` — rg recipes underlying `nerdbrain-wiki`'s
   Graph recall step (used by 0b above).
-- `nerd4rent:project-continue` — reads the checkpoint this skill writes and
+- `nerdway:project-continue` — reads the checkpoint this skill writes and
   answers "where were we" for the project; it hints at the issue ID to type
   here, never enters this workflow by itself.
-- `nerd4rent:nerd-orchestrate` — planning for every unplanned issue in a
+- `nerdway:nerd-orchestrate` — planning for every unplanned issue in a
   project, then a yes before `auto-issue-mode`; it runs this skill's
   Planning phase only and stops before `post-plan.after-plan`.
-- `nerd4rent:tdd` — the implementation loop step 5 hands off to under
+- `nerdway:tdd` — the implementation loop step 5 hands off to under
   `mode: TDD`.
-- `nerd4rent:debug` — the cause-finding loop an issue labelled Bug is planned
+- `nerdway:debug` — the cause-finding loop an issue labelled Bug is planned
   around (step 1); `tdd` hands an unexplained red to it during implementation.
-- `nerd4rent:grill` — the grilling session of step 1a (`issue: <ID>`); its
+- `nerdway:grill` — the grilling session of step 1a (`issue: <ID>`); its
   confirmed outcome feeds the spec refinement and the plan.
 - `gitlab-to-linear` / `simgit` — GitLab → Linear import (separate flow).

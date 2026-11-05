@@ -20,10 +20,10 @@
     {
       "id": "close-out-parent-with-open-child",
       "prompt": "DEMO-620 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-620` and asks to merge and close it. Its PR is green and approved, and the user's guide for it is already in nerdbrain. DEMO-620 has a sub-issue DEMO-621, which is still in Todo. issue.url gives https://linear.app/example/issue/DEMO-620, and https://linear.app/example/issue/DEMO-621 for the sub-issue.",
-      "expected_output": "The close-out runs nerd4rent:issue-close, whose children check stops on DEMO-621 before the merge. The agent reports that DEMO-620 cannot be closed while DEMO-621 is not done, lists DEMO-621 with its link, and does not merge the PR, set DEMO-620 to done or close DEMO-621 by any other route.",
+      "expected_output": "The close-out runs nerdway:issue-close, whose children check stops on DEMO-621 before the merge. The agent reports that DEMO-620 cannot be closed while DEMO-621 is not done, lists DEMO-621 with its link, and does not merge the PR, set DEMO-620 to done or close DEMO-621 by any other route.",
       "files": [],
       "assertions": [
-        "The agent delegates the close-out to nerd4rent:issue-close",
+        "The agent delegates the close-out to nerdway:issue-close",
         "The agent does not merge the PR",
         "The agent does not set DEMO-620 or DEMO-621 to done itself",
         "The report names DEMO-621 as the reason the close-out stopped"
@@ -32,12 +32,12 @@
     {
       "id": "readiness-description-replaces-start-draft",
       "prompt": "DEMO-630 is In Progress on Linear with VCS GitHub. The implementation is committed and pushed, and every row of the Criteria verification table is pass. The PR body is still the one issue-start wrote:\n\nFixes DEMO-630\n\nAdds retry to the export job.\n\nThe repo's merged PRs are written in Polish.",
-      "expected_output": "Before offering the review, the agent writes the readiness description from readiness-description-template.md in Polish, pipes pr.view through scripts/pr-body-state.ts, gets draft, and replaces the body with pr.edit-body. The new body opens with `Fixes DEMO-630`, has the why, what changed, scope, evidence table, merge risk sections, no After merge section without steps, ends with the `<!-- nerd4rent:pr-body -->` marker, and names DEMO-630 nowhere else.",
+      "expected_output": "Before offering the review, the agent writes the readiness description from readiness-description-template.md in Polish, pipes pr.view through scripts/pr-body-state.ts, gets draft, and replaces the body with pr.edit-body. The new body opens with `Fixes DEMO-630`, has the why, what changed, scope, evidence table, merge risk sections, no After merge section without steps, ends with the `<!-- nerdway:pr-body -->` marker, and names DEMO-630 nowhere else.",
       "files": [],
       "assertions": [
         "The agent runs scripts/pr-body-state.ts on the pr.view output before writing the body",
         "The agent replaces the body with pr.edit-body, not gh pr edit",
-        "The new body starts with `Fixes DEMO-630` and ends with `<!-- nerd4rent:pr-body -->`",
+        "The new body starts with `Fixes DEMO-630` and ends with `<!-- nerdway:pr-body -->`",
         "The evidence section is the criteria table without tracker links",
         "The merge risk section says whether the merge is a one-way or a two-way door and names the blast radius",
         "DEMO-630 appears only in the Fixes line"
@@ -45,7 +45,7 @@
     },
     {
       "id": "readiness-description-keeps-manual-body",
-      "prompt": "DEMO-631 is In Progress on Linear with VCS GitHub, every criterion is pass, and a teammate rewrote the PR body by hand: it has three paragraphs about the migration and no `<!-- nerd4rent:pr-body -->` marker.",
+      "prompt": "DEMO-631 is In Progress on Linear with VCS GitHub, every criterion is pass, and a teammate rewrote the PR body by hand: it has three paragraphs about the migration and no `<!-- nerdway:pr-body -->` marker.",
       "expected_output": "The classifier prints manual, so the agent leaves the PR body untouched, posts the readiness description with pr.comment, and tells the user the new version is a comment because the description was changed by hand.",
       "files": [],
       "assertions": [
@@ -82,14 +82,14 @@
     {
       "id": "dispatch-in-progress-starts",
       "prompt": "DEMO-651 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-651`. issue.read shows the issue In Progress with a `## Implementation plan` comment whose Test approach is TDD. There is no branch and no PR yet, and the local checkout is a clean `main`.",
-      "expected_output": "The phase is in-progress, so the agent implements: it rebuilds context from the description and the plan, runs the Start step by delegating to nerd4rent:issue-start with DEMO-651 and a one-paragraph summary (branch, empty start commit, push, draft PR with `Fixes DEMO-651`), then follows the plan's TDD test approach through nerd4rent:tdd. It does not re-plan.",
+      "expected_output": "The phase is in-progress, so the agent implements: it rebuilds context from the description and the plan, runs the Start step by delegating to nerdway:issue-start with DEMO-651 and a one-paragraph summary (branch, empty start commit, push, draft PR with `Fixes DEMO-651`), then follows the plan's TDD test approach through nerdway:tdd. It does not re-plan.",
       "files": [],
       "assertions": [
         "The agent dispatches on the in-progress phase and does not draft a new plan",
         "The existing `## Implementation plan` comment is what unlocks Start; the agent does not re-plan",
-        "The agent delegates the Start step to nerd4rent:issue-start because there is no branch or PR",
+        "The agent delegates the Start step to nerdway:issue-start because there is no branch or PR",
         "The draft PR body starts with `Fixes DEMO-651`",
-        "The agent implements with nerd4rent:tdd, as the plan's test approach says"
+        "The agent implements with nerdway:tdd, as the plan's test approach says"
       ]
     },
     {
@@ -107,12 +107,12 @@
     {
       "id": "dispatch-done-close-out",
       "prompt": "DEMO-653 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user moved DEMO-653 to Done on the tracker and types `DEMO-653`. Its PR is still open, green and reviewed.",
-      "expected_output": "Phase done with the PR unmerged means close-out: the agent first runs nerd4rent:nerd-personal-docs with the issue ID on the session model, then delegates to nerd4rent:issue-close, which checks the guide, the children and the PR description, merges with a merge commit and switches to the base branch.",
+      "expected_output": "Phase done with the PR unmerged means close-out: the agent first runs nerdway:nerd-personal-docs with the issue ID on the session model, then delegates to nerdway:issue-close, which checks the guide, the children and the PR description, merges with a merge commit and switches to the base branch.",
       "files": [],
       "assertions": [
         "The agent dispatches on the done phase to the close-out",
-        "The agent runs nerd4rent:nerd-personal-docs before nerd4rent:issue-close",
-        "The merge is delegated to nerd4rent:issue-close, not run directly"
+        "The agent runs nerdway:nerd-personal-docs before nerdway:issue-close",
+        "The merge is delegated to nerdway:issue-close, not run directly"
       ]
     },
     {
@@ -160,7 +160,7 @@
       "assertions": [
         "The agent reads the phase and the comments from the tracker before doing anything else",
         "The agent posts a comment starting with `## Implementation plan` and writes phase todo",
-        "The agent does not Start, does not delegate to nerd4rent:issue-start, and does not launch a CloudAgent",
+        "The agent does not Start, does not delegate to nerdway:issue-start, and does not launch a CloudAgent",
         "The agent makes no repo change: no branch, no file edit, no commit, no PR",
         "The agent asks the user to move the issue to In Progress and prints the issue link"
       ]
@@ -179,19 +179,19 @@
     },
     {
       "id": "aim-plan-then-set-in-progress-starts",
-      "prompt": "The user invoked `/nerd4rent:auto-issue-mode DEMO-659` (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read shows DEMO-659 in Todo with a comment starting with `## Implementation plan` whose Test approach is TDD. There is no branch and no PR. The local checkout is a clean `main`. The user is not asked anything after invocation.",
-      "expected_output": "This is the auto-issue-mode path: the plan comment already exists, so AIM writes phase in-progress with issue.set-status itself (AIM autonomy) and continues Start → impl without asking the user to move the status. It delegates Start to nerd4rent:issue-start with DEMO-659 and a one-paragraph summary, then implements with nerd4rent:tdd. It does not wait for a manual status flip and does not re-plan.",
+      "prompt": "The user invoked `/nerdway:auto-issue-mode DEMO-659` (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read shows DEMO-659 in Todo with a comment starting with `## Implementation plan` whose Test approach is TDD. There is no branch and no PR. The local checkout is a clean `main`. The user is not asked anything after invocation.",
+      "expected_output": "This is the auto-issue-mode path: the plan comment already exists, so AIM writes phase in-progress with issue.set-status itself (AIM autonomy) and continues Start → impl without asking the user to move the status. It delegates Start to nerdway:issue-start with DEMO-659 and a one-paragraph summary, then implements with nerdway:tdd. It does not wait for a manual status flip and does not re-plan.",
       "files": [],
       "assertions": [
         "The agent is on the auto-issue-mode path and does not ask the user to move the issue to In Progress",
         "The agent writes phase in-progress with issue.set-status because the `## Implementation plan` comment already exists",
-        "The agent then Starts (nerd4rent:issue-start) and implements; it does not wait for a manual status flip",
+        "The agent then Starts (nerdway:issue-start) and implements; it does not wait for a manual status flip",
         "The agent does not draft a second plan"
       ]
     },
     {
       "id": "aim-no-plan-no-start",
-      "prompt": "The user invoked `/nerd4rent:auto-issue-mode DEMO-660` and said \"zrób od razu\". issue.read shows DEMO-660 In Progress, a full description with acceptance criteria, no comment starting with `## Implementation plan`, no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-660.",
+      "prompt": "The user invoked `/nerdway:auto-issue-mode DEMO-660` and said \"zrób od razu\". issue.read shows DEMO-660 In Progress, a full description with acceptance criteria, no comment starting with `## Implementation plan`, no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-660.",
       "expected_output": "AIM hard-stops on the missing plan: it runs stage 2 (posts a comment starting with `## Implementation plan`) and does not Start, does not launch a CloudAgent, and edits no file until that comment exists. \"zrób od razu\" and the AC in the description do not waive the plan. After the comment is posted, AIM writes in-progress and may then continue Start — not before.",
       "files": [],
       "assertions": [
@@ -204,13 +204,13 @@
     {
       "id": "implement-command-with-plan-starts",
       "prompt": "The user types `zaimplementuj DEMO-661` (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read shows DEMO-661 in Todo with a comment starting with `## Implementation plan` whose Test approach is TDD. There is no branch and no PR. The local checkout is a clean `main`. issue.url gives https://linear.app/example/issue/DEMO-661.",
-      "expected_output": "The user gave an explicit implement command and the plan comment already exists, so the agent writes phase in-progress with issue.set-status itself and continues Start → impl. It does not ask the user to move the status. It delegates Start to nerd4rent:issue-start with DEMO-661 and a one-paragraph summary, then implements with nerd4rent:tdd.",
+      "expected_output": "The user gave an explicit implement command and the plan comment already exists, so the agent writes phase in-progress with issue.set-status itself and continues Start → impl. It does not ask the user to move the status. It delegates Start to nerdway:issue-start with DEMO-661 and a one-paragraph summary, then implements with nerdway:tdd.",
       "files": [],
       "assertions": [
         "The agent treats `zaimplementuj DEMO-661` as an explicit implement command",
         "The agent writes phase in-progress with issue.set-status because the `## Implementation plan` comment already exists",
         "The agent does not ask the user to move the issue to In Progress",
-        "The agent Starts (nerd4rent:issue-start) and implements"
+        "The agent Starts (nerdway:issue-start) and implements"
       ]
     },
     {
@@ -228,13 +228,13 @@
     {
       "id": "post-plan-grok-bot-implement-now",
       "prompt": "DEMO-670 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-670` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-670.\n\nThis session is Grok Bot: the tool list includes `SendToUser` (native host ask/widget). There is no AskUserQuestion tool. After you post the plan, treat the next widget result as **Implementuj teraz** and continue from there. The local checkout is a clean `main`.",
-      "expected_output": "The agent plans first, posts a comment starting with `## Implementation plan`, writes phase todo, then asks with the native SendToUser widget whose options are Implementuj teraz and Później. On Implementuj teraz it writes in-progress with issue.set-status and continues Start (nerd4rent:issue-start). It does not wait for a manual status click and does not ask with the statuses.md prose shape.",
+      "expected_output": "The agent plans first, posts a comment starting with `## Implementation plan`, writes phase todo, then asks with the native SendToUser widget whose options are Implementuj teraz and Później. On Implementuj teraz it writes in-progress with issue.set-status and continues Start (nerdway:issue-start). It does not wait for a manual status click and does not ask with the statuses.md prose shape.",
       "files": [],
       "assertions": [
         "The agent posts a comment starting with `## Implementation plan` and writes phase todo before any Start",
         "The agent asks with the native SendToUser widget (or equivalent host widget), not the statuses.md prose ask",
         "The widget options are Implementuj teraz and Później",
-        "On Implementuj teraz the agent writes phase in-progress with issue.set-status and Starts (nerd4rent:issue-start)",
+        "On Implementuj teraz the agent writes phase in-progress with issue.set-status and Starts (nerdway:issue-start)",
         "The agent does not ask the user to move the issue to In Progress by hand"
       ]
     },

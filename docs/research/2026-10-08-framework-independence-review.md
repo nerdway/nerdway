@@ -280,7 +280,7 @@ Goal: the skill loaded on every issue turn carries only what every turn needs.
 **P8. The grill skill, in rounds**
 Goal: one grilling protocol, the plugin's own, replacing the three inline copies and the `/grill-me` menu item.
 - `skills/grill/SKILL.md` asks in rounds over the decision tree (the frontier per round, numbered, a recommended answer each, "yes" accepts it), looks facts up itself, announces the size classification out loud, and ends on confirmed shared understanding, check: an eval with a three-decision topic finishes in at most two rounds.
-- `issue-writer`, `issue-workflow` 1a and `new-project-workflow` call `nerd4rent:grill`; the `/grill-me` and `/grill-with-docs` mentions are gone, check: `rg -n 'grill-me|grill-with-docs' skills` empty.
+- `issue-writer`, `issue-workflow` 1a and `new-project-workflow` call `nerdway:grill`; the `/grill-me` and `/grill-with-docs` mentions are gone, check: `rg -n 'grill-me|grill-with-docs' skills` empty.
 - Checkpointing of a session (decision of 2026-10-07) is designed in the plan: the carrier is a tracker comment when the issue exists and the chat otherwise, check: plan comment.
 
 **P9. Seam notes and review focus in the plan**

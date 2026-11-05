@@ -1,6 +1,6 @@
 ---
 name: new-project-workflow
-description: Bootstrap a new development project end-to-end — resolve the target directory, initialize git, scaffold README.md, create a GitHub repo via gh, create a matching Linear project, optionally record the project in a nerdbrain wiki, then route the user to a spec-creating skill of their choice. Use whenever the user wants to "start a new project", "bootstrap a project", "kick off a new repo", "set up a new project the nerd4rent way", or invokes /new-project-workflow / /nerd4rent:new-project-workflow. Also use proactively when the user is sitting in an empty or near-empty directory and signals they're about to begin fresh work (e.g. "let's build X", "new idea I want to start on"), even if they don't say "workflow" explicitly.
+description: Bootstrap a new development project end-to-end — resolve the target directory, initialize git, scaffold README.md, create a GitHub repo via gh, create a matching Linear project, optionally record the project in a nerdbrain wiki, then route the user to a spec-creating skill of their choice. Use whenever the user wants to "start a new project", "bootstrap a project", "kick off a new repo", "set up a new project the nerd4rent way", or invokes /new-project-workflow / /nerdway:new-project-workflow. Also use proactively when the user is sitting in an empty or near-empty directory and signals they're about to begin fresh work (e.g. "let's build X", "new idea I want to start on"), even if they don't say "workflow" explicitly.
 ---
 
 # new-project-workflow
@@ -48,7 +48,7 @@ The skill accepts an argument string with the following forms (all optional):
 | `--name=<name>` | Override the project name (otherwise = directory basename). |
 
 Examples:
-- `/new-project-workflow` / `/nerd4rent:new-project-workflow`
+- `/new-project-workflow` / `/nerdway:new-project-workflow`
 - `/new-project-workflow ~/src/my-thing`
 - `/new-project-workflow ~/src/my-thing --private`
 - `/new-project-workflow ~/src/scratch-1234 --name=cool-app --public`
@@ -217,7 +217,7 @@ Only run if inspection confirmed nerdbrain is reachable. Create `~/obsidian/nerd
 - `remote: <github-url>`
 - `local-paths: [{host: <hostname>, path: <absolute-path>}]`
 - `platform:` — the project's platform config, the same YAML object
-  `nerd4rent:determine-platform` writes:
+  `nerdway:determine-platform` writes:
   `{tracker: linear, vcs: github, linear: {team: <team>, project: <uuid-from-step-4.5>}, github: {owner: <owner>, repo: <name>}}`.
   Both Linear fields are REQUIRED; prefill them directly from step 4.5 (the
   project was just created or found there, so the UUID is known). With GitHub Issues write
@@ -229,7 +229,7 @@ Only run if inspection confirmed nerdbrain is reachable. Create `~/obsidian/nerd
   legacy `linear:` key.
 - `created` / `updated`: today
 
-Then append a one-liner to `5-wiki/index.md` under `## Projekty` and a log entry to `5-wiki/log.md`. Write the page, `index.md` and `log.md` through `nerd4rent:nerdbrain-wiki` (filesystem `Read`/`Edit`/`Write` on the vault path).
+Then append a one-liner to `5-wiki/index.md` under `## Projekty` and a log entry to `5-wiki/log.md`. Write the page, `index.md` and `log.md` through `nerdway:nerdbrain-wiki` (filesystem `Read`/`Edit`/`Write` on the vault path).
 
 If nerdbrain is *not* reachable (this is the common case for users installing the open-source plugin), this whole step is silently skipped — no error.
 
@@ -259,18 +259,18 @@ Do **not** hardcode the menu. The set of installed skills varies per user and gr
 
    Exclude: review skills (CEO/eng/design review), execution skills (implement-task, ship), debugging, and skills that operate on existing artifacts only.
 
-3. **Rank and present.** Item 1 is always **`nerd4rent:grill`** — the plugin's own interview, one question at a time, until shared understanding, always available. Below it, show the filtered external skills (**3–9 total**), most general-purpose first, domain-specific lower. Skills whose frontmatter carries `disable-model-invocation: true` may be listed for reference but mark them **(manual — user runs the slash command)**; the agent cannot invoke them. Format:
+3. **Rank and present.** Item 1 is always **`nerdway:grill`** — the plugin's own interview, one question at a time, until shared understanding, always available. Below it, show the filtered external skills (**3–9 total**), most general-purpose first, domain-specific lower. Skills whose frontmatter carries `disable-model-invocation: true` may be listed for reference but mark them **(manual — user runs the slash command)**; the agent cannot invoke them. Format:
 
    ```
    Pick a spec skill to drive the next step:
-     1. nerd4rent:grill — interview one question at a time until shared understanding
+     1. nerdway:grill — interview one question at a time until shared understanding
      2. /to-prd — turn current context into a PRD
      3. /office-hours — YC forcing questions + design brainstorm
      ...
    Pick [1-N] or 'skip':
    ```
 
-4. **Invoke the chosen skill.** Item 1 → invoke `nerd4rent:grill` with the two argument lines `issue: none` and `topic: the scaffolded README and the user's project idea`, via the Skill tool when that tool exists; if it does not (Cursor and other Agent Skills clients), `Read` `skills/grill/SKILL.md` under the plugin root and follow it — the same degradation as ADR-0003. Another agent-invocable skill → invoke it the same way (Skill tool, or `Read` its `SKILL.md`). Do not summarize what it will do — hand off or follow through. A manual-only wrapper → tell the user to type the slash command themselves; no Skill-tool handoff. `skip` → exit with the summary from Step 4.7.
+4. **Invoke the chosen skill.** Item 1 → invoke `nerdway:grill` with the two argument lines `issue: none` and `topic: the scaffolded README and the user's project idea`, via the Skill tool when that tool exists; if it does not (Cursor and other Agent Skills clients), `Read` `skills/grill/SKILL.md` under the plugin root and follow it — the same degradation as ADR-0003. Another agent-invocable skill → invoke it the same way (Skill tool, or `Read` its `SKILL.md`). Do not summarize what it will do — hand off or follow through. A manual-only wrapper → tell the user to type the slash command themselves; no Skill-tool handoff. `skip` → exit with the summary from Step 4.7.
 
 ### Why dynamic discovery
 
@@ -290,14 +290,14 @@ A hardcoded list rots within weeks: skills get renamed, new ones appear, the use
 | Linear project with same name already exists in team | Surface existing UUID; do not create duplicate. |
 | Nerdbrain vault not reachable | Silently skip step 4.6. This is normal for users without nerdbrain. |
 | User aborts at approval gate | Print "Cancelled. No changes made." Step 1 is read-only. |
-| No external spec-creating skills found in session | The menu always offers **`nerd4rent:grill`** as item 1; a wrapper marked manual-only can only be run by the user. |
+| No external spec-creating skills found in session | The menu always offers **`nerdway:grill`** as item 1; a wrapper marked manual-only can only be run by the user. |
 
 ## Examples
 
 **Example 1 — fresh directory, full happy path:**
 
 ```
-User: /nerd4rent:new-project-workflow ~/src/my-side-project --public
+User: /nerdway:new-project-workflow ~/src/my-side-project --public
 Claude: [inspects: empty dir, GitHub CLI authed, nerdbrain reachable]
         Linear teams:
           1. nerd4rent
@@ -308,7 +308,7 @@ Claude: [inspects: empty dir, GitHub CLI authed, nerdbrain reachable]
         [executes: git init, README "My Side Project", commit, GitHub, Linear, wiki]
         [shows spec skill menu]
         Pick [1-N]: 1
-        [invokes nerd4rent:grill]
+        [invokes nerdway:grill]
 ```
 
 **Example 2 — existing repo with README, GitHub repo also already created:**
@@ -335,7 +335,7 @@ Claude: [inspects: git repo on main with commits, README exists,
 **Example 3 — placeholder basename triggers name prompt:**
 
 ```
-User: /nerd4rent:new-project-workflow /tmp/scratch-1747569600
+User: /nerdway:new-project-workflow /tmp/scratch-1747569600
 Claude: The directory name 'scratch-1747569600' looks like a placeholder.
         This will be the public GitHub repo slug. Use this name, or pick a new one?
           1. Use 'scratch-1747569600' anyway

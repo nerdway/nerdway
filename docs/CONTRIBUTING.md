@@ -44,10 +44,10 @@ Check that every term of the `## Language` glossary in `CONTEXT.md` is used, as 
 node scripts/validate-context-terms.ts
 ```
 
-Run the session-start install check by hand, the way the hooks in `hooks/hooks.json` (Claude Code) and `hooks/cursor.hooks.json` (Cursor) run it. The three environment variables exist for this run only: `NERD4RENT_MAIN_VERSION` replaces the version fetched from `main` and skips the network, `NERD4RENT_SKILL_DIRS` replaces the scanned skill directories (colon-separated; empty scans nothing), `NERD4RENT_CACHE_DIR` moves the 24-hour cache. An installation that is current prints nothing:
+Run the session-start install check by hand, the way the hooks in `hooks/hooks.json` (Claude Code) and `hooks/cursor.hooks.json` (Cursor) run it. The three environment variables exist for this run only: `NERDWAY_MAIN_VERSION` replaces the version fetched from `main` and skips the network, `NERDWAY_SKILL_DIRS` replaces the scanned skill directories (colon-separated; empty scans nothing), `NERDWAY_CACHE_DIR` moves the 24-hour cache. An installation that is current prints nothing:
 
 ```bash
-echo '{"cwd":"'"$PWD"'"}' | NERD4RENT_MAIN_VERSION=9.9.9 NERD4RENT_SKILL_DIRS= node scripts/check-install.ts --runtime claude
+echo '{"cwd":"'"$PWD"'"}' | NERDWAY_MAIN_VERSION=9.9.9 NERDWAY_SKILL_DIRS= node scripts/check-install.ts --runtime claude
 ```
 
 Run the session-start nerdbrain inject by hand the same way. `NERDBRAIN_VAULT` points it at another vault directory (a missing one gives the `mcp` hint), `NERDBRAIN_INJECT_BUDGET` changes the byte budget, and `--runtime cursor` prints Cursor's envelope instead:

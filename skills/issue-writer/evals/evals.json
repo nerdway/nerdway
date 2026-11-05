@@ -51,7 +51,7 @@
         "The agent does not propose or create a new issue whose only purpose is implementing DEMO-466's grill decisions",
         "The agent does not offer a menu, widget or suggestion to create a follow-up implementation issue",
         "The drafted or updated body does not contain \"Out of scope: implementacja w osobnym issue\" or \"implementation in a separate issue\"",
-        "The handoff points at nerd4rent:issue-workflow for DEMO-466, not at issue-writer for a new implementation issue"
+        "The handoff points at nerdway:issue-workflow for DEMO-466, not at issue-writer for a new implementation issue"
       ]
     },
     {

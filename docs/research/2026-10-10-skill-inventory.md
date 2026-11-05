@@ -110,7 +110,7 @@ One fact from Cursor's skills page matters below: Cursor loads user-level skills
 
 ## 3. Lifecycle (table A)
 
-Verdicts: **have** (`nerd4rent:<skill>` covers it), **missing** (no owner in the plugin; the issue column names the fix), **thin overlay** (a plugin wrapper around a host built-in, never around another plugin, since ADR-0009 forbids that reference), **skip** (deliberately left out, reason given).
+Verdicts: **have** (`nerdway:<skill>` covers it), **missing** (no owner in the plugin; the issue column names the fix), **thin overlay** (a plugin wrapper around a host built-in, never around another plugin, since ADR-0009 forbids that reference), **skip** (deliberately left out, reason given).
 
 | Id | Phase | Practice | Sources | Verdict | Reason | Issue |
 |---|---|---|---|---|---|---|

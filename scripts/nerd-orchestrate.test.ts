@@ -40,7 +40,7 @@ test("nerd-orchestrate is model-invokable and catches PL/EN triggers", () => {
 
 test("nerd-orchestrate invokes project-continue read-only then filters unplanned issues", () => {
   const skill = compact(SKILL);
-  assert.match(skill, /nerd4rent:project-continue/);
+  assert.match(skill, /nerdway:project-continue/);
   assert.match(skill, /do not record a checkpoint unless/);
   assert.match(skill, /unplanned issue/);
   assert.match(skill, /first line is exactly/);
@@ -65,7 +65,7 @@ test("nerd-orchestrate always asks batch versus just-in-time, then asks before A
 test("nerd-orchestrate planning is issue-workflow Planning only", () => {
   const skill = compact(SKILL);
   assert.match(skill, /Planning phase only/);
-  assert.match(skill, /nerd4rent:issue-workflow/);
+  assert.match(skill, /nerdway:issue-workflow/);
   assert.match(skill, /write phase `todo`/);
   assert.match(skill, /Do not Start/);
   assert.match(skill, /Stop \*\*before\*\* `post-plan\.after-plan`/);

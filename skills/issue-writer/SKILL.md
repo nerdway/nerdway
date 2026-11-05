@@ -7,7 +7,7 @@ description: >-
   issue/zadanie", "create issue", "new task") and does NOT yet have an issue ID.
   Adaptively interviews for missing goals, drafts the issue, gates the tracker
   write on approval, creates the issue in the backlog phase, and offers an optional
-  grilling session, run through nerd4rent:grill, that can split the topic into
+  grilling session, run through nerdway:grill, that can split the topic into
   sub-issues. Distinct
   from issue-workflow (which plans/implements an EXISTING issue ID).
   Delegates to determine-platform when no platform is configured; tracker
@@ -17,7 +17,7 @@ description: >-
 # Issue writer
 
 Create well-formed tracker issues whose goals are specified clearly enough that
-`nerd4rent:issue-workflow` can plan implementation directly from them.
+`nerdway:issue-workflow` can plan implementation directly from them.
 
 ## Platform and adapters
 
@@ -42,7 +42,7 @@ task* and English *create / open / file / new issue / task*.
 
 **Disambiguation:** if the user gives an existing issue ID (`TEAM-123`, or
 `#123` / `owner/repo#123` on GitHub Issues, `#123` / `group/project#123` on
-GitLab Issues, `#123` / `AB#123` on Azure DevOps Boards) and asks to plan or implement it → that is `nerd4rent:issue-workflow`, not this skill. This skill
+GitLab Issues, `#123` / `AB#123` on Azure DevOps Boards) and asks to plan or implement it → that is `nerdway:issue-workflow`, not this skill. This skill
 *ends* by pointing at that one's status-driven flow.
 
 ## Hard gate (do not skip)
@@ -64,7 +64,7 @@ that has them:
    `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes, never from context;
 2. the entity page frontmatter `platform:` — a legacy `linear:` block there
    means `tracker: linear` with that `team` and `project`;
-3. neither → **invoke `nerd4rent:determine-platform`** and take the platform
+3. neither → **invoke `nerdway:determine-platform`** and take the platform
    from its output.
 
 No adapter file for the tracker → stop and report: "adapter
@@ -85,7 +85,7 @@ project questions, and confirm the repo instead.
 On Azure DevOps Boards (`tracker: ado`) the project is the container and the
 issue is a work item of type `ado.workItemType`, created on `ado.team`'s board:
 take all of them from the `ado` block and confirm project + type. When the
-block has no `workItemType`, stop and run `nerd4rent:bind-statuses` first — it
+block has no `workItemType`, stop and run `nerdway:bind-statuses` first — it
 picks the team, board and type — never guess a type. Sub-issues are the same
 type with a parent link, so they land on the same board.
 
@@ -108,7 +108,7 @@ because `jq` is missing, offer `--only jq` the same way.
 
 ### 2. Assess complexity (out loud)
 
-Invoke **`nerd4rent:grill`** with the two argument lines `issue: none` and
+Invoke **`nerdway:grill`** with the two argument lines `issue: none` and
 `topic: the user's request`. It says the size of the topic out loud before any
 question, so the user can override it, and the size picks the path:
 
@@ -217,12 +217,12 @@ the bug, no change of its phase.
 ### 6. Grilling session (optional)
 
 For a complex or still-fuzzy topic, ask the user: *Odpalić sesję grillowania
-dla tego issue?* If yes, invoke **`nerd4rent:grill`** with `issue: <ID>` (the
+dla tego issue?* If yes, invoke **`nerdway:grill`** with `issue: <ID>` (the
 issue step 5 created) and `topic: the created issue's body`; the skill records
 its state as comments on that issue, so the session can resume on another
 machine. After `Confirmed shared understanding: yes` with `issue: <ID>`,
 stay on `<ID>`: refine the spec (update the description) and point at
-`nerd4rent:issue-workflow` for the plan and implementation of those
+`nerdway:issue-workflow` for the plan and implementation of those
 decisions. No menu, widget or suggestion to "załóż follow-up na
 implementację" / "create an implementation issue". Handle the confirmed
 outcome:
@@ -258,19 +258,19 @@ ID for every `DEMO-123` below. Then point at the status-driven flow — do
 > sesji lub wiadomości, aby rozpocząć planowanie.*
 
 Planning, implementation, and review are driven by the issue's phase on the tracker in
-`nerd4rent:issue-workflow` — keep creation and planning as separate,
+`nerdway:issue-workflow` — keep creation and planning as separate,
 deliberate steps.
 
 ## Related skills
 
-- `nerd4rent:grill` — the interview of step 2 (`issue: none`) and the
+- `nerdway:grill` — the interview of step 2 (`issue: none`) and the
   optional session of step 6 (`issue: <ID>`); it announces the size and
   returns a confirmed outcome.
-- `nerd4rent:issue-workflow` — downstream: status-driven planning and
+- `nerdway:issue-workflow` — downstream: status-driven planning and
   implementation of an issue ID produced here.
-- `nerd4rent:determine-platform` — upstream: records the platform this skill
+- `nerdway:determine-platform` — upstream: records the platform this skill
   files issues on; invoked from step 1 when none is configured.
-- `nerd4rent:auto-issue-mode` — runs this skill's creation flow without
+- `nerdway:auto-issue-mode` — runs this skill's creation flow without
   grilling, then carries the issue autonomously to merge and done.
-- `nerd4rent:new-project-workflow` — bootstraps a whole project; routes to
+- `nerdway:new-project-workflow` — bootstraps a whole project; routes to
   spec-creating skills. This skill is the issue-level counterpart.

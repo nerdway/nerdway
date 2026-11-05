@@ -3,16 +3,16 @@ import { test } from "node:test";
 
 import { detectHost } from "./host-detect.ts";
 
-test("explicit NERD4RENT_HOST wins over tools", () => {
-  assert.equal(detectHost({ env: { NERD4RENT_HOST: "cursor" }, tools: ["SendToUser"] }), "cursor");
+test("explicit NERDWAY_HOST wins over tools", () => {
+  assert.equal(detectHost({ env: { NERDWAY_HOST: "cursor" }, tools: ["SendToUser"] }), "cursor");
 });
 
-test("explicit AGENT_HOST wins when NERD4RENT_HOST is absent", () => {
+test("explicit AGENT_HOST wins when NERDWAY_HOST is absent", () => {
   assert.equal(detectHost({ env: { AGENT_HOST: "grok-bot" }, tools: ["AskUserQuestion"] }), "grok-bot");
 });
 
 test("unknown explicit host is ignored", () => {
-  assert.equal(detectHost({ env: { NERD4RENT_HOST: "codex" }, tools: ["AskUserQuestion"] }), "claude-code");
+  assert.equal(detectHost({ env: { NERDWAY_HOST: "codex" }, tools: ["AskUserQuestion"] }), "claude-code");
 });
 
 test("SendToUser selects grok-bot", () => {

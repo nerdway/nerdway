@@ -49,13 +49,13 @@ function installedVersion(): string {
 }
 
 function cacheDir(): string {
-  if (process.env.NERD4RENT_CACHE_DIR) return process.env.NERD4RENT_CACHE_DIR;
+  if (process.env.NERDWAY_CACHE_DIR) return process.env.NERDWAY_CACHE_DIR;
   if (process.env.CLAUDE_PLUGIN_DATA) return process.env.CLAUDE_PLUGIN_DATA;
   return join(process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache"), "nerd4rent");
 }
 
 async function mainVersion(): Promise<string | null> {
-  const override = process.env.NERD4RENT_MAIN_VERSION;
+  const override = process.env.NERDWAY_MAIN_VERSION;
   if (override !== undefined) return override.length > 0 ? override : null;
 
   const cacheFile = join(cacheDir(), "main-version.json");
@@ -78,7 +78,7 @@ function rememberMainVersion(cacheFile: string, version: string, now: number): v
 }
 
 function skillDirs(project: string): string[] {
-  const override = process.env.NERD4RENT_SKILL_DIRS;
+  const override = process.env.NERDWAY_SKILL_DIRS;
   if (override !== undefined) return override.split(":").filter((dir) => dir.length > 0);
   const home = homedir();
   return [".claude", ".cursor", ".agents"].flatMap((dot) => [join(home, dot, "skills"), join(project, dot, "skills")]);

@@ -1,6 +1,6 @@
 # Grill asks one question per turn, as a menu
 
-`nerd4rent:grill` took from Matt Pocock's grilling the idea of asking every
+`nerdway:grill` took from Matt Pocock's grilling the idea of asking every
 question that can be answered now in one batch, numbered, each with a
 recommended answer on the same line, so a plain "tak" accepted the whole
 batch. It did not take the shape of his questions (a title, a body with the

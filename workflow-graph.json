@@ -520,7 +520,7 @@
               "mode": {
                 "type": "string",
                 "title": "Mode",
-                "description": "TDD runs nerd4rent:tdd; no tests is a plain implementation backed by the reason below.",
+                "description": "TDD runs nerdway:tdd; no tests is a plain implementation backed by the reason below.",
                 "enum": ["TDD", "no tests"]
               },
               "seams": {

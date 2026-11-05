@@ -458,7 +458,7 @@ Use in sessions, measured from what this machine keeps:
 
 A pattern is adopted only if all of these hold:
 
-1. It can be written from scratch as a `nerd4rent:` skill or a section of an
+1. It can be written from scratch as a `nerdway:` skill or a section of an
    existing one, with no dependency on another plugin or an external tool.
 2. It fits the five issue phases (backlog, todo, in-progress, in-review, done)
    and the existing human gate: only the user moves an issue to in-progress.

@@ -10,7 +10,7 @@ fallback when no host signal matched). After posting a plan, interactive
 First match wins, same spirit as grill's ask-tool list. This file is selected
 when:
 
-1. `NERD4RENT_HOST` or `AGENT_HOST` is `claude-code`; or
+1. `NERDWAY_HOST` or `AGENT_HOST` is `claude-code`; or
 2. no earlier host matched, and the session's tool list includes
    `AskUserQuestion`; or
 3. no earlier host matched, and `CLAUDE_CODE` or `CLAUDECODE` is set; or

@@ -33,7 +33,7 @@ Header: **AIM**. One sentence: the plan for `<ID>` is on the tracker
 (comment link). Two options:
 
 1. **Run auto-issue-mode for `<ID>`** (recommended) — start, implement,
-   review, merge. Same consent as `/nerd4rent:auto-issue-mode <ID>`.
+   review, merge. Same consent as `/nerdway:auto-issue-mode <ID>`.
 2. **Skip AIM for `<ID>`** — leave `todo` with the plan; continue.
 
 ## Worktree recipe (Claude Code and Cursor)

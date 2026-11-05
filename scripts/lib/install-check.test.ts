@@ -49,7 +49,7 @@ test("findStaleSkillCopies flags a current skill name only when the file mention
   const entries = [
     { path: "/home/u/.agents/skills/nerdbrain-wiki", text: skillMd("nerdbrain-wiki", "Write the nerdbrain entity page.") },
     { path: "/home/u/.agents/skills/tdd", text: skillMd("tdd", "Red, green, refactor.") },
-    { path: "/home/u/.agents/skills/issue-workflow", text: skillMd("issue-workflow", "Call nerd4rent:issue-start.") },
+    { path: "/home/u/.agents/skills/issue-workflow", text: skillMd("issue-workflow", "Call nerdway:issue-start.") },
   ];
   assert.deepEqual(findStaleSkillCopies(entries, CURRENT_SKILLS), [
     { kind: "stale-skill-copy", path: "/home/u/.agents/skills/nerdbrain-wiki", name: "nerdbrain-wiki" },

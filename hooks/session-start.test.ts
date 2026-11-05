@@ -110,7 +110,7 @@ test("slug comes from the slug file, else the remote, else the directory name", 
     rmSync(join(project, ".nerdbrain-slug"));
     writeFileSync(join(root, "aliases"), "github.com=gh\n");
     const fromRemote = contextOf(
-      renderSession(options(root, project, { gitRemote: () => "git@github.com:Nerdway/Plugin.git" })),
+      renderSession(options(root, project, { gitRemote: () => "git@github.com:nerdway/Plugin.git" })),
     );
     assert.equal(fromRemote.includes("slug: `gh-nerdway-plugin`"), true);
 

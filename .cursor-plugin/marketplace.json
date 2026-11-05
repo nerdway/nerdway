@@ -1,11 +1,11 @@
 {
   "name": "nerdway",
   "owner": {
-    "name": "Paweł Wlazło",
-    "email": "75803724+pawelwlazlo@users.noreply.github.com"
+    "name": "Paweł Wlazło"
   },
   "metadata": {
-    "description": "Nerdway open-source skills, agents and hooks for daily developer workflows (Cursor plugin marketplace)."
+    "description": "nerdway open-source skills, agents and hooks for daily developer workflows (Cursor plugin marketplace).",
+    "version": "0.77.0"
   },
   "plugins": [
     {

@@ -2,7 +2,7 @@
   "name": "nerdway",
   "displayName": "nerdway",
   "description": "Daily developer workflow automation — bootstrap new projects with git, GitHub, Linear, and spec-creating skills; write well-specified Linear issues and drive them through a status-driven plan-implement-review workflow; mechanically start an issue (branch, empty commit, draft PR/MR with the Fixes magic word) and close it out (commit, push, merge PR/MR, set Done); resume a project from its last nerdbrain checkpoint, verified against git and Linear; bootstrap the CLIs those skills require.",
-  "version": "0.76.0",
+  "version": "0.77.0",
   "author": {
     "name": "Paweł Wlazło"
   },

@@ -108,7 +108,10 @@ Those agents read global skills from `~/.agents/skills/` (Cursor also reads `~/.
 
 A typical issue, from idea to merged pull request, goes through [`issue-workflow`](skills/issue-workflow/SKILL.md). You steer by moving the issue on the tracker; the agent asks for that move and prints the issue link.
 
-1. Bring the CLIs from [Requirements](#requirements) up to date:
+1. Install the CLIs you need from [Requirements](#requirements). The command
+   lists the tools and you pick which ones to install. Skip this if you
+   prefer: a later skill that needs a missing CLI (for example `gh` for
+   GitHub Issues) will offer that one tool and ask yes or no.
 
    ```
    /bootstrap-clis
@@ -178,7 +181,7 @@ Twenty skills ship in `skills/`. Invoke one with `/<name>` or `/nerd4rent:<name>
 
 | Skill | What it does |
 |---|---|
-| [`bootstrap-clis`](skills/bootstrap-clis/SKILL.md) | Bring this machine to the CLI state the skills require: probe, install or update missing tools, and hand back only the authentication steps a human can complete. |
+| [`bootstrap-clis`](skills/bootstrap-clis/SKILL.md) | List the required CLIs and install only the ones you select. A skill that needs a missing tool offers that one install as a yes/no. Full reconcile is `--all`. |
 
 The [User Guide skills reference](docs/USER-GUIDE.md#skills-reference) lists trigger phrases and what happens for each skill.
 
@@ -199,7 +202,13 @@ These CLIs on your `PATH`:
 | `az` (Azure CLI) | 2.90 | Azure DevOps-hosted repos or Azure DevOps Boards |
 | `rg` (ripgrep) | 14 | search |
 
-You don't have to install the CLIs by hand. Once the plugin is installed, `/bootstrap-clis` probes every dependency, installs or updates what is missing, and hands you back only the authentication steps a human has to complete.
+You don't have to install the CLIs by hand. Once the plugin is installed,
+`/bootstrap-clis` lists the tools in the table and you multi-select which to
+install. A skill that needs a missing CLI asks yes or no for that one tool;
+you do not have to run `/bootstrap-clis` first. To probe and install every
+entry (a fresh full machine, or plugin development), pass `--all` to
+`scripts/bootstrap-clis.ts`. Authentication is never done for you: the skill
+hands back only the login steps a human has to complete.
 
 To authenticate `linearis`, create a personal API key in Linear under **Settings → Security & access → API → Personal API keys**, then either set it as the `LINEAR_API_TOKEN` environment variable or run `linearis auth login`. The key does not expire. Other CLIs use their usual login: `gh auth login`, `glab auth login`, `az login` or `az devops login`. After `az`, add the DevOps extension with `az extension add --name azure-devops`.
 

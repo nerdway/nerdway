@@ -187,7 +187,13 @@ Run `repo.create` from the VCS adapter with the project name and the chosen
 visibility (it creates the repo, wires `origin` and pushes).
 
 Failure paths:
-- GitHub CLI not installed → stop with: "Install `gh` (https://cli.github.com) and re-run." Earlier steps remain.
+- GitHub CLI not installed → say that creating the repo needs `gh` and ask
+  yes/no to install it. Yes →
+  `node ${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap-clis.ts --only gh`
+  (if `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
+  directories up from this skill's base directory). No → stop with the
+  printed `manualInstall` hint (or https://cli.github.com). Do not mention
+  `/bootstrap-clis` or install other CLIs. Earlier steps remain.
 - GitHub CLI not authenticated → stop with the adapter's `auth.check` message.
 - Repo already exists on GitHub but no local remote → don't recreate; instead `git remote add origin <existing-url>` and `git push -u origin main`. Surface the existing URL.
 
@@ -276,7 +282,7 @@ A hardcoded list rots within weeks: skills get renamed, new ones appear, the use
 |-----------|----------|
 | Target directory doesn't exist | Ask whether to create it. Don't silently `mkdir`. |
 | Basename looks like a placeholder | Ask once for a name override; use the override everywhere remote-facing. |
-| GitHub CLI not installed | Stop before step 4.4 with: "Install `gh` (https://cli.github.com) and re-run." Earlier steps remain. |
+| GitHub CLI not installed | Before step 4.4, ask yes/no to install `gh` (`--only gh`). No → stop with the manual hint. Earlier steps remain. |
 | GitHub CLI not authenticated | Stop before step 4.4 with the adapter's `auth.check` message. |
 | Repo already has remote `origin` | Skip repo creation; use existing remote. |
 | GitHub repo with same name exists, no local remote | Wire the existing remote with `git remote add origin <url>` and push. No duplicate created. |

@@ -1,42 +1,12 @@
 # nerdway
 
-Open-source skills for Claude Code, Cursor and other coding agents that take a tracker issue from specification to a merged pull request, built for the daily developer workflow at [Nerd4Rent](https://nerd4rent.io).
+Open-source skills for Claude Code, Cursor, and other coding agents that take a tracker issue from a written spec to a merged pull request. Built for the daily developer workflow at [Nerd4Rent](https://nerd4rent.io).
 
-**Name and IDs.** The public project, the plugin, and the marketplace listing all use the id `nerdway`. Slash commands still use the `/nerd4rent:` prefix. If you already installed `nerd4rent@nerd4rent-claude-plugin`, remove that marketplace and install `nerdway` with the commands below.
+You describe the work in Linear, GitHub Issues, GitLab Issues, or Azure DevOps Boards. The plugin plans from that issue, implements after you move it to In Progress, reviews the change, and merges when you say so. The repository stays code; the spec and the plan live on the tracker.
 
-## Spec in the tracker
+The public project, the plugin, and the marketplace listing all use the id `nerdway`. Slash commands still use the `/nerd4rent:` prefix. If you already installed `nerd4rent@nerd4rent-claude-plugin`, remove that marketplace and install `nerdway` with the commands below.
 
-Spec-driven frameworks keep the specification and the plan as files in the repository. This plugin keeps them in the tracker (Linear, GitHub Issues, GitLab Issues or Azure DevOps Boards), where the rest of the work already lives:
-
-- the issue description is the spec: what to build and why, with acceptance criteria that each name the test or command proving them;
-- an `## Implementation plan` comment is the plan: how, including the files it will change;
-- `## Spec change` comments record every change to the spec after work started, and why;
-- a `## Session summary` comment after each working session is enough to resume the work from the tracker alone.
-
-The repository holds code only. Everything about one piece of work sits in one dated thread next to its status, readable by anyone with access to the tracker, and developers who don't use your tracker see clean code and a pull request description. You steer the agent by moving the issue between statuses: moving it to In Progress is the approval that unlocks code changes. The [User Guide](docs/USER-GUIDE.md#the-spec-lives-in-the-issue) walks through the path from spec to verified change, and [ADR-0008](docs/adr/0008-spec-in-issue-description.md) records the decision.
-
-## Requirements
-
-A coding agent: [Claude Code](https://claude.com/claude-code), [Cursor](#cursor), or [another agent](#other-agents) that reads Agent Skills. The parallel planning and review steps need Claude Code 2.1.154 or newer on a plan that includes dynamic workflows; without them the same steps run one after another.
-
-These CLIs on your `PATH`:
-
-| CLI | Minimum version | Install | Authentication |
-|---|---|---|---|
-| `git` | 2.40 | your package manager | none |
-| `node` (with npm) | 24 | <https://nodejs.org> | none |
-| `gh` (GitHub CLI) | 2.97 | `brew install gh` / `winget install GitHub.cli` | `gh auth login` |
-| `linearis` (Linear CLI), Linear only | 2026.7.0 | `npm i -g linearis` | see below |
-| `glab` (GitLab CLI), GitLab-hosted repos or GitLab Issues only | 1.117 | `brew install glab` / `winget install GLab.GLab` | `glab auth login` (token scopes `api`, `write_repository`) |
-| `jq`, GitLab Issues or Azure DevOps Boards only | 1.6 | `brew install jq` / `winget install jqlang.jq` | none |
-| `az` (Azure CLI), Azure DevOps-hosted repos or Azure DevOps Boards only | 2.90 | `brew install azure-cli` / `winget install Microsoft.AzureCLI`, then `az extension add --name azure-devops` | `az login` or `az devops login` |
-| `rg` (ripgrep) | 14 | `brew install ripgrep` / `winget install BurntSushi.ripgrep.MSVC` | none |
-
-To authenticate `linearis`, create a personal API key in Linear under **Settings → Security & access → API → Personal API keys**, then either set it as the `LINEAR_API_TOKEN` environment variable or run `linearis auth login`. The key does not expire.
-
-You don't have to install the CLIs by hand: once the plugin is installed, `/bootstrap-clis` probes every dependency, installs or updates what is missing, and hands you back only the authentication steps a human has to complete.
-
-## Installation
+## Install
 
 ### Claude Code
 
@@ -64,10 +34,6 @@ Then update the plugin and restart Claude Code:
 /plugin update nerdway@nerdway
 ```
 
-At every session start the plugin injects the project's nerdbrain page (`hooks/session-start.ts`): the trimmed page when the vault directory is on the machine, and in a cloud session without it a pointer to reading the page through the `nerdbrain` connector.
-
-In the default permission mode each parallel planning or review run asks for consent first; answer "don't ask again" to silence the prompt for that workflow in that project.
-
 ### Cursor
 
 **Recommended: team marketplace (updates follow `main`).** In the Cursor dashboard, open **Plugins & MCPs** → **Team Marketplaces** → **Add Marketplace** → **Import from Repo** and paste `https://github.com/nerdway/nerdway`. Cursor reads `.cursor-plugin/marketplace.json`. Install the [Cursor GitHub App](https://github.com/apps/cursor) on this repository, then turn on **Enable Auto Refresh** under Marketplace Settings. Each push to `main` is re-indexed within about 10 minutes, and clients pick it up on their next restart or window focus; **Refresh** forces a re-index. Install `nerdway` from that marketplace in **Customize**.
@@ -88,7 +54,7 @@ Clone the plugin into it:
 git clone https://github.com/nerdway/nerdway ~/.cursor/plugins/local/nerdway
 ```
 
-Then run **Developer: Reload Window** and open **Customize**. The `nerdway` card should list the skills, the five agents, and the hooks: SessionStart and the issue gate (sessionStart reminder and beforeShellExecution on `git commit`/`git push`). If a marketplace plugin with the same name `nerdway` is installed, it takes precedence over the local copy, so uninstall it first.
+Then run **Developer: Reload Window** and open **Customize**. The `nerdway` card should list the skills, the five agents, and the hooks. If a marketplace plugin with the same name `nerdway` is installed, it takes precedence over the local copy, so uninstall it first.
 
 To update the local copy later, pull and reload the window again:
 
@@ -96,13 +62,23 @@ To update the local copy later, pull and reload the window again:
 git -C ~/.cursor/plugins/local/nerdway pull
 ```
 
-**Third-Party Imports.** Keep **Cursor Settings → Agents → Third-Party Imports** ("Include Third-Party Plugins, Skills, and Other Configs") on, which is the default. Cursor then loads the repo `CLAUDE.md` into context as an always-applied rule, so the project's general instructions apply in Cursor too. The plugin's workflow does not depend on it: every skill reads the project's platform settings from `CLAUDE.md` on disk, so they resolve the same way with the setting off.
+Keep **Cursor Settings → Agents → Third-Party Imports** on (the default). With that setting on, a Claude Code install of `nerdway@nerdway` on the same machine can hide a fresher local clone. Keep the Claude Code copy current:
 
-**Plugin agents in Customize.** The agents from `agents/` show on the `nerdway` card and in the `/` menu, and the main agent spawns them through `Task` with `subagent_type`. **Customize → Subagents** does not list plugin agents. It shows only the subagents you configure yourself, globally in `~/.cursor/agents/` or per project in `.cursor/agents/`, plus their `.claude/` and `.codex/` counterparts. An empty list there is expected and does not mean the plugin agents are missing.
+```
+claude plugin marketplace update nerdway
+```
 
-**Claude Code install on the same machine.** With Third-Party Imports on, Cursor also imports `nerdway@nerdway` from `~/.claude/plugins` as a second card. Skills and agents with the same name then load from that copy, not from the local clone in `~/.cursor/plugins/local/nerdway`, so an outdated Claude Code install hides a fresh `git pull`. Keep it current with `claude plugin marketplace update nerdway` and `claude plugin update nerdway@nerdway`, or uninstall it from Claude Code on a machine where you only use Cursor. The Uninstall button on the imported card only leads to the Third-Party Imports setting.
+```
+claude plugin update nerdway@nerdway
+```
 
-**Which copy is active.** Compare the version on the `nerdway` cards in **Customize** with the one in the clone: `grep '"version"' ~/.cursor/plugins/local/nerdway/.cursor-plugin/plugin.json`. For the Claude Code copy, `claude plugin list` shows the installed version. If two cards are listed and their versions differ, update or remove the older one and reload the window. The session start check also reports an outdated install, see [the user guide](docs/USER-GUIDE.md#the-plugin-tells-you-when-it-is-out-of-date).
+Or uninstall it from Claude Code on a machine where you only use Cursor. Compare the version on the `nerdway` cards in **Customize** with the clone:
+
+```bash
+grep '"version"' ~/.cursor/plugins/local/nerdway/.cursor-plugin/plugin.json
+```
+
+The session start check also reports an outdated install; see [the user guide](docs/USER-GUIDE.md#the-plugin-tells-you-when-it-is-out-of-date).
 
 ### Other agents
 
@@ -128,7 +104,9 @@ npx skills update
 
 Those agents read global skills from `~/.agents/skills/` (Cursor also reads `~/.cursor/skills/`), and the CLI installs there automatically. Restart the agent after installing. This path ships skills only, without the Cursor agents or hooks.
 
-## First steps
+## Quick start
+
+A typical issue, from idea to merged pull request, goes through [`issue-workflow`](skills/issue-workflow/SKILL.md). You steer by moving the issue on the tracker; the agent asks for that move and prints the issue link.
 
 1. Bring the CLIs from [Requirements](#requirements) up to date:
 
@@ -142,28 +120,100 @@ Those agents read global skills from `~/.agents/skills/` (Cursor also reads `~/.
    /determine-platform
    ```
 
-3. Say *"create an issue: …"* and describe the work. For a fuzzy topic the agent asks its questions in numbered rounds, each with a recommended answer, so a plain yes accepts them; the same interview runs before a plan when an issue is ambiguous. The agent drafts the issue, shows it to you, and creates it in Backlog only after you approve.
-4. Type the issue ID (for example `DEMO-123` or `#123`). The agent posts an implementation plan as a comment and stops.
-5. Read the plan on the tracker and move the issue to In Progress. The agent opens a branch and a draft pull request, implements the plan, checks every acceptance criterion, and rewrites the pull request description for the people who will review it.
-6. Review runs next; say *"merge and close"* when you are satisfied. Before the merge the agent writes or updates your guide for the change in the nerdbrain vault, when you have one.
+3. Say *"create an issue: …"* and describe the work. [`issue-writer`](skills/issue-writer/SKILL.md) drafts the issue, shows it to you, and creates it in Backlog only after you approve. For a fuzzy topic the agent asks its questions in numbered rounds through [`grill`](skills/grill/SKILL.md); a plain yes accepts the recommended answer.
+
+4. Type the issue ID (for example `DEMO-123` or `#123`). [`issue-workflow`](skills/issue-workflow/SKILL.md) posts an implementation plan as a comment and stops.
+
+5. Read the plan on the tracker and move the issue to In Progress. The agent opens a branch and a draft pull request, implements the plan, checks every acceptance criterion, and rewrites the pull request description for reviewers.
+
+6. Review runs next. Say *"merge and close"* when you are satisfied. [`issue-close`](skills/issue-close/SKILL.md) merges and marks the issue done.
 
 The [User Guide](docs/USER-GUIDE.md#a-day-with-the-plugin) follows one feature through these steps in detail.
 
-## Documentation
+Other starting points:
 
-- [User Guide](docs/USER-GUIDE.md): the ideas behind the plugin, a day with it, steering with statuses, and the reference of every skill with its trigger phrases.
-- [Architecture](docs/ARCHITECTURE.md): the platform config and adapters, the plugin's agents, and the workflow contract.
+- A new repo from an empty directory: say *"start a new project"* ([`new-project-workflow`](skills/new-project-workflow/SKILL.md)).
+- One issue, unattended after you approve the draft: `/nerd4rent:auto-issue-mode` plus a description or an existing ID ([`auto-issue-mode`](skills/auto-issue-mode/SKILL.md)).
+- "What's next for this issue?": type the ID with that intent ([`issue-next-step`](skills/issue-next-step/SKILL.md)).
+
+## Skills
+
+Twenty skills ship in `skills/`. Invoke one with `/<name>` or `/nerd4rent:<name>`.
+
+### Workflow
+
+| Skill | What it does |
+|---|---|
+| [`issue-workflow`](skills/issue-workflow/SKILL.md) | Status-driven workflow for tracker issues: plan, implement, review, or close-out depending on the issue's phase. |
+| [`issue-writer`](skills/issue-writer/SKILL.md) | Create a new tracker issue with clearly specified goals so planning can build an implementation plan from it. |
+| [`issue-start`](skills/issue-start/SKILL.md) | Mechanically start work on an in-progress tracker issue: create the branch, open a draft PR/MR, and attach the Fixes magic word. |
+| [`issue-next-step`](skills/issue-next-step/SKILL.md) | Diagnose where one tracker issue stands, name its one natural next step, and hand off when you choose. |
+| [`issue-close`](skills/issue-close/SKILL.md) | Mechanically close out a tracker issue once the work is done: merge the PR/MR and move the issue to done. |
+| [`auto-issue-mode`](skills/auto-issue-mode/SKILL.md) | Run one tracker issue autonomously from a task description or an existing issue ID to a merged PR/MR and the done phase. |
+| [`grill`](skills/grill/SKILL.md) | Interview one question at a time until shared understanding, with a recommended answer each turn. |
+| [`tdd`](skills/tdd/SKILL.md) | Test-first implementation loop: red, verify red, green, refactor, check - one test and one minimal change per cycle. |
+| [`debug`](skills/debug/SKILL.md) | Find the cause of a failure before touching the fix: rank hypotheses, settle them with the smallest evidence, then fix only what the evidence justifies. |
+
+### Project
+
+| Skill | What it does |
+|---|---|
+| [`new-project-workflow`](skills/new-project-workflow/SKILL.md) | Bootstrap a new development project end-to-end: git, README, GitHub repo, Linear project, optional wiki, then a spec-creating skill. |
+| [`project-continue`](skills/project-continue/SKILL.md) | Answer "where are we" for the current project: verify the newest checkpoint against the repo and tracker, and record a fresh one with consent. |
+| [`nerd-orchestrate`](skills/nerd-orchestrate/SKILL.md) | Orchestrate a project's unplanned issues: report progress, plan every open issue without a plan comment, then ask before auto-issue-mode. |
+| [`determine-platform`](skills/determine-platform/SKILL.md) | Establish which tracker holds the project's issues and which VCS host holds its code, and record that as the Platform section of CLAUDE.md. |
+| [`bind-statuses`](skills/bind-statuses/SKILL.md) | Bind the five canonical workflow phases to how the project's tracker shows them and record the map in the repo CLAUDE.md. |
+| [`retro`](skills/retro/SKILL.md) | Turn the lessons of the current session into tracker issues: propose candidates by category and hand accepted ones to issue-writer. |
+
+### Vault
+
+| Skill | What it does |
+|---|---|
+| [`nerdbrain-search`](skills/nerdbrain-search/SKILL.md) | The four recall operations of the nerdbrain Obsidian vault: phrase search, outgoing links, backlinks, and 1-hop graph assembly. |
+| [`nerdbrain-wiki`](skills/nerdbrain-wiki/SKILL.md) | How to create or update a nerdbrain second-brain entity page in the user's Obsidian vault. |
+| [`nerd-personal-docs`](skills/nerd-personal-docs/SKILL.md) | Write or update a human-readable guide in the nerdbrain vault whenever finished work created or changed something the user will use. |
+| [`nerd-documentation-write`](skills/nerd-documentation-write/SKILL.md) | Conventions for writing or revising a tutorial, README, or step-by-step guide meant to be read by people outside your own tooling stack. |
+
+### Meta
+
+| Skill | What it does |
+|---|---|
+| [`bootstrap-clis`](skills/bootstrap-clis/SKILL.md) | Bring this machine to the CLI state the skills require: probe, install or update missing tools, and hand back only the authentication steps a human can complete. |
+
+The [User Guide skills reference](docs/USER-GUIDE.md#skills-reference) lists trigger phrases and what happens for each skill.
+
+## Requirements
+
+A coding agent: [Claude Code](https://claude.com/claude-code), [Cursor](#cursor), or [another agent](#other-agents) that reads Agent Skills. The parallel planning and review steps need Claude Code 2.1.154 or newer on a plan that includes dynamic workflows; without them the same steps run one after another.
+
+These CLIs on your `PATH`:
+
+| CLI | Minimum version | Needed for |
+|---|---|---|
+| `git` | 2.40 | every project |
+| `node` (with npm) | 24 | every project |
+| `gh` (GitHub CLI) | 2.97 | GitHub-hosted repos or GitHub Issues |
+| `linearis` (Linear CLI) | 2026.7.0 | Linear |
+| `glab` (GitLab CLI) | 1.117 | GitLab-hosted repos or GitLab Issues |
+| `jq` | 1.6 | GitLab Issues or Azure DevOps Boards |
+| `az` (Azure CLI) | 2.90 | Azure DevOps-hosted repos or Azure DevOps Boards |
+| `rg` (ripgrep) | 14 | search |
+
+You don't have to install the CLIs by hand. Once the plugin is installed, `/bootstrap-clis` probes every dependency, installs or updates what is missing, and hands you back only the authentication steps a human has to complete.
+
+To authenticate `linearis`, create a personal API key in Linear under **Settings → Security & access → API → Personal API keys**, then either set it as the `LINEAR_API_TOKEN` environment variable or run `linearis auth login`. The key does not expire. Other CLIs use their usual login: `gh auth login`, `glab auth login`, `az login` or `az devops login`. After `az`, add the DevOps extension with `az extension add --name azure-devops`.
+
+Install notes, day-to-day steering, and the full skill reference are in the [User Guide](docs/USER-GUIDE.md).
+
+## Docs, support, and contributing
+
+- [User Guide](docs/USER-GUIDE.md): a day with the plugin, steering with statuses, and the reference of every skill with its trigger phrases.
 - [Support](docs/SUPPORT.md): MIT license, paid support, and paid onboarding.
 - [Contributing](docs/CONTRIBUTING.md): checking a change and releasing a version.
-- [Architecture decision records](docs/adr/): why the design is the way it is.
 
-## Issues and contributions
+Report bugs and propose changes in [GitHub Issues](https://github.com/nerdway/nerdway/issues). Pull requests are welcome.
 
-Report bugs and propose changes in [GitHub Issues](https://github.com/nerdway/nerdway/issues). This repository tracks its own work there, with `tracker: github` in its [`CLAUDE.md`](CLAUDE.md). Pull requests are welcome; [Contributing](docs/CONTRIBUTING.md) lists the checks a change must pass.
-
-## Support
-
-The source is MIT. Nerd4Rent offers paid support and paid onboarding on top of it; details are in [Support](docs/SUPPORT.md). Bugs and proposals still go in [GitHub Issues](https://github.com/nerdway/nerdway/issues).
+The source is MIT. Nerd4Rent offers paid support and paid onboarding on top of it; details are in [Support](docs/SUPPORT.md).
 
 ## License
 

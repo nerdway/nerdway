@@ -84,7 +84,7 @@ Call it `<ID>` below.
 ## Step 0 — Guide check (gate)
 
 This skill never writes the guide. The caller writes it beforehand with
-`nerd4rent:nerd-personal-docs` on the session model (`issue-workflow`'s
+`nerdway:nerd-personal-docs` on the session model (`issue-workflow`'s
 close-out, `auto-issue-mode`'s close-out stage); this step only checks that
 it happened. Take the first case that matches:
 
@@ -117,7 +117,7 @@ it happened. Take the first case that matches:
 4. **Otherwise stop** — commit, push and merge nothing — and report exactly:
 
    > No guide for `<ID>` in `5-wiki/guides/` and no `## Personal guide`
-   > comment saying none is needed. Run `nerd4rent:nerd-personal-docs <ID>`
+   > comment saying none is needed. Run `nerdway:nerd-personal-docs <ID>`
    > first, then run the close-out again.
 
 ## Step 0b — Children check (gate)
@@ -164,7 +164,7 @@ draft `issue-start` wrote.
 
    > The PR/MR description of `<ID>` is still the start draft (`Fixes <ID>`
    > and one paragraph). Write the readiness description with
-   > `nerd4rent:issue-workflow` step 6b, then run the close-out again.
+   > `nerdway:issue-workflow` step 6b, then run the close-out again.
 
 ## Step 1 — Commit leftover changes (skip if clean)
 
@@ -243,10 +243,10 @@ the shape *Asking the human to move a phase* in
 
 ## Related skills
 
-- `nerd4rent:issue-workflow` — the status-driven workflow whose close-out
+- `nerdway:issue-workflow` — the status-driven workflow whose close-out
   phase delegates here.
-- `nerd4rent:nerd-personal-docs` — writes the guide Step 0 checks; the
+- `nerdway:nerd-personal-docs` — writes the guide Step 0 checks; the
   caller runs it before this skill, on the session model.
-- `nerd4rent:issue-start` — the mirror chain at the other end of the issue:
+- `nerdway:issue-start` — the mirror chain at the other end of the issue:
   branch, start commit, push, draft PR/MR.
-- `nerd4rent:determine-platform` — records the platform this skill reads.
+- `nerdway:determine-platform` — records the platform this skill reads.

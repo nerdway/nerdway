@@ -21,10 +21,10 @@ A Claude Code session on this machine is still steered by superpowers before any
 | `superpowers@superpowers-marketplace` 6.2.0 is enabled | `~/.claude/settings.json` `enabledPlugins`; `~/.claude/plugins/installed_plugins.json` | Its `SessionStart` hook (`hooks/hooks.json`, matcher `startup|clear|compact`) injects `using-superpowers` into every session, which tells the agent to invoke `brainstorming` before any creative work and its TDD before any code. Observed in this session's own start. |
 | `~/.agents/skills` holds stale copies of four plugin skills under their June names | `linear-issue-workflow`, `linear-issue-writer`, `nerdbrain-wiki`, `new-project-workflow`; `~/.agents/.skill-lock.json` points them at `skills/linear-issue-workflow/SKILL.md`, a path that no longer exists | Cursor and every agent that reads that directory sees two generations of the same skills side by side; `npx skills update` cannot refresh them. Claude Code does not read the directory. |
 | `~/.agents/skills` holds 35 Matt Pocock skills | same directory | Harmless for Claude Code; relevant for Cursor only when the plugin is not installed there. |
-| The installed plugin lags `main` | `nerd4rent@nerd4rent-claude-plugin` 0.45.0 installed, `main` at 0.48.0 | Sessions run three releases behind the repository they are reviewing. |
+| The installed plugin lags `main` | `nerdway@nerdway` 0.45.0 installed, `main` at 0.48.0 | Sessions run three releases behind the repository they are reviewing. |
 | `mattpocock-skills@mattpocock` 1.2.0 installed, not enabled | `enabledPlugins` has no entry for it | No effect on Claude Code sessions. Listed so nobody re-enables it by accident. |
 
-Recommendation, not executed here (out of scope by the spec): remove `superpowers@superpowers-marketplace` from `enabledPlugins` in the nix-managed `~/.claude/settings.json`, remove the four stale copies from `~/.agents/skills` (`npx skills remove` or `rm -rf`), and update the installed plugin (`/plugin marketplace update nerd4rent-claude-plugin`, `/plugin update nerd4rent@nerd4rent-claude-plugin`). The three other superpowers marketplace plugins (`superpowers-chrome`, `superpowers-lab`, `superpowers-developing-for-claude-code`) are installed but disabled and can stay.
+Recommendation, not executed here (out of scope by the spec): remove `superpowers@superpowers-marketplace` from `enabledPlugins` in the nix-managed `~/.claude/settings.json`, remove the four stale copies from `~/.agents/skills` (`npx skills remove` or `rm -rf`), and update the installed plugin (`/plugin marketplace update nerdway`, `/plugin update nerdway@nerdway`). The three other superpowers marketplace plugins (`superpowers-chrome`, `superpowers-lab`, `superpowers-developing-for-claude-code`) are installed but disabled and can stay.
 
 ### Is it the best issue framework it can be?
 
@@ -280,7 +280,7 @@ Goal: the skill loaded on every issue turn carries only what every turn needs.
 **P8. The grill skill, in rounds**
 Goal: one grilling protocol, the plugin's own, replacing the three inline copies and the `/grill-me` menu item.
 - `skills/grill/SKILL.md` asks in rounds over the decision tree (the frontier per round, numbered, a recommended answer each, "yes" accepts it), looks facts up itself, announces the size classification out loud, and ends on confirmed shared understanding, check: an eval with a three-decision topic finishes in at most two rounds.
-- `issue-writer`, `issue-workflow` 1a and `new-project-workflow` call `nerd4rent:grill`; the `/grill-me` and `/grill-with-docs` mentions are gone, check: `rg -n 'grill-me|grill-with-docs' skills` empty.
+- `issue-writer`, `issue-workflow` 1a and `new-project-workflow` call `nerdway:grill`; the `/grill-me` and `/grill-with-docs` mentions are gone, check: `rg -n 'grill-me|grill-with-docs' skills` empty.
 - Checkpointing of a session (decision of 2026-10-07) is designed in the plan: the carrier is a tracker comment when the issue exists and the chat otherwise, check: plan comment.
 
 **P9. Seam notes and review focus in the plan**

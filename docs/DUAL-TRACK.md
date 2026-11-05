@@ -1,7 +1,7 @@
 # Dual-track export
 
-nerdway is the public MIT tree. The private plugin that Nerd4Rent and its
-bots run stays on its own GitHub remote and is not this repository. This
+nerdway is the public MIT tree. The private plugin and its
+bots stay on their own GitHub remote and are not this repository. This
 guide is for maintainers who publish or update `nerdway/nerdway` from that
 private source.
 
@@ -15,7 +15,7 @@ Decisions behind that path are ADR-0014, ADR-0015, and ADR-0016.
 | Track | Remote | Role |
 |---|---|---|
 | Public | `nerdway/nerdway` | MIT source, GitHub Issues, public marketplace |
-| Private | the Nerd4Rent plugin remote | bots, private marketplace, internal board |
+| Private | the private plugin remote | bots, private marketplace, internal board |
 
 Bots, sync jobs, and the private marketplace keep using the private remote.
 An export does not retarget them.
@@ -69,14 +69,18 @@ working tree. The pass does three things:
 
 The `--replace-text` option reads a replacements file. Keep that file next
 to the export clone (it is an operator artifact, not a path this
-repository requires). A starting map, in `git-filter-repo` syntax:
+repository requires). A starting map, in `git-filter-repo` syntax.
+Substitute the private org slug from your local replacements file wherever
+this guide writes `<private-org>` or `<PRIVATE-ORG>`:
 
 ```
 regex:NER-==>DEMO-
 regex:ner-==>demo-
 regex:GRO-==>OPS-
 regex:gro-==>ops-
-linear.app/nerd4rent==>linear.app/example
+linear.app/<private-org>==>linear.app/example
+<private-org>==>nerdway
+regex:<PRIVATE-ORG>_==>NERDWAY_
 regex:\bProxmox\b==>hypervisor
 regex:\bCoder\b==>DevBox
 regex:\bpve[0-9]*\b==>host
@@ -109,28 +113,52 @@ git remote add public https://github.com/nerdway/nerdway.git
 
 If `origin` is still listed, stop. Remove it before any `git push`.
 
+## Export remap
+
+The private plugin keeps its own namespace: slash prefix, env vars, cache
+dir, and PR body marker. The public tree uses `nerdway:` / `NERDWAY_` /
+`.cache/nerdway` / `<!-- nerdway:pr-body -->`.
+
+The export's `replacements.txt` must map those identifiers before the next
+export, or the public scrub-check fails. Minimum extra lines, again with
+the private org slug substituted from your local replacements file:
+
+```
+<private-org>:==>nerdway:
+regex:<PRIVATE-ORG>_==>NERDWAY_
+.cache/<private-org>==>.cache/nerdway
+<!-- <private-org>:pr-body -->==><!-- nerdway:pr-body -->
+```
+
+Also map brand prose (the private org name in sentences and marketplace
+copy) to `nerdway`. Coordinate that map on the private side before the
+next export; it is not part of this public tree.
+
 ## Dry-run
 
 The rewritten clone must not contain the private-track strings, in the tip
 or in history. No output and a non-zero exit from `git grep` mean the tree
 is clean.
 
+Substitute the private org slug from your local replacements file into the
+`<private-org>` token below.
+
 Search the current tree:
 
 ```bash
-git grep -E 'NER-|GRO-|Proxmox|Coder|pve|linear\.app/nerd4rent'
+git grep -E 'NER-|GRO-|Proxmox|Coder|pve|<private-org>'
 ```
 
 Search every commit reachable from the rewrite:
 
 ```bash
-git grep -E 'NER-|GRO-|Proxmox|Coder|pve|linear\.app/nerd4rent' $(git rev-list --all)
+git grep -E 'NER-|GRO-|Proxmox|Coder|pve|<private-org>' $(git rev-list --all)
 ```
 
 The same search with ripgrep on the working tree:
 
 ```bash
-rg -n 'NER-|GRO-|Proxmox|Coder|pve|linear\.app/nerd4rent'
+rg -n 'NER-|GRO-|Proxmox|Coder|pve|<private-org>'
 ```
 
 A hit means the replacements file is incomplete. Fix the file, start again

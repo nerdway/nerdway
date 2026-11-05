@@ -10,7 +10,7 @@ does not read this file.
 First match wins, same spirit as grill's ask-tool list. This file is selected
 when:
 
-1. `NERD4RENT_HOST` or `AGENT_HOST` is `grok-bot`; or
+1. `NERDWAY_HOST` or `AGENT_HOST` is `grok-bot`; or
 2. the session's tool list includes `SendToUser` (any case or
    `send_to_user` spelling), or another native widget ask whose name is
    that tool; or

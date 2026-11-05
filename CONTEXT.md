@@ -1,6 +1,6 @@
-# nerd4rent-claude-plugin
+# nerdway
 
-Claude Code plugin bundling the skills that run the Nerd4Rent daily developer
+Claude Code plugin bundling the skills that run the nerdway daily developer
 workflow: Linear issue lifecycle and the nerdbrain second-brain wiki.
 
 ## Standards
@@ -51,8 +51,8 @@ a rule that cannot be verified from the diff does not belong here.
 **nerdway**:
 The public name of the open-source cut of this plugin: the `nerdway/nerdway`
 repository, and the package and marketplace id (`nerdway`). Dual-track with the
-private `nerd4rent` plugin.
-_Avoid_: nerd4rent (the private track), nerdway-plugin
+private plugin.
+_Avoid_: the private plugin name, nerdway-plugin
 
 **Vault**:
 The nerdbrain Obsidian vault, present on every machine where wiki skills
@@ -157,7 +157,7 @@ _Avoid_: touched files (says what happened, not what was agreed)
 
 **Test approach**:
 The section of the plan that sets how the implementation is driven: `TDD`
-(the default, run by `nerd4rent:tdd`) or `no tests`, which needs a reason and
+(the default, run by `nerdway:tdd`) or `no tests`, which needs a reason and
 the runnable check standing in for a test. Approved with the plan; the mode and
 any reason are carried into the session summary. A recommendation, not a frozen
 rule.
@@ -180,7 +180,7 @@ The readiness description: the PR/MR description rewritten for a human
 reviewer once the Criteria verification table is complete — why, what
 changed, scope, the criteria table as evidence and the merge risk. Written on
 the session model in `issue-workflow` step 6b (and through it in stage 4 of
-`auto-issue-mode`); it ends with the marker `<!-- nerd4rent:pr-body -->`, and
+`auto-issue-mode`); it ends with the marker `<!-- nerdway:pr-body -->`, and
 only a start draft or a description with that marker is overwritten.
 `issue-close` stops while the description is still the start draft.
 _Avoid_: PR summary (the one paragraph of the start draft), changelog
@@ -222,7 +222,7 @@ agent waits.
 _Avoid_: gate, milestone (both name a stop; a checkpoint stops nothing)
 
 **Grill state**:
-The block headed `## Grill state` that `nerd4rent:grill` writes after every
+The block headed `## Grill state` that `nerdway:grill` writes after every
 answer of a grilling session: topic, size, the decisions resolved, the facts
 checked, the open branches and the next question with its options, closed by
 `Confirmed shared understanding: yes` or `no`. Its carrier is a comment on the
@@ -236,7 +236,7 @@ _Avoid_: checkpoint, grill checkpoint (a **Checkpoint** records where the
 project stands on the entity page; this records where one interview stands)
 
 **Grill decisions**:
-The living markdown checklist headed `## Grill decisions` that `nerd4rent:grill`
+The living markdown checklist headed `## Grill decisions` that `nerdway:grill`
 upserts on a bound tracker issue after every answer (`- [x] <label> — <choice>`
 settled, `- [ ]` deferred or open). One comment or description section,
 updated in place. On resume, tracker edits are the source of truth over chat

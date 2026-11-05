@@ -37,7 +37,7 @@ A section is addressed by its **heading path**: the text of the page's H1,
 `::`, the section's heading text, as in `nerdbrain-claude-plugin::Decisions`.
 The root is the H1 text as `vault_get_document_map` lists it, not the slug
 (this plugin's page is `# nerdbrain-claude-plugin` at the slug
-`github-com-nerd4rent-nerd4rent-claude-plugin`), so take it from the document
+`github-com-nerdway-nerdway`), so take it from the document
 map and never guess it. The root of `index.md` is `Wiki Index`.
 
 ## Operations

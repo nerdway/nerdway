@@ -9,7 +9,7 @@ plugin's behaviour to what happened to be installed: the same issue was
 planned one way on a machine with the family and another way without it,
 and an eval could not say which path it was testing. DEMO-371 decided that
 the plugin is a self-contained framework: every practice it relies on is
-its own skill (`nerd4rent:tdd`, `nerd4rent:review-verify`, the inline
+its own skill (`nerdway:tdd`, `nerdway:review-verify`, the inline
 grilling protocol, the practice skills of DEMO-380), and nothing in the repo
 calls a skill of another plugin.
 
@@ -41,7 +41,7 @@ A new exemption is a change to this ADR, not an edit of the constant alone.
 - **Keep the optional references with a graceful fallback** — rejected: the
   fallback was the only path the plugin could promise, so the reference added
   a second, untested behaviour and a dependency on the machine.
-- **Replace each reference with the matching `nerd4rent:` skill** — rejected
+- **Replace each reference with the matching `nerdway:` skill** — rejected
   for the grilling and domain-modeling references: the practice skills do not
   exist yet (DEMO-380), and the inline protocol works without them. The text is
   neutral until those skills land; wiring them in is that issue's change.
@@ -67,7 +67,7 @@ A new exemption is a change to this ADR, not an edit of the constant alone.
   protocol itself is unchanged.
 
   *Amended: the inline grilling protocol moved into the plugin's own
-  `nerd4rent:grill` skill, which asks in rounds; `issue-writer`,
+  `nerdway:grill` skill, which asks in rounds; `issue-writer`,
   `issue-workflow` and `new-project-workflow` invoke it, and the manual
   `/grill-me` menu item of `new-project-workflow` is gone.*
 

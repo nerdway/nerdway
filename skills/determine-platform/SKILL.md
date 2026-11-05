@@ -52,8 +52,8 @@ linear:
   team: DEMO
   project: 72aa8034-9c1f-4206-bd68-38af2eb9c87e
 github:
-  owner: nerd4rent
-  repo: nerd4rent-claude-plugin
+  owner: nerdway
+  repo: nerdway
 ```
 
 | Key | Values | Identifier block |
@@ -150,7 +150,7 @@ Linear for it.
 Running the skill twice with the same result must leave `git diff` empty.
 
 **Entity page** — only when the vault is reachable (`tier=file`) and the page
-exists. Follow `nerd4rent:nerdbrain-wiki` for the write (filesystem only,
+exists. Follow `nerdway:nerdbrain-wiki` for the write (filesystem only,
 `updated:` bump, one `log.md` line):
 
 - set the frontmatter key `platform:` to the same object, keeping an existing
@@ -164,7 +164,7 @@ enough.
 
 ## Step 5 — Bind statuses
 
-With a tracker (anything but `none`), invoke `nerd4rent:bind-statuses` and
+With a tracker (anything but `none`), invoke `nerdway:bind-statuses` and
 pass it the config from Step 4. It proposes how the tracker shows the
 workflow phases, asks one question, and writes the `statuses` key into the
 same section. When the user declines or it stops, carry on: without a
@@ -192,11 +192,11 @@ Third-Party Imports on.
   transport only where the vault filesystem is absent (ADR-0010). Never git
   against the vault (ADR-0004).
 - Never create tracker projects, repos or teams here; that is
-  `nerd4rent:new-project-workflow`.
+  `nerdway:new-project-workflow`.
 
 ## Related skills
 
-- `nerd4rent:issue-writer` — delegates here when no platform is configured.
-- `nerd4rent:bind-statuses` — the chain this skill ends with; also runs on
+- `nerdway:issue-writer` — delegates here when no platform is configured.
+- `nerdway:bind-statuses` — the chain this skill ends with; also runs on
   its own.
-- `nerd4rent:nerdbrain-wiki` — the write procedure for the entity-page mirror.
+- `nerdway:nerdbrain-wiki` — the write procedure for the entity-page mirror.

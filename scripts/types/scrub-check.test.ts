@@ -12,6 +12,7 @@ import {
 } from "./scrub-check.ts";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const privateOrg = ["nerd", "4rent"].join("");
 
 test("scrubCheckErrors: a private-track string is reported with its path and line", () => {
   const errors = scrubCheckErrors([{ path: "README.md", source: "# Title\n\nSee NER-123 for context.\n" }]);
@@ -31,9 +32,31 @@ test("scrubCheckErrors: every matching line is reported once", () => {
 
 test("scrubCheckErrors: Proxmox, Coder, pve and the private Linear URL match", () => {
   const errors = scrubCheckErrors([
-    { path: "docs/ARCHITECTURE.md", source: "Proxmox\nCoder\npve1\nhttps://linear.app/nerd4rent/issue/x\n" },
+    {
+      path: "docs/ARCHITECTURE.md",
+      source: `Proxmox\nCoder\npve1\nhttps://linear.app/${privateOrg}/issue/x\n`,
+    },
   ]);
   assert.equal(errors.length, 4);
+});
+
+test("scrubCheckErrors: a bare private-org brand string fails", () => {
+  const errors = scrubCheckErrors([{ path: "README.md", source: `see ${privateOrg} for the private track\n` }]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /^README\.md:1: /);
+});
+
+test("scrubCheckErrors: mixed-case brand and env-style leak fail", () => {
+  const mixed = `${privateOrg.toUpperCase()}_X`;
+  const errors = scrubCheckErrors([{ path: "README.md", source: `${mixed}\n` }]);
+  assert.equal(errors.length, 1);
+});
+
+test("scrubCheckErrors: a nerdway string passes", () => {
+  assert.deepEqual(
+    scrubCheckErrors([{ path: "README.md", source: "# nerdway\n\nInvoke /nerdway:issue-writer.\n" }]),
+    [],
+  );
 });
 
 test("scrubCheckErrors: exempt paths may name the patterns", () => {

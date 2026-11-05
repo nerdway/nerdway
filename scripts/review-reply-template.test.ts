@@ -5,7 +5,7 @@ import { test } from "node:test";
 
 const templatePath = join(import.meta.dirname, "../skills/issue-workflow/review-reply-template.md");
 
-const authorTools = ["nerd4rent", "claude", "cursor", "linear", "linearis"];
+const authorTools = ["nerdway", "claude", "cursor", "linear", "linearis"];
 
 test("the review reply template can be posted on a client repository", () => {
   const text = readFileSync(templatePath, "utf8");

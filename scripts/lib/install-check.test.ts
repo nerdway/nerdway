@@ -45,11 +45,11 @@ test("findStaleSkillCopies flags a directory whose SKILL.md carries a historical
   ]);
 });
 
-test("findStaleSkillCopies flags a current skill name only when the file mentions nerd4rent or nerdbrain", () => {
+test("findStaleSkillCopies flags a current skill name only when the file mentions nerdway or nerdbrain", () => {
   const entries = [
     { path: "/home/u/.agents/skills/nerdbrain-wiki", text: skillMd("nerdbrain-wiki", "Write the nerdbrain entity page.") },
     { path: "/home/u/.agents/skills/tdd", text: skillMd("tdd", "Red, green, refactor.") },
-    { path: "/home/u/.agents/skills/issue-workflow", text: skillMd("issue-workflow", "Call nerd4rent:issue-start.") },
+    { path: "/home/u/.agents/skills/issue-workflow", text: skillMd("issue-workflow", "Call nerdway:issue-start.") },
   ];
   assert.deepEqual(findStaleSkillCopies(entries, CURRENT_SKILLS), [
     { kind: "stale-skill-copy", path: "/home/u/.agents/skills/nerdbrain-wiki", name: "nerdbrain-wiki" },
@@ -59,7 +59,7 @@ test("findStaleSkillCopies flags a current skill name only when the file mention
 
 test("findStaleSkillCopies ignores unrelated skills and files without a frontmatter name", () => {
   const entries = [
-    { path: "/home/u/.claude/skills/pdf", text: skillMd("pdf", "Read PDFs for nerd4rent clients.") },
+    { path: "/home/u/.claude/skills/pdf", text: skillMd("pdf", "Read PDFs for nerdway clients.") },
     { path: "/home/u/.claude/skills/broken", text: "no frontmatter here, nerdbrain mentioned" },
   ];
   assert.deepEqual(findStaleSkillCopies(entries, CURRENT_SKILLS), []);

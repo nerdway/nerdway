@@ -22,14 +22,14 @@ Documentation for the user personally, kept in their nerdbrain Obsidian
 vault. Agents tend to leave important knowledge only in issue and PR
 descriptions, which the user does not read day to day. A guide is the one
 place that says how a thing works, how to use it and what the user must do
-by hand. Its style follows `nerd4rent:nerd-documentation-write`, with the
+by hand. Its style follows `nerdway:nerd-documentation-write`, with the
 reversals listed below.
 
 ## When it runs
 
-- **Before an issue is closed.** The callers of `nerd4rent:issue-close` run
+- **Before an issue is closed.** The callers of `nerdway:issue-close` run
   this skill first, on the session model, with the issue ID:
-  `nerd4rent:issue-workflow` in its close-out and `nerd4rent:auto-issue-mode`
+  `nerdway:issue-workflow` in its close-out and `nerdway:auto-issue-mode`
   at the start of its close-out stage. `issue-close` itself only checks the
   result (its Step 0) and stops the close-out when it is missing. Decide
   whether the work created or changed something the user uses, operates or
@@ -54,11 +54,11 @@ No guide for work that needs one means the issue is not finished.
   caller carries that line into its own report.
 - Guides live in `5-wiki/guides/{topic}.md`, one file per tool, service or
   solution, named with a short kebab-case slug (`home-assistant.md`,
-  `pangolin.md`). Search first with `nerd4rent:nerdbrain-search` and update
+  `pangolin.md`). Search first with `nerdway:nerdbrain-search` and update
   the existing guide instead of creating a near-duplicate.
 - The project's entity page (`5-wiki/entities/projects/{slug}.md`) links to
   its guides in a `## Dokumentacja` section; add the section when it is
-  missing. Write the entity page through `nerd4rent:nerdbrain-wiki`.
+  missing. Write the entity page through `nerdway:nerdbrain-wiki`.
 - Vault access goes through the filesystem by default: `Read`, `Edit`,
   `Write` and `rg`; an MCP server is the transport only where the vault
   filesystem is absent (ADR-0010).
@@ -80,7 +80,7 @@ Collect the links before writing; the guide's history section needs them:
 
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory. The caller passes the
-platform; when it did not, resolve it the way `nerd4rent:issue-close` does.
+platform; when it did not, resolve it the way `nerdway:issue-close` does.
 
 ## Structure of a guide
 
@@ -111,7 +111,7 @@ the current behaviour, and prepend the new history entries.
 
 ## Style rules
 
-Kept from `nerd4rent:nerd-documentation-write`:
+Kept from `nerdway:nerd-documentation-write`:
 
 - **Facts, not a repair log.** State the requirement or the current
   behaviour and its consequence; the investigation trail stays in the issue
@@ -170,12 +170,12 @@ Reversed, because the reader is the user inside their own stack:
 
 ## Related skills
 
-- `nerd4rent:issue-workflow`, `nerd4rent:auto-issue-mode` - run this skill
+- `nerdway:issue-workflow`, `nerdway:auto-issue-mode` - run this skill
   before their close-out.
-- `nerd4rent:issue-close` - checks the guide or the `## Personal guide`
+- `nerdway:issue-close` - checks the guide or the `## Personal guide`
   comment in its Step 0 and stops the close-out without them.
-- `nerd4rent:nerd-documentation-write` - the style this skill adapts, for
+- `nerdway:nerd-documentation-write` - the style this skill adapts, for
   readers outside the user's stack.
-- `nerd4rent:nerdbrain-search` - finds an existing guide before a new one is
+- `nerdway:nerdbrain-search` - finds an existing guide before a new one is
   written.
-- `nerd4rent:nerdbrain-wiki` - writes the entity page and the log.
+- `nerdway:nerdbrain-wiki` - writes the entity page and the log.

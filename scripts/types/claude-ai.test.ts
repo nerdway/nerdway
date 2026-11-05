@@ -13,10 +13,10 @@ const DESCRIPTION = "Daily developer workflow automation.";
 
 function manifests(overrides: Partial<ClaudeAiManifests> = {}): ClaudeAiManifests {
   return {
-    claudePlugin: { name: "nerd4rent", description: DESCRIPTION },
-    marketplace: { plugins: [{ name: "nerd4rent", description: DESCRIPTION }] },
-    cursorPlugin: { name: "nerd4rent", displayName: "nerd4rent", description: DESCRIPTION },
-    cursorMarketplace: { plugins: [{ name: "nerd4rent", description: DESCRIPTION }] },
+    claudePlugin: { name: "nerdway", description: DESCRIPTION },
+    marketplace: { plugins: [{ name: "nerdway", description: DESCRIPTION }] },
+    cursorPlugin: { name: "nerdway", displayName: "nerdway", description: DESCRIPTION },
+    cursorMarketplace: { plugins: [{ name: "nerdway", description: DESCRIPTION }] },
     ...overrides,
   };
 }
@@ -50,17 +50,17 @@ test("accepts plugin manifests within claude.ai's limits", () => {
 
 test("rejects a plugin description longer than 500 characters", () => {
   const long = "x".repeat(501);
-  const errors = validatePluginForClaudeAi(manifests({ claudePlugin: { name: "nerd4rent", description: long } }));
+  const errors = validatePluginForClaudeAi(manifests({ claudePlugin: { name: "nerdway", description: long } }));
   assert.ok(errors.some((error) => error.startsWith(".claude-plugin/plugin.json:") && /501 characters/.test(error)));
 });
 
 test("accepts a plugin description of exactly 500 characters", () => {
   const exact = "x".repeat(500);
-  const entry = [{ name: "nerd4rent", description: exact }];
+  const entry = [{ name: "nerdway", description: exact }];
   const errors = validatePluginForClaudeAi({
-    claudePlugin: { name: "nerd4rent", description: exact },
+    claudePlugin: { name: "nerdway", description: exact },
     marketplace: { plugins: entry },
-    cursorPlugin: { name: "nerd4rent", description: exact },
+    cursorPlugin: { name: "nerdway", description: exact },
     cursorMarketplace: { plugins: entry },
   });
   assert.deepEqual(errors, []);
@@ -68,29 +68,29 @@ test("accepts a plugin description of exactly 500 characters", () => {
 
 test("rejects a long description in the marketplace entry and the Cursor manifests", () => {
   const long = "y".repeat(555);
-  const entry = { plugins: [{ name: "nerd4rent", description: long }] };
+  const entry = { plugins: [{ name: "nerdway", description: long }] };
   const errors = validatePluginForClaudeAi(
-    manifests({ marketplace: entry, cursorMarketplace: entry, cursorPlugin: { name: "nerd4rent", description: long } }),
+    manifests({ marketplace: entry, cursorMarketplace: entry, cursorPlugin: { name: "nerdway", description: long } }),
   );
-  assert.ok(errors.some((error) => error.startsWith(".claude-plugin/marketplace.json plugins[nerd4rent]") && /555/.test(error)));
+  assert.ok(errors.some((error) => error.startsWith(".claude-plugin/marketplace.json plugins[nerdway]") && /555/.test(error)));
   assert.ok(errors.some((error) => error.startsWith(".cursor-plugin/plugin.json") && /555/.test(error)));
-  assert.ok(errors.some((error) => error.startsWith(".cursor-plugin/marketplace.json plugins[nerd4rent]") && /555/.test(error)));
+  assert.ok(errors.some((error) => error.startsWith(".cursor-plugin/marketplace.json plugins[nerdway]") && /555/.test(error)));
 });
 
 test("rejects plugin descriptions that drift apart", () => {
   const errors = validatePluginForClaudeAi(
-    manifests({ cursorPlugin: { name: "nerd4rent", description: "Something else." } }),
+    manifests({ cursorPlugin: { name: "nerdway", description: "Something else." } }),
   );
   assert.ok(errors.some((error) => /\.cursor-plugin\/plugin\.json: description differs/.test(error)));
 });
 
 test("rejects a missing plugin description", () => {
-  const errors = validatePluginForClaudeAi(manifests({ claudePlugin: { name: "nerd4rent" } }));
+  const errors = validatePluginForClaudeAi(manifests({ claudePlugin: { name: "nerdway" } }));
   assert.ok(errors.some((error) => error === ".claude-plugin/plugin.json: description is missing"));
 });
 
 test("rejects a plugin name claude.ai does not accept", () => {
-  for (const name of ["Nerd4rent", "nerd_4rent", "nerd 4rent", "n".repeat(65)]) {
+  for (const name of ["Nerdway", "nerd_way", "nerd way", "n".repeat(65)]) {
     const errors = validatePluginForClaudeAi(manifests({ claudePlugin: { name, description: DESCRIPTION } }));
     assert.ok(errors.some((error) => error.startsWith(".claude-plugin/plugin.json: name")), name);
   }
@@ -98,7 +98,7 @@ test("rejects a plugin name claude.ai does not accept", () => {
 
 test("rejects a Claude Code displayName longer than 64 characters", () => {
   const errors = validatePluginForClaudeAi(
-    manifests({ claudePlugin: { name: "nerd4rent", displayName: "d".repeat(65), description: DESCRIPTION } }),
+    manifests({ claudePlugin: { name: "nerdway", displayName: "d".repeat(65), description: DESCRIPTION } }),
   );
   assert.ok(errors.some((error) => /displayName/.test(error)));
 });

@@ -1,4 +1,4 @@
-export const READINESS_MARKER = "<!-- nerd4rent:pr-body -->";
+export const READINESS_MARKER = "<!-- nerdway:pr-body -->";
 
 export type PrBodyState = "draft" | "readiness" | "manual";
 

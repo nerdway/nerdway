@@ -17,7 +17,7 @@ test("prints draft for the start draft read from gh pr view --json", () => {
 });
 
 test("prints readiness for a description with the marker", () => {
-  const { status, stdout } = run("Fixes DEMO-1\n\nWhy.\n\nWhat.\n\n<!-- nerd4rent:pr-body -->\n");
+  const { status, stdout } = run("Fixes DEMO-1\n\nWhy.\n\nWhat.\n\n<!-- nerdway:pr-body -->\n");
   assert.equal(status, 0);
   assert.equal(stdout, "readiness\n");
 });

@@ -7,7 +7,7 @@ export type HostDetectInput = {
   tools?: string[];
 };
 
-const EXPLICIT_KEYS = ["NERD4RENT_HOST", "AGENT_HOST"] as const;
+const EXPLICIT_KEYS = ["NERDWAY_HOST", "AGENT_HOST"] as const;
 
 function isHostId(value: string | undefined): value is HostId {
   return value !== undefined && (HOST_IDS as readonly string[]).includes(value);

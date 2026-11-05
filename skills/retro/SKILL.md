@@ -8,7 +8,7 @@ description: >-
   coding standards, tool economy, no-ops, information access), each with its
   evidence and the change it asks for, apply nothing, and hand every candidate
   the user accepts to issue-writer as a draft. User-invoked only, as
-  /nerd4rent:retro; writes nothing to the repo, memory files or the vault.
+  /nerdway:retro; writes nothing to the repo, memory files or the vault.
 ---
 
 # Retro
@@ -37,10 +37,10 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory.
 
-Resolve the platform exactly as `nerd4rent:issue-writer` step 1 does (repo
+Resolve the platform exactly as `nerdway:issue-writer` step 1 does (repo
 `CLAUDE.md` `## Platform`, read from disk as
 `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes → entity page
-`platform:` / legacy `linear:` → `nerd4rent:determine-platform`). With no
+`platform:` / legacy `linear:` → `nerdway:determine-platform`). With no
 tracker, still propose the candidates and say that the duplicate check was
 skipped.
 
@@ -111,7 +111,7 @@ any, and end.
 ## Step 5 — Hand off to `issue-writer`
 
 For each accepted candidate, in the order the user listed them, invoke
-`nerd4rent:issue-writer` through the `Skill` tool with the candidate as the
+`nerdway:issue-writer` through the `Skill` tool with the candidate as the
 request: its title, the evidence, the change and where it lands. Name the
 session as the source in the request, so the draft's context section says
 where the lesson came from. `issue-writer` resolves the container, shows the
@@ -136,9 +136,9 @@ and the candidates the user turned down.
 
 ## Related skills
 
-- `nerd4rent:issue-writer` — drafts and creates every accepted candidate,
+- `nerdway:issue-writer` — drafts and creates every accepted candidate,
   behind its own approval.
-- `nerd4rent:debug` — finds the cause of one failure; a lesson about why
+- `nerdway:debug` — finds the cause of one failure; a lesson about why
   the failure was possible at all comes here.
-- `nerd4rent:project-continue` — reports the project's open issues, the
+- `nerdway:project-continue` — reports the project's open issues, the
   candidates this skill creates among them.

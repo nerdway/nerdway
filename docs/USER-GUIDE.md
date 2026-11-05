@@ -102,7 +102,7 @@ Requirements, installation in Claude Code, Cursor and other agents, and updating
 
 Neither Claude Code nor Cursor says when a newer version of a third-party plugin exists, so the plugin checks for itself at the start of every session (startup, resume and `/clear` in Claude Code; every `sessionStart` in Cursor). When something is off, the agent opens its first reply with one line per finding, and in Claude Code the same text also appears as a system message:
 
-- `nerdway plugin 0.45.0 is installed, main is 0.51.0: run ...`. Your copy is older than the `main` branch of the repository. The line ends with the fix for your runtime. In Claude Code: `/plugin marketplace update nerdway`, then `/plugin update nerdway@nerdway`, then restart. In Cursor, for a clone under `~/.cursor/plugins/local/`: `git -C <that directory> pull --ff-only`, then Reload Window; for a marketplace install: `agent plugin marketplace remove nerdway`, `agent plugin marketplace add nerdway/nerdway`, then reinstall the card in Customize. If the line still names the old `nerd4rent` marketplace, remove that marketplace and install `nerdway` from this repository.
+- `nerdway plugin 0.45.0 is installed, main is 0.51.0: run ...`. Your copy is older than the `main` branch of the repository. The line ends with the fix for your runtime. In Claude Code: `/plugin marketplace update nerdway`, then `/plugin update nerdway@nerdway`, then restart. In Cursor, for a clone under `~/.cursor/plugins/local/`: `git -C <that directory> pull --ff-only`, then Reload Window; for a marketplace install: `agent plugin marketplace remove nerdway`, `agent plugin marketplace add nerdway/nerdway`, then reinstall the card in Customize.
 - `stale copy of the nerdway skill <name> at <path>: remove it`. A skill directory of yours (`~/.claude/skills`, `~/.cursor/skills`, `~/.agents/skills`, or the same under the project) holds an old copy of a plugin skill, typically from an `npx skills add` run or an early manual install. Such a copy shadows or duplicates the plugin's current skill. Delete the directory named in the line.
 
 When everything is current the check prints nothing. The version of `main` is fetched from GitHub at most once a day and the check stays silent when the network is unavailable (this includes `claude.ai/code`, which blocks that host), so an offline session is never slowed down or warned by mistake. The check needs `node` in the session's PATH; without it, it exits silently.
@@ -111,7 +111,7 @@ When everything is current the check prints nothing. The version of `main` is fe
 
 Every piece of work starts with an issue. In a repo whose `CLAUDE.md` has a `## Platform` section with a tracker, the plugin reminds the agent of that when work starts (on every prompt in Claude Code, at session start in Cursor), and it refuses `git commit` and `git push` on a branch whose name carries no issue ID. On Linear that means the team key and a number anywhere in the branch name (`demo-123-...`); on GitHub Issues, GitLab Issues and Azure DevOps Boards a branch that starts with the issue number (`123-...`). The branches `issue-start` creates always pass. A commit whose message names the issue (`DEMO-123`, `#123`) passes too. Pushing tags alone always passes, whatever branch you are on, so a release tag made on `main` or `master` goes out: `git push origin <tag>`, `git push origin refs/tags/<tag>` or `git push --tags`. A push that also carries a branch (`git push origin main v1.2.3`) is checked as usual, and so is `git push --follow-tags`, because it pushes the current branch too. On a branch whose name starts with `feature/` or `hotfix/` you can commit and push without an issue ID, and the agent gets no reminder there.
 
-Questions, reading code and edits are never blocked, and the plugin asks the tracker nothing: it only looks at the branch name and the command. A repo without a `## Platform` section is not checked at all. To work without an issue on purpose, start the agent with `NERD4RENT_NO_ISSUE=1` in its environment (for example `NERD4RENT_NO_ISSUE=1 claude`); the agent cannot set it for itself. If the check itself breaks (no `node`, a timeout), the commit goes through.
+Questions, reading code and edits are never blocked, and the plugin asks the tracker nothing: it only looks at the branch name and the command. A repo without a `## Platform` section is not checked at all. To work without an issue on purpose, start the agent with `NERDWAY_NO_ISSUE=1` in its environment (for example `NERDWAY_NO_ISSUE=1 claude`); the agent cannot set it for itself. If the check itself breaks (no `node`, a timeout), the commit goes through.
 
 Agents that do not run the plugin's hooks get the same rule from the `issue-workflow` and `auto-issue-mode` skills: the first step is the issue and its number, before any work.
 
@@ -162,7 +162,7 @@ The issue's status in Linear is the single source of truth for what the agent do
 | **In Review** | runs the adversarial review island and pushes fixes |
 | **Done** (with the PR still open) | closes out: merges the PR, syncs your checkout |
 
-Only you can move an issue to **In Progress** - the agent never does it by itself to unlock implementation (an explicit request to implement in chat counts as approval, and the agent then sets the status to reflect it). The exceptions are a run you start with `/nerd4rent:auto-issue-mode`, where invoking the skill is the approval, and `issue-next-step`, which moves the issue to In Progress only after you say yes to it in chat.
+Only you can move an issue to **In Progress** - the agent never does it by itself to unlock implementation (an explicit request to implement in chat counts as approval, and the agent then sets the status to reflect it). The exceptions are a run you start with `/nerdway:auto-issue-mode`, where invoking the skill is the approval, and `issue-next-step`, which moves the issue to In Progress only after you say yes to it in chat.
 
 The table uses Linear's default names. On GitHub Issues and GitLab Issues the same steps are labels: **Backlog** is an open issue with no status label, then `status::todo`, `status::in-progress`, `status::in-review`, and **Done** is a closed issue - so merging the PR or MR with `Fixes #123` finishes it. On Azure DevOps Boards the steps are the columns of your team's board - `New`, `Todo`, `Active`, `In Review`, `Closed` by default - and `/bind-statuses` offers to add the columns your board lacks; you steer by dragging the card, and completing the PR with `Fixes #123` moves it to Closed. Under the hood the agent works with five phases and reads them through the project's status strategy, so the same steering works with labels (`status::in-progress`) or with a comment whose first line is `Status: in-progress` - whatever `/bind-statuses` recorded. A status the map doesn't know (say, *Canceled*) makes the agent report it and do nothing.
 
@@ -179,7 +179,7 @@ Reason: duplicate of DEMO-213
 
 ## Skills reference
 
-How to trigger each skill and what to expect. All of them also respond to `/<skill-name>` and `/nerd4rent:<skill-name>`.
+How to trigger each skill and what to expect. All of them also respond to `/<skill-name>` and `/nerdway:<skill-name>`.
 
 ### `determine-platform` - record the tracker and host
 
@@ -213,12 +213,12 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 
 ### `auto-issue-mode` - run an issue end to end
 
-- **Say:** `/nerd4rent:auto-issue-mode <task description>` or `/nerd4rent:auto-issue-mode DEMO-123` - only by typing it; the agent never picks this skill on its own.
+- **Say:** `/nerdway:auto-issue-mode <task description>` or `/nerdway:auto-issue-mode DEMO-123` - only by typing it; the agent never picks this skill on its own.
 - **What happens:** from a description, the agent drafts the issue and asks for your approval once; from an ID, it picks up at the issue's current status. Everything after that runs without questions, each stage on its own subagent: start, a plan posted as a comment on the issue, implementation, review, merge and Done, then a nerdbrain update. The review is the same four-axis island with sceptics and a judge that `issue-workflow` runs, and the run fixes only the findings that survived verification. Before it marks the PR ready, the run rewrites the PR description for reviewers the same way `issue-workflow` does. That update runs after the merge and records a checkpoint with the merge commit on the base branch, so `project-continue` shows the real state of the project afterwards. Invoking it is your approval, so here the agent moves the issue to In Progress and In Review itself. On an error, a merge conflict or tests it cannot fix it stops and tells you how to resume with the issue ID.
 
 ### `issue-next-step` - take the next step
 
-- **Say:** *"what's next for DEMO-123"*, *"co dalej z DEMO-123"*, *"następny krok"*, or `/nerd4rent:issue-next-step DEMO-123`.
+- **Say:** *"what's next for DEMO-123"*, *"co dalej z DEMO-123"*, *"następny krok"*, or `/nerdway:issue-next-step DEMO-123`.
 - **What happens:** the agent reads the issue's status and what already exists for it - the plan comment, the branch, the PR, recent commits - and names one next step: plan, implement, review, or close out. It then asks one question: continue step by step with `issue-workflow`, run it autonomously with `auto-issue-mode`, or stop. When the next step is implementation and the issue isn't In Progress yet, choosing to continue moves it there; saying no writes nothing. For a Done issue with no work on the default branch the next step is a bug report instead (see above). Whatever you pick starts right away with the same issue ID.
 
 ### `new-project-workflow` - bootstrap a project
@@ -228,12 +228,12 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 
 ### `bootstrap-clis` - set up a machine
 
-- **Say:** `/bootstrap-clis` / `/nerd4rent:bootstrap-clis`. Optional: a skill that needs a missing CLI (for example `issue-writer` after you pick GitHub) will offer that one tool itself.
+- **Say:** `/bootstrap-clis` / `/nerdway:bootstrap-clis`. Optional: a skill that needs a missing CLI (for example `issue-writer` after you pick GitHub) will offer that one tool itself.
 - **What happens:** the skill lists the tools from the requirements table and you multi-select which to install. Only those are probed and, after a yes, installed. You do not have to know this skill exists: another skill that hits a missing CLI asks a plain yes/no for that tool. Power users who want every entry use select-all or `scripts/bootstrap-clis.ts --all`. Authentication is never done for you - the skill ends with the exact steps you need to run yourself.
 
 ### `nerd-orchestrate` - plan the unplanned issues and offer AIM
 
-- **Say:** *"orkiestruj projekt"*, *"orchestrate"*, *"zaplanuj projekt"*, *"worktrees"*, or `/nerd4rent:nerd-orchestrate`. An optional path or tracker project id selects the project; without it, the current directory.
+- **Say:** *"orkiestruj projekt"*, *"orchestrate"*, *"zaplanuj projekt"*, *"worktrees"*, or `/nerdway:nerd-orchestrate`. An optional path or tracker project id selects the project; without it, the current directory.
 - **What happens:** the agent reports progress through `project-continue` (it does not write a checkpoint unless you already agreed to that skill's own question), then lists every unplanned issue: Backlog, Todo or In Progress with no comment whose first line is exactly `## Implementation plan`. In Review is skipped. It always asks whether to plan them all first (batch) or one by one (just-in-time). Each plan is the Planning phase of `issue-workflow` only - a `## Implementation plan` comment and Todo, no branch, no edits. After every posted plan it asks before `auto-issue-mode` for that id; a skip leaves the issue in Todo. Approved AIM runs go to subagents: at most two `git worktree` checkouts in parallel on Claude Code and Cursor, and on Grok Bot one after another in this session or as a CloudAgent, never two checkouts of the same repo as local worktrees.
 
 ### `project-continue` - pick up where you left off
@@ -243,7 +243,7 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 
 ### `retro` - lessons from the session as issues
 
-- **Say:** `/nerd4rent:retro`, at the end of a session; optionally with the path to a session transcript. The agent never starts it by itself.
+- **Say:** `/nerdway:retro`, at the end of a session; optionally with the path to a session transcript. The agent never starts it by itself.
 - **What happens:** the agent goes through the session and picks out the places where it cost more than it had to or went wrong: a file searched for three times, a mistake no check caught, a long output read in full, a step that changed nothing, information it had to ask you for. Each becomes a candidate in one of six categories (navigation, automated checks, coding standards, tool economy, no-ops, information access) with its evidence from the session, the change it asks for and a recommendation. Lessons an open issue already covers are listed with that issue's link instead. You pick which candidates become issues; each one goes to `issue-writer`, which shows the draft and creates it only after you approve. Nothing is changed directly: no file in the repo, no `CLAUDE.md`, no memory file, no nerdbrain page.
 
 ### `tdd` - test first
@@ -283,6 +283,6 @@ These maintain a personal Obsidian vault with one entity page per project - the 
 - **`linearis` errors about authentication**: set `LINEAR_API_TOKEN` or run `linearis auth login` (see [Requirements](../README.md#requirements)).
 - **`/plugin update` says nothing changed**: run `/plugin marketplace update nerdway` first; if it still reports no change, no new version has been released yet.
 - **The session opens with "nerdway plugin X is installed, main is Y" or "stale copy of the nerdway skill"**: see [The plugin tells you when it is out of date](#the-plugin-tells-you-when-it-is-out-of-date); follow the fix the line ends with.
-- **`nerd4rent blocked git commit` (or `git push`)**: the branch has no issue ID; see [No commit without an issue](#no-commit-without-an-issue). Create or pick the issue and work on its branch, or restart the agent with `NERD4RENT_NO_ISSUE=1` when the work really has no issue.
-- **A skill doesn't trigger**: invoke it explicitly with the slash form, e.g. `/issue-workflow DEMO-123` or `/nerd4rent:issue-workflow DEMO-123`.
+- **`nerdway blocked git commit` (or `git push`)**: the branch has no issue ID; see [No commit without an issue](#no-commit-without-an-issue). Create or pick the issue and work on its branch, or restart the agent with `NERDWAY_NO_ISSUE=1` when the work really has no issue.
+- **A skill doesn't trigger**: invoke it explicitly with the slash form, e.g. `/issue-workflow DEMO-123` or `/nerdway:issue-workflow DEMO-123`.
 - **The plan or review runs sequentially and slowly**: dynamic workflows are unavailable or disabled; see [Installation](#installation). The result is the same, only slower.

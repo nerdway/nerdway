@@ -141,8 +141,8 @@ early, report which one and why — the caller decides what to do next.
 
 ## Related skills
 
-- `nerd4rent:issue-workflow` — the status-driven workflow whose Start step
+- `nerdway:issue-workflow` — the status-driven workflow whose Start step
   delegates here once the user has moved the issue to `in-progress`.
-- `nerd4rent:issue-close` — the mirror chain at the other end of the issue:
+- `nerdway:issue-close` — the mirror chain at the other end of the issue:
   commit, push, merge, switch to base, write `done`.
-- `nerd4rent:determine-platform` — records the platform this skill reads.
+- `nerdway:determine-platform` — records the platform this skill reads.

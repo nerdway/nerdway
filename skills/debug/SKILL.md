@@ -105,7 +105,7 @@ hypothesis stands or falls, and why.
 ## 4. Regression test
 
 With the cause confirmed, write the test that catches it, **before the fix**,
-through `nerd4rent:tdd`: one test at the seam the bug lives on, red for the
+through `nerdway:tdd`: one test at the seam the bug lives on, red for the
 confirmed cause and for nothing else. The seam is the one the plan names when
 an issue exists; without a plan, it is the nearest public boundary that
 exercises the mechanism, never the private line that happens to be wrong.
@@ -149,15 +149,15 @@ The record is short, and it goes where this plugin already keeps records:
 
 | Caller | Passes | When |
 |---|---|---|
-| `nerd4rent:tdd` | `issue: <ID>` or `none` | "Verify red" is red for a reason other than the one the test was written for, or "Check" turns the suite red |
-| `nerd4rent:auto-issue-mode` stage 3 | `issue: <ID>` | tests are red after implementation, before the run declares its red-tests stop |
-| `nerd4rent:issue-workflow` step 1 | `issue: <ID>` | planning an issue labelled Bug: the feedback loop is the first implementation step and the regression test the first red of `tdd` |
+| `nerdway:tdd` | `issue: <ID>` or `none` | "Verify red" is red for a reason other than the one the test was written for, or "Check" turns the suite red |
+| `nerdway:auto-issue-mode` stage 3 | `issue: <ID>` | tests are red after implementation, before the run declares its red-tests stop |
+| `nerdway:issue-workflow` step 1 | `issue: <ID>` | planning an issue labelled Bug: the feedback loop is the first implementation step and the regression test the first red of `tdd` |
 | the user | `issue: <ID>` or none | a direct request for the cause of a failure |
 
 ## Related skills
 
-- `nerd4rent:tdd` — writes the regression test of section 4 and runs the
+- `nerdway:tdd` — writes the regression test of section 4 and runs the
   check of section 5; hands a red step with an unexplained cause here.
-- `nerd4rent:auto-issue-mode` — calls this loop before stopping on red tests.
-- `nerd4rent:issue-workflow` — plans an issue labelled Bug around this loop
+- `nerdway:auto-issue-mode` — calls this loop before stopping on red tests.
+- `nerdway:issue-workflow` — plans an issue labelled Bug around this loop
   and carries the record in the session summary.

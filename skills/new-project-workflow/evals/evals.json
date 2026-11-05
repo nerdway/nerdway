@@ -4,13 +4,13 @@
     {
       "id": "fresh-dir",
       "prompt": "I want to bootstrap /tmp/n4r-test-fresh-<ID> as a new dev project — git init, scaffold README.md, set up a GitHub remote with `gh`, create a matching Linear project, then route me to a spec-creating skill. Produce a clear plan I can approve in one shot, but DO NOT execute any of the steps yet (no real git init, no gh, no linear API calls). Just show me what you intend to do.",
-      "expected_output": "A single-approval dry-run plan covering all five workflow stages (git init, README, gh repo create with --public, Linear in 'nerd4rent', spec-skill menu). Ends with a single 'Proceed? [Y/n]' gate.",
+      "expected_output": "A single-approval dry-run plan covering all five workflow stages (git init, README, gh repo create with --public, Linear in 'nerdway', spec-skill menu). Ends with a single 'Proceed? [Y/n]' gate.",
       "files": [],
       "assertions": [
         "Plan output starts with a clear header that names the project (basename of the target directory)",
         "Plan shows the absolute target directory path",
         "Plan declares repo visibility as 'public' (the default)",
-        "Plan declares the Linear team as 'nerd4rent'",
+        "Plan declares the Linear team as 'nerdway'",
         "Plan covers all five workflow stages: git init, README creation, gh repo create, Linear project creation, spec-skill selection",
         "Plan uses a single approval gate at the end ('Proceed? [Y/n]') rather than asking per-step confirmation",
         "Plan's gh step explicitly uses --public flag (matching the visibility decision)",

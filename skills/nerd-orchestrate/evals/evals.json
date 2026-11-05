@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": "resolve-optional-path-defaults-to-cwd",
-      "prompt": "The user typed `/nerd4rent:nerd-orchestrate` with no argument, in a git checkout whose CLAUDE.md has tracker: linear and vcs: github. A second session types `/nerd4rent:nerd-orchestrate ../other-app` where that path has its own CLAUDE.md with tracker: github.",
+      "prompt": "The user typed `/nerdway:nerd-orchestrate` with no argument, in a git checkout whose CLAUDE.md has tracker: linear and vcs: github. A second session types `/nerdway:nerd-orchestrate ../other-app` where that path has its own CLAUDE.md with tracker: github.",
       "expected_output": "With no argument the skill resolves the platform from the current working directory's CLAUDE.md. With a path argument it reads that repo's CLAUDE.md instead. A tracker project id would keep the current tracker and select that project. It does not invent a project without reading the platform sources issue-writer step 1 names.",
       "files": [],
       "assertions": [
@@ -28,10 +28,10 @@
     {
       "id": "progress-invokes-project-continue-read-only",
       "prompt": "The user says \"orkiestruj projekt\". The newest checkpoint exists and git and the tracker are in sync. project-continue would ask about a new checkpoint only on drift.",
-      "expected_output": "The skill invokes nerd4rent:project-continue, prints its report, then filters unplanned issues from the open list. It does not write a checkpoint itself and does not answer yes to project-continue's checkpoint question on the user's behalf.",
+      "expected_output": "The skill invokes nerdway:project-continue, prints its report, then filters unplanned issues from the open list. It does not write a checkpoint itself and does not answer yes to project-continue's checkpoint question on the user's behalf.",
       "files": [],
       "assertions": [
-        "The skill invokes nerd4rent:project-continue before asking the planning-mode question",
+        "The skill invokes nerdway:project-continue before asking the planning-mode question",
         "No checkpoint is written without the user's yes to project-continue's own question"
       ]
     },
@@ -71,7 +71,7 @@
     },
     {
       "id": "host-worktree-cap-claude-code",
-      "prompt": "Host detect: AskUserQuestion present, NERD4RENT_HOST unset. git worktree list succeeds. The user approved AIM for DEMO-701, DEMO-702 and DEMO-703 after their plans were posted (batch).",
+      "prompt": "Host detect: AskUserQuestion present, NERDWAY_HOST unset. git worktree list succeeds. The user approved AIM for DEMO-701, DEMO-702 and DEMO-703 after their plans were posted (batch).",
       "expected_output": "Claude Code. AIM runs in git worktrees, at most two in flight. DEMO-703 waits for a slot. Each worktree is a sibling checkout on the default branch; two AIM runs never share one cwd. After a run finishes its worktree is removed. auto-issue-mode is started from entry B in a subagent by reading its SKILL.md, because disable-model-invocation blocks the Skill tool.",
       "files": [],
       "assertions": [

@@ -31,7 +31,7 @@
     },
     {
       "id": "mention-in-another-pr-does-not-count",
-      "prompt": "Gdzie jesteśmy? The newest checkpoint reads: \"- 2026-10-08 — DEMO-380 · in-progress · demo-380-native-practice-skills @ 4f2c1aa — next: write the debug skill\". DEMO-380 is Done on the tracker, with no \"## No code in this repo\" comment. The only commit on origin/main that names DEMO-380 is the merge commit of another issue: \"Merge pull request #75 from nerd4rent/demo-405-demo-380-closed-without-work\" with the body \"DEMO-405: DEMO-380 closed without work\". Neither trace search from adapters/statuses.md matches it.",
+      "prompt": "Gdzie jesteśmy? The newest checkpoint reads: \"- 2026-10-08 — DEMO-380 · in-progress · demo-380-native-practice-skills @ 4f2c1aa — next: write the debug skill\". DEMO-380 is Done on the tracker, with no \"## No code in this repo\" comment. The only commit on origin/main that names DEMO-380 is the merge commit of another issue: \"Merge pull request #75 from nerdway/demo-405-demo-380-closed-without-work\" with the body \"DEMO-405: DEMO-380 closed without work\". Neither trace search from adapters/statuses.md matches it.",
       "expected_output": "The merge commit of DEMO-405 does not count as a trace of DEMO-380: the report warns that DEMO-380 is done without a trace of work and offers the bug through issue-writer.",
       "files": [],
       "assertions": [

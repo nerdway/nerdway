@@ -16,9 +16,9 @@ description: >-
 
 You are the **orchestrator** of a project's unplanned work: progress, then
 planning, then auto-issue-mode. You resolve the project, invoke
-`nerd4rent:project-continue`, filter the unplanned issues, ask how to plan
+`nerdway:project-continue`, filter the unplanned issues, ask how to plan
 them, post each plan through `issue-workflow`'s Planning phase only, ask
-before every AIM run, and dispatch `nerd4rent:auto-issue-mode` in a
+before every AIM run, and dispatch `nerdway:auto-issue-mode` in a
 subagent. You rewrite none of those skills. The code, the commits and the
 tracker writes of a stage belong to the skill you invoke; you edit no file
 in the repo yourself.
@@ -31,10 +31,10 @@ The argument is optional. A filesystem path is a repo to work in (read its
 that project on the already resolved tracker. With neither, the project is
 the current working directory.
 
-Resolve the platform exactly as `nerd4rent:issue-writer` step 1 does (repo
+Resolve the platform exactly as `nerdway:issue-writer` step 1 does (repo
 `CLAUDE.md` `## Platform`, read from disk as
 `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes → entity page
-`platform:` / legacy `linear:` → `nerd4rent:determine-platform`), and the
+`platform:` / legacy `linear:` → `nerdway:determine-platform`), and the
 status strategy and map as
 `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` describes. No adapter file
 → stop and report: "adapter `trackers/<tracker>` is not available yet in
@@ -53,7 +53,7 @@ directories up from this skill's base directory.
 
 ## Progress
 
-Invoke `nerd4rent:project-continue` in this conversation and wait for its
+Invoke `nerdway:project-continue` in this conversation and wait for its
 report. That skill is read-only here: do not record a checkpoint unless
 the user already said yes to its own question. After the report, keep the
 open-issue list it printed.
@@ -99,7 +99,7 @@ launch a CloudAgent, do not write `in-progress`. Stop **before**
 `post-plan.after-plan` — that host operation asks to implement or to
 move the phase, and this skill asks about AIM instead.
 
-Invoke `nerd4rent:issue-workflow` through the `Skill` tool with the id
+Invoke `nerdway:issue-workflow` through the `Skill` tool with the id
 and a prompt that names this restriction, or `Read` its `SKILL.md` and
 follow the Planning phase yourself. Either way the core stays there; this
 skill does not duplicate the fan-out, the template or the gates.
@@ -115,7 +115,7 @@ After every posted plan, ask once for that id, native host ask or the
 numbered list in `reference.md`:
 
 1. **Run auto-issue-mode for `<ID>`** (recommended) — same consent as
-   typing `/nerd4rent:auto-issue-mode <ID>`.
+   typing `/nerdway:auto-issue-mode <ID>`.
 2. **Skip AIM for `<ID>`** — leave the issue `todo` with the plan on it;
    continue the queue.
 
@@ -153,7 +153,7 @@ already posted the plan; if `issue.read` does not show it, do not
 dispatch.
 
 On a stop from AIM, report what is done, what is pending, the error, and
-how to resume: `/nerd4rent:auto-issue-mode <ID>`. Continue the queue
+how to resume: `/nerdway:auto-issue-mode <ID>`. Continue the queue
 unless the error is a missing adapter or an unknown phase for the whole
 project.
 
@@ -192,12 +192,12 @@ CloudAgent).
 
 ## Related skills
 
-- `nerd4rent:project-continue` — the progress report this skill invokes
+- `nerdway:project-continue` — the progress report this skill invokes
   first; it never enters a workflow by itself.
-- `nerd4rent:issue-workflow` — Planning phase only, then this skill asks
+- `nerdway:issue-workflow` — Planning phase only, then this skill asks
   about AIM instead of `post-plan.after-plan`.
-- `nerd4rent:auto-issue-mode` — the autonomous run of one issue, started
+- `nerdway:auto-issue-mode` — the autonomous run of one issue, started
   from entry B after a yes.
-- `nerd4rent:issue-next-step` — the same handoff for a single id the user
+- `nerdway:issue-next-step` — the same handoff for a single id the user
   already named.
-- `nerd4rent:determine-platform` — when the repo has no platform config.
+- `nerdway:determine-platform` — when the repo has no platform config.

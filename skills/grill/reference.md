@@ -27,10 +27,10 @@ question nor in the summary line, the outcome or the confirmation menu.
 
 | Caller | Passes | Does with the outcome |
 |---|---|---|
-| `nerd4rent:issue-writer` step 2 | `issue: none`, topic = the user's request | drafts the issue body from the decisions; a large size becomes the split proposal of its step 3, of the kind the outcome named — never a draft whose Out of scope only defers this topic's implementation to another issue |
-| `nerd4rent:issue-writer` step 6 | `issue: <ID>`, topic = the created issue's body | updates the description after showing the diff; proposes sub-issues only after approval, and only for a large result split or stages in time of distinct shippable deliverables; never a new issue whose only purpose is implementing this grill; then ends at step 7 on `<ID>` |
-| `nerd4rent:issue-workflow` step 1a | `issue: <ID>`, topic = the issue description | refines the spec (its step 0c) and drafts the plan on `<ID>`; posts neither before the confirmed outcome; never offers a new issue for the implementation of those decisions |
-| `nerd4rent:new-project-workflow` step 5 | `issue: none`, topic = the scaffolded README and the project idea | hands the decisions to the first issue of the project |
+| `nerdway:issue-writer` step 2 | `issue: none`, topic = the user's request | drafts the issue body from the decisions; a large size becomes the split proposal of its step 3, of the kind the outcome named — never a draft whose Out of scope only defers this topic's implementation to another issue |
+| `nerdway:issue-writer` step 6 | `issue: <ID>`, topic = the created issue's body | updates the description after showing the diff; proposes sub-issues only after approval, and only for a large result split or stages in time of distinct shippable deliverables; never a new issue whose only purpose is implementing this grill; then ends at step 7 on `<ID>` |
+| `nerdway:issue-workflow` step 1a | `issue: <ID>`, topic = the issue description | refines the spec (its step 0c) and drafts the plan on `<ID>`; posts neither before the confirmed outcome; never offers a new issue for the implementation of those decisions |
+| `nerdway:new-project-workflow` step 5 | `issue: none`, topic = the scaffolded README and the project idea | hands the decisions to the first issue of the project |
 
 After `Confirmed shared understanding: yes` with `issue: <ID>`, every
 caller above returns to refining the spec, drafting the plan, or
@@ -44,13 +44,13 @@ issue".
 
 ## Related skills
 
-- `nerd4rent:issue-writer` — invokes this skill for the interview before the
+- `nerdway:issue-writer` — invokes this skill for the interview before the
   issue exists and for the optional session after it was created.
-- `nerd4rent:issue-workflow` — invokes this skill before posting a plan for
+- `nerdway:issue-workflow` — invokes this skill before posting a plan for
   an ambiguous issue.
-- `nerd4rent:new-project-workflow` — offers this skill as the first item of
+- `nerdway:new-project-workflow` — offers this skill as the first item of
   its spec-skill menu.
-- `nerd4rent:nerdbrain-wiki` — writes the decisions this skill tags as
+- `nerdway:nerdbrain-wiki` — writes the decisions this skill tags as
   entity-page decisions.
 
 ## Docs-discipline tags
@@ -68,7 +68,7 @@ Each settled decision in the outcome carries one tag:
   implementation.
 - **entity-page decision** when it is a project-level decision — the
   `## Decisions` write trigger of the nerdbrain entity page, through
-  `nerd4rent:nerdbrain-wiki`.
+  `nerdway:nerdbrain-wiki`.
 - **none** otherwise; most decisions carry no tag.
 
 ## Numbered-list fallback

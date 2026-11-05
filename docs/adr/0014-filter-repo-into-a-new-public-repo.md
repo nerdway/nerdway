@@ -1,7 +1,7 @@
 # Public history is a filter-repo export into a new repository
 
 The open-source cut of this plugin lives at `nerdway/nerdway`. The private
-plugin that Nerd4Rent and its bots run stays in its own repository and is
+plugin and its bots stay in their own repository and are
 not rewritten in place. A grilling session on 2026-11-04 settled the split:
 two tracks, one public MIT tree and one private operational tree, with
 package id `nerdway` on the public side.

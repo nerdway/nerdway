@@ -17,7 +17,7 @@ One pass for one issue: **diagnose → propose → ask once → hand off**. The
 diagnosis only reads. The single write this skill makes itself is the
 `in-progress` phase of the diagnosed issue, after the user agrees in chat;
 branch, commits and PR/MR belong to the skill it hands off to, and a bug
-report to `nerd4rent:issue-writer`.
+report to `nerdway:issue-writer`.
 
 ## Platform and adapters
 
@@ -33,10 +33,10 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/vcs/<vcs>.md
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory.
 
-Resolve the platform exactly as `nerd4rent:issue-writer` step 1 does (repo
+Resolve the platform exactly as `nerdway:issue-writer` step 1 does (repo
 `CLAUDE.md` `## Platform`, read from disk as
 `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes → entity page
-`platform:` / legacy `linear:` → `nerd4rent:determine-platform`), and the status strategy and map as
+`platform:` / legacy `linear:` → `nerdway:determine-platform`), and the status strategy and map as
 `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` describes. The argument is an
 issue ID in the form the tracker adapter's `## Issue ID` section gives.
 
@@ -91,7 +91,7 @@ When the next step is implementation and the phase is not `in-progress`:
 1. move the issue to In Progress and continue step by step with
    `issue-workflow`;
 2. move it and run it autonomously with `auto-issue-mode` — choosing this is
-   the same consent as typing `/nerd4rent:auto-issue-mode <ID>`: the run asks
+   the same consent as typing `/nerdway:auto-issue-mode <ID>`: the run asks
    nothing more until the merge and `done`;
 3. no — end here.
 
@@ -118,11 +118,11 @@ skill with nothing written.
 
 Continue in the same conversation with the ID the user already gave:
 
-- **bug** → invoke `nerd4rent:issue-writer` through the `Skill` tool with the
+- **bug** → invoke `nerdway:issue-writer` through the `Skill` tool with the
   incident as its input; it shows the draft and creates nothing without its
   own approval, then runs `issue.relate` from the new bug to the issue;
 
-- **step by step** → invoke `nerd4rent:issue-workflow` through the `Skill`
+- **step by step** → invoke `nerdway:issue-workflow` through the `Skill`
   tool with the issue ID as the argument;
 - **autonomously** → `auto-issue-mode` is user-invoked only, so the `Skill`
   tool cannot start it: read
@@ -142,13 +142,13 @@ with nothing written, when:
 
 ## Related skills
 
-- `nerd4rent:issue-workflow` — the step-by-step handoff target; its dispatch
+- `nerdway:issue-workflow` — the step-by-step handoff target; its dispatch
   table is the source of the next-step table.
-- `nerd4rent:auto-issue-mode` — the autonomous handoff target, entered at
+- `nerdway:auto-issue-mode` — the autonomous handoff target, entered at
   entry B.
-- `nerd4rent:project-continue` — answers "where are we" for the whole
+- `nerdway:project-continue` — answers "where are we" for the whole
   project; this skill answers "what next" for one issue.
-- `nerd4rent:nerd-orchestrate` — the same progress-plus-plans-plus-AIM
+- `nerdway:nerd-orchestrate` — the same progress-plus-plans-plus-AIM
   loop for every unplanned issue in the project, not one id.
-- `nerd4rent:bind-statuses` — binds the phases this skill reads and the
+- `nerdway:bind-statuses` — binds the phases this skill reads and the
   `in-progress` value it writes.

@@ -68,7 +68,7 @@ one, or named outside the `PlatformConfig` enum (rule 24).
   instead of improvising.
 - The platform config lives in the committed repo `CLAUDE.md`, client repos
   included, because it must travel with the repo into every worktree; other
-  developers' agents have no nerd4rent skills and ignore the section.
+  developers' agents have no nerdway skills and ignore the section.
 - Writing that one section is exempt from `no-repo-change-before-in-progress`,
   recorded as a validated `exemptions` entry on the frozen rule (rule 23)
   rather than in prose.

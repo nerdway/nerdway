@@ -200,7 +200,7 @@ the "next" line before writing if they want to.
 
 **A done issue without a trace of work**: the question after the report also
 offers, as its own numbered option, to draft a bug for each such issue with
-`nerd4rent:issue-writer` (the incident, the issue link, a `related` relation
+`nerdway:issue-writer` (the incident, the issue link, a `related` relation
 through `issue.relate`, the marking from the tracker adapter's `## Bugs`).
 The skill never offers a comment on the faulty issue in its place, nor a
 change of its phase. On yes, invoke `issue-writer` through the `Skill` tool;
@@ -271,16 +271,16 @@ If the page has `## Decisions` and `## Active context` but no
 
 ## Related skills
 
-- `nerd4rent:nerdbrain-wiki` — defines the `## Checkpoints` entry format and
+- `nerdway:nerdbrain-wiki` — defines the `## Checkpoints` entry format and
   the Prepend, capped write mode this skill delegates to.
-- `nerd4rent:issue-workflow` — writes a checkpoint in its mandatory
+- `nerdway:issue-workflow` — writes a checkpoint in its mandatory
   session-summary step, which is what keeps the history growing; type the
   issue ID from the report to enter it.
-- `nerd4rent:nerdbrain-search` — `rg` recipes if the page has to be found by
+- `nerdway:nerdbrain-search` — `rg` recipes if the page has to be found by
   content rather than by slug.
-- `nerd4rent:issue-writer` — drafts the bug for a done issue without a trace
+- `nerdway:issue-writer` — drafts the bug for a done issue without a trace
   of work, after the user picks that option.
-- `nerd4rent:issue-next-step` — takes the issue ID this report hints at,
+- `nerdway:issue-next-step` — takes the issue ID this report hints at,
   names its next step and hands off to the flow the user picks.
-- `nerd4rent:nerd-orchestrate` — invokes this skill for the progress
+- `nerdway:nerd-orchestrate` — invokes this skill for the progress
   report, then plans every unplanned issue and asks before auto-issue-mode.

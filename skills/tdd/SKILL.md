@@ -49,7 +49,7 @@ pass.
    reason you named — a missing behaviour, not a typo, an import error or a
    broken fixture. A test that passes on first run either tests nothing new or
    tests the wrong thing; fix the test, never move on. A test that is red for
-   a reason you cannot explain is not a red step: invoke `nerd4rent:debug`
+   a reason you cannot explain is not a red step: invoke `nerdway:debug`
    with the issue line, let it find the cause (its regression test comes back
    through this loop), then return here.
 3. **Green.** Write the minimum production code that makes this test pass. No
@@ -62,7 +62,7 @@ pass.
 5. **Check.** Run the project's full test command and its validators, not
    just the new test. Everything is green before the cycle counts as done.
    A green cycle that turns the suite or a validator red is a failure with no
-   named cause: invoke `nerd4rent:debug` before changing anything, and fix
+   named cause: invoke `nerdway:debug` before changing anything, and fix
    only what its evidence justifies. Commit the cycle as one atomic commit.
 
 Never weaken a test to get to green: no loosened assertion, no skipped case,
@@ -109,10 +109,10 @@ plan, extend the plan with an `issue.comment` carrying the new test approach.
 
 ## Related skills
 
-- `nerd4rent:issue-workflow` — step 5 reads the plan's test approach and
+- `nerdway:issue-workflow` — step 5 reads the plan's test approach and
   hands TDD work here; step 6a is the criteria verification table.
-- `nerd4rent:auto-issue-mode` — runs this loop in its implementation stage
+- `nerdway:auto-issue-mode` — runs this loop in its implementation stage
   without asking.
-- `nerd4rent:debug` — takes over when a red step is red for a reason other
+- `nerdway:debug` — takes over when a red step is red for a reason other
   than the named one or a check turns the suite red; its regression test is
   written through this loop.

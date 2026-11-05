@@ -246,14 +246,14 @@ test("no ## Platform section, tracker none, a detached HEAD or a failed git read
   assert.equal(gate("git commit -m x", LINEAR, null), "allow");
 });
 
-test("NERD4RENT_NO_ISSUE=1 allows the gate and silences the reminder; other values do not", () => {
-  assert.equal(gate("git push", LINEAR, "main", { NERD4RENT_NO_ISSUE: "1" }), "allow");
-  assert.equal(gate("git push", LINEAR, "main", { NERD4RENT_NO_ISSUE: "0" }), "deny");
-  assert.equal(reminderText("/repo", { NERD4RENT_NO_ISSUE: "1" }, probe(LINEAR, "main")), "");
+test("NERDWAY_NO_ISSUE=1 allows the gate and silences the reminder; other values do not", () => {
+  assert.equal(gate("git push", LINEAR, "main", { NERDWAY_NO_ISSUE: "1" }), "allow");
+  assert.equal(gate("git push", LINEAR, "main", { NERDWAY_NO_ISSUE: "0" }), "deny");
+  assert.equal(reminderText("/repo", { NERDWAY_NO_ISSUE: "1" }, probe(LINEAR, "main")), "");
 });
 
-test("an inline NERD4RENT_NO_ISSUE=1 prefix in the command does not open the gate", () => {
-  assert.equal(gate("NERD4RENT_NO_ISSUE=1 git push", LINEAR, "main"), "deny");
+test("an inline NERDWAY_NO_ISSUE=1 prefix in the command does not open the gate", () => {
+  assert.equal(gate("NERDWAY_NO_ISSUE=1 git push", LINEAR, "main"), "deny");
 });
 
 test("the deny reason tells the model what to do and names the escape hatch", () => {
@@ -263,8 +263,8 @@ test("the deny reason tells the model what to do and names the escape hatch", ()
   assert.match(result.agent, /git commit/);
   assert.match(result.agent, /`main`/);
   assert.match(result.agent, /demo-123-short-title/);
-  assert.match(result.agent, /nerd4rent:issue-writer/);
-  assert.match(result.agent, /NERD4RENT_NO_ISSUE=1/);
+  assert.match(result.agent, /nerdway:issue-writer/);
+  assert.match(result.agent, /NERDWAY_NO_ISSUE=1/);
   assert.match(result.user, /blocked/);
 });
 
@@ -278,12 +278,12 @@ test("the reminder appears only in a repo with a tracker on a branch without an 
 test("runHook renders the Claude Code envelopes", () => {
   const reminder = JSON.parse(runHook("claude", "reminder", JSON.stringify({ cwd: "/repo", prompt: "hi" }), {}, "/", probe(LINEAR, "main")));
   assert.equal(reminder.hookSpecificOutput.hookEventName, "UserPromptSubmit");
-  assert.match(reminder.hookSpecificOutput.additionalContext, /nerd4rent:issue-writer/);
+  assert.match(reminder.hookSpecificOutput.additionalContext, /nerdway:issue-writer/);
   const deny = JSON.parse(
     runHook("claude", "gate", JSON.stringify({ cwd: "/repo", tool_name: "Bash", tool_input: { command: "git push" } }), {}, "/", probe(LINEAR, "main")),
   );
   assert.equal(deny.hookSpecificOutput.permissionDecision, "deny");
-  assert.match(deny.hookSpecificOutput.permissionDecisionReason, /NERD4RENT_NO_ISSUE/);
+  assert.match(deny.hookSpecificOutput.permissionDecisionReason, /NERDWAY_NO_ISSUE/);
   assert.equal(runHook("claude", "gate", JSON.stringify({ cwd: "/repo", tool_input: { command: "git status" } }), {}, "/", probe(LINEAR, "main")), "");
 });
 
@@ -325,7 +325,7 @@ function repo(claudeMd: string | null, branch: string): string {
 const PLATFORM_MD = "## Platform\n\n```yaml\ntracker: linear\nvcs: github\nlinear:\n  team: DEMO\n  project: p\n```\n";
 
 function run(runtime: string, event: string, input: unknown, env: NodeJS.ProcessEnv = {}) {
-  const { NERD4RENT_NO_ISSUE: _ignored, ...base } = process.env;
+  const { NERDWAY_NO_ISSUE: _ignored, ...base } = process.env;
   return spawnSync(process.execPath, ["hooks/require-issue.ts", "--runtime", runtime, "--event", event], {
     input: JSON.stringify(input),
     encoding: "utf8",
@@ -371,9 +371,9 @@ test("the script reads tags from a real repo: a tag name pushes from master, a p
   assert.equal(run("claude", "reminder", { cwd: feature }).stdout, "");
 });
 
-test("the script honours NERD4RENT_NO_ISSUE=1 from its environment and allows outside a git repo", () => {
+test("the script honours NERDWAY_NO_ISSUE=1 from its environment and allows outside a git repo", () => {
   const main = repo(PLATFORM_MD, "main");
-  assert.equal(run("claude", "gate", { cwd: main, tool_input: { command: "git push" } }, { NERD4RENT_NO_ISSUE: "1" }).stdout, "");
+  assert.equal(run("claude", "gate", { cwd: main, tool_input: { command: "git push" } }, { NERDWAY_NO_ISSUE: "1" }).stdout, "");
   const outside = mkdtempSync(join(tmpdir(), "require-issue-nogit-"));
   assert.equal(JSON.parse(run("cursor", "gate", { command: "git push", cwd: outside }).stdout).permission, "allow");
 });

@@ -185,13 +185,13 @@ const [repoFacts, conventions, priorPlans, trackerRelations, vault] = await para
     agent(
       issueHeader +
         'Map the repository for a planning agent. Read README.md and the top-level layout, find the directories and files this issue will likely touch, and collect the exact test/build/validator commands the repo documents (README, CONTRIBUTING.md at the root or under docs/, CLAUDE.md, scripts). Return repoLayout as one compact paragraph and commands as verbatim shell commands.',
-      { label: 'gather:repo-layout', phase: 'Gather', schema: repoFactsShape, agentType: 'nerd4rent:plan-gatherer' },
+      { label: 'gather:repo-layout', phase: 'Gather', schema: repoFactsShape, agentType: 'nerdway:plan-gatherer' },
     ),
   () =>
     agent(
       issueHeader +
         'Collect the in-repo rules a plan for this issue must follow. Read CONTEXT.md (glossary terms), every ADR under docs/adr/, and infer the commit-message style from `git log --oneline -15`. Return items: one string per rule or constraint, each prefixed with its source, e.g. "ADR-0003: ...", "CONTEXT.md: ...", "commits: ...".',
-      { label: 'gather:conventions', phase: 'Gather', schema: stringListShape, agentType: 'nerd4rent:plan-gatherer' },
+      { label: 'gather:conventions', phase: 'Gather', schema: stringListShape, agentType: 'nerdway:plan-gatherer' },
     ),
   () =>
     agent(
@@ -200,7 +200,7 @@ const [repoFacts, conventions, priorPlans, trackerRelations, vault] = await para
           ? 'Collect prior art inside this repo: read every file under docs/plans/ (if present). '
           : `Collect prior art inside this repo: read every file under docs/plans/ (if present) and the last few merged PRs. ${adapterInstruction(vcsAdapter, 'pr.list-merged')} `) +
         'Return items: one string per precedent — what it was and what a planner should copy from it.',
-      { label: 'gather:prior-plans', phase: 'Gather', schema: stringListShape, agentType: 'nerd4rent:plan-gatherer' },
+      { label: 'gather:prior-plans', phase: 'Gather', schema: stringListShape, agentType: 'nerdway:plan-gatherer' },
     ),
   () =>
     issueId === '' || trackerAdapter === null
@@ -208,7 +208,7 @@ const [repoFacts, conventions, priorPlans, trackerRelations, vault] = await para
       : agent(
           issueHeader +
             `Collect the issues related to ${issueId}: its parent, sub-issues and linked issues, then the parent's other sub-issues. ${adapterInstruction(trackerAdapter, 'issue.read-relations')} Run it on ${issueId}, then on the parent. Return items: one string per related issue — "TEAM-123 (state): title — why it matters to this plan". If the CLI is unavailable, return an empty list.`,
-          { label: 'gather:tracker-relations', phase: 'Gather', schema: stringListShape, agentType: 'nerd4rent:plan-gatherer' },
+          { label: 'gather:tracker-relations', phase: 'Gather', schema: stringListShape, agentType: 'nerdway:plan-gatherer' },
         ),
   () =>
     vaultAdapter === null
@@ -216,7 +216,7 @@ const [repoFacts, conventions, priorPlans, trackerRelations, vault] = await para
       : agent(
           issueHeader +
             `Recall project context from the nerdbrain vault with the preloaded nerdbrain-search operations. Vault recipes come from the adapter file \`${vaultAdapter}\`: read its "## Paths" and "## Operations" sections and run only the read operations page.read, page.read-section, vault.search, graph.links, graph.backlinks and graph.hop1 exactly as its table gives them; skip an operation whose recipe is \`—\` and say so in the result. Find the project entity page under entities/projects/, extract its slug, the "## Decisions" section (one string per decision) and "## Active context", then assemble the 1-hop graph (graph.hop1) for relatedPages. Keep at most ${MAX_SEARCH_RESULTS} search results per query and at most ${MAX_RELATED_PAGES} related pages. If the vault is unreachable, fail rather than invent content.`,
-          { label: 'gather:vault', phase: 'Gather', schema: SCHEMA_ProjectContext, agentType: 'nerd4rent:plan-gatherer' },
+          { label: 'gather:vault', phase: 'Gather', schema: SCHEMA_ProjectContext, agentType: 'nerdway:plan-gatherer' },
         ),
 ])
 

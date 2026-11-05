@@ -1,5 +1,5 @@
 {
-  "description": "Injects the nerdbrain project page at session start; warns when the installed nerd4rent plugin is older than main or stale copies of its skills sit in user skill directories; reminds about the issue and blocks git commit and git push on a branch without an issue ID in repos with a ## Platform section",
+  "description": "Injects the nerdbrain project page at session start; warns when the installed nerdway plugin is older than main or stale copies of its skills sit in user skill directories; reminds about the issue and blocks git commit and git push on a branch without an issue ID in repos with a ## Platform section",
   "hooks": {
     "SessionStart": [
       {

@@ -939,9 +939,9 @@ test("rule 24: rejects an adapter file in a directory no axis declares", () => {
 });
 
 test("rule 24: rejects an adapter file named outside the axis enum", () => {
-  const errors = validateAdapters({ trackers: trackersAxis }, [adapterFile({ name: "jira" })]);
+  const errors = validateAdapters({ trackers: trackersAxis }, [adapterFile({ name: "basecamp" })]);
   assert.equal(errors.length, 1);
-  assert.match(errors[0], /jira/);
+  assert.match(errors[0], /basecamp/);
 });
 
 test("rule 24: rejects an adapter missing a required section", () => {

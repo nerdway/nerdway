@@ -9,7 +9,7 @@ remote: <git-remote-url-or-empty>
 local-paths:
   - {host: <hostname>, path: <absolute-path>}
 platform:            # REQUIRED — same object as the repo CLAUDE.md `## Platform` section
-  tracker: linear    # linear | github | gitlab | ado | none
+  tracker: linear    # linear | github | gitlab | ado | jira | none
   vcs: github        # github | gitlab | ado
   linear:            # identifier block of each platform in use
     team: <team-key>
@@ -17,6 +17,9 @@ platform:            # REQUIRED — same object as the repo CLAUDE.md `## Platfo
   github:
     owner: <owner>
     repo: <repo>
+  jira:              # when tracker is jira
+    site: <site>.atlassian.net
+    project: <PROJECT-KEY>
 # No tracker: `tracker: none` and no `linear:` block inside `platform:`.
 related: []
 ---

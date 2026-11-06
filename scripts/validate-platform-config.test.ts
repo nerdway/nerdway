@@ -27,8 +27,21 @@ test("--print: no file or no section exits 3, so the skill moves on to its next 
 });
 
 test("--print: a broken section exits 4, never 1, which stays Node's own failure", () => {
-  const run = print("## Platform\n\n```yaml\ntracker: jira\nvcs: github\n```\n");
+  const run = print("## Platform\n\n```yaml\ntracker: basecamp\nvcs: github\n```\n");
   assert.equal(run.status, 4);
   assert.equal(run.stdout, "");
-  assert.match(run.stderr, /jira/);
+  assert.match(run.stderr, /basecamp/);
+});
+
+test("--print: tracker jira with site and project exits 0", () => {
+  const run = print(
+    "## Platform\n\n```yaml\ntracker: jira\nvcs: github\njira:\n  site: acme.atlassian.net\n  project: PROJ\ngithub:\n  owner: acme\n  repo: app\n```\n",
+  );
+  assert.equal(run.status, 0, run.stderr);
+  assert.deepEqual(JSON.parse(run.stdout), {
+    tracker: "jira",
+    vcs: "github",
+    jira: { site: "acme.atlassian.net", project: "PROJ" },
+    github: { owner: "acme", repo: "app" },
+  });
 });

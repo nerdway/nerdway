@@ -115,7 +115,7 @@
             "type": "string",
             "title": "Tracker",
             "description": "Where the project's issues live; `none` when the project has no tracker. Names the file under `adapters/trackers/`.",
-            "enum": ["linear", "github", "gitlab", "ado", "none"]
+            "enum": ["linear", "github", "gitlab", "ado", "jira", "none"]
           },
           "vcs": {
             "type": "string",
@@ -209,6 +209,24 @@
               }
             },
             "required": ["org", "project"]
+          },
+          "jira": {
+            "type": "object",
+            "title": "Jira Cloud",
+            "description": "Jira Cloud identifiers, present when the tracker is Jira Cloud.",
+            "properties": {
+              "site": {
+                "type": "string",
+                "title": "Site",
+                "description": "Jira Cloud hostname, e.g. `acme.atlassian.net` — no scheme. The value `acli jira auth login --site` uses, and the host of `https://<site>/browse/<KEY>`."
+              },
+              "project": {
+                "type": "string",
+                "title": "Project",
+                "description": "Project key, e.g. `PROJ`. Issue IDs are `<project>-<number>`."
+              }
+            },
+            "required": ["site", "project"]
           },
           "statuses": {
             "type": "object",

@@ -2,7 +2,7 @@
 name: determine-platform
 description: >-
   Establish the project's platform — which tracker holds its issues (Linear,
-  GitHub Issues, GitLab Issues, Azure DevOps Boards, or none) and which VCS host
+  GitHub Issues, GitLab Issues, Azure DevOps Boards, Jira Cloud, or none) and which VCS host
   holds its code (GitHub, GitLab, Azure DevOps) — and record it as the
   `## Platform` section of the repo CLAUDE.md, mirrored as `platform:` on the
   nerdbrain entity page. Reads the existing config first, infers from the git
@@ -58,7 +58,7 @@ github:
 
 | Key | Values | Identifier block |
 |-----|--------|------------------|
-| `tracker` | `linear`, `github`, `gitlab`, `ado`, `none` | `linear: {team, project}` (project = UUID); GitHub/GitLab/ADO trackers reuse the VCS block of the same platform; an ADO tracker's `ado.team`, `ado.board` and `ado.workItemType` are written by `bind-statuses` |
+| `tracker` | `linear`, `github`, `gitlab`, `ado`, `jira`, `none` | `linear: {team, project}` (project = UUID); `jira: {site, project}` (site = Cloud hostname, project = key); GitHub/GitLab/ADO trackers reuse the VCS block of the same platform; an ADO tracker's `ado.team`, `ado.board` and `ado.workItemType` are written by `bind-statuses` |
 | `vcs` | `github`, `gitlab`, `ado` | `github: {owner, repo}`, `gitlab: {group, project}`, `ado: {org, project}` |
 
 ## Step 1 — Read what is already recorded
@@ -89,6 +89,8 @@ the other in Step 4.
 | VCS host | `git remote get-url origin` | host `github.com` → `github` (`owner/repo` from the path); host containing `gitlab` → `gitlab` (`group/project` from the path, subgroups kept in `group`); `dev.azure.com` or `*.visualstudio.com` (SSH hosts included) → `ado`, with `org` and `project` per the Azure DevOps table below |
 | Tracker CLI | `auth.check` from `adapters/trackers/linear.md` | exit 0 → the Linear CLI is installed and authenticated |
 | Linear project | `project.list` from `adapters/trackers/linear.md` | projects whose name equals the repo name, case-insensitive |
+| Jira CLI | `auth.check` from `adapters/trackers/jira.md` | exit 0 → `acli` is installed and authenticated to Jira Cloud |
+| Jira project | `project.list` from `adapters/trackers/jira.md` | projects whose `key` or `name` equals the repo name, case-insensitive |
 
 Azure DevOps remotes come in four forms, and on `*.visualstudio.com` the
 organisation is the subdomain, not the first path segment:
@@ -107,7 +109,9 @@ The inference is **unambiguous** only when all three hold: the origin host
 maps to exactly one VCS, the Linear CLI is authenticated, and exactly one
 Linear project in exactly one team matches the repo name. Then the result is
 `tracker: linear` plus that team key and project UUID, `vcs` from the host —
-write it without asking.
+write it without asking. A matching Jira project is never unambiguous on its
+own: `acli` being authenticated does not mean this repo's issues live in
+Jira, so always ask (Step 3) when Linear did not settle.
 
 ## Step 3 — Ask (only when Step 2 is ambiguous)
 
@@ -123,11 +127,15 @@ Which platform does this project use?
   4. GitHub Issues + GitHub
   5. GitLab Issues + GitLab
   6. Azure DevOps Boards + Azure DevOps
+  7. Jira Cloud + GitHub
+  8. Jira Cloud + GitLab
+  9. Jira Cloud + Azure DevOps
 Or answer `none` for no tracker (then name the VCS host).
 ```
 
 Then ask only for the identifiers inference could not settle (for Linear: the
-team key from `team.list`, the project from `project.list`).
+team key from `team.list`, the project from `project.list`; for Jira Cloud:
+`jira.site` as the Cloud hostname, `jira.project` from `project.list`).
 
 A combination with no adapter file yet is still recorded — the core skill
 that needs it will stop with "adapter not available yet". Never substitute

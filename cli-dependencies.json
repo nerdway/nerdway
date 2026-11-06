@@ -48,12 +48,25 @@
     },
     {
       "id": "jq",
-      "_comment": "the GitLab Issues tracker adapter filters `glab api` output with jq, because `glab api` has no --jq flag; the Azure DevOps Boards tracker adapter builds JSON Patch bodies for `az devops invoke` and filters its output with jq",
+      "_comment": "the GitLab Issues tracker adapter filters `glab api` output with jq, because `glab api` has no --jq flag; the Azure DevOps Boards tracker adapter builds JSON Patch bodies for `az devops invoke` and filters its output with jq; the Jira Cloud tracker adapter filters `acli --json` the same way",
       "minVersion": "1.6.0",
       "versionCommand": ["jq", "--version"],
       "versionRegex": "jq-(\\d+\\.\\d+(?:\\.\\d+)?)",
       "requiredBy": ["issue-workflow", "issue-writer", "issue-start", "issue-close", "bind-statuses", "project-continue", "auto-issue-mode", "issue-next-step", "nerd-orchestrate", "retro"],
       "manualInstall": "winget install jqlang.jq | brew install jq | apt install jq"
+    },
+    {
+      "id": "acli",
+      "_comment": "official Atlassian CLI, Jira Cloud only; auth.check is a real API call because a missing token must fail the probe. Token is piped on stdin to `jira auth login --token`; never --web (OAuth) as the agent recipe",
+      "minVersion": "1.3.0",
+      "versionCommand": ["acli", "--version"],
+      "versionRegex": "(\\d+\\.\\d+\\.\\d+)",
+      "requiredBy": ["issue-workflow", "issue-writer", "issue-close", "project-continue", "issue-start", "determine-platform", "bind-statuses", "auto-issue-mode", "issue-next-step", "nerd-orchestrate", "retro"],
+      "manualInstall": "brew tap atlassian/homebrew-acli && brew install acli | see https://developer.atlassian.com/cloud/acli/guides/install-acli/",
+      "auth": {
+        "check": ["acli", "jira", "project", "list", "--limit", "1"],
+        "instructions": "Create an Atlassian API token at https://id.atlassian.com/manage-profile/security/api-tokens (email + token; never commit the token). Pipe it into `acli jira auth login --site <jira.site> --email <account-email> --token`. Do not use `acli jira auth login --web` for agent operations."
+      }
     },
     {
       "id": "az",

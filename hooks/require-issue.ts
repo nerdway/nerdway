@@ -42,10 +42,12 @@ function trackerOf(platform: Platform): string {
   return typeof platform.tracker === "string" ? platform.tracker : "none";
 }
 
-function linearKey(platform: Platform): string {
-  const linear = platform.linear;
-  const team = isRecord(linear) ? linear.team : undefined;
-  return typeof team === "string" && /^[A-Za-z][A-Za-z0-9_]*$/.test(team) ? escapeRegExp(team) : "[a-z][a-z0-9_]*";
+function keyTrackerPrefix(platform: Platform): string | null {
+  const tracker = trackerOf(platform);
+  const block = tracker === "linear" ? platform.linear : tracker === "jira" ? platform.jira : undefined;
+  const raw = isRecord(block) ? (tracker === "linear" ? block.team : block.project) : undefined;
+  if (tracker !== "linear" && tracker !== "jira") return null;
+  return typeof raw === "string" && /^[A-Za-z][A-Za-z0-9_]*$/.test(raw) ? escapeRegExp(raw) : "[a-z][a-z0-9_]*";
 }
 
 export function enforced(platform: Platform | null): platform is Platform {
@@ -53,22 +55,29 @@ export function enforced(platform: Platform | null): platform is Platform {
 }
 
 export function branchHasIssue(branch: string, platform: Platform): boolean {
-  if (trackerOf(platform) === "linear") {
-    return new RegExp(`(?<![a-z0-9])${linearKey(platform)}-[0-9]+(?![0-9])`, "i").test(branch);
+  const prefix = keyTrackerPrefix(platform);
+  if (prefix !== null) {
+    return new RegExp(`(?<![a-z0-9])${prefix}-[0-9]+(?![0-9])`, "i").test(branch);
   }
   return /^[0-9]+(?![0-9])/.test(branch);
 }
 
 export function messageHasIssue(message: string, platform: Platform): boolean {
-  if (trackerOf(platform) === "linear") return branchHasIssue(message, platform);
+  if (keyTrackerPrefix(platform) !== null) return branchHasIssue(message, platform);
   return /(?<![A-Za-z0-9])(?:AB)?#[0-9]+/.test(message);
 }
 
 export function example(platform: Platform): string {
-  if (trackerOf(platform) === "linear") {
+  const tracker = trackerOf(platform);
+  if (tracker === "linear") {
     const linear = platform.linear;
     const team = isRecord(linear) && typeof linear.team === "string" ? linear.team : "TEAM";
     return `${team.toLowerCase()}-123-short-title`;
+  }
+  if (tracker === "jira") {
+    const jira = platform.jira;
+    const project = isRecord(jira) && typeof jira.project === "string" ? jira.project : "PROJ";
+    return `${project.toLowerCase()}-123-short-title`;
   }
   return "123-short-title";
 }

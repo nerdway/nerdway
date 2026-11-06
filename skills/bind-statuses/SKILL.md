@@ -68,6 +68,15 @@ and `ado.workItemType` before Step 2, keeping values the block already holds:
    the types the board carries; one → take it, several → ask which one new
    issues are created as.
 
+**Jira Cloud (`tracker: jira`).** `native` maps phases to the project's
+workflow status names. Stock simplified workflows lack **In Review**, and
+Scrum / team-managed often lack **Backlog**. Do **not** add statuses or
+edit the board here — that is a separate board-setup skill. `status.list`
+is `—`; propose the adapter default map and ask the user whether those
+names exist on the project. If they cannot bind five distinct statuses
+(no admin, or they decline to add names), recommend `comment`. Never
+offer `label` (the adapter lists it as `—`).
+
 ## Step 2 — Propose a strategy
 
 Pick the recommendation by the first rule that holds:

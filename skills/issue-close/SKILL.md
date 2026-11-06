@@ -3,14 +3,14 @@ name: issue-close
 model: haiku
 description: >-
   Mechanically close out a tracker issue (Linear, GitHub Issues, GitLab
-  Issues, Azure DevOps Boards) once the work
+  Issues, Azure DevOps Boards, Jira Cloud) once the work
   is done: check that the user's nerdbrain guide for the issue exists (the
   caller writes it first with nerd-personal-docs; without it the close-out
   stops), check that every child of the issue is done (an unfinished child
   stops it before the merge), check that the PR/MR description is no longer
   the start draft (the caller writes the readiness description first), commit any
   leftover changes, push, merge the PR (GitHub, Azure DevOps) or MR (GitLab),
-  switch the local
+  switch the
   checkout to the PR/MR base branch, and move the issue to done. Purely
   procedural with explicit commands and no multi-step reasoning — pinned to Haiku
   (the `model` frontmatter above) to keep it cheap. Invoked by
@@ -222,9 +222,9 @@ git checkout <base> && git pull
 ## Step 5 — Move the issue to `done`
 
 Run `issue.set-status` from the tracker adapter with the phase `done`: the
-write recipe of the resolved strategy with `map.done` (`Done` on Linear,
-`closed` on GitHub Issues and GitLab Issues, the `Closed` board column on
-Azure DevOps Boards by default).
+write recipe of the resolved strategy with `map.done` (`Done` on Linear and
+on Jira Cloud by default, `closed` on GitHub Issues and GitLab Issues, the
+`Closed` board column on Azure DevOps Boards by default).
 
 This is idempotent and deterministic: it closes the issue independently of
 magic-word timing and covers hosts with no tracker auto-close. An issue the

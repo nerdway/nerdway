@@ -104,6 +104,7 @@ with `--only` or `--skills`, or `--only` with `--skills`, is an error.
 | `NEEDS_PATH` | Binary placed, not resolvable | Tell the user to add `~/.local/bin` to PATH, then re-run |
 | `MISSING` | Absent, no install ran (no `install` strategy for this entry, or the run was `--check`) | If the detail says the install was skipped for `--check`, ask to install that subset; otherwise give the user the `manualInstall` hint |
 | `MISSING` for `glab` | The GitLab CLI is absent | Not blocking for a machine that works on no GitLab repos - say so, and give the `manualInstall` hint only when the user works on a GitLab-hosted repo (`vcs: gitlab`). A `--only glab` / `--all` run still exits 1 |
+| `MISSING` for `acli` | The Atlassian CLI is absent | Not blocking for a machine that works on no Jira Cloud tracker - say so, and give the `manualInstall` hint only when the user works with `tracker: jira`. A `--only acli` / `--all` run still exits 1 |
 | `OUTDATED` | Present but below `minVersion`, no install ran (same two causes as `MISSING`) | Same as `MISSING` |
 | `UNSUPPORTED` | No install path for this platform | Give the `manualInstall` hint |
 | `FAILED` | Install ran and did not work | Report the detail verbatim; do not substitute another architecture |

@@ -113,9 +113,9 @@ test("accepts a comment map of marker values", () => {
 });
 
 test("rejects a tracker or vcs outside the enum", () => {
-  const errors = validatePlatformConfig({ tracker: "jira", vcs: "bitbucket" }, vocabulary, undefined);
+  const errors = validatePlatformConfig({ tracker: "basecamp", vcs: "bitbucket" }, vocabulary, undefined);
   assert.equal(errors.length, 2);
-  assert.match(errors[0], /jira/);
+  assert.match(errors[0], /basecamp/);
   assert.match(errors[1], /bitbucket/);
 });
 
@@ -300,6 +300,43 @@ test("ado: rejects a team, board or work item type carrying shell quoting charac
   assert.match(errors[1], /ado\.workItemType/);
 });
 
+const jiraVocabulary: PlatformVocabulary = { ...vocabulary, trackers: [...vocabulary.trackers, "jira"] };
+const jiraDefaults = ["strategy: native", "map:", "  backlog: Backlog", "  todo: To Do", "  in-progress: In Progress", "  in-review: In Review", "  done: Done"].join("\n");
+const jiraAdapter = adapter([["native", "read", "write"], ["label", "—", "—"], ["comment", "read", "write"]], jiraDefaults);
+
+function jiraConfig(jira: Record<string, string>, statuses?: unknown) {
+  return { tracker: "jira", vcs: "github", jira: { site: "acme.atlassian.net", project: "PROJ", ...jira }, github: { owner: "acme", repo: "app" }, ...(statuses === undefined ? {} : { statuses }) };
+}
+
+test("jira: accepts site and project with the adapter default native map", () => {
+  assert.deepEqual(validatePlatformConfig(jiraConfig({}), jiraVocabulary, jiraAdapter), []);
+});
+
+test("jira: rejects a config without site or project", () => {
+  const errors = validatePlatformConfig({ tracker: "jira", vcs: "github" }, jiraVocabulary, jiraAdapter);
+  assert.equal(errors.length, 2);
+  assert.match(errors[0], /jira\.site/);
+  assert.match(errors[1], /jira\.project/);
+});
+
+test("jira: rejects a site or project carrying shell quoting characters", () => {
+  const errors = validatePlatformConfig(jiraConfig({ site: 'acme".atlassian.net', project: "$(id)" }), jiraVocabulary, jiraAdapter);
+  assert.equal(errors.length, 2);
+  assert.match(errors[0], /jira\.site/);
+  assert.match(errors[1], /jira\.project/);
+});
+
+test("jira: accepts an explicit comment map as the no-admin fallback", () => {
+  const map = { backlog: "backlog", todo: "todo", "in-progress": "in-progress", "in-review": "in-review", done: "done" };
+  assert.deepEqual(validatePlatformConfig(jiraConfig({}, { strategy: "comment", map }), jiraVocabulary, jiraAdapter), []);
+});
+
+test("jira: rejects label, which the adapter does not support", () => {
+  const errors = validatePlatformConfig(jiraConfig({}, { strategy: "label", map: labelMap }), jiraVocabulary, jiraAdapter);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /not supported/);
+});
+
 test("readPlatform: a valid section is found, with the parsed object", () => {
   const markdown = "# Repo\n\n## Platform\n\n```yaml\ntracker: linear\nvcs: github\nlinear:\n  team: DEMO\n```\n\n## Other\n";
   assert.deepEqual(readPlatform(markdown, vocabulary, new Map([["linear", adapter()]])), {
@@ -319,7 +356,7 @@ test("readPlatform: a broken section is invalid, never absent, so the caller sto
   const noBlock = readPlatform("## Platform\n\nprose only\n", vocabulary, new Map());
   assert.equal(noBlock.status, "invalid");
   assert.match(noBlock.errors[0], /yaml/);
-  const badValue = readPlatform("## Platform\n\n```yaml\ntracker: jira\nvcs: github\n```\n", vocabulary, new Map());
+  const badValue = readPlatform("## Platform\n\n```yaml\ntracker: basecamp\nvcs: github\n```\n", vocabulary, new Map());
   assert.equal(badValue.status, "invalid");
-  assert.match(badValue.errors[0], /jira/);
+  assert.match(badValue.errors[0], /basecamp/);
 });

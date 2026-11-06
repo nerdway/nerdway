@@ -117,6 +117,28 @@ test("the node entry keeps 24.0.0 and names both cursor hooks", () => {
   assert.equal(node.requiredBy.includes("hooks/session-start.ts"), true);
 });
 
+test("the acli entry is the Jira Cloud tracker CLI with API-token auth", () => {
+  const contract = JSON.parse(readFileSync(new URL("../../cli-dependencies.json", import.meta.url), "utf8")) as {
+    clis: Array<{
+      id: string;
+      minVersion: string;
+      versionCommand: string[];
+      requiredBy: string[];
+      auth?: { check: string[]; instructions: string };
+    }>;
+  };
+  const acli = contract.clis.find((item) => item.id === "acli");
+  assert.ok(acli);
+  assert.equal(acli.minVersion, "1.3.0");
+  assert.deepEqual(acli.versionCommand, ["acli", "--version"]);
+  assert.equal(acli.requiredBy.includes("determine-platform"), true);
+  assert.equal(acli.requiredBy.includes("issue-workflow"), true);
+  assert.ok(acli.auth);
+  assert.deepEqual(acli.auth.check, ["acli", "jira", "project", "list", "--limit", "1"]);
+  assert.match(acli.auth.instructions, /--token/);
+  assert.match(acli.auth.instructions, /Do not use `acli jira auth login --web`/);
+});
+
 test("rejects a malformed versionRegex", () => {
   const errors = validateContract({ clis: [entry({ versionRegex: "linear version (" })] }, skillDirs);
   assert.equal(errors.length, 1);

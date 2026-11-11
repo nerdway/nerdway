@@ -246,7 +246,8 @@ export function validateAdapterDefaults(name: string, adapterSource: string, voc
 export type PlatformRead =
   | { status: "found"; value: Record<string, unknown>; errors: [] }
   | { status: "absent"; errors: string[] }
-  | { status: "invalid"; errors: string[] };
+  | { status: "invalid"; errors: string[] }
+  | { status: "migration-needed"; errors: string[] };
 
 export function readPlatform(
   markdown: string | undefined,

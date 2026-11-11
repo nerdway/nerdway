@@ -11,12 +11,12 @@
       "exemptions": [
         {
           "node": "platform-determine",
-          "scope": "The `## Platform` section of the repo `CLAUDE.md`, replaced idempotently and nothing else in the repo.",
+          "scope": "The user-owned nerdway project config (`<config dir>/<slug>/config.yml`; config dir is `NERDWAY_CONFIG_DIR`, else `$XDG_CONFIG_HOME/nerdway`, else `~/.config/nerdway` on Linux and macOS, else `%APPDATA%\\nerdway` on Windows), replaced idempotently. No file in the repo is changed.",
           "reason": "Platform config is project setup, not issue work: it has to exist before any issue can be written, so it cannot wait for an issue to reach In Progress."
         },
         {
           "node": "statuses-bind",
-          "scope": "The `statuses` key inside the `## Platform` section of the repo `CLAUDE.md` — and, when the tracker is Azure DevOps Boards, the `team`, `board` and `workItemType` keys of its `ado` block, which name the board those statuses live on — replaced idempotently and nothing else in the repo.",
+          "scope": "The `statuses` key of the user-owned nerdway project config — and, when the tracker is Azure DevOps Boards, the `team`, `board` and `workItemType` keys of its `ado` block, which name the board those statuses live on — replaced idempotently. No file in the repo is changed.",
           "reason": "The status binding decides how the in-progress gate itself is read, so it has to exist before the gate can hold — it cannot wait for an issue to pass that gate."
         },
         {
@@ -106,7 +106,7 @@
   "schemas": [
     {
       "id": "PlatformConfig",
-      "description": "The project's platform: which tracker holds its issues, which VCS host holds its code, and the identifiers each needs. Kept as the `## Platform` section of the repo `CLAUDE.md` and mirrored as `platform:` on the entity page; the tracker and vcs values name the adapter files core skills read.",
+      "description": "The project's platform: which tracker holds its issues, which VCS host holds its code, and the identifiers each needs. Kept in the user-owned nerdway store (`<config dir>/config.yml` defaults merged with `<config dir>/<project-slug>/config.yml`; config dir is `NERDWAY_CONFIG_DIR`, else `$XDG_CONFIG_HOME/nerdway`, else `~/.config/nerdway` on Linux and macOS, else `%APPDATA%\\nerdway` on Windows) and mirrored as `platform:` on the entity page; the tracker and vcs values name the adapter files core skills read.",
       "schema": {
         "type": "object",
         "title": "Platform config",

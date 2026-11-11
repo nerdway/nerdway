@@ -8,7 +8,7 @@ slug: <slug>
 remote: <git-remote-url-or-empty>
 local-paths:
   - {host: <hostname>, path: <absolute-path>}
-platform:            # REQUIRED — same object as the repo CLAUDE.md `## Platform` section
+platform:            # REQUIRED — same object as the user-owned nerdway platform config
   tracker: linear    # linear | github | gitlab | ado | jira | none
   vcs: github        # github | gitlab | ado
   linear:            # identifier block of each platform in use

@@ -337,6 +337,16 @@ test("jira: rejects label, which the adapter does not support", () => {
   assert.match(errors[0], /not supported/);
 });
 
+test("jira: accepts an optional issueType", () => {
+  assert.deepEqual(validatePlatformConfig(jiraConfig({ issueType: "Story" }), jiraVocabulary, jiraAdapter), []);
+});
+
+test("jira: rejects an issueType carrying shell quoting characters", () => {
+  const errors = validatePlatformConfig(jiraConfig({ issueType: "Task$(id)" }), jiraVocabulary, jiraAdapter);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /jira\.issueType/);
+});
+
 test("readPlatform: a valid section is found, with the parsed object", () => {
   const markdown = "# Repo\n\n## Platform\n\n```yaml\ntracker: linear\nvcs: github\nlinear:\n  team: DEMO\n```\n\n## Other\n";
   assert.deepEqual(readPlatform(markdown, vocabulary, new Map([["linear", adapter()]])), {

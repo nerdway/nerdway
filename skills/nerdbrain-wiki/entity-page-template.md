@@ -20,6 +20,7 @@ platform:            # REQUIRED — same object as the repo CLAUDE.md `## Platfo
   jira:              # when tracker is jira
     site: <site>.atlassian.net
     project: <PROJECT-KEY>
+    issueType: <localized-type-name>  # optional; discover when absent
 # No tracker: `tracker: none` and no `linear:` block inside `platform:`.
 related: []
 ---

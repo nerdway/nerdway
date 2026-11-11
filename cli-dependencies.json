@@ -57,7 +57,7 @@
     },
     {
       "id": "acli",
-      "_comment": "official Atlassian CLI, Jira Cloud only; auth.check is a real API call because a missing token must fail the probe. Token is piped on stdin to `jira auth login --token`; never --web (OAuth) as the agent recipe",
+      "_comment": "official Atlassian CLI, Jira Cloud only; auth.check is a real API call because a missing session must fail the probe. Headless login is an unscoped API token piped on stdin to `jira auth login --token`; any authenticated session (token or oauth_global) works; never --web as the agent recipe; verify with `jira auth status`",
       "minVersion": "1.3.0",
       "versionCommand": ["acli", "--version"],
       "versionRegex": "(\\d+\\.\\d+\\.\\d+)",
@@ -65,7 +65,7 @@
       "manualInstall": "brew tap atlassian/homebrew-acli && brew install acli | see https://developer.atlassian.com/cloud/acli/guides/install-acli/",
       "auth": {
         "check": ["acli", "jira", "project", "list", "--limit", "1"],
-        "instructions": "Create an Atlassian API token at https://id.atlassian.com/manage-profile/security/api-tokens (email + token; never commit the token). Pipe it into `acli jira auth login --site <jira.site> --email <account-email> --token`. Do not use `acli jira auth login --web` for agent operations."
+        "instructions": "The adapter works with any authenticated acli session. Verify with `acli jira auth status`. The documented headless login is an unscoped Atlassian API token from https://id.atlassian.com/manage-profile/security/api-tokens (Create API token, not Create API token with scopes): pipe it into `acli jira auth login --site <jira.site> --email <account-email> --token`. Never commit the token. Do not use `acli jira auth login --web` for agent operations."
       }
     },
     {

@@ -164,7 +164,8 @@ function validateStatuses(where: string, raw: unknown, vocabulary: PlatformVocab
 
 const ADO_BOARD_KEYS: readonly string[] = ["team", "board"];
 const ADO_SHELL_KEYS = ["team", "board", "workItemType"];
-const JIRA_KEYS: readonly string[] = ["site", "project"];
+const JIRA_REQUIRED_KEYS: readonly string[] = ["site", "project"];
+const JIRA_OPTIONAL_KEYS: readonly string[] = ["issueType"];
 
 function defaultStrategy(adapterSource: string | undefined): unknown {
   if (adapterSource === undefined) return undefined;
@@ -190,10 +191,19 @@ function validateAdoBlock(raw: Record<string, unknown>, trackerAdapter: string |
 function validateJiraBlock(raw: Record<string, unknown>): string[] {
   const jira = isRecord(raw.jira) ? raw.jira : {};
   const errors: string[] = [];
-  for (const key of JIRA_KEYS) {
+  for (const key of JIRA_REQUIRED_KEYS) {
     const value = jira[key];
     if (typeof value !== "string" || value.length === 0) {
       errors.push(`jira.${key} is required when the tracker is jira`);
+    } else if (SHELL_UNSAFE.test(value)) {
+      errors.push(`jira.${key} holds a quote, backtick, $, backslash or newline — adapter recipes interpolate the value into shell commands`);
+    }
+  }
+  for (const key of JIRA_OPTIONAL_KEYS) {
+    const value = jira[key];
+    if (value === undefined) continue;
+    if (typeof value !== "string" || value.length === 0) {
+      errors.push(`jira.${key} must be a non-empty string when set`);
     } else if (SHELL_UNSAFE.test(value)) {
       errors.push(`jira.${key} holds a quote, backtick, $, backslash or newline — adapter recipes interpolate the value into shell commands`);
     }

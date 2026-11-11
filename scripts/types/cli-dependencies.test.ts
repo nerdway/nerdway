@@ -117,7 +117,7 @@ test("the node entry keeps 24.0.0 and names both cursor hooks", () => {
   assert.equal(node.requiredBy.includes("hooks/session-start.ts"), true);
 });
 
-test("the acli entry is the Jira Cloud tracker CLI with API-token auth", () => {
+test("the acli entry is the Jira Cloud tracker CLI with unscoped-token headless auth", () => {
   const contract = JSON.parse(readFileSync(new URL("../../cli-dependencies.json", import.meta.url), "utf8")) as {
     clis: Array<{
       id: string;
@@ -136,7 +136,10 @@ test("the acli entry is the Jira Cloud tracker CLI with API-token auth", () => {
   assert.ok(acli.auth);
   assert.deepEqual(acli.auth.check, ["acli", "jira", "project", "list", "--limit", "1"]);
   assert.match(acli.auth.instructions, /--token/);
+  assert.match(acli.auth.instructions, /unscoped/);
+  assert.match(acli.auth.instructions, /acli jira auth status/);
   assert.match(acli.auth.instructions, /Do not use `acli jira auth login --web`/);
+  assert.doesNotMatch(acli.auth.instructions, /scoped to Jira/);
 });
 
 test("rejects a malformed versionRegex", () => {

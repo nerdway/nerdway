@@ -164,6 +164,8 @@ function validateStatuses(where: string, raw: unknown, vocabulary: PlatformVocab
 
 const ADO_BOARD_KEYS: readonly string[] = ["team", "board"];
 const ADO_SHELL_KEYS = ["team", "board", "workItemType"];
+const JIRA_REQUIRED_KEYS: readonly string[] = ["site", "project"];
+const JIRA_OPTIONAL_KEYS: readonly string[] = ["issueType"];
 
 function defaultStrategy(adapterSource: string | undefined): unknown {
   if (adapterSource === undefined) return undefined;
@@ -186,6 +188,29 @@ function validateAdoBlock(raw: Record<string, unknown>, trackerAdapter: string |
   return errors;
 }
 
+function validateJiraBlock(raw: Record<string, unknown>): string[] {
+  const jira = isRecord(raw.jira) ? raw.jira : {};
+  const errors: string[] = [];
+  for (const key of JIRA_REQUIRED_KEYS) {
+    const value = jira[key];
+    if (typeof value !== "string" || value.length === 0) {
+      errors.push(`jira.${key} is required when the tracker is jira`);
+    } else if (SHELL_UNSAFE.test(value)) {
+      errors.push(`jira.${key} holds a quote, backtick, $, backslash or newline — adapter recipes interpolate the value into shell commands`);
+    }
+  }
+  for (const key of JIRA_OPTIONAL_KEYS) {
+    const value = jira[key];
+    if (value === undefined) continue;
+    if (typeof value !== "string" || value.length === 0) {
+      errors.push(`jira.${key} must be a non-empty string when set`);
+    } else if (SHELL_UNSAFE.test(value)) {
+      errors.push(`jira.${key} holds a quote, backtick, $, backslash or newline — adapter recipes interpolate the value into shell commands`);
+    }
+  }
+  return errors;
+}
+
 export function validatePlatformConfig(raw: unknown, vocabulary: PlatformVocabulary, trackerAdapter: string | undefined): string[] {
   if (!isRecord(raw)) return ["platform config must be a YAML map"];
   const errors: string[] = [];
@@ -196,6 +221,7 @@ export function validatePlatformConfig(raw: unknown, vocabulary: PlatformVocabul
     errors.push(`vcs ${String(raw.vcs)} is not one of ${vocabulary.vcs.join(", ")}`);
   }
   if (raw.tracker === "ado") errors.push(...validateAdoBlock(raw, trackerAdapter));
+  if (raw.tracker === "jira") errors.push(...validateJiraBlock(raw));
   if (raw.statuses === undefined) return errors;
   if (raw.tracker === "none") {
     errors.push("statuses is set, but tracker is none — there is no tracker to bind phases to");

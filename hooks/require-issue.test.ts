@@ -21,6 +21,7 @@ import {
 } from "./require-issue.ts";
 
 const LINEAR: Platform = { tracker: "linear", vcs: "github", linear: { team: "DEMO", project: "x" } };
+const JIRA: Platform = { tracker: "jira", vcs: "github", jira: { site: "acme.atlassian.net", project: "PROJ" } };
 const GITHUB: Platform = { tracker: "github", vcs: "github", github: { owner: "acme", repo: "app" } };
 const GITLAB: Platform = { tracker: "gitlab", vcs: "gitlab" };
 const ADO: Platform = { tracker: "ado", vcs: "ado" };
@@ -57,6 +58,27 @@ test("Linear without a team key accepts any letters-digits ID", () => {
   assert.equal(branchHasIssue("main", platform), false);
 });
 
+test("Jira: the project key from the config, any letter case, anywhere in the branch", () => {
+  assert.equal(branchHasIssue("proj-123-plugin-hook", JIRA), true);
+  assert.equal(branchHasIssue("PROJ-123", JIRA), true);
+  assert.equal(branchHasIssue("feature/proj-12-x", JIRA), true);
+  assert.equal(branchHasIssue("sprint-24-proj-456-fix", JIRA), true);
+});
+
+test("Jira: another project key, a key glued to letters or a bare word is no issue ID", () => {
+  assert.equal(branchHasIssue("eng-12-x", JIRA), false);
+  assert.equal(branchHasIssue("xproj-12", JIRA), false);
+  assert.equal(branchHasIssue("main", JIRA), false);
+  assert.equal(branchHasIssue("proj-fix", JIRA), false);
+  assert.equal(branchHasIssue("123-short-title", JIRA), false);
+});
+
+test("Jira without a project key accepts any letters-digits ID", () => {
+  const platform: Platform = { tracker: "jira", vcs: "github" };
+  assert.equal(branchHasIssue("eng-12-x", platform), true);
+  assert.equal(branchHasIssue("main", platform), false);
+});
+
 test("GitHub, GitLab and Azure DevOps: the leading number of the branch", () => {
   for (const platform of [GITHUB, GITLAB, ADO]) {
     assert.equal(branchHasIssue("123-fix-login", platform), true);
@@ -66,9 +88,11 @@ test("GitHub, GitLab and Azure DevOps: the leading number of the branch", () => 
   }
 });
 
-test("an issue ID in the commit message counts: KEY-123 on Linear, #123 or AB#123 elsewhere", () => {
+test("an issue ID in the commit message counts: KEY-123 on Linear and Jira, #123 or AB#123 elsewhere", () => {
   assert.equal(messageHasIssue("Poprawka (DEMO-432)", LINEAR), true);
   assert.equal(messageHasIssue("Poprawka", LINEAR), false);
+  assert.equal(messageHasIssue("Poprawka (PROJ-88)", JIRA), true);
+  assert.equal(messageHasIssue("Poprawka (ENG-88)", JIRA), false);
   assert.equal(messageHasIssue("Fix login #123", GITHUB), true);
   assert.equal(messageHasIssue("Fix AB#77", ADO), true);
   assert.equal(messageHasIssue("Fix login", GITLAB), false);
@@ -164,6 +188,7 @@ test("the gate denies commit and push on a branch without an issue ID", () => {
 
 test("the gate allows commit and push on an issue branch", () => {
   assert.equal(gate("git commit -m 'Poprawka'", LINEAR, "demo-432-hook"), "allow");
+  assert.equal(gate("git commit -m 'Poprawka'", JIRA, "proj-88-jira-adapter"), "allow");
   assert.equal(gate("git push -u origin 123-fix", GITHUB, "123-fix"), "allow");
 });
 

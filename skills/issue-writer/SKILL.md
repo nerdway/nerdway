@@ -86,7 +86,9 @@ project questions, and confirm the repo instead.
 On Jira Cloud (`tracker: jira`) the Jira project is the container: take
 `jira.site` and `jira.project` from the config, skip the team question, and
 confirm the project key. When the block names no project, `project.list` and
-ask.
+ask. Resolve `--type` from `jira.issueType` when set, otherwise the adapter's
+type-discovery recipe (project view JSON, or the create error listing allowed
+types) — never assume the English names `Task` or `Bug`.
 
 On Azure DevOps Boards (`tracker: ado`) the project is the container and the
 issue is a work item of type `ado.workItemType`, created on `ado.team`'s board:

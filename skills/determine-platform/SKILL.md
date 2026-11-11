@@ -58,7 +58,7 @@ github:
 
 | Key | Values | Identifier block |
 |-----|--------|------------------|
-| `tracker` | `linear`, `github`, `gitlab`, `ado`, `jira`, `none` | `linear: {team, project}` (project = UUID); `jira: {site, project}` (site = Cloud hostname, project = key); GitHub/GitLab/ADO trackers reuse the VCS block of the same platform; an ADO tracker's `ado.team`, `ado.board` and `ado.workItemType` are written by `bind-statuses` |
+| `tracker` | `linear`, `github`, `gitlab`, `ado`, `jira`, `none` | `linear: {team, project}` (project = UUID); `jira: {site, project, issueType?}` (site = Cloud hostname, project = key, optional localized work-item type); GitHub/GitLab/ADO trackers reuse the VCS block of the same platform; an ADO tracker's `ado.team`, `ado.board` and `ado.workItemType` are written by `bind-statuses` |
 | `vcs` | `github`, `gitlab`, `ado` | `github: {owner, repo}`, `gitlab: {group, project}`, `ado: {org, project}` |
 
 ## Step 1 — Read what is already recorded
@@ -135,7 +135,9 @@ Or answer `none` for no tracker (then name the VCS host).
 
 Then ask only for the identifiers inference could not settle (for Linear: the
 team key from `team.list`, the project from `project.list`; for Jira Cloud:
-`jira.site` as the Cloud hostname, `jira.project` from `project.list`).
+`jira.site` as the Cloud hostname, `jira.project` from `project.list`, and
+optionally `jira.issueType` from the adapter's type-discovery recipe — leave
+it unset when several types look equally likely).
 
 A combination with no adapter file yet is still recorded — the core skill
 that needs it will stop with "adapter not available yet". Never substitute

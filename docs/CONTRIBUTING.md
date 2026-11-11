@@ -26,9 +26,10 @@ Check the CLI dependency list the `bootstrap-clis` skill installs from:
 node scripts/validate-cli-dependencies.ts
 ```
 
-Check the `## Platform` config of this repo and the default status map of every tracker adapter:
+Check the user-owned platform config of this repo (exit `0` found, `3` absent, `4` invalid, `5` migration-needed) and the default status map of every tracker adapter:
 
 ```bash
+node scripts/validate-platform-config.ts --print "$(git rev-parse --show-toplevel)"
 node scripts/validate-platform-config.ts
 ```
 
@@ -114,7 +115,7 @@ Run `claude plugin validate`, where any warning fails (needs the Claude Code CLI
 node scripts/validate-claude-plugin.ts
 ```
 
-Check that every mention of `## Platform` in a skill, agent or adapter reads `CLAUDE.md` through `adapters/platform.md`:
+Check that every mention of `## Platform` in a skill, agent or adapter points at `adapters/platform.md`, and that writers call `write-platform-config.ts`:
 
 ```bash
 node scripts/validate-platform-references.ts

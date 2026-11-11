@@ -26,21 +26,9 @@ const claude = process.env.CLAUDE_BIN ?? "claude";
 const TARGETS = [".", ".claude-plugin/plugin.json"];
 
 // Known warnings that do not break Claude Code or the claude.ai sync. Each
-// entry needs a reason; keep this list short.
-const ALLOWED: { file: string; path: string; prefix: string; reason: string }[] = [
-  // A leftover root CLAUDE.md (not plugin content) is not loaded as
-  // project context. Platform config now lives in the user-owned nerdway
-  // store, so this warning is only expected while a project CLAUDE.md
-  // still sits at the plugin root. Do not add a ## Platform section to
-  // silence it.
-  {
-    file: "CLAUDE.md",
-    path: "root",
-    prefix: "CLAUDE.md at the plugin root is not loaded as project context",
-    reason:
-      "a leftover project CLAUDE.md at the plugin root is not plugin context; platform config is user-owned (ADR-0018)",
-  },
-];
+// entry needs a reason; keep this list short. Platform config is
+// user-owned (ADR-0018), so a root CLAUDE.md is no longer expected.
+const ALLOWED: { file: string; path: string; prefix: string; reason: string }[] = [];
 
 function allowed(file: string, issue: Issue): boolean {
   const rel = relative(repoRoot, file);

@@ -246,12 +246,13 @@ _Avoid_: grill checklist (the heading is the name)
 **Platform config**:
 The project's tracker (`linear`, `github`, `gitlab`, `ado`, `jira`, `none`) and VCS
 host (`github`, `gitlab`, `ado`) plus the identifiers each needs — schema
-`PlatformConfig`. Lives as the `## Platform` section of the repo `CLAUDE.md`,
-mirrored as `platform:` on the entity page, and is established by
-`determine-platform`; a legacy `linear:` block on an entity page is read as its
-alias. An optional `statuses` block binds the canonical phases to the tracker.
-Skills read it from disk through `adapters/platform.md`, never from a
-`CLAUDE.md` in context.
+`PlatformConfig`. Lives in the user-owned nerdway store (`<config dir>/config.yml`
+defaults merged with `<config dir>/<project-slug>/config.yml`), mirrored as
+`platform:` on the entity page, and is established by `determine-platform`; a
+legacy `linear:` block on an entity page is read as its alias. An optional
+`statuses` block binds the canonical phases to the tracker. Skills read it from
+disk through `adapters/platform.md`, never from a leftover `## Platform` section
+or a `CLAUDE.md` in context. See ADR-0018.
 _Avoid_: platform settings, integration (both hide that it is one YAML object in two places)
 
 **Adapter**:
@@ -356,9 +357,9 @@ _Avoid_: stale issue, false done (both suggest moving the issue back)
 **Exemption**:
 A validated exception on a frozen rule: the node allowed to act despite it,
 the narrow scope it may touch, and the reason. Four exist today, all on
-`no-repo-change-before-in-progress`: `platform-determine` replaces the
-`## Platform` section of `CLAUDE.md` and `statuses-bind` writes its
-`statuses` key, both before any issue is In Progress; `auto-issue-mode` sets
+`no-repo-change-before-in-progress`: `platform-determine` writes the user-owned
+nerdway config and `statuses-bind` writes its `statuses` key, both before any
+issue is In Progress; `auto-issue-mode` sets
 In Progress itself for the one issue it runs, invoking the skill being the
 user's consent; `issue-next-step` sets In Progress for the one issue it
 diagnosed, only after the user agrees in chat, and changes nothing in the

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
@@ -8,7 +8,6 @@ import { fileURLToPath } from "node:url";
 import { pluginVocabulary, readPlatformFile, trackerAdapterSources } from "./platform-read.ts";
 
 const pluginRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const dir = mkdtempSync(join(tmpdir(), "platform-read-"));
 
 test("pluginVocabulary reads the PlatformConfig enums from workflow-graph.json", () => {
   const vocabulary = pluginVocabulary(pluginRoot);
@@ -23,15 +22,35 @@ test("trackerAdapterSources loads every tracker adapter by name", () => {
   assert.deepEqual([...trackerAdapterSources(pluginRoot).keys()], ["ado", "github", "gitlab", "jira", "linear"]);
 });
 
-test("readPlatformFile reads this repo's CLAUDE.md and reports a missing file as absent", () => {
-  const read = readPlatformFile(pluginRoot, join(pluginRoot, "CLAUDE.md"));
-  assert.equal(read.status, "found");
-  assert.equal(read.status === "found" ? read.value.tracker : undefined, "github");
-  assert.equal(readPlatformFile(pluginRoot, join(dir, "missing.md")).status, "absent");
+test("readPlatformFile reads the user config and reports a missing store as absent", () => {
+  const root = mkdtempSync(join(tmpdir(), "platform-read-file-"));
+  try {
+    const repo = join(root, "repo");
+    mkdirSync(repo);
+    const env = { NERDWAY_CONFIG_DIR: join(root, "config") };
+    assert.equal(readPlatformFile(pluginRoot, repo, env).status, "absent");
+    mkdirSync(join(root, "config", "repo"), { recursive: true });
+    writeFileSync(
+      join(root, "config", "repo", "config.yml"),
+      "tracker: github\nvcs: github\ngithub:\n  owner: nerdway\n  repo: nerdway\n",
+    );
+    const read = readPlatformFile(pluginRoot, repo, env);
+    assert.equal(read.status, "found");
+    assert.equal(read.status === "found" ? read.value.tracker : undefined, "github");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
-test("readPlatformFile reports a broken section as invalid", () => {
-  const path = join(dir, "broken.md");
-  writeFileSync(path, "## Platform\n\n```yaml\ntracker: basecamp\nvcs: github\n```\n");
-  assert.equal(readPlatformFile(pluginRoot, path).status, "invalid");
+test("readPlatformFile reports a broken project file as invalid", () => {
+  const root = mkdtempSync(join(tmpdir(), "platform-read-broken-"));
+  try {
+    const repo = join(root, "repo");
+    mkdirSync(repo);
+    mkdirSync(join(root, "config", "repo"), { recursive: true });
+    writeFileSync(join(root, "config", "repo", "config.yml"), "tracker: basecamp\nvcs: github\n");
+    assert.equal(readPlatformFile(pluginRoot, repo, { NERDWAY_CONFIG_DIR: join(root, "config") }).status, "invalid");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

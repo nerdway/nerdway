@@ -264,7 +264,7 @@ test("the gate lets through everything that is not git commit or git push", () =
   }
 });
 
-test("no ## Platform section, tracker none, a detached HEAD or a failed git read allow", () => {
+test("no platform config, tracker none, a detached HEAD or a failed git read allow", () => {
   assert.equal(gate("git commit -m x", null, "main"), "allow");
   assert.equal(gate("git commit -m x", NONE, "main"), "allow");
   assert.equal(gate("git commit -m x", LINEAR, ""), "allow");
@@ -349,16 +349,26 @@ function repo(claudeMd: string | null, branch: string): string {
 
 const PLATFORM_MD = "## Platform\n\n```yaml\ntracker: linear\nvcs: github\nlinear:\n  team: DEMO\n  project: p\n```\n";
 
+function configDirOf(input: unknown): string {
+  if (typeof input === "object" && input !== null && !Array.isArray(input)) {
+    const record = input as { cwd?: unknown; workspace_roots?: unknown };
+    if (typeof record.cwd === "string" && record.cwd.length > 0) return join(record.cwd, ".nerdway-cfg");
+    const roots = record.workspace_roots;
+    if (Array.isArray(roots) && typeof roots[0] === "string" && roots[0].length > 0) return join(roots[0], ".nerdway-cfg");
+  }
+  return mkdtempSync(join(tmpdir(), "require-issue-cfg-"));
+}
+
 function run(runtime: string, event: string, input: unknown, env: NodeJS.ProcessEnv = {}) {
-  const { NERDWAY_NO_ISSUE: _ignored, ...base } = process.env;
+  const { NERDWAY_NO_ISSUE: _ignored, NERDWAY_CONFIG_DIR: _config, ...base } = process.env;
   return spawnSync(process.execPath, ["hooks/require-issue.ts", "--runtime", runtime, "--event", event], {
     input: JSON.stringify(input),
     encoding: "utf8",
-    env: { ...base, ...env },
+    env: { ...base, NERDWAY_CONFIG_DIR: env.NERDWAY_CONFIG_DIR ?? configDirOf(input), ...env },
   });
 }
 
-test("the script reads a real repo: deny on main with ## Platform, allow on an issue branch or without the section", () => {
+test("the script reads a real repo: deny on main with a platform config, allow on an issue branch or without one", () => {
   const main = repo(PLATFORM_MD, "main");
   const cursorDeny = run("cursor", "gate", { command: "git commit -m x", cwd: main });
   assert.equal(cursorDeny.status, 0);

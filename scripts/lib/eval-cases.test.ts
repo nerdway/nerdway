@@ -81,6 +81,8 @@ test("the system prompt sets the sandbox aside, fills unstated results with succ
   assert.match(EVAL_SYSTEM_PROMPT, /empty sandbox/);
   assert.match(EVAL_SYSTEM_PROMPT, /does not state succeeds/);
   assert.match(EVAL_SYSTEM_PROMPT, /Skill tool/);
+  assert.match(EVAL_SYSTEM_PROMPT, /missing nerdway platform config/);
+  assert.equal(EVAL_SYSTEM_PROMPT.includes("CLAUDE.md"), false);
 });
 
 test("every llm grader opens with the judge preamble on adapter operations and steps not run", () => {

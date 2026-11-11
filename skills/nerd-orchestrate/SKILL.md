@@ -26,13 +26,13 @@ in the repo yourself.
 ## First step: the project, before the queue
 
 The argument is optional. A filesystem path is a repo to work in (read its
-`CLAUDE.md`, run git there). A tracker project id (Linear UUID, GitHub
+nerdway platform config, run git there). A tracker project id (Linear UUID, GitHub
 `owner/repo`, GitLab `group/project`, Azure DevOps project name) selects
 that project on the already resolved tracker. With neither, the project is
 the current working directory.
 
-Resolve the platform exactly as `nerdway:issue-writer` step 1 does (repo
-`CLAUDE.md` `## Platform`, read from disk as
+Resolve the platform exactly as `nerdway:issue-writer` step 1 does (nerdway
+platform config, read from disk as
 `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes → entity page
 `platform:` / legacy `linear:` → `nerdway:determine-platform`), and the
 status strategy and map as

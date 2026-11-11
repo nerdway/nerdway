@@ -44,7 +44,7 @@ Take `<tracker>` and its identifiers (for Linear: team key and project UUID;
 for GitHub Issues: `github.owner`/`github.repo`; for GitLab Issues:
 `gitlab.group`/`gitlab.project`; for Azure DevOps Boards: `ado.org`/`ado.project`
 with `ado.team`/`ado.board`; for Jira Cloud: `jira.site`/`jira.project`)
-from the `## Platform` section of the repo `CLAUDE.md` (read from disk as
+from the nerdway platform config (read from disk as
 `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes, never from context), else
 from the entity page frontmatter `platform:` — a legacy `linear:` block there means
 `tracker: linear` with that `team` and `project`. With neither, or with no

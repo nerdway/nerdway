@@ -1,7 +1,8 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { readPlatform, type PlatformRead, type PlatformVocabulary } from "../types/platform-config.ts";
+import { readPlatformConfig } from "./nerdway-config.ts";
+import type { PlatformRead, PlatformVocabulary } from "../types/platform-config.ts";
 
 interface Property {
   enum?: string[];
@@ -32,7 +33,9 @@ export function trackerAdapterSources(pluginRoot: string): Map<string, string> {
   return sources;
 }
 
-export function readPlatformFile(pluginRoot: string, claudeMd: string): PlatformRead {
-  const markdown = existsSync(claudeMd) ? readFileSync(claudeMd, "utf8") : undefined;
-  return readPlatform(markdown, pluginVocabulary(pluginRoot), trackerAdapterSources(pluginRoot));
+export function readPlatformFile(pluginRoot: string, repoRoot: string, env: NodeJS.ProcessEnv = process.env): PlatformRead {
+  return readPlatformConfig(repoRoot, env, {
+    vocabulary: pluginVocabulary(pluginRoot),
+    trackerAdapters: trackerAdapterSources(pluginRoot),
+  });
 }

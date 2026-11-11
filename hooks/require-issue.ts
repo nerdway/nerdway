@@ -248,7 +248,7 @@ function prefixList(): string {
 function denyMessages(invocation: GitInvocation, branch: string, platform: Platform): { agent: string; user: string } {
   const tracker = trackerOf(platform);
   const agent =
-    `nerdway blocked git ${invocation.subcommand}: this repository tracks work in ${tracker} (## Platform in CLAUDE.md) ` +
+    `nerdway blocked git ${invocation.subcommand}: this repository tracks work in ${tracker} (nerdway platform config) ` +
     `and the branch \`${branch}\` carries no issue ID (expected a name like \`${example(platform)}\`). ` +
     "Every change needs an issue first: find or create it (nerdway:issue-writer), tell the user its number, " +
     "then work on its branch (nerdway:issue-start) and commit there. " +
@@ -291,7 +291,7 @@ export function reminderText(dir: string, env: NodeJS.ProcessEnv, probe: Probe):
   const branch = probe.branchFor(dir);
   if (branch === null || branch.length === 0 || branchHasIssue(branch, platform) || exemptBranch(branch)) return "";
   return (
-    `nerdway: this repository tracks work in ${trackerOf(platform)} (## Platform in CLAUDE.md) and the current branch ` +
+    `nerdway: this repository tracks work in ${trackerOf(platform)} (nerdway platform config) and the current branch ` +
     `\`${branch}\` carries no issue ID. If the user's request will change the repository, the first step is an issue ` +
     "in the tracker: find or create it (nerdway:issue-writer) and tell the user its number before you start, " +
     "then work on its branch (nerdway:issue-start). Questions, analysis and reading code need no issue. " +
@@ -358,7 +358,7 @@ export function gitProbe(pluginRoot: string): Probe {
     platformFor(dir) {
       const top = git(dir, ["rev-parse", "--show-toplevel"]);
       if (top === null || top.length === 0) return null;
-      const read = readPlatformFile(pluginRoot, join(top, "CLAUDE.md"));
+      const read = readPlatformFile(pluginRoot, top);
       return read.status === "found" ? read.value : null;
     },
     branchFor(dir) {

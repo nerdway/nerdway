@@ -1,7 +1,8 @@
 # The public tracker is GitHub Issues, started from scratch
 
-This repository's `## Platform` section names GitHub as the tracker and
-`nerdway/nerdway` as the repo. The grilling session of 2026-11-04 chose
+This repository's user-owned nerdway platform config names GitHub as the
+tracker and `nerdway/nerdway` as the repo (ADR-0018). The grilling session
+of 2026-11-04 chose
 GitHub Issues as the public tracker and chose not to migrate the private
 Linear workspace.
 
@@ -35,8 +36,8 @@ corresponds to a private ticket.
 
 - `README.md` points at GitHub Issues. It does not point at a Linear
   workspace.
-- `CLAUDE.md` records `tracker: github` with `github.owner: nerdway` and
-  `github.repo: nerdway`.
+- The user-owned nerdway config (ADR-0018) records `tracker: github`
+  with `github.owner: nerdway` and `github.repo: nerdway`.
 - Examples in docs keep using generic issue ids such as `DEMO-123` or
   `#123`. They do not cite private workspace prefixes.
 - Closing a public GitHub issue does not close anything on the private

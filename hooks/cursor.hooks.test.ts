@@ -10,8 +10,9 @@ function commands(event: string): string[] {
   return hooks.hooks[event].map((entry) => entry.command);
 }
 
-test("sessionStart calls node for the inject, the install check and the issue reminder", () => {
+test("sessionStart calls node for the platform migration, the inject, the install check and the issue reminder", () => {
   assert.deepEqual(commands("sessionStart"), [
+    "node ./hooks/migrate-platform.ts --runtime cursor",
     "node ./hooks/session-start.ts --runtime cursor",
     "node ./scripts/check-install.ts --runtime cursor",
     "node ./hooks/require-issue.ts --runtime cursor --event reminder",

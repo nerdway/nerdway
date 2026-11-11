@@ -61,7 +61,7 @@ grilling session (step 6).
 **Platform first.** Take the tracker and its identifiers from the first source
 that has them:
 
-1. the `## Platform` section of the repo `CLAUDE.md`, read from disk as
+1. the nerdway platform config, read from disk as
    `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes, never from context;
 2. the entity page frontmatter `platform:` — a legacy `linear:` block there
    means `tracker: linear` with that `team` and `project`;

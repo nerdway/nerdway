@@ -4,8 +4,8 @@ description: >-
   Bind the five canonical workflow phases (backlog, todo, in-progress,
   in-review, done) to how the project's tracker shows them — a status strategy
   (native states, labels plus open/closed, or `Status:` marker comments) and a
-  phase → value map — and record it as the `statuses` key of the `## Platform`
-  section in the repo CLAUDE.md, mirrored on the nerdbrain entity page. Lists
+  phase → value map — and record it as the `statuses` key of the user-owned
+  nerdway platform config, mirrored on the nerdbrain entity page. Lists
   the tracker's real states or labels where its CLI can, recommends a map,
   creates missing labels only with consent. Use for `/bind-statuses`, at the
   end of `determine-platform`, or when the user asks how workflow statuses map
@@ -21,10 +21,10 @@ the `statuses` block of the `PlatformConfig` schema in `workflow-graph.json`.
 What each strategy means lives in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`
 — read it first.
 
-This skill may run at any issue status: the `no-repo-change-before-in-progress`
-rule exempts writing the `statuses` key of the `## Platform` section in the
-repo `CLAUDE.md` (and, on Azure DevOps Boards, the `team`, `board` and
-`workItemType` keys of its `ado` block). Touch nothing else in the repo.
+This skill may run at any issue status: it writes only the user-owned nerdway
+config store (the `statuses` key, and on Azure DevOps Boards the `team`,
+`board` and `workItemType` keys of the `ado` block) and the entity-page
+mirror, never a file in the repo.
 
 ## Adapters
 
@@ -42,8 +42,7 @@ cannot do it — skip that step, never improvise a command.
 
 Take the platform from the caller when one was passed (the
 `determine-platform` chain passes its result), else read it exactly as
-`determine-platform` Step 1 does: the line-start `## Platform` section of the
-repo `CLAUDE.md`, read from disk as
+`determine-platform` Step 1 does: the user nerdway config, read from disk as
 `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes, else `platform:` on the
 entity page.
 
@@ -170,32 +169,33 @@ tracker without that yes.
 
 ## Step 6 — Write both places
 
-**Repo `CLAUDE.md`** — edit the YAML block of the `## Platform` section
-(on Azure DevOps also set `team`, `board` and `workItemType` inside the `ado`
-block the same way, every other key byte-for-byte):
+**User nerdway config** — write through the script, never by editing a repo
+file. Pipe a YAML object that holds only `statuses` (and on Azure DevOps
+also `ado` with `team`, `board` and `workItemType`) to:
 
-1. Find the heading `## Platform` **at the start of a line**; never splice on
-   a bare substring search.
-2. Inside its fenced `yaml` block, replace the top-level `statuses:` key with
-   all its indented lines, or append it at the end of the block when absent.
-   Every other key stays byte-for-byte.
-3. Shape:
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/write-platform-config.ts" --repo "$(git rev-parse --show-toplevel)" --keys statuses,ado
+```
 
-   ```yaml
-   statuses:
-     strategy: native
-     map:
-       backlog: Backlog
-       todo: Todo
-       in-progress: In Progress
-       in-review: In Review
-       done: Done
-   ```
+Shape of `statuses`:
 
-   Phases in this order, two-space indentation, values unquoted unless they
-   start with a YAML special character.
+```yaml
+statuses:
+  strategy: native
+  map:
+    backlog: Backlog
+    todo: Todo
+    in-progress: In Progress
+    in-review: In Review
+    done: Done
+```
 
-Running the skill twice with the same answers must leave `git diff` empty.
+Phases in this order, two-space indentation, values unquoted unless they
+start with a YAML special character. The script merges those keys into the
+project config and leaves every other key as it is.
+
+Running the skill twice with the same answers must leave the config file
+unchanged.
 
 **Entity page** — only when the vault is reachable (`tier=file`) and the page
 exists: set `platform.statuses` (and `platform.ado`'s three keys) in the frontmatter to the same object,
@@ -205,26 +205,23 @@ following `nerdway:nerdbrain-wiki` (filesystem only, `updated:` bump, one
 ## Step 7 — Validate
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/validate-platform-config.ts" "$(git rev-parse --show-toplevel)/CLAUDE.md"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/validate-platform-config.ts" --print "$(git rev-parse --show-toplevel)"
 ```
 
-Non-zero exit → show the errors, fix the block with the user, write again.
+Non-zero exit → show the errors, fix the object with the user, write again.
 
 ## Step 8 — Return the result
 
-Print the full `## Platform` YAML and where it was written (or that nothing
+Print the full platform YAML and where it was written (or that nothing
 changed). A calling skill takes the statuses from this output, or reads the
-file again as `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes. A
-`CLAUDE.md` that is part of the conversation context is no source: Claude
-Code loaded it before this write and never reloads it, and Cursor loads it
-only with Third-Party Imports on.
+store again as `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes.
 
 ## Boundaries
 
-- The only repo change is the `statuses` key of `## Platform` (plus
-  `ado.team`, `ado.board`, `ado.workItemType` on Azure DevOps). Never commit or
-  push it; the change stays in the working tree for the user or the calling
-  skill.
+- Never write platform metadata into the repository. The only config writes
+  are the `statuses` key (plus `ado.team`, `ado.board`, `ado.workItemType` on
+  Azure DevOps) through `write-platform-config.ts`, and the entity-page
+  mirror.
 - The only tracker writes are `label.create` and, on Azure DevOps, the one
   add-columns `PUT`, each after an explicit yes.
   Never change an issue's state, labels or comments here.

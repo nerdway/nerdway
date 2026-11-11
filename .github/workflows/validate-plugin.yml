@@ -36,7 +36,7 @@ jobs:
         run: node scripts/validate-cli-dependencies.ts
       - name: Platform config and tracker status defaults
         run: node scripts/validate-platform-config.ts
-      - name: Platform section read through adapters/platform.md
+      - name: Platform config read through adapters/platform.md
         run: node scripts/validate-platform-references.ts
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code

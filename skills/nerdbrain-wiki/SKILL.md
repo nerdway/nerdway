@@ -205,11 +205,11 @@ Initialize `local-paths` with the current `host:$PWD` pair. Set `slug:` and
 `remote:` from the hook-injected values.
 
 **`platform:` is REQUIRED.** It holds the project's platform config — the
-same YAML object as the `## Platform` section of the repo `CLAUDE.md`
+same YAML object as the user-owned nerdway store
 (`tracker`, `vcs`, and the identifier block of each platform in use; schema
 `PlatformConfig` in `workflow-graph.json`). Establish it before writing the
 page — never save a page with empty or placeholder values:
-- If the repo `CLAUDE.md` has the section, copy that object. Read it from
+- If the user nerdway config has the object, copy it. Read it from
   disk as `adapters/platform.md` at the plugin root describes, never from
   context.
 - If unknown, invoke `nerdway:determine-platform`; it reads the repo, infers

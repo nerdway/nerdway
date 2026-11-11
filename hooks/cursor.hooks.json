@@ -3,6 +3,9 @@
   "hooks": {
     "sessionStart": [
       {
+        "command": "node ./hooks/migrate-platform.ts --runtime cursor"
+      },
+      {
         "command": "node ./hooks/session-start.ts --runtime cursor"
       },
       {

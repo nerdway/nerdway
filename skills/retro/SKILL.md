@@ -37,8 +37,8 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory.
 
-Resolve the platform exactly as `nerdway:issue-writer` step 1 does (repo
-`CLAUDE.md` `## Platform`, read from disk as
+Resolve the platform exactly as `nerdway:issue-writer` step 1 does (nerdway
+platform config, read from disk as
 `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes → entity page
 `platform:` / legacy `linear:` → `nerdway:determine-platform`). With no
 tracker, still propose the candidates and say that the duplicate check was

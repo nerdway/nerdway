@@ -33,6 +33,45 @@ test("platformReferenceErrors: a mention without the shared recipe fails", () =>
   assert.equal(errors.length, 1);
   assert.match(errors[0], /skills\/x\/SKILL\.md/);
   assert.match(errors[0], /adapters\/platform\.md/);
+  assert.match(errors[0], /nerdway platform config/);
+});
+
+test("platformReferenceErrors: determine-platform and bind-statuses must call write-platform-config.ts", () => {
+  const missing = platformReferenceErrors([
+    { path: "skills/determine-platform/SKILL.md", source: "Write the config. See adapters/platform.md." },
+    { path: "skills/bind-statuses/SKILL.md", source: "Write statuses. See adapters/platform.md." },
+  ]);
+  assert.equal(missing.length, 2);
+  assert.match(missing[0], /determine-platform/);
+  assert.match(missing[0], /write-platform-config\.ts/);
+  assert.match(missing[1], /bind-statuses/);
+  assert.deepEqual(
+    platformReferenceErrors([
+      { path: "skills/determine-platform/SKILL.md", source: "Call write-platform-config.ts. See adapters/platform.md." },
+      { path: "skills/bind-statuses/SKILL.md", source: "Call write-platform-config.ts --keys statuses,ado. See adapters/platform.md." },
+    ]),
+    [],
+  );
+});
+
+test("platformReferenceErrors: no skill writes platform metadata into the repo", () => {
+  const errors = platformReferenceErrors([
+    {
+      path: "skills/x/SKILL.md",
+      source: "Write the `## Platform` section in the repo `CLAUDE.md`. See adapters/platform.md.",
+    },
+  ]);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /writes platform metadata into the repo/);
+  assert.deepEqual(
+    platformReferenceErrors([
+      {
+        path: "skills/y/SKILL.md",
+        source: "Never write platform metadata into the repository. See adapters/platform.md.",
+      },
+    ]),
+    [],
+  );
 });
 
 test("platformReferenceErrors: a mention with the shared recipe passes, and so does a file without a mention", () => {
@@ -69,4 +108,12 @@ test("platformReaders covers every skill, agent and adapter of this repo", () =>
 
 test("this repo: every skill that mentions `## Platform` points at the shared recipe", () => {
   assert.deepEqual(validatePlatformReferences(repoRoot), []);
+});
+
+test("this repo: determine-platform and bind-statuses call write-platform-config.ts", () => {
+  const writers = platformReaders(repoRoot).filter((file) =>
+    file.path === "skills/determine-platform/SKILL.md" || file.path === "skills/bind-statuses/SKILL.md",
+  );
+  assert.equal(writers.length, 2);
+  for (const file of writers) assert.ok(file.source.includes("write-platform-config.ts"), file.path);
 });

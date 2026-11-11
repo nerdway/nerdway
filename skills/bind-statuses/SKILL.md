@@ -68,6 +68,19 @@ and `ado.workItemType` before Step 2, keeping values the block already holds:
    the types the board carries; one → take it, several → ask which one new
    issues are created as.
 
+**Jira Cloud (`tracker: jira`).** `native` maps phases to the project's
+workflow status names as the site spells them (often not English). Do
+**not** add statuses or edit the board here — that is a separate
+board-setup skill. Run `status.list`: unique `fields.status.name` values
+with `fields.status.statusCategory.key` (`new`, `indeterminate`, `done`).
+Propose a native map by category (`new` → `backlog` and `todo`;
+`indeterminate` → `in-progress` and `in-review`; `done` → `done`). Ask
+when a category has several names or when five distinct names cannot be
+filled. Never assume English names such as `In Progress` or `To Do`. If
+the five phases cannot be bound natively, recommend `comment` with
+`Status: <phase>` markers. Never offer `label` (the adapter lists it as
+`—`).
+
 ## Step 2 — Propose a strategy
 
 Pick the recommendation by the first rule that holds:
@@ -97,11 +110,14 @@ propose the adapter default map instead.
 Build the recommended map:
 
 - `native` — the existing map, else the adapter default, adjusted to the names
-  `status.list` returned when it ran. On Azure DevOps a board with fewer than
-  five columns cannot hold the map: propose the missing columns in the same
-  question — each with the state it maps (a `todo` column maps the `Proposed`
-  state, an `in-review` column an `InProgress` one) and its place on the
-  board — e.g. `Todo` after `New`, `Resolved` renamed `In Review`.
+  `status.list` returned when it ran. On Jira Cloud ignore English example
+  names unless `status.list` actually returned them; group by
+  `statusCategory.key` and ask when a category is ambiguous. On Azure DevOps a
+  board with fewer than five columns cannot hold the map: propose the missing
+  columns in the same question — each with the state it maps (a `todo` column
+  maps the `Proposed` state, an `in-review` column an `InProgress` one) and
+  its place on the board — e.g. `Todo` after `New`, `Resolved` renamed
+  `In Review`.
 - `label` — `backlog: open`, `todo: status::todo`,
   `in-progress: status::in-progress`, `in-review: status::in-review`,
   `done: closed`; reuse an existing label that clearly means the same phase.

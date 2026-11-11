@@ -2,7 +2,7 @@
 
 Open-source skills for Claude Code, Cursor, and other coding agents that take a tracker issue from a written spec to a merged pull request. Built for the daily developer workflow at [nerdway](https://nerdway.si).
 
-You describe the work in Linear, GitHub Issues, GitLab Issues, or Azure DevOps Boards. The plugin plans from that issue, implements after you move it to In Progress, reviews the change, and merges when you say so. The repository stays code; the spec and the plan live on the tracker.
+You describe the work in Linear, GitHub Issues, GitLab Issues, Azure DevOps Boards, or Jira Cloud. The plugin plans from that issue, implements after you move it to In Progress, reviews the change, and merges when you say so. The repository stays code; the spec and the plan live on the tracker.
 
 ## Install
 
@@ -196,8 +196,9 @@ These CLIs on your `PATH`:
 | `gh` (GitHub CLI) | 2.97 | GitHub-hosted repos or GitHub Issues |
 | `linearis` (Linear CLI) | 2026.7.0 | Linear |
 | `glab` (GitLab CLI) | 1.117 | GitLab-hosted repos or GitLab Issues |
-| `jq` | 1.6 | GitLab Issues or Azure DevOps Boards |
+| `jq` | 1.6 | GitLab Issues, Azure DevOps Boards, or Jira Cloud (on Windows PowerShell, `ConvertFrom-Json` is the parse path) |
 | `az` (Azure CLI) | 2.90 | Azure DevOps-hosted repos or Azure DevOps Boards |
+| `acli` (Atlassian CLI) | 1.3.0 | Jira Cloud |
 | `rg` (ripgrep) | 14 | search |
 
 You don't have to install the CLIs by hand. Once the plugin is installed,
@@ -208,7 +209,7 @@ entry (a fresh full machine, or plugin development), pass `--all` to
 `scripts/bootstrap-clis.ts`. Authentication is never done for you: the skill
 hands back only the login steps a human has to complete.
 
-To authenticate `linearis`, create a personal API key in Linear under **Settings → Security & access → API → Personal API keys**, then either set it as the `LINEAR_API_TOKEN` environment variable or run `linearis auth login`. The key does not expire. Other CLIs use their usual login: `gh auth login`, `glab auth login`, `az login` or `az devops login`. After `az`, add the DevOps extension with `az extension add --name azure-devops`.
+To authenticate `linearis`, create a personal API key in Linear under **Settings → Security & access → API → Personal API keys**, then either set it as the `LINEAR_API_TOKEN` environment variable or run `linearis auth login`. The key does not expire. For Jira Cloud, any authenticated `acli` session works (check with `acli jira auth status`). The documented headless login is an unscoped API token from [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens) (Create API token, not Create API token with scopes), piped into `acli jira auth login --site <host> --email <account-email> --token`. Other CLIs use their usual login: `gh auth login`, `glab auth login`, `az login` or `az devops login`. After `az`, add the DevOps extension with `az extension add --name azure-devops`.
 
 Install notes, day-to-day steering, and the full skill reference are in the [User Guide](docs/USER-GUIDE.md).
 

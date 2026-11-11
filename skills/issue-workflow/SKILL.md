@@ -2,8 +2,8 @@
 name: issue-workflow
 description: >-
   Mandatory status-driven workflow for tracker issues (Linear, GitHub Issues,
-  GitLab Issues, Azure DevOps Boards) when the user provides an issue ID (e.g.
-  KAM-145, ENG-123; #123, owner/repo#123 or group/project#123 in a GitHub or
+  GitLab Issues, Azure DevOps Boards, Jira Cloud) when the user provides an issue ID (e.g.
+  TEAM-123, PROJ-123; #123, owner/repo#123 or group/project#123 in a GitHub or
   GitLab Issues project; #123 or AB#123 in an Azure DevOps Boards project) to
   plan or implement. Dispatches on the
   issue's workflow phase, read through the tracker's status strategy:

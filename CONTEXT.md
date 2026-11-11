@@ -244,7 +244,7 @@ and over an older Grill state block.
 _Avoid_: grill checklist (the heading is the name)
 
 **Platform config**:
-The project's tracker (`linear`, `github`, `gitlab`, `ado`, `none`) and VCS
+The project's tracker (`linear`, `github`, `gitlab`, `ado`, `jira`, `none`) and VCS
 host (`github`, `gitlab`, `ado`) plus the identifiers each needs — schema
 `PlatformConfig`. Lives as the `## Platform` section of the repo `CLAUDE.md`,
 mirrored as `platform:` on the entity page, and is established by

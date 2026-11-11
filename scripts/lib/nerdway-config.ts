@@ -7,6 +7,28 @@ export interface ResolveSlugOptions {
   gitRemote?: (projectDir: string) => string;
 }
 
+function trimmed(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  const text = value.trim();
+  return text.length > 0 ? text : undefined;
+}
+
+export function resolveConfigDir(
+  env: NodeJS.ProcessEnv,
+  platform: NodeJS.Platform,
+  home: string,
+): string {
+  const override = trimmed(env.NERDWAY_CONFIG_DIR);
+  if (override !== undefined) return override;
+  const xdg = trimmed(env.XDG_CONFIG_HOME);
+  if (xdg !== undefined) return join(xdg, "nerdway");
+  if (platform === "win32") {
+    const appdata = trimmed(env.APPDATA);
+    if (appdata !== undefined) return join(appdata, "nerdway");
+  }
+  return join(home, ".config", "nerdway");
+}
+
 function isFile(path: string): boolean {
   try {
     return statSync(path).isFile();

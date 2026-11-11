@@ -115,7 +115,7 @@ A typical issue, from idea to merged pull request, goes through [`issue-workflow
    /bootstrap-clis
    ```
 
-2. In the project repository, record which tracker holds the issues and which host holds the code. The result is a `## Platform` section in the repo `CLAUDE.md`; commit it with your next change.
+2. In the project repository, record which tracker holds the issues and which host holds the code. The result is written to your user nerdway config (`~/.config/nerdway/<slug>/config.yml` on Linux and macOS, `%APPDATA%\nerdway\<slug>\config.yml` on Windows), not to the repo.
 
    ```
    /determine-platform
@@ -162,8 +162,8 @@ Twenty skills ship in `skills/`. Invoke one with `/<name>` or `/nerdway:<name>`.
 | [`new-project-workflow`](skills/new-project-workflow/SKILL.md) | Bootstrap a new development project end-to-end: git, README, GitHub repo, Linear project, optional wiki, then a spec-creating skill. |
 | [`project-continue`](skills/project-continue/SKILL.md) | Answer "where are we" for the current project: verify the newest checkpoint against the repo and tracker, and record a fresh one with consent. |
 | [`nerd-orchestrate`](skills/nerd-orchestrate/SKILL.md) | Orchestrate a project's unplanned issues: report progress, plan every open issue without a plan comment, then ask before auto-issue-mode. |
-| [`determine-platform`](skills/determine-platform/SKILL.md) | Establish which tracker holds the project's issues and which VCS host holds its code, and record that as the Platform section of CLAUDE.md. |
-| [`bind-statuses`](skills/bind-statuses/SKILL.md) | Bind the five canonical workflow phases to how the project's tracker shows them and record the map in the repo CLAUDE.md. |
+| [`determine-platform`](skills/determine-platform/SKILL.md) | Establish which tracker holds the project's issues and which VCS host holds its code, and record that in the user-owned nerdway config store. |
+| [`bind-statuses`](skills/bind-statuses/SKILL.md) | Bind the five canonical workflow phases to how the project's tracker shows them and record the map in the user-owned nerdway config store. |
 | [`retro`](skills/retro/SKILL.md) | Turn the lessons of the current session into tracker issues: propose candidates by category and hand accepted ones to issue-writer. |
 
 ### Vault

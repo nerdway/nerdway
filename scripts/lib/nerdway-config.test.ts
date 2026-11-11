@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { mergePlatformConfigs, readPlatformConfig, resolveConfigDir, resolveSlug } from "./nerdway-config.ts";
+import { mergePlatformConfigs, migrateLegacyPlatform, readPlatformConfig, resolveConfigDir, resolveSlug } from "./nerdway-config.ts";
 import type { PlatformVocabulary } from "../types/platform-config.ts";
 
 test("slug comes from the slug file, else the remote, else the directory name", () => {
@@ -115,15 +115,21 @@ function configEnv(root: string): { env: NodeJS.ProcessEnv; repo: string; config
   return { env: { NERDWAY_CONFIG_DIR: configDir }, repo, configDir };
 }
 
-function readOf(repo: string, env: NodeJS.ProcessEnv, extra: { gitRemote?: (dir: string) => string } = {}) {
-  return readPlatformConfig(repo, env, {
+function optionsOf(repo: string, extra: { gitRemote?: (dir: string) => string } = {}) {
+  return {
     vocabulary,
     trackerAdapters: adapters,
     gitRemote: extra.gitRemote ?? (() => ""),
     home: repo,
-    platform: "linux",
-  });
+    platform: "linux" as const,
+  };
 }
+
+function readOf(repo: string, env: NodeJS.ProcessEnv, extra: { gitRemote?: (dir: string) => string } = {}) {
+  return readPlatformConfig(repo, env, optionsOf(repo, extra));
+}
+
+const LEGACY = "## Platform\n\n```yaml\ntracker: github\nvcs: github\ngithub:\n  owner: nerdway\n  repo: nerdway\n```\n";
 
 test("mergePlatformConfigs: a project key replaces the default key whole; missing keys come from defaults", () => {
   const defaults = {
@@ -192,16 +198,116 @@ test("readPlatformConfig: a broken project file is invalid", () => {
   }
 });
 
-test("readPlatformConfig: a legacy ## Platform section is migration-needed", () => {
-  const root = mkdtempSync(join(tmpdir(), "nerdway-legacy-"));
+test("clear-case migration writes, reads back, then removes the section", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-migrate-clear-"));
   try {
-    const { env, repo } = configEnv(root);
-    writeFileSync(join(repo, "CLAUDE.md"), "## Platform\n\n```yaml\ntracker: github\nvcs: github\n```\n");
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(repo, "CLAUDE.md"), `# Repo\n\nKeep this.\n\n${LEGACY}\n## Other\n\nbody\n`);
+    const result = migrateLegacyPlatform(repo, env, optionsOf(repo));
+    assert.equal(result.status, "migrated");
     const read = readOf(repo, env);
-    assert.equal(read.status, "migration-needed");
-    assert.ok(read.errors.length > 0);
+    assert.equal(read.status, "found");
+    if (read.status !== "found") return;
+    assert.deepEqual(read.value, { tracker: "github", vcs: "github", github: { owner: "nerdway", repo: "nerdway" } });
+    const markdown = readFileSync(join(repo, "CLAUDE.md"), "utf8");
+    assert.equal(markdown.includes("## Platform"), false);
+    assert.equal(markdown.includes("# Repo"), true);
+    assert.equal(markdown.includes("## Other"), true);
+    assert.equal(existsSync(join(configDir, "repo", "config.yml")), true);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("clear-case migration deletes CLAUDE.md when only the Platform section remains", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-migrate-delete-"));
+  try {
+    const { env, repo } = configEnv(root);
+    writeFileSync(join(repo, "CLAUDE.md"), LEGACY);
+    const result = migrateLegacyPlatform(repo, env, optionsOf(repo));
+    assert.equal(result.status, "migrated");
+    assert.equal(existsSync(join(repo, "CLAUDE.md")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("conflict when the project config differs removes nothing and reports", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-migrate-conflict-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(configDir, "repo"));
+    writeFileSync(join(configDir, "repo", "config.yml"), "tracker: github\nvcs: github\ngithub:\n  owner: acme\n  repo: app\n");
+    writeFileSync(join(repo, "CLAUDE.md"), LEGACY);
+    const result = migrateLegacyPlatform(repo, env, optionsOf(repo));
+    assert.equal(result.status, "conflict");
+    assert.equal(readFileSync(join(repo, "CLAUDE.md"), "utf8"), LEGACY);
+    const read = readOf(repo, env);
+    assert.equal(read.status, "migration-needed");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("an unreadable legacy section removes nothing and reports", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-migrate-bad-"));
+  try {
+    const { env, repo } = configEnv(root);
+    writeFileSync(join(repo, "CLAUDE.md"), "## Platform\n\nprose only\n");
+    const result = migrateLegacyPlatform(repo, env, optionsOf(repo));
+    assert.equal(result.status, "conflict");
+    assert.equal(readFileSync(join(repo, "CLAUDE.md"), "utf8").includes("## Platform"), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("an ambiguous slug removes nothing and reports", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-migrate-slug-"));
+  try {
+    const { env, repo } = configEnv(root);
+    writeFileSync(join(repo, ".nerdbrain-slug"), "!!!\n");
+    writeFileSync(join(repo, "CLAUDE.md"), LEGACY);
+    const result = migrateLegacyPlatform(repo, env, optionsOf(repo));
+    assert.equal(result.status, "conflict");
+    assert.equal(readFileSync(join(repo, "CLAUDE.md"), "utf8"), LEGACY);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("--resolve keep-user, take-repo and merge finish a conflict and remove the section", () => {
+  const cases = [
+    {
+      choice: "keep-user" as const,
+      owner: "acme",
+    },
+    {
+      choice: "take-repo" as const,
+      owner: "nerdway",
+    },
+    {
+      choice: "merge" as const,
+      owner: "acme",
+    },
+  ];
+  for (const item of cases) {
+    const root = mkdtempSync(join(tmpdir(), `nerdway-resolve-${item.choice}-`));
+    try {
+      const { env, repo, configDir } = configEnv(root);
+      mkdirSync(join(configDir, "repo"));
+      writeFileSync(join(configDir, "repo", "config.yml"), "tracker: github\nvcs: github\ngithub:\n  owner: acme\n  repo: app\n");
+      writeFileSync(join(repo, "CLAUDE.md"), LEGACY);
+      const result = migrateLegacyPlatform(repo, env, { ...optionsOf(repo), resolve: item.choice });
+      assert.equal(result.status, "migrated", item.choice);
+      assert.equal(existsSync(join(repo, "CLAUDE.md")), false, item.choice);
+      const read = readOf(repo, env);
+      assert.equal(read.status, "found", item.choice);
+      if (read.status !== "found") return;
+      assert.equal((read.value.github as { owner: string }).owner, item.owner, item.choice);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   }
 });
 

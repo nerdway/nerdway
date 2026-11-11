@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
 
@@ -32,6 +32,17 @@ export interface WritePlatformOptions extends ReadPlatformOptions {
 }
 
 export type WritePlatformResult = { status: "ok"; path: string } | { status: "invalid"; errors: string[] };
+
+export type ResolveChoice = "keep-user" | "take-repo" | "merge";
+
+export interface MigratePlatformOptions extends ReadPlatformOptions {
+  resolve?: ResolveChoice;
+}
+
+export type MigrationResult =
+  | { status: "migrated"; path: string }
+  | { status: "unchanged" }
+  | { status: "conflict"; errors: string[] };
 
 function trimmed(value: string | undefined): string | undefined {
   if (value === undefined) return undefined;
@@ -152,18 +163,10 @@ export function readPlatformConfig(
   env: NodeJS.ProcessEnv,
   options: ReadPlatformOptions,
 ): PlatformRead {
-  const markdown = isFile(join(repoRoot, "CLAUDE.md")) ? readFileSync(join(repoRoot, "CLAUDE.md"), "utf8") : undefined;
-  const legacy = readPlatform(markdown, options.vocabulary, options.trackerAdapters);
-  if (legacy.status !== "absent") {
-    return {
-      status: "migration-needed",
-      errors: legacy.status === "invalid" ? legacy.errors : ["legacy ## Platform section in CLAUDE.md"],
-    };
-  }
+  const migrated = migrateLegacyPlatform(repoRoot, env, options);
+  if (migrated.status === "conflict") return { status: "migration-needed", errors: migrated.errors };
 
-  const home = options.home ?? homedir();
-  const configDir = resolveConfigDir(env, options.platform ?? process.platform, home);
-  const slug = resolveSlug(repoRoot, { aliasesPath: options.aliasesPath, gitRemote: options.gitRemote });
+  const { configDir, slug } = configPaths(repoRoot, env, options);
   const defaults = readYamlFile(join(configDir, "config.yml"));
   const project = slug.length === 0 ? { kind: "missing" as const } : readYamlFile(join(configDir, slug, "config.yml"));
   if (defaults.kind === "invalid") return { status: "invalid", errors: defaults.errors.map((error) => `config.yml: ${error}`) };
@@ -231,4 +234,105 @@ export function writePlatformConfig(
   mkdirSync(join(configDir, slug), { recursive: true });
   writeFileSync(projectPath, emitYaml(nextProject));
   return { status: "ok", path: projectPath };
+}
+
+function canonical(value: unknown): string {
+  if (typeof value !== "object" || value === null) return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`)
+    .join(",")}}`;
+}
+
+function sameConfig(left: Record<string, unknown>, right: Record<string, unknown>): boolean {
+  return canonical(left) === canonical(right);
+}
+
+function removePlatformSection(markdown: string): string {
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  const start = lines.findIndex((line) => line.trimEnd() === "## Platform");
+  if (start === -1) return markdown;
+  const end = lines.findIndex((line, index) => index > start && line.startsWith("## "));
+  const before = lines.slice(0, start);
+  const after = end === -1 ? [] : lines.slice(end);
+  while (before.length > 0 && before[before.length - 1].trim() === "") before.pop();
+  while (after.length > 0 && after[0].trim() === "") after.shift();
+  const kept = [...before, ...(before.length > 0 && after.length > 0 ? [""] : []), ...after];
+  const out = kept.join("\n").replace(/[ \t\n]+$/, "");
+  return out.length === 0 ? "" : `${out}\n`;
+}
+
+function applyPlatformRemoval(repoRoot: string): void {
+  const path = join(repoRoot, "CLAUDE.md");
+  const next = removePlatformSection(readFileSync(path, "utf8"));
+  if (next.trim().length === 0) unlinkSync(path);
+  else writeFileSync(path, next);
+}
+
+export function migrateLegacyPlatform(
+  repoRoot: string,
+  env: NodeJS.ProcessEnv,
+  options: MigratePlatformOptions,
+): MigrationResult {
+  const claudeMd = join(repoRoot, "CLAUDE.md");
+  const markdown = isFile(claudeMd) ? readFileSync(claudeMd, "utf8") : undefined;
+  const legacy = readPlatform(markdown, options.vocabulary, options.trackerAdapters);
+  if (legacy.status === "absent") return { status: "unchanged" };
+
+  const { configDir, slug } = configPaths(repoRoot, env, options);
+  if (slug.length === 0) {
+    return { status: "conflict", errors: ["ambiguous project slug - cannot choose a project config path"] };
+  }
+  if (legacy.status !== "found") {
+    return { status: "conflict", errors: legacy.errors.length > 0 ? legacy.errors : ["legacy ## Platform section is unreadable"] };
+  }
+
+  const projectPath = join(configDir, slug, "config.yml");
+  const existing = readYamlFile(projectPath);
+  if (existing.kind === "invalid") {
+    return { status: "conflict", errors: existing.errors.map((error) => `${slug}/config.yml: ${error}`) };
+  }
+
+  const projectExists = existing.kind === "ok";
+  const differs = projectExists && !sameConfig(existing.value, legacy.value);
+  if (differs && options.resolve === undefined) {
+    return {
+      status: "conflict",
+      errors: [
+        "legacy ## Platform section differs from the user project config",
+        "ask the user: keep the user config, take the repo values, or merge",
+        "then run: node scripts/validate-platform-config.ts --resolve keep-user|take-repo|merge <repo>",
+      ],
+    };
+  }
+
+  let toWrite: Record<string, unknown> | null = null;
+  if (options.resolve === "keep-user") {
+    if (!projectExists) return { status: "conflict", errors: ["keep-user needs an existing project config"] };
+  } else if (options.resolve === "merge") {
+    toWrite = mergePlatformConfigs(legacy.value, projectExists ? existing.value : {});
+  } else if (options.resolve === "take-repo" || !projectExists) {
+    toWrite = legacy.value;
+  }
+
+  if (toWrite !== null) {
+    const written = writePlatformConfig(repoRoot, env, toWrite, options);
+    if (written.status !== "ok") return { status: "conflict", errors: written.errors };
+    const readBack = readYamlFile(written.path);
+    if (readBack.kind !== "ok" || !sameConfig(readBack.value, toWrite)) {
+      if (!projectExists) {
+        try {
+          unlinkSync(written.path);
+        } catch {
+          return { status: "conflict", errors: ["wrote the project config but the read-back did not match"] };
+        }
+      }
+      return { status: "conflict", errors: ["wrote the project config but the read-back did not match"] };
+    }
+  }
+
+  applyPlatformRemoval(repoRoot);
+  return { status: "migrated", path: projectPath };
 }

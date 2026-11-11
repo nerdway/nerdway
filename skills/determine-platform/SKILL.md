@@ -3,13 +3,13 @@ name: determine-platform
 description: >-
   Establish the project's platform — which tracker holds its issues (Linear,
   GitHub Issues, GitLab Issues, Azure DevOps Boards, Jira Cloud, or none) and which VCS host
-  holds its code (GitHub, GitLab, Azure DevOps) — and record it as the
-  `## Platform` section of the repo CLAUDE.md, mirrored as `platform:` on the
-  nerdbrain entity page. Reads the existing config first, infers from the git
-  remote and the tracker CLI, and asks one question only when the answer is
-  ambiguous. Use for `/determine-platform`, when a core skill reports that no
-  platform is configured, or when the user asks which tracker or host a project
-  uses ("jaka platforma", "ustal platformę", "set the platform", "which tracker").
+  holds its code (GitHub, GitLab, Azure DevOps) — and record it in the user-owned
+  nerdway config store, mirrored as `platform:` on the nerdbrain entity page.
+  Reads the existing config first, infers from the git remote and the tracker CLI,
+  and asks one question only when the answer is ambiguous. Use for
+  `/determine-platform`, when a core skill reports that no platform is
+  configured, or when the user asks which tracker or host a project uses
+  ("jaka platforma", "ustal platformę", "set the platform", "which tracker").
 ---
 
 # Determine platform
@@ -20,9 +20,8 @@ return**. The result is a `PlatformConfig` (schema in `workflow-graph.json`):
 `statuses` block `bind-statuses` adds. Core skills pick their adapter files
 from `tracker` and `vcs`.
 
-This skill may run at any issue status: the `no-repo-change-before-in-progress`
-rule exempts exactly one repo change — replacing the `## Platform` section of
-the repo `CLAUDE.md`. Touch nothing else in the repo.
+This skill may run at any issue status: it writes only the user-owned nerdway
+config store (and the entity-page mirror), never a file in the repo.
 
 ## Adapters
 
@@ -65,12 +64,13 @@ github:
 
 Check the sources in this order and keep the first one that yields a config:
 
-1. **Repo `CLAUDE.md`** at `git rev-parse --show-toplevel`, read from disk as
-   `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes: the section from the
-   line-start heading `## Platform` to the next line-start `## ` (or EOF),
-   holding one fenced `yaml` block. A broken section (exit code `4` there)
+1. **User nerdway config** for this repo, read from disk as
+   `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes. Exit code `4` there
    yields no config here: this skill is the one that rewrites it, so note
-   what was wrong, report it in Step 6 and go on to source 2.
+   what was wrong, report it in Step 6 and go on to source 2. Exit code `5`
+   (a leftover `## Platform` section that could not be migrated) stops this
+   skill: ask the user to keep the user config, take the repo values, or
+   merge, then run `--resolve` as that recipe says before writing anything.
 2. **Entity page frontmatter** (`~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md`,
    slug from the SessionStart inject): the `platform:` key.
 3. **Legacy entity page alias**: a `linear:` block without `platform:` means
@@ -145,19 +145,17 @@ Linear for it.
 
 ## Step 4 — Write both places
 
-**Repo `CLAUDE.md`** — replace the section idempotently:
+**User nerdway config** — write through the script, never by editing a repo
+file. Carry over an existing top-level `statuses` key. Pipe the YAML object
+to:
 
-1. Find the heading `## Platform` **at the start of a line**. Never splice on
-   a bare substring search: the heading text can recur in prose.
-2. Present → replace everything from that line up to (not including) the next
-   line starting with `## `, or to EOF, with the new section — carrying over
-   an existing top-level `statuses:` key with all its indented lines as is.
-3. Absent → append the section at the end of the file, after one blank line.
-   No `CLAUDE.md` at all → create it holding only the section.
-4. The section is the heading, one blank line, the fenced `yaml` block, one
-   blank line.
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/write-platform-config.ts" --repo "$(git rev-parse --show-toplevel)"
+```
 
-Running the skill twice with the same result must leave `git diff` empty.
+Non-zero exit → show the errors, fix the object with the user, write again.
+Running the skill twice with the same result must leave the config file
+unchanged.
 
 **Entity page** — only when the vault is reachable (`tier=file`) and the page
 exists. Follow `nerdway:nerdbrain-wiki` for the write (filesystem only,
@@ -169,7 +167,7 @@ exists. Follow `nerdway:nerdbrain-wiki` for the write (filesystem only,
   comment lines — one source, never two;
 - nothing else on the page changes.
 
-Skip the page silently with `tier=none` or no page; the repo section alone is
+Skip the page silently with `tier=none` or no page; the user config alone is
 enough.
 
 ## Step 5 — Bind statuses
@@ -186,18 +184,14 @@ same section. When the user declines or it stops, carry on: without a
 
 Print the YAML block — including `statuses` when `bind-statuses` wrote it —
 and where it was written (or that nothing changed). The calling skill takes
-the platform from this output, or reads the file again as
-`${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes. A `CLAUDE.md` that
-is part of the conversation context is no source: Claude Code loaded it
-before this write and never reloads it, and Cursor loads it only with
-Third-Party Imports on.
+the platform from this output, or reads the store again as
+`${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes.
 
 ## Boundaries
 
-- The only repo change is the `## Platform` section (the `statuses` key in
-  it through `bind-statuses`). Never commit or push
-  it: the skill may run on `main` or on another issue's branch, so the change
-  stays in the working tree for the user or the calling skill to commit.
+- Never write platform metadata into the repository. The only writes are the
+  user nerdway config (through `write-platform-config.ts`) and the entity-page
+  mirror. The `statuses` key is written through `bind-statuses`.
 - Vault access goes through the filesystem by default; an MCP server is the
   transport only where the vault filesystem is absent (ADR-0010). Never git
   against the vault (ADR-0004).

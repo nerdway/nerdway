@@ -3,13 +3,13 @@
   "evals": [
     {
       "id": "resolve-optional-path-defaults-to-cwd",
-      "prompt": "The user typed `/nerdway:nerd-orchestrate` with no argument, in a git checkout whose CLAUDE.md has tracker: linear and vcs: github. A second session types `/nerdway:nerd-orchestrate ../other-app` where that path has its own CLAUDE.md with tracker: github.",
-      "expected_output": "With no argument the skill resolves the platform from the current working directory's CLAUDE.md. With a path argument it reads that repo's CLAUDE.md instead. A tracker project id would keep the current tracker and select that project. It does not invent a project without reading the platform sources issue-writer step 1 names.",
+      "prompt": "The user typed `/nerdway:nerd-orchestrate` with no argument, in a git checkout whose nerdway platform config has tracker: linear and vcs: github. A second session types `/nerdway:nerd-orchestrate ../other-app` where that path has its own nerdway platform config with tracker: github.",
+      "expected_output": "With no argument the skill resolves the platform from the current working directory's nerdway config. With a path argument it reads that repo's nerdway config instead. A tracker project id would keep the current tracker and select that project. It does not invent a project without reading the platform sources issue-writer step 1 names.",
       "files": [],
       "assertions": [
-        "No argument uses the current working directory and its CLAUDE.md platform",
+        "No argument uses the current working directory and its nerdway platform config",
         "A filesystem path argument resolves the platform from that path",
-        "The skill does not skip determine-platform when neither CLAUDE.md nor the entity page has a platform"
+        "The skill does not skip determine-platform when neither the nerdway platform config nor the entity page has a platform"
       ]
     },
     {

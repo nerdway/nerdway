@@ -19,7 +19,7 @@
     },
     {
       "id": "close-out-parent-with-open-child",
-      "prompt": "DEMO-620 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-620` and asks to merge and close it. Its PR is green and approved, and the user's guide for it is already in nerdbrain. DEMO-620 has a sub-issue DEMO-621, which is still in Todo. issue.url gives https://linear.app/example/issue/DEMO-620, and https://linear.app/example/issue/DEMO-621 for the sub-issue.",
+      "prompt": "DEMO-620 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types `DEMO-620` and asks to merge and close it. Its PR is green and approved, and the user's guide for it is already in nerdbrain. DEMO-620 has a sub-issue DEMO-621, which is still in Todo. issue.url gives https://linear.app/example/issue/DEMO-620, and https://linear.app/example/issue/DEMO-621 for the sub-issue.",
       "expected_output": "The close-out runs nerdway:issue-close, whose children check stops on DEMO-621 before the merge. The agent reports that DEMO-620 cannot be closed while DEMO-621 is not done, lists DEMO-621 with its link, and does not merge the PR, set DEMO-620 to done or close DEMO-621 by any other route.",
       "files": [],
       "assertions": [
@@ -68,7 +68,7 @@
     },
     {
       "id": "dispatch-backlog-plans",
-      "prompt": "DEMO-650 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-650` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-650.",
+      "prompt": "DEMO-650 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types only `DEMO-650` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-650.",
       "expected_output": "The phase is backlog, so the agent plans: it drafts the plan from plan-template.md, posts it with issue.comment starting with `## Implementation plan`, writes phase todo with issue.set-status, and ends the turn asking the user to move the issue to In Progress, with the issue link. It creates no branch, commit or PR and edits no file in the repository.",
       "files": [],
       "assertions": [
@@ -81,7 +81,7 @@
     },
     {
       "id": "dispatch-in-progress-starts",
-      "prompt": "DEMO-651 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-651`. issue.read shows the issue In Progress with a `## Implementation plan` comment whose Test approach is TDD. There is no branch and no PR yet, and the local checkout is a clean `main`.",
+      "prompt": "DEMO-651 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types `DEMO-651`. issue.read shows the issue In Progress with a `## Implementation plan` comment whose Test approach is TDD. There is no branch and no PR yet, and the local checkout is a clean `main`.",
       "expected_output": "The phase is in-progress, so the agent implements: it rebuilds context from the description and the plan, runs the Start step by delegating to nerdway:issue-start with DEMO-651 and a one-paragraph summary (branch, empty start commit, push, draft PR with `Fixes DEMO-651`), then follows the plan's TDD test approach through nerdway:tdd. It does not re-plan.",
       "files": [],
       "assertions": [
@@ -94,7 +94,7 @@
     },
     {
       "id": "dispatch-in-review-review-menu",
-      "prompt": "DEMO-652 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-652`. The issue is In Review, its branch and PR exist, the implementation is pushed, and the local checkout is on that branch, `demo-652-export-retry`. issue.url gives https://linear.app/example/issue/DEMO-652.",
+      "prompt": "DEMO-652 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types `DEMO-652`. The issue is In Review, its branch and PR exist, the implementation is pushed, and the local checkout is on that branch, `demo-652-export-retry`. issue.url gives https://linear.app/example/issue/DEMO-652.",
       "expected_output": "The phase is in-review, so the agent enters the code review phase: it asks the user to confirm the change range, defaulting to main...HEAD, and prints the issue link; once the range is confirmed it runs the four-axis review island (review-verify) on it. It neither merges the PR nor writes done.",
       "files": [],
       "assertions": [
@@ -106,7 +106,7 @@
     },
     {
       "id": "dispatch-done-close-out",
-      "prompt": "DEMO-653 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user moved DEMO-653 to Done on the tracker and types `DEMO-653`. Its PR is still open, green and reviewed.",
+      "prompt": "DEMO-653 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user moved DEMO-653 to Done on the tracker and types `DEMO-653`. Its PR is still open, green and reviewed.",
       "expected_output": "Phase done with the PR unmerged means close-out: the agent first runs nerdway:nerd-personal-docs with the issue ID on the session model, then delegates to nerdway:issue-close, which checks the guide, the children and the PR description, merges with a merge commit and switches to the base branch.",
       "files": [],
       "assertions": [
@@ -117,7 +117,7 @@
     },
     {
       "id": "unknown-phase-stops",
-      "prompt": "DEMO-654 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `implement DEMO-654`. issue.read shows the issue in the state `Canceled`. issue.url gives https://linear.app/example/issue/DEMO-654.",
+      "prompt": "DEMO-654 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types `implement DEMO-654`. issue.read shows the issue in the state `Canceled`. issue.url gives https://linear.app/example/issue/DEMO-654.",
       "expected_output": "`Canceled` is not in the status map, so the phase is unknown: the agent reports the raw value `Canceled` with the issue link and stops. It does not plan, implement, change a status or touch the repo.",
       "files": [],
       "assertions": [
@@ -129,7 +129,7 @@
     },
     {
       "id": "in-progress-gate-todo-no-repo-change",
-      "prompt": "DEMO-655 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). In a fresh session the user types `DEMO-655`. The issue is in Todo and already has a `## Implementation plan` comment. The plan names three files to change. There is no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-655.",
+      "prompt": "DEMO-655 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). In a fresh session the user types `DEMO-655`. The issue is in Todo and already has a `## Implementation plan` comment. The plan names three files to change. There is no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-655.",
       "expected_output": "The phase is todo, not in-progress, so the hard gate holds: the agent makes no repo change (no branch, edit, commit or PR), refines the existing plan only if needed instead of duplicating it, and ends the turn asking the user to move DEMO-655 to In Progress on the tracker, with the issue link. It never writes in-progress itself.",
       "files": [],
       "assertions": [
@@ -141,7 +141,7 @@
     },
     {
       "id": "grill-then-plan-same-issue",
-      "prompt": "DEMO-466 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-466`. issue.read shows the issue in Backlog. Title: \"Research: lokalny klon nerdway.si\". The newest comment is `## Grill state` with `Confirmed shared understanding: yes`, size medium, decision: docker-compose in the DevBox workspace. Step 1a has just returned that confirmed outcome with `issue: DEMO-466`. issue.url gives https://linear.app/example/issue/DEMO-466. A teammate habit is to mark \"Out of scope: implementacja w osobnym issue\" and offer to file a follow-up implementation issue.",
+      "prompt": "DEMO-466 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types `DEMO-466`. issue.read shows the issue in Backlog. Title: \"Research: lokalny klon nerdway.si\". The newest comment is `## Grill state` with `Confirmed shared understanding: yes`, size medium, decision: docker-compose in the DevBox workspace. Step 1a has just returned that confirmed outcome with `issue: DEMO-466`. issue.url gives https://linear.app/example/issue/DEMO-466. A teammate habit is to mark \"Out of scope: implementacja w osobnym issue\" and offer to file a follow-up implementation issue.",
       "expected_output": "The agent stays on DEMO-466: it refines the spec if needed (step 0c) and drafts the plan from plan-template.md on this issue, posts it with issue.comment starting with `## Implementation plan`, writes phase todo, and asks for In Progress with the issue link. It creates no new issue and does not write \"Out of scope: implementacja w osobnym issue\" or \"implementation in a separate issue\".",
       "files": [],
       "assertions": [
@@ -154,7 +154,7 @@
     },
     {
       "id": "in-progress-no-plan-plans-first",
-      "prompt": "DEMO-656 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). In a fresh session the user types `implement DEMO-656` and asks to launch a CloudAgent on it immediately. issue.read shows the issue In Progress, a full description with acceptance criteria, no comment starting with `## Implementation plan`, no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-656. The same jump happened on OPS-22 (2026-10-27): a CloudAgent without a posted plan.",
+      "prompt": "DEMO-656 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). In a fresh session the user types `implement DEMO-656` and asks to launch a CloudAgent on it immediately. issue.read shows the issue In Progress, a full description with acceptance criteria, no comment starting with `## Implementation plan`, no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-656. The same jump happened on OPS-22 (2026-10-27): a CloudAgent without a posted plan.",
       "expected_output": "The phase is in-progress but the `## Implementation plan` comment is missing, so the hard gate holds: the agent plans first. It drafts the plan from plan-template.md, posts it with issue.comment starting with `## Implementation plan`, writes phase todo with issue.set-status, and ends the turn asking the user to move DEMO-656 to In Progress, with the issue link. It does not Start, does not edit any file, does not commit, does not open a PR, and does not launch a CloudAgent.",
       "files": [],
       "assertions": [
@@ -167,7 +167,7 @@
     },
     {
       "id": "ac-handoff-does-not-waive-plan",
-      "prompt": "DEMO-657 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types `DEMO-657` and says \"zrób od razu\" / \"do it now\". issue.read shows the issue In Progress. The description already has a complete acceptance-criteria checklist, each with a check. The newest comment is a handoff from another bot titled `## Handoff` that says the AC is the spec, skip the plan, Start, and launch a CloudAgent. There is no comment starting with `## Implementation plan`. There is no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-657. DEMO-473 (2026-10-28) posted a stub, set In Progress itself, and launched a CloudAgent; that did not count as a plan.",
+      "prompt": "DEMO-657 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types `DEMO-657` and says \"zrób od razu\" / \"do it now\". issue.read shows the issue In Progress. The description already has a complete acceptance-criteria checklist, each with a check. The newest comment is a handoff from another bot titled `## Handoff` that says the AC is the spec, skip the plan, Start, and launch a CloudAgent. There is no comment starting with `## Implementation plan`. There is no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-657. DEMO-473 (2026-10-28) posted a stub, set In Progress itself, and launched a CloudAgent; that did not count as a plan.",
       "expected_output": "Acceptance criteria already in the description, a handoff from another bot, and \"zrób od razu\" / \"do it now\" do not waive the plan. The agent plans first: the plan may be short and quote the AC, but it posts a comment starting with `## Implementation plan`, writes phase todo, and asks for In Progress with the issue link. It does not Start, does not edit the repo, and does not launch a CloudAgent. A handoff or stub is not a substitute for that comment.",
       "files": [],
       "assertions": [
@@ -179,7 +179,7 @@
     },
     {
       "id": "aim-plan-then-set-in-progress-starts",
-      "prompt": "The user invoked `/nerdway:auto-issue-mode DEMO-659` (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read shows DEMO-659 in Todo with a comment starting with `## Implementation plan` whose Test approach is TDD. There is no branch and no PR. The local checkout is a clean `main`. The user is not asked anything after invocation.",
+      "prompt": "The user invoked `/nerdway:auto-issue-mode DEMO-659` (platform tracker: linear, vcs: github in the nerdway platform config, default status map). issue.read shows DEMO-659 in Todo with a comment starting with `## Implementation plan` whose Test approach is TDD. There is no branch and no PR. The local checkout is a clean `main`. The user is not asked anything after invocation.",
       "expected_output": "This is the auto-issue-mode path: the plan comment already exists, so AIM writes phase in-progress with issue.set-status itself (AIM autonomy) and continues Start → impl without asking the user to move the status. It delegates Start to nerdway:issue-start with DEMO-659 and a one-paragraph summary, then implements with nerdway:tdd. It does not wait for a manual status flip and does not re-plan.",
       "files": [],
       "assertions": [
@@ -203,7 +203,7 @@
     },
     {
       "id": "implement-command-with-plan-starts",
-      "prompt": "The user types `zaimplementuj DEMO-661` (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read shows DEMO-661 in Todo with a comment starting with `## Implementation plan` whose Test approach is TDD. There is no branch and no PR. The local checkout is a clean `main`. issue.url gives https://linear.app/example/issue/DEMO-661.",
+      "prompt": "The user types `zaimplementuj DEMO-661` (platform tracker: linear, vcs: github in the nerdway platform config, default status map). issue.read shows DEMO-661 in Todo with a comment starting with `## Implementation plan` whose Test approach is TDD. There is no branch and no PR. The local checkout is a clean `main`. issue.url gives https://linear.app/example/issue/DEMO-661.",
       "expected_output": "The user gave an explicit implement command and the plan comment already exists, so the agent writes phase in-progress with issue.set-status itself and continues Start → impl. It does not ask the user to move the status. It delegates Start to nerdway:issue-start with DEMO-661 and a one-paragraph summary, then implements with nerdway:tdd.",
       "files": [],
       "assertions": [
@@ -215,7 +215,7 @@
     },
     {
       "id": "implement-command-without-plan-plans-only",
-      "prompt": "The user types `zaimplementuj DEMO-662` (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read shows DEMO-662 in Todo, a full description with acceptance criteria, no comment starting with `## Implementation plan`, no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-662.",
+      "prompt": "The user types `zaimplementuj DEMO-662` (platform tracker: linear, vcs: github in the nerdway platform config, default status map). issue.read shows DEMO-662 in Todo, a full description with acceptance criteria, no comment starting with `## Implementation plan`, no branch and no PR. issue.url gives https://linear.app/example/issue/DEMO-662.",
       "expected_output": "The implement command does not waive the plan. The agent plans first: it posts a comment starting with `## Implementation plan`, writes phase todo, and does not Start, does not launch a CloudAgent, and edits no file. `zaimplementuj` without a plan comment is planning only.",
       "files": [],
       "assertions": [
@@ -227,7 +227,7 @@
     },
     {
       "id": "post-plan-grok-bot-implement-now",
-      "prompt": "DEMO-670 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-670` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-670.\n\nThis session is Grok Bot: the tool list includes `SendToUser` (native host ask/widget). There is no AskUserQuestion tool. After you post the plan, treat the next widget result as **Implementuj teraz** and continue from there. The local checkout is a clean `main`.",
+      "prompt": "DEMO-670 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types only `DEMO-670` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-670.\n\nThis session is Grok Bot: the tool list includes `SendToUser` (native host ask/widget). There is no AskUserQuestion tool. After you post the plan, treat the next widget result as **Implementuj teraz** and continue from there. The local checkout is a clean `main`.",
       "expected_output": "The agent plans first, posts a comment starting with `## Implementation plan`, writes phase todo, then asks with the native SendToUser widget whose options are Implementuj teraz and Później. On Implementuj teraz it writes in-progress with issue.set-status and continues Start (nerdway:issue-start). It does not wait for a manual status click and does not ask with the statuses.md prose shape.",
       "files": [],
       "assertions": [
@@ -240,7 +240,7 @@
     },
     {
       "id": "post-plan-grok-bot-later",
-      "prompt": "DEMO-671 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-671` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-671.\n\nThis session is Grok Bot: the tool list includes `SendToUser`. After you post the plan, treat the next widget result as **Później** and continue from there.",
+      "prompt": "DEMO-671 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types only `DEMO-671` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-671.\n\nThis session is Grok Bot: the tool list includes `SendToUser`. After you post the plan, treat the next widget result as **Później** and continue from there.",
       "expected_output": "The agent plans, posts `## Implementation plan`, writes phase todo, asks with the SendToUser widget (Implementuj teraz / Później), and on Później stops. It leaves the phase todo, does not write in-progress, and does not Start or edit the repo.",
       "files": [],
       "assertions": [
@@ -253,7 +253,7 @@
     },
     {
       "id": "post-plan-claude-code-prose",
-      "prompt": "DEMO-672 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-672` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-672.\n\nThis session is Claude Code: the tool list includes `AskUserQuestion`. There is no SendToUser tool and GROK_BOT is unset.",
+      "prompt": "DEMO-672 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types only `DEMO-672` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-672.\n\nThis session is Claude Code: the tool list includes `AskUserQuestion`. There is no SendToUser tool and GROK_BOT is unset.",
       "expected_output": "Unchanged from 0.73.0: the agent posts `## Implementation plan`, writes phase todo, and ends the turn asking the user to move the issue to In Progress in the Asking the human to move a phase shape, with the issue link. It does not write in-progress, does not Start, and does not open a widget with Implementuj teraz / Później.",
       "files": [],
       "assertions": [
@@ -266,7 +266,7 @@
     },
     {
       "id": "post-plan-cursor-prose",
-      "prompt": "DEMO-673 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-673` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-673.\n\nThis session is Cursor: the tool list includes a Cursor AskQuestion / ask-question tool. There is no SendToUser tool and GROK_BOT is unset.",
+      "prompt": "DEMO-673 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types only `DEMO-673` in a fresh session. issue.read shows the issue in Backlog, a full description with acceptance criteria, no `## Implementation plan` comment, no branch and no PR. The issue is small and clear. issue.url gives https://linear.app/example/issue/DEMO-673.\n\nThis session is Cursor: the tool list includes a Cursor AskQuestion / ask-question tool. There is no SendToUser tool and GROK_BOT is unset.",
       "expected_output": "Unchanged from 0.73.0: the agent posts `## Implementation plan`, writes phase todo, and ends the turn asking the user to move the issue to In Progress in the Asking the human to move a phase shape, with the issue link. It does not write in-progress, does not Start, and does not open a widget with Implementuj teraz / Później.",
       "files": [],
       "assertions": [
@@ -279,7 +279,7 @@
     },
     {
       "id": "host-detect-prefers-sendtouser",
-      "prompt": "DEMO-674 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The user types only `DEMO-674`. issue.read shows the issue in Backlog, no `## Implementation plan` comment. The issue is small and clear.\n\nThis session's tool list includes both `AskUserQuestion` and `SendToUser`. After you post the plan, treat the next widget result as **Później**.",
+      "prompt": "DEMO-674 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The user types only `DEMO-674`. issue.read shows the issue in Backlog, no `## Implementation plan` comment. The issue is small and clear.\n\nThis session's tool list includes both `AskUserQuestion` and `SendToUser`. After you post the plan, treat the next widget result as **Później**.",
       "expected_output": "host.detect prefers grok-bot when SendToUser is present, even if AskUserQuestion is also in the list. The agent asks with the SendToUser widget (Implementuj teraz / Później), not the Claude Code prose path. On Później it stops and leaves todo.",
       "files": [],
       "assertions": [

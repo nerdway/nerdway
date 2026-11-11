@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": "precondition-not-in-progress",
-      "prompt": "Start DEMO-660 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). issue.read-status returns `Todo`. The checkout is a clean `main`. issue.url gives https://linear.app/example/issue/DEMO-660.",
+      "prompt": "Start DEMO-660 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). issue.read-status returns `Todo`. The checkout is a clean `main`. issue.url gives https://linear.app/example/issue/DEMO-660.",
       "expected_output": "Precondition 1 fails: the phase is todo, not in-progress. The chain stops before any branch, commit, push or PR, reports the phase, and asks the user to move DEMO-660 to In Progress with the issue link from issue.url. It does not write the status itself.",
       "files": [],
       "assertions": [
@@ -15,7 +15,7 @@
     },
     {
       "id": "precondition-not-on-main",
-      "prompt": "Start DEMO-661 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The issue is In Progress. `git branch --show-current` prints `demo-640-other-work`. The working tree is clean.",
+      "prompt": "Start DEMO-661 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The issue is In Progress. `git branch --show-current` prints `demo-640-other-work`. The working tree is clean.",
       "expected_output": "Precondition 2 fails: the checkout is not on main or master. The chain stops and reports the current branch `demo-640-other-work`; it does not switch branches, create the issue branch or ask which base to use, because that is the caller's decision.",
       "files": [],
       "assertions": [
@@ -26,7 +26,7 @@
     },
     {
       "id": "precondition-dirty-tree",
-      "prompt": "Start DEMO-662 on Linear (platform tracker: linear, vcs: github in the repo CLAUDE.md, default status map). The issue is In Progress, the checkout is on `main`, and `git status --porcelain` prints ` M README.md`.",
+      "prompt": "Start DEMO-662 on Linear (platform tracker: linear, vcs: github in the nerdway platform config, default status map). The issue is In Progress, the checkout is on `main`, and `git status --porcelain` prints ` M README.md`.",
       "expected_output": "Precondition 3 fails: the working tree is not clean. The chain stops and reports the uncommitted change, without stashing, committing or discarding it and without creating a branch, because leftover changes would land in the start commit of the wrong issue.",
       "files": [],
       "assertions": [

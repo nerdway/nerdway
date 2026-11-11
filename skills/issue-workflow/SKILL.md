@@ -52,7 +52,7 @@ directories up from this skill's base directory.
 
 Pick `<tracker>` and `<vcs>` from the first source that has them:
 
-1. the `## Platform` section of the repo `CLAUDE.md`, read from disk as
+1. the nerdway platform config, read from disk as
    `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes, never from context;
 2. the entity page frontmatter `platform:` — a legacy `linear:` block there
    means `tracker: linear`, with `vcs` detected from `git remote get-url
@@ -807,7 +807,7 @@ session's last push.
 ## Nerdbrain entity-page integration
 
 - When the platform config carries the tracker identifiers (`linear.team` /
-  `linear.project`, from `## Platform` or the entity page's `platform:` or
+  `linear.project`, from the nerdway platform config or the entity page's `platform:` or
   legacy `linear:`), query open work with `issue.list-open` instead of
   re-asking the user.
 - When recording a decision on the entity page (nerdbrain write trigger),

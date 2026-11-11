@@ -1,10 +1,10 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, join, resolve, sep } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { renderContextOutput, type Runtime } from "../scripts/lib/install-check.ts";
+import { resolveSlug } from "../scripts/lib/nerdway-config.ts";
 
 const ALWAYS = new Set(["Purpose", "Stack", "Commands", "Conventions", "Active context"]);
 
@@ -128,63 +128,6 @@ export function enforceBudget(content: string, budget: number, path: string): st
   return decodeDropIncomplete(raw.subarray(0, cut)) + marker;
 }
 
-function slugFromFile(text: string): string {
-  const line = text.split("\n", 1)[0] ?? "";
-  return line.replace(/[^a-z0-9-]/g, "").slice(0, 200);
-}
-
-function aliasFor(host: string, aliases: string): string {
-  const line = aliases.split("\n").find((item) => item.startsWith(`${host}=`));
-  if (line === undefined) return "";
-  const value = line.slice(host.length + 1).split("=")[0] ?? "";
-  return value.replace(/[^a-z0-9-]/g, "");
-}
-
-function stripRemotePrefix(url: string): string {
-  const https = `https:${"/".repeat(2)}`;
-  const http = `http:${"/".repeat(2)}`;
-  if (url.startsWith("git@")) return url.slice(4);
-  if (url.startsWith(https)) return url.slice(https.length);
-  if (url.startsWith(http)) return url.slice(http.length);
-  return url;
-}
-
-function slugFromRemote(url: string, aliases: string | null): string {
-  let cleaned = stripRemotePrefix(url);
-  const colon = cleaned.indexOf(":");
-  if (colon !== -1) cleaned = `${cleaned.slice(0, colon)}/${cleaned.slice(colon + 1)}`;
-  cleaned = cleaned.replace(/\.git$/, "");
-  if (aliases !== null) {
-    const slash = cleaned.indexOf("/");
-    const host = slash === -1 ? cleaned : cleaned.slice(0, slash);
-    const alias = aliasFor(host, aliases);
-    if (alias.length > 0) {
-      const rest = slash === -1 ? cleaned : cleaned.slice(slash + 1);
-      cleaned = `${alias}/${rest}`;
-    }
-  }
-  return cleaned.replace(/[/.]/g, "-").toLowerCase();
-}
-
-function gitRemote(projectDir: string): string {
-  try {
-    return execFileSync("git", ["-C", projectDir, "config", "--get", "remote.origin.url"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
-    return "";
-  }
-}
-
-function resolveSlug(options: SessionOptions): string {
-  const slugPath = join(options.projectDir, ".nerdbrain-slug");
-  if (isFile(slugPath)) return slugFromFile(readText(slugPath) ?? "");
-  const remote = (options.gitRemote ?? gitRemote)(options.projectDir).trim();
-  if (remote.length > 0) return slugFromRemote(remote, readText(options.aliasesPath));
-  return basename(options.projectDir).toLowerCase().replace(/[^a-z0-9-]/g, "");
-}
-
 function insideVault(projectDir: string, vault: string): boolean {
   if (!isDir(vault)) return false;
   try {
@@ -200,7 +143,10 @@ function buildContext(options: SessionOptions): string {
   if (isFile(options.killSwitchPath) || isFile(join(options.projectDir, ".nerdbrain-disabled"))) return "";
   if (insideVault(options.projectDir, options.vault)) return "";
 
-  const slug = resolveSlug(options);
+  const slug = resolveSlug(options.projectDir, {
+    aliasesPath: options.aliasesPath,
+    gitRemote: options.gitRemote,
+  });
   const tier = isDir(options.vault) ? "file" : "none";
   const pagePath = join(options.vault, "5-wiki", "entities", "projects", `${slug}.md`);
   let page = readText(pagePath) ?? "";

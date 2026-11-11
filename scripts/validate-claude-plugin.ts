@@ -28,19 +28,17 @@ const TARGETS = [".", ".claude-plugin/plugin.json"];
 // Known warnings that do not break Claude Code or the claude.ai sync. Each
 // entry needs a reason; keep this list short.
 const ALLOWED: { file: string; path: string; prefix: string; reason: string }[] = [
-  // The root CLAUDE.md is this repo's own project file, not plugin content.
-  // Its `## Platform` section (tracker, VCS, Linear team and project) is
-  // required by the nerd workflow in every project, this plugin repo
-  // included, and the workflow skills read it from the repo root. It is
-  // intentionally not loaded as plugin context, which is exactly what the
-  // warning reports, so the warning is expected and must stay allowlisted.
-  // Do not move or delete the file to silence it.
+  // A leftover root CLAUDE.md (not plugin content) is not loaded as
+  // project context. Platform config now lives in the user-owned nerdway
+  // store, so this warning is only expected while a project CLAUDE.md
+  // still sits at the plugin root. Do not add a ## Platform section to
+  // silence it.
   {
     file: "CLAUDE.md",
     path: "root",
     prefix: "CLAUDE.md at the plugin root is not loaded as project context",
     reason:
-      "the repo's own project CLAUDE.md with ## Platform, required by the nerd workflow; intentionally not plugin context (present since before 0.29.0, which synced to claude.ai)",
+      "a leftover project CLAUDE.md at the plugin root is not plugin context; platform config is user-owned (ADR-0018)",
   },
 ];
 

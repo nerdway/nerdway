@@ -14,7 +14,7 @@ export const EVAL_TOOLS = ["Read", "Glob", "Grep", "Skill"];
 
 export const EVAL_SYSTEM_PROMPT = [
   "This session is an evaluation of the plugin's skills. It has no shell, no tracker and no VCS host: only Read, Glob, Grep and Skill.",
-  "The working directory is an empty sandbox of the evaluation harness: its git branch, its commits, its untracked files and its missing CLAUDE.md say nothing about the task. Ignore them; the repository, its checkout, the tracker and the PR are only what the user's facts say.",
+  "The working directory is an empty sandbox of the evaluation harness: its git branch, its commits, its untracked files and its missing nerdway platform config say nothing about the task. Ignore them; the repository, its checkout, the tracker and the PR are only what the user's facts say.",
   "Treat every fact the user states (issue status, branch, working tree, PR state, command output) as the result of the command the skill would run.",
   "A command whose result the user does not state succeeds with an ordinary result.",
   "Load a skill with the Skill tool, including a skill another skill delegates to; do not read its SKILL.md with Read instead.",

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  emitYaml,
   parseYaml,
   platformYaml,
   readPlatform,
@@ -369,4 +370,28 @@ test("readPlatform: a broken section is invalid, never absent, so the caller sto
   const badValue = readPlatform("## Platform\n\n```yaml\ntracker: basecamp\nvcs: github\n```\n", vocabulary, new Map());
   assert.equal(badValue.status, "invalid");
   assert.match(badValue.errors[0], /basecamp/);
+});
+
+test("emitYaml: round-trips maps of strings and nested maps", () => {
+  const value = {
+    tracker: "linear",
+    vcs: "github",
+    linear: { team: "DEMO", project: "72aa8034" },
+    github: { owner: "nerdway", repo: "nerdway" },
+    statuses: {
+      strategy: "native",
+      map: { backlog: "Backlog", todo: "Todo", "in-progress": "In Progress", "in-review": "In Review", done: "Done" },
+    },
+  };
+  const yaml = emitYaml(value);
+  const parsed = parseYaml(yaml);
+  assert.deepEqual(parsed.errors, []);
+  assert.deepEqual(parsed.value, value);
+});
+
+test("emitYaml: quotes a value that would be a YAML boolean or that starts with a special character", () => {
+  const yaml = emitYaml({ team: "No", note: "yes", board: "#1" });
+  const parsed = parseYaml(yaml);
+  assert.deepEqual(parsed.errors, []);
+  assert.deepEqual(parsed.value, { team: "No", note: "yes", board: "#1" });
 });

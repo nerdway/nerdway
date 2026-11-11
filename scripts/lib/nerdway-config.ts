@@ -1,8 +1,26 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
+import { homedir } from "node:os";
 import { basename, join } from "node:path";
 
+import {
+  parseYaml,
+  readPlatform,
+  validatePlatformConfig,
+  type PlatformRead,
+  type PlatformVocabulary,
+} from "../types/platform-config.ts";
+
 export interface ResolveSlugOptions {
+  aliasesPath?: string;
+  gitRemote?: (projectDir: string) => string;
+}
+
+export interface ReadPlatformOptions {
+  vocabulary: PlatformVocabulary;
+  trackerAdapters: ReadonlyMap<string, string>;
+  platform?: NodeJS.Platform;
+  home?: string;
   aliasesPath?: string;
   gitRemote?: (projectDir: string) => string;
 }
@@ -100,4 +118,53 @@ export function resolveSlug(projectDir: string, options: ResolveSlugOptions = {}
   const remote = (options.gitRemote ?? gitRemote)(projectDir).trim();
   if (remote.length > 0) return slugFromRemote(remote, options.aliasesPath === undefined ? null : readText(options.aliasesPath));
   return basename(projectDir).toLowerCase().replace(/[^a-z0-9-]/g, "");
+}
+
+export function mergePlatformConfigs(
+  defaults: Record<string, unknown>,
+  project: Record<string, unknown>,
+): Record<string, unknown> {
+  return { ...defaults, ...project };
+}
+
+type YamlFile =
+  | { kind: "missing" }
+  | { kind: "ok"; value: Record<string, unknown> }
+  | { kind: "invalid"; errors: string[] };
+
+function readYamlFile(path: string): YamlFile {
+  if (!isFile(path)) return { kind: "missing" };
+  const parsed = parseYaml(readFileSync(path, "utf8"));
+  if (parsed.value === undefined) return { kind: "invalid", errors: parsed.errors };
+  return { kind: "ok", value: parsed.value };
+}
+
+export function readPlatformConfig(
+  repoRoot: string,
+  env: NodeJS.ProcessEnv,
+  options: ReadPlatformOptions,
+): PlatformRead {
+  const markdown = isFile(join(repoRoot, "CLAUDE.md")) ? readFileSync(join(repoRoot, "CLAUDE.md"), "utf8") : undefined;
+  const legacy = readPlatform(markdown, options.vocabulary, options.trackerAdapters);
+  if (legacy.status !== "absent") {
+    return {
+      status: "migration-needed",
+      errors: legacy.status === "invalid" ? legacy.errors : ["legacy ## Platform section in CLAUDE.md"],
+    };
+  }
+
+  const home = options.home ?? homedir();
+  const configDir = resolveConfigDir(env, options.platform ?? process.platform, home);
+  const slug = resolveSlug(repoRoot, { aliasesPath: options.aliasesPath, gitRemote: options.gitRemote });
+  const defaults = readYamlFile(join(configDir, "config.yml"));
+  const project = slug.length === 0 ? { kind: "missing" as const } : readYamlFile(join(configDir, slug, "config.yml"));
+  if (defaults.kind === "invalid") return { status: "invalid", errors: defaults.errors.map((error) => `config.yml: ${error}`) };
+  if (project.kind === "invalid") return { status: "invalid", errors: project.errors.map((error) => `${slug}/config.yml: ${error}`) };
+  if (defaults.kind === "missing" && project.kind === "missing") {
+    return { status: "absent", errors: ["no platform config"] };
+  }
+  const value = mergePlatformConfigs(defaults.kind === "ok" ? defaults.value : {}, project.kind === "ok" ? project.value : {});
+  const errors = validatePlatformConfig(value, options.vocabulary, options.trackerAdapters.get(String(value.tracker)));
+  if (errors.length > 0) return { status: "invalid", errors };
+  return { status: "found", value, errors: [] };
 }

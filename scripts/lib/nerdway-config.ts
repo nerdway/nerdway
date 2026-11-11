@@ -1,9 +1,10 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
+import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
 
 import {
+  emitYaml,
   parseYaml,
   readPlatform,
   validatePlatformConfig,
@@ -24,6 +25,13 @@ export interface ReadPlatformOptions {
   aliasesPath?: string;
   gitRemote?: (projectDir: string) => string;
 }
+
+export interface WritePlatformOptions extends ReadPlatformOptions {
+  defaults?: boolean;
+  keys?: string[];
+}
+
+export type WritePlatformResult = { status: "ok"; path: string } | { status: "invalid"; errors: string[] };
 
 function trimmed(value: string | undefined): string | undefined {
   if (value === undefined) return undefined;
@@ -167,4 +175,60 @@ export function readPlatformConfig(
   const errors = validatePlatformConfig(value, options.vocabulary, options.trackerAdapters.get(String(value.tracker)));
   if (errors.length > 0) return { status: "invalid", errors };
   return { status: "found", value, errors: [] };
+}
+
+function configPaths(repoRoot: string, env: NodeJS.ProcessEnv, options: ReadPlatformOptions): { configDir: string; slug: string } {
+  const home = options.home ?? homedir();
+  return {
+    configDir: resolveConfigDir(env, options.platform ?? process.platform, home),
+    slug: resolveSlug(repoRoot, { aliasesPath: options.aliasesPath, gitRemote: options.gitRemote }),
+  };
+}
+
+export function writePlatformConfig(
+  repoRoot: string,
+  env: NodeJS.ProcessEnv,
+  input: Record<string, unknown>,
+  options: WritePlatformOptions,
+): WritePlatformResult {
+  const { configDir, slug } = configPaths(repoRoot, env, options);
+  const defaultsPath = join(configDir, "config.yml");
+  const projectPath = join(configDir, slug, "config.yml");
+  const defaults = readYamlFile(defaultsPath);
+  const existing = readYamlFile(projectPath);
+  if (defaults.kind === "invalid") return { status: "invalid", errors: defaults.errors.map((error) => `config.yml: ${error}`) };
+  if (existing.kind === "invalid") return { status: "invalid", errors: existing.errors.map((error) => `${slug}/config.yml: ${error}`) };
+
+  if (options.defaults) {
+    const nextDefaults = input;
+    const project = existing.kind === "ok" ? existing.value : {};
+    const merged = mergePlatformConfigs(nextDefaults, project);
+    if (existing.kind === "ok" || Object.keys(project).length > 0) {
+      const errors = validatePlatformConfig(merged, options.vocabulary, options.trackerAdapters.get(String(merged.tracker)));
+      if (errors.length > 0) return { status: "invalid", errors };
+    } else {
+      const errors = validatePlatformConfig(nextDefaults, options.vocabulary, options.trackerAdapters.get(String(nextDefaults.tracker)));
+      if (errors.length > 0) return { status: "invalid", errors };
+    }
+    mkdirSync(configDir, { recursive: true });
+    writeFileSync(defaultsPath, emitYaml(nextDefaults));
+    return { status: "ok", path: defaultsPath };
+  }
+
+  if (slug.length === 0) return { status: "invalid", errors: ["project slug is empty"] };
+  let nextProject = input;
+  if (options.keys !== undefined) {
+    const current = existing.kind === "ok" ? existing.value : {};
+    const patch: Record<string, unknown> = {};
+    for (const key of options.keys) {
+      if (Object.hasOwn(input, key)) patch[key] = input[key];
+    }
+    nextProject = { ...current, ...patch };
+  }
+  const merged = mergePlatformConfigs(defaults.kind === "ok" ? defaults.value : {}, nextProject);
+  const errors = validatePlatformConfig(merged, options.vocabulary, options.trackerAdapters.get(String(merged.tracker)));
+  if (errors.length > 0) return { status: "invalid", errors };
+  mkdirSync(join(configDir, slug), { recursive: true });
+  writeFileSync(projectPath, emitYaml(nextProject));
+  return { status: "ok", path: projectPath };
 }

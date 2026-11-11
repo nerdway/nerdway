@@ -88,6 +88,33 @@ export function parseYaml(text: string): YamlResult {
   return errors.length > 0 ? { errors } : { value: root, errors };
 }
 
+const UNQUOTED_SCALAR = /^[A-Za-z0-9_./:+-]+$/;
+const RESERVED_SCALAR = /^(?:true|false|null|yes|no|on|off|y|n|~)$/i;
+
+function emitScalar(value: string): string {
+  if (value.length > 0 && UNQUOTED_SCALAR.test(value) && !RESERVED_SCALAR.test(value)) return value;
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+function emitLines(value: Record<string, unknown>, indent: number): string[] {
+  const pad = "  ".repeat(indent);
+  const lines: string[] = [];
+  for (const [key, child] of Object.entries(value)) {
+    if (typeof child === "string") {
+      lines.push(`${pad}${key}: ${emitScalar(child)}`);
+    } else if (isRecord(child)) {
+      lines.push(`${pad}${key}:`);
+      lines.push(...emitLines(child, indent + 1));
+    }
+  }
+  return lines;
+}
+
+export function emitYaml(value: Record<string, unknown>): string {
+  const lines = emitLines(value, 0);
+  return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
+}
+
 function onlyYamlBlock(body: string, where: string): PlatformYaml {
   const blocks = [...body.matchAll(/^```yaml\n([\s\S]*?)\n```$/gm)].map((match) => match[1]);
   if (blocks.length !== 1) return { errors: [`${where} must hold exactly one fenced yaml block, found ${blocks.length}`] };

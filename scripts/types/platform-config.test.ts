@@ -348,6 +348,44 @@ test("jira: rejects an issueType carrying shell quoting characters", () => {
   assert.match(errors[0], /jira\.issueType/);
 });
 
+const githubVocabulary: PlatformVocabulary = { ...vocabulary };
+const githubDefaults = ["strategy: label", "map:", "  backlog: open", "  todo: status::todo", "  in-progress: status::in-progress", "  in-review: status::in-review", "  done: closed"].join("\n");
+const githubAdapter = adapter([["native", "read", "write"], ["label", "read", "write"], ["comment", "read", "write"]], githubDefaults);
+const githubNativeMap = { backlog: "Backlog", todo: "Todo", "in-progress": "In Progress", "in-review": "In Review", done: "Done" };
+
+function githubConfig(github: Record<string, string>, statuses?: unknown) {
+  return { tracker: "github", vcs: "github", github: { owner: "acme", repo: "app", ...github }, ...(statuses === undefined ? {} : { statuses }) };
+}
+
+test("github: native requires github.project", () => {
+  const errors = validatePlatformConfig(githubConfig({}, { strategy: "native", map: githubNativeMap }), githubVocabulary, githubAdapter);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /github\.project/);
+});
+
+test("github: native accepts a project number", () => {
+  assert.deepEqual(
+    validatePlatformConfig(githubConfig({ project: "1" }, { strategy: "native", map: githubNativeMap }), githubVocabulary, githubAdapter),
+    [],
+  );
+});
+
+test("github: label stays valid without a project, which is the default", () => {
+  assert.deepEqual(validatePlatformConfig(githubConfig({}, { strategy: "label", map: labelMap }), githubVocabulary, githubAdapter), []);
+  assert.deepEqual(validatePlatformConfig(githubConfig({}), githubVocabulary, githubAdapter), []);
+});
+
+test("github: comment needs no project", () => {
+  const map = { backlog: "backlog", todo: "todo", "in-progress": "in-progress", "in-review": "in-review", done: "done" };
+  assert.deepEqual(validatePlatformConfig(githubConfig({}, { strategy: "comment", map }), githubVocabulary, githubAdapter), []);
+});
+
+test("github: rejects a project carrying shell quoting characters", () => {
+  const errors = validatePlatformConfig(githubConfig({ project: "$(id)" }, { strategy: "native", map: githubNativeMap }), githubVocabulary, githubAdapter);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /github\.project/);
+});
+
 test("readPlatform: a valid section is found, with the parsed object", () => {
   const markdown = "# Repo\n\n## Platform\n\n```yaml\ntracker: linear\nvcs: github\nlinear:\n  team: DEMO\n```\n\n## Other\n";
   assert.deepEqual(readPlatform(markdown, vocabulary, new Map([["linear", adapter()]])), {

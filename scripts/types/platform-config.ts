@@ -238,6 +238,19 @@ function validateJiraBlock(raw: Record<string, unknown>): string[] {
   return errors;
 }
 
+function validateGithubBlock(raw: Record<string, unknown>, trackerAdapter: string | undefined): string[] {
+  const github = isRecord(raw.github) ? raw.github : {};
+  const strategy = raw.statuses === undefined ? defaultStrategy(trackerAdapter) : isRecord(raw.statuses) ? raw.statuses.strategy : undefined;
+  const project = github.project;
+  const errors: string[] = [];
+  if (strategy === "native" && (typeof project !== "string" || project.length === 0)) {
+    errors.push("github.project is required under the native strategy — the phases are the Status options of that Project (v2)");
+  } else if (typeof project === "string" && SHELL_UNSAFE.test(project)) {
+    errors.push("github.project holds a quote, backtick, $, backslash or newline — adapter recipes interpolate the value into shell commands");
+  }
+  return errors;
+}
+
 export function validatePlatformConfig(raw: unknown, vocabulary: PlatformVocabulary, trackerAdapter: string | undefined): string[] {
   if (!isRecord(raw)) return ["platform config must be a YAML map"];
   const errors: string[] = [];
@@ -249,6 +262,7 @@ export function validatePlatformConfig(raw: unknown, vocabulary: PlatformVocabul
   }
   if (raw.tracker === "ado") errors.push(...validateAdoBlock(raw, trackerAdapter));
   if (raw.tracker === "jira") errors.push(...validateJiraBlock(raw));
+  if (raw.tracker === "github") errors.push(...validateGithubBlock(raw, trackerAdapter));
   if (raw.statuses === undefined) return errors;
   if (raw.tracker === "none") {
     errors.push("statuses is set, but tracker is none — there is no tracker to bind phases to");

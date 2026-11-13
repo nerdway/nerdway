@@ -13,8 +13,9 @@ the config's `gitlab` block and the checkout:
 - `<ENC>` — `<PROJECT>` with every `/` written `%2F`, for `glab api` paths.
 - `<n>` — the issue number (IID) without `#`.
 
-The project is the container, so `team.*` and `project.*` are `—`. Epics,
-iterations and boards are not used.
+The project is the container, so `team.*` and `project.*` are `—`. Epics
+and iterations are not used. Issue boards are label lists: `board-setup`
+may add a list per `status::*` label; the status strategy stays `label`.
 
 ## CLI
 
@@ -118,6 +119,8 @@ resolves to nothing: stop and ask the user for the ID — never guess it.
 | `status.list` | — | GitLab issues have only opened/closed; phases live in labels or marker comments |
 | `label.list` | `glab api --hostname <HOST> "projects/<ENC>/labels?per_page=100" --paginate` | the project's labels with those inherited from its groups; names in `.[].name` |
 | `label.create` | `glab label create -R <HOST>/<CODE_PROJECT> --name "<name>"` | only with the user's consent; HTTP 409, exit 1 when it already exists |
+| `board.rights` | the rights recipe below | `{ native, label, reason }`: compare the current user's project access level with GitLab's documented thresholds — board lists (Planner, 15) and labels (Reporter, 20) |
+| `status.create` | the board-list recipe below | `label.create` for each missing `status::*` label, then a board list per label via `glab api`. Strategy stays `label`. Only with the user's consent |
 
 Sub-issues: GitLab Free has no parent/child relation between issues (epics
 and child tasks are Premium or work-item-only), so a child is an ordinary
@@ -177,6 +180,35 @@ n=$(git branch --show-current | grep -oE '^[0-9]+')
 [ -n "$n" ] && glab issue view "$n" -R <HOST>/<CODE_PROJECT> --output json >/dev/null 2>&1 && echo "#$n"
 ```
 
+Rights recipe for `board.rights`. The project JSON carries the current
+user's access. GitLab documents Planner (15) and above for creating board
+lists, Reporter (20) and above for creating labels (Guest 10, Planner 15,
+Reporter 20, Developer 30, Maintainer 40, Owner 50).
+
+```bash
+glab api --hostname <HOST> "projects/<ENC>" \
+  | jq '[.permissions.project_access.access_level, .permissions.group_access.access_level] | map(select(. != null)) | max // 0'
+```
+
+`>= 15` → `native` yes (board lists); `>= 20` → `label` yes; below 15 →
+both no; a 401/403 or missing `permissions` → `unknown`.
+
+Board-list recipe for `status.create` — only with the user's consent. For
+each missing `status::*` label run `label.create`, then add a list on the
+project's issue board. Strategy stays `label`. HTTP 403 → drop one cascade
+level and ask again.
+
+```bash
+glab api --hostname <HOST> "projects/<ENC>/boards"
+board_id=$(glab api --hostname <HOST> "projects/<ENC>/boards" | jq -r '.[0].id')
+label_id=$(glab api --hostname <HOST> "projects/<ENC>/labels?search=<name>" --paginate \
+  | jq -r --arg n "<name>" '.[] | select(.name == $n) | .id')
+glab api --hostname <HOST> --method POST "projects/<ENC>/boards/${board_id}/lists" -f label_id="$label_id"
+```
+
+No board → ask which board to create a list on, or skip lists and keep
+labels only. Several boards → ask which one.
+
 Active-list recipe for `issue.list-active` under `label`:
 
 ```bash
@@ -225,8 +257,10 @@ GitLab issues are only opened or closed, so the default strategy is `label`:
 one `status::<phase>` label per middle phase, `open` for `backlog` and
 `closed` for `done` — an MR merged into the default branch with
 `Fixes #<n>` closes the issue and so lands on `done` with no label write. The
-three labels do not exist in a new project; `bind-statuses` creates them with
-the user's consent.
+three labels do not exist in a new project; `board-setup` creates them with
+the user's consent, and can also add a board list per label. The status
+strategy stays `label`: GitLab board columns are label lists, not a separate
+state field.
 
 Default strategy and map, used when the platform config has no `statuses`
 block (semantics in `adapters/statuses.md`):
@@ -251,7 +285,7 @@ spelled out below the table.
 | Strategy | Read | Write |
 |----------|------|-------|
 | `native` | — | — |
-| `label` | `glab issue view <n> -R <REPO> --output json` — `state` `closed` → value `closed`; `opened` → the mapped names among `labels`, none → `open` | `closed` → `glab issue close <n> -R <REPO>`; a label `<value>` (not `open`) missing from `label.list` → stop: "label `<value>` does not exist — run `/bind-statuses`"; otherwise `glab issue update <n> -R <REPO> --unlabel '<mapped label on the issue>'` once per other mapped label the read found, plus `--label '<value>'` unless `<value>` is `open` (skip the update when neither applies), then `glab issue reopen <n> -R <REPO>` when the read found `closed` |
+| `label` | `glab issue view <n> -R <REPO> --output json` — `state` `closed` → value `closed`; `opened` → the mapped names among `labels`, none → `open` | `closed` → `glab issue close <n> -R <REPO>`; a label `<value>` (not `open`) missing from `label.list` → stop: "label `<value>` does not exist — run `/board-setup`"; otherwise `glab issue update <n> -R <REPO> --unlabel '<mapped label on the issue>'` once per other mapped label the read found, plus `--label '<value>'` unless `<value>` is `open` (skip the update when neither applies), then `glab issue reopen <n> -R <REPO>` when the read found `closed` |
 | `comment` | the notes recipe of `issue.read`, then the marker-author check below | `glab issue note <n> -R <REPO> --message "Status: <value>"` |
 
 Marker-author check for the `comment` read. Walk the notes newest first and

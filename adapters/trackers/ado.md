@@ -14,9 +14,9 @@ config's `ado` block:
   (e.g. `User Story`).
 - `<n>` — the work item ID without `#`.
 
-`bind-statuses` writes `team`, `board` and `workItemType`. The project is the
-container, so `project.*` is `—`. Iterations, swimlanes and backlog levels
-above `<TYPE>` are not used.
+`bind-statuses` writes `team`, `board` and `workItemType`. `board-setup`
+adds missing columns. The project is the container, so `project.*` is `—`.
+Iterations, swimlanes and backlog levels above `<TYPE>` are not used.
 
 ## CLI
 
@@ -129,7 +129,9 @@ it.
 | `issue.relate` | `az boards work-item relation add --organization <ORG> --id <n> --relation-type Related --target-id <m> -o none` | a `Related` link, shown on both work items; `<m>` must be a work item of `<PROJECT>` |
 | `status.list` | the board recipe below — `columns[].name` | under `native` the phases are the columns of `<BOARD>`, not work item states |
 | `label.list` | `az devops invoke --organization <ORG> --area wit --resource tags --route-parameters project=<PROJECT> --api-version 7.1-preview -o json` | the tags already used in the project; names in `.value[].name` |
-| `label.create` | — | ADO has no tag create: a tag appears the first time a work item carries it. `bind-statuses` asks for consent to the tags as it would for labels, and the first `issue.set-status` of that phase creates the tag |
+| `label.create` | — | ADO has no tag create: a tag appears the first time a work item carries it. `board-setup` asks for consent to the tags as it would for labels, and the first `issue.set-status` of that phase creates the tag |
+| `board.rights` | the rights recipe below | `{ native, label, reason }`: `native` yes when the viewer is a team admin of `<TEAM>`; `label` is `yes` — tags need no admin |
+| `status.create` | the add-columns recipe below | add missing board columns with one `PUT`; moved here from `bind-statuses`. Only with the user's consent |
 
 Board recipe — the column field, the columns and their state per work item
 type; every `native` recipe starts from it:
@@ -144,7 +146,21 @@ az devops invoke --organization <ORG> --area work --resource boards \
 `az devops invoke --organization <ORG> --area work --resource boards --route-parameters project=<PROJECT> team="<TEAM>" --api-version 7.1 -o json | jq '[.value[].name]'`,
 and `<TYPE>` is a key of the columns' `stateMappings`.
 
-Add-columns recipe for `bind-statuses` — only with the user's consent. Read
+Rights recipe for `board.rights`. Team admins can add columns; anyone who
+can update a work item can add tags, so `label` is `yes`.
+
+```bash
+az devops team list-member --organization <ORG> --project <PROJECT> --team "<TEAM>" -o json
+```
+
+Match the signed-in identity (`az account show --query user.name -o tsv`,
+or `identity.uniqueName` / `identity.displayName` on the member list) to a
+row with `isTeamAdmin: true` → `native` yes; a listed member without that
+flag → `native` no; missing `isTeamAdmin` on the payload, or no signed-in
+identity → `native` unknown. No `ado.team` yet → `native` unknown until
+`bind-statuses` picks the team.
+
+Add-columns recipe for `status.create` — only with the user's consent. Read
 the whole list, insert the new columns, `PUT` it back; a new column needs a
 `stateMappings` entry for **every** type the board carries:
 
@@ -159,7 +175,8 @@ az devops invoke --organization <ORG> --area work --resource columns \
   --http-method PUT --in-file new-columns.json --api-version 7.1 -o json | jq '[.value[].name]'
 ```
 
-HTTP 403 → the user is not a team admin: stop and offer `label` instead.
+HTTP 403 → the user is not a team admin: drop one cascade level and ask
+again for `label` on tags.
 
 Comments recipe for `issue.read` — every comment, newest first:
 
@@ -317,7 +334,7 @@ New / Active / Resolved / Closed, Scrum: New / Approved / Committed / Done,
 Basic: To Do / Doing / Done), and a map may not name a value twice. On Azure
 DevOps `native` therefore binds the phases to the **columns of the team's
 board**, which a team admin can add without touching the process; each
-column maps to a state, so the state follows the column. `bind-statuses`
+column maps to a state, so the state follows the column. `board-setup`
 adds the missing columns with the user's consent.
 
 Default strategy and map, used when the platform config has no `statuses`

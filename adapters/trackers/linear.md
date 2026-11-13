@@ -74,6 +74,8 @@ candidate resolves, stop and ask the user for the ID — never guess it.
 | `status.list` | — | `linearis` has no state-listing command; a wrong state name fails loudly on write |
 | `label.list` | `linearis labels list --team <KEY> --limit 250 --fields nodes.name`, then `linearis labels list --scope workspace --limit 250 --fields nodes.name` | the union of both lists: the team's own labels and the workspace labels every team shares. `--team` alone filters on the team and hides the workspace labels, so a workspace `Bug` looked missing on 2026-10-10 |
 | `label.create` | `linearis labels create "<name>" --team <KEY>` | team-scoped label; only with the user's consent |
+| `board.rights` | the rights recipe below | `{ native, label, reason }`: `native` yes when the viewer is a workspace admin or a team owner; `label` is `no` because Linear does not support the label strategy |
+| `status.create` | — | `linearis` has no team workflow-state command (workflow-state administration is excluded); guided path: list the missing states, link to the team workflow settings, the user adds them, then read back |
 
 `issue.resolve-from-branch`:
 
@@ -82,6 +84,28 @@ for candidate in $(git branch --show-current | grep -oiE '[a-z]+-[0-9]+' | tr '[
   linearis issues read "$candidate" --fields identifier >/dev/null 2>&1 && { echo "$candidate"; break; }
 done
 ```
+
+Rights recipe for `board.rights`. Workspace admins and team owners can edit
+workflow states. `label` is always `no`.
+
+```bash
+linearis users list --fields nodes.email,nodes.displayName,nodes.admin,nodes.isMe
+linearis teams members <KEY> --fields nodes.user.email,nodes.user.name,nodes.owner
+```
+
+A user with `isMe` (or the authenticated account, matched by email or
+display name) and `admin` true → `native` yes. Else a member of `<KEY>`
+with `owner` true matching that user → `native` yes. Otherwise `native`
+no. Missing fields, a command failure, or no way to identify the viewer →
+`native` unknown, and the skill asks.
+
+Guided path for `status.create`: list the names `status.list` cannot
+return (`linearis` has no state-listing command) against the adapter
+default map, name each missing state, and link
+`https://linear.app/<workspace>/settings/teams/<KEY>/workflow`. The user
+adds them in the Linear UI. Then `bind-statuses` reads the names the user
+confirms. Never call the Linear GraphQL `workflowStateCreate` mutation
+from this adapter.
 
 ## Children on close
 

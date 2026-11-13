@@ -91,13 +91,24 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/write-platform-config.ts" --repo "$(git rev-
 
 Run `board.rights`. The result is `{ native: yes|no|unknown, label:
 yes|no|unknown, reason }`. A command of `—` still yields that shape from
-the Notes column (Jira: `native` unknown, `label` no; Linear: `label` no).
+the Notes column (Jira: `native` unknown, `label` no). Linear
+`board.rights` is a read; this skill never creates Linear states.
 
 Never probe rights by attempting a write.
 
 ## Step 3 — Pick the level and say so
 
-Call `decideLevel` on the rights (floor `native` on the first pass).
+**Linear (`tracker: linear`).** No creation path. Every nerdway phase maps
+to a Linear default workflow state: Backlog, Todo, In Progress, In Review,
+Done. Run `board.rights` (a read only) and `status.list` (the default-states
+probe). Any of those five missing → report the missing name(s) and
+**stop**: no `status.create`, no guided editor link, no tracker write.
+All five present → skip Steps 5–6 and go to Step 7 with `strategy: native`
+and the adapter default map. Do not cascade Linear to `comment` because
+a default is missing.
+
+Call `decideLevel` on the rights (floor `native` on the first pass). Skip
+this on Linear.
 
 - `uncertain: true` → ask one question: "I cannot tell whether you can
   edit the board (`native`) / create labels (`label`): `<reason>`. Can
@@ -109,7 +120,7 @@ Call `decideLevel` on the rights (floor `native` on the first pass).
   rights)."
 
 A strategy the adapter lists as `—` is not a cascade level: if `decideLevel`
-returns `label` and the adapter has `label` as `—` (Linear, Jira), drop to
+returns `label` and the adapter has `label` as `—` (Jira), drop to
 `comment` and say so.
 
 **GitLab.** Cascade `native` still records `strategy: label`. The create
@@ -119,12 +130,12 @@ step adds `status::*` labels and a board list per label.
 
 | Cascade level | Operation | Use |
 |---------------|-----------|-----|
-| `native` | `status.list` | existing state / column / Status option names. Linear: `status.list` is `—`, so compare against the adapter default map and what the user confirms. GitLab: `label.list` plus the project's boards (`glab api …/boards`) |
+| `native` | `status.list` | existing state / column / Status option names. Linear: the five default names (see the Linear path in Step 3). GitLab: `label.list` plus the project's boards (`glab api …/boards`) |
 | `label` | `label.list` | existing labels, to reuse before creating |
 | `comment` | — | nothing to list or create |
 
-When the operation is `—` and this is not the Linear/Jira guided path, say
-so and skip to Step 7 with the adapter default map.
+When the operation is `—` and this is not the Jira guided path, say so
+and skip to Step 7 with the adapter default map.
 
 ## Step 5 — Propose the missing items (one question)
 
@@ -139,8 +150,8 @@ where it sits on the board:
 
 - GitHub `native` — Status options to add, e.g. `Backlog` (GRAY) before
   `Todo`, `In Review` (YELLOW) after `In Progress`.
-- Linear `native` — workflow states to add, with the team workflow URL
-  from the adapter.
+- Linear — never propose creating states; the Linear path in Step 3
+  already stopped or skipped here.
 - GitLab — `status::*` labels, then a board list per label on the chosen
   board.
 - Azure DevOps `native` — columns with the state each maps and its place,
@@ -180,11 +191,10 @@ then the board-list recipe. Azure DevOps: the add-columns recipe, all
 new columns in one `PUT`. GitHub: the Status-option create recipe,
 including the item-Status snapshot, verify, and re-apply.
 
-**Guided path** (Linear `status.create` is `—`; Jira `status.create` is
-`—`): list the missing names, print the editor URL from the adapter, ask
-the user to add them, wait, then re-run `status.list` (Linear: ask the
-user which names they added). No GraphQL `workflowStateCreate`, no Jira
-REST mutation, no stored token.
+**Guided path** (Jira `status.create` is `—` only): list the missing
+names, print the editor URL from the adapter, ask the user to add them,
+wait, then re-run `status.list`. No Jira REST mutation, no stored token.
+Linear has no guided path and no `status.create`.
 
 **HTTP 403** (or "you cannot edit this workflow"): stop the write, call
 `dropLevel` on the current level, tell the user ("403 on native write —
@@ -218,8 +228,8 @@ the store again as `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes.
 - The only tracker writes are `status.create` and `label.create`, each
   after an explicit yes. Never change an issue's state, labels or comments
   here. Never migrate historical issues between strategies.
-- Never invent a Linear `workflowStateCreate` call or a Jira workflow REST
-  write.
+- Never invent a Linear `workflowStateCreate` call, a Linear guided path,
+  or a Jira workflow REST write. Linear `status.create` is `—`.
 - Vault access goes through the filesystem by default; an MCP server is the
   transport only where the vault filesystem is absent (ADR-0010). Never git
   against the vault (ADR-0004).

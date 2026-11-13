@@ -105,8 +105,8 @@ rights, or no wish to add labels). Never offer a strategy the adapter lists as
 | `label` | `label.list` | existing labels, to reuse before creating |
 | `comment` | — | nothing to list; markers need no setup |
 
-When the operation is `—` (Linear has no state-listing command), say so and
-propose the adapter default map instead.
+When the operation is `—`, say so and propose the adapter default map
+instead. On Linear, `status.list` probes the five default names.
 
 ## Step 4 — Propose the map (one question)
 

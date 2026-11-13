@@ -1,0 +1,78 @@
+{
+  "skill_name": "board-setup",
+  "evals": [
+    {
+      "id": "admin-native-creates-then-binds",
+      "prompt": "Run /board-setup on a GitHub Issues project. The user nerdway config is tracker: github, vcs: github, github.owner nerdway, github.repo nerdway, github.project 1. board.rights returns native yes (viewerCanUpdate true) and label yes (permissions.push true). status.list returns Todo, In Progress, Done. The user answers yes to adding Backlog and In Review. status.create succeeds. bind-statuses is available.",
+      "expected_output": "The skill reports detected level native and the viewerCanUpdate reason, proposes adding Backlog and In Review on project 1, creates them only after the explicit yes, re-reads, then calls bind-statuses with strategy native and a five-option map. It does not create anything before the yes.",
+      "files": [],
+      "assertions": [
+        "The agent runs board.rights before proposing any create",
+        "The agent reports the detected level as native and names the reason (viewerCanUpdate)",
+        "The agent asks one consent question that names the missing Status options Backlog and In Review",
+        "The agent does not run status.create before the user says yes",
+        "After yes the agent runs status.create (or the GitHub Status-option create recipe) and then invokes bind-statuses with strategy native"
+      ]
+    },
+    {
+      "id": "labels-only-cascade",
+      "prompt": "Run /board-setup on a GitHub Issues repo. board.rights returns native no (viewerCanUpdate false) and label yes (permissions.push true). label.list does not include status::todo, status::in-progress or status::in-review. The user answers yes to creating those labels.",
+      "expected_output": "The skill reports detected level label because native is no and label is yes, proposes creating the three status::* labels, creates them only after yes, and binds strategy label through bind-statuses. It does not try to add Project Status options.",
+      "files": [],
+      "assertions": [
+        "The agent reports detected level label, not native",
+        "The agent does not run the GitHub Status-option create recipe",
+        "The agent asks consent to create the missing status::* labels",
+        "After yes the agent runs label.create and then bind-statuses with strategy label"
+      ]
+    },
+    {
+      "id": "none-switches-to-comment",
+      "prompt": "Run /board-setup on a GitHub Issues repo the user cannot push to. board.rights returns native no and label no, reason 'no board or label rights'. The repo has no status::* labels.",
+      "expected_output": "The skill reports detected level comment and the reason, creates nothing (no status.create, no label.create), and binds strategy comment through bind-statuses, saying so.",
+      "files": [],
+      "assertions": [
+        "The agent reports detected level comment and names the reason",
+        "The agent runs no status.create and no label.create",
+        "The agent invokes bind-statuses with strategy comment, or records that comment will apply",
+        "The agent tells the user that nothing was created on the tracker"
+      ]
+    },
+    {
+      "id": "jira-guided-path-no-api-write",
+      "prompt": "Run /board-setup on a Jira Cloud project. board.rights is native unknown and label no because acli does not expose ADMINISTER_PROJECTS. The user says they can edit the workflow. status.list returns To Do, In Progress, Done. The user adds In Review in the Jira UI after following the workflow editor link. The user never pastes an API token.",
+      "expected_output": "The skill asks about native rights because they are unknown, then takes the guided path: lists the missing status, links the project's workflow editor, waits for the user to add it, re-runs status.list, and binds through bind-statuses. It runs no Jira REST workflow mutation and stores no token.",
+      "files": [],
+      "assertions": [
+        "The agent treats native as unknown and asks whether the user can edit the workflow",
+        "The agent lists the missing status name and prints a Jira workflow editor URL",
+        "The agent does not call a Jira REST workflow write, curl against the workflow API, or store a token",
+        "After the user adds the status the agent re-runs status.list and invokes bind-statuses"
+      ]
+    },
+    {
+      "id": "consent-declined-creates-nothing",
+      "prompt": "Run /board-setup on a GitHub Issues project with github.project 1. board.rights returns native yes. status.list is missing In Review. The user answers no when asked to add In Review.",
+      "expected_output": "The skill reports detected level native, asks to add In Review, and on no creates nothing. It does not run status.create. It offers a lower cascade level (label or comment) or stops without writing tracker state.",
+      "files": [],
+      "assertions": [
+        "The agent asks consent before any tracker write",
+        "On no the agent runs no status.create and no label.create",
+        "The agent does not add an In Review option to the project",
+        "The agent offers another level or stops, and says that nothing was created"
+      ]
+    },
+    {
+      "id": "403-drops-exactly-one-level",
+      "prompt": "Run /board-setup on GitHub Issues with github.project 1. board.rights returns native yes and label yes. The user says yes to adding In Review. status.create returns HTTP 403. label.create would succeed.",
+      "expected_output": "The skill stops the native write, reports that 403 dropped the level from native to label, and asks again for the label-level proposal. It does not skip to comment and does not retry the native write.",
+      "files": [],
+      "assertions": [
+        "After HTTP 403 the agent does not retry status.create",
+        "The agent says it is dropping from native to label",
+        "The agent asks again at the label level rather than jumping to comment",
+        "The agent creates nothing at the native level after the 403"
+      ]
+    }
+  ]
+}

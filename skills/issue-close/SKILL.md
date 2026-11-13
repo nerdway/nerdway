@@ -223,8 +223,11 @@ git checkout <base> && git pull
 
 Run `issue.set-status` from the tracker adapter with the phase `done`: the
 write recipe of the resolved strategy with `map.done` (`Done` on Linear and
-on Jira Cloud by default, `closed` on GitHub Issues and GitLab Issues, the
-`Closed` board column on Azure DevOps Boards by default).
+on Jira Cloud by default, `closed` on GitHub Issues and GitLab Issues under
+`label`, the project's Done Status option under GitHub `native`, the
+`Closed` board column on Azure DevOps Boards by default). On GitHub
+`native` the write sets that Done option and closes the issue, so a merged
+`Fixes #<n>` and this step agree.
 
 This is idempotent and deterministic: it closes the issue independently of
 magic-word timing and covers hosts with no tracker auto-close. An issue the

@@ -361,7 +361,8 @@ the narrow scope it may touch, and the reason. Five exist today, all on
 `no-repo-change-before-in-progress`: `platform-determine` writes the user-owned
 nerdway config and `statuses-bind` writes its `statuses` key, both before any
 issue is In Progress; `board-setup` creates tracker statuses, columns or
-labels and records the map through `bind-statuses`; `auto-issue-mode` sets
+labels (except Linear, which only reads the five default workflow states)
+and records the map through `bind-statuses`; `auto-issue-mode` sets
 In Progress itself for the one issue it runs, invoking the skill being the
 user's consent; `issue-next-step` sets In Progress for the one issue it
 diagnosed, only after the user agrees in chat, and changes nothing in the

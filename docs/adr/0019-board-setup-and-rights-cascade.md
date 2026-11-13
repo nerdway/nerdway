@@ -27,6 +27,10 @@ gains a `native` strategy backed by the Projects (v2) Status field;
 - **Jira REST workflow writes with a stored token** — rejected: no
   stored secrets, and `acli` has no workflow-write command. The skill
   lists missing names and links the workflow editor.
+- **A Linear guided path (list missing states, link team workflow
+  settings, the user adds them)** — rejected (plan amended 2026-11-13):
+  every nerdway phase maps to a Linear default workflow state. Missing
+  defaults are reported and the skill stops; there is no creation path.
 - **A fourth `column` strategy** — rejected earlier in ADR-0006; Azure
   DevOps columns stay `native`. GitLab board lists stay `label`,
   because they are label lists, not a separate state field.
@@ -38,9 +42,11 @@ gains a `native` strategy backed by the Projects (v2) Status field;
 - Two new tracker operations, `board.rights` and `status.create`, are
   in the adapter contract. Every tracker adapter declares both, with a
   recipe or `—` and a reason.
-- `linearis` has no team workflow-state command, so Linear
-  `status.create` is the guided path (list, link team workflow
-  settings, read back). Never `workflowStateCreate`.
+- Linear `status.create` is `—`: every nerdway phase maps to a Linear
+  default workflow state (Backlog, Todo, In Progress, In Review, Done).
+  `board-setup` reads those names; a missing default is reported and the
+  skill stops with no tracker write. There is no guided path and no
+  `workflowStateCreate`. `board.rights` on Linear stays a read.
 - `PlatformConfig.github.project` is the Project (v2) number. GitHub
   `native` requires it. `determine-platform` records it when the repo
   uses a Project; `board-setup` may write it later. `--keys github`

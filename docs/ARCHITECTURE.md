@@ -45,7 +45,7 @@ statuses:
 
 The `native` strategy maps phases to the tracker's state names, `label` to label names plus the reserved `open` (backlog only) and `closed` (always `done`), and `comment` to the value of a `Status: <value>` marker comment. Without the key, the tracker adapter's `## Statuses` default applies:
 
-- on Linear, `native` with `Backlog / Todo / In Progress / In Review / Done`, so existing projects behave as before (`/board-setup` lists missing states and links the team workflow settings);
+- on Linear, `native` with `Backlog / Todo / In Progress / In Review / Done`, so existing projects behave as before (`/board-setup` reads those defaults and stops if one is missing; it never creates Linear states);
 - on GitHub Issues, `label` with `open / status::todo / status::in-progress / status::in-review / closed` (create the three labels with `/board-setup`); `native` is the Project (v2) Status field when `github.project` is set (`/board-setup` adds missing options such as In Review);
 - on GitLab Issues, `label` with the same `status::*` names (`/board-setup` may also add a board list per label; the strategy stays `label`);
 - on Azure DevOps Boards, `native` with the board columns `New / Todo / Active / In Review / Closed` (add the missing columns with `/board-setup`);

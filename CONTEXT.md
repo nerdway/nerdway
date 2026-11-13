@@ -342,7 +342,8 @@ The flat phase → value object under `statuses.map`: state names for
 `native`, label names or the reserved `open`/`closed` for `label`, marker
 values for `comment`. All five phases are mapped and no value twice, so a
 value read back from the tracker names exactly one phase; a value the map does
-not hold is "phase unknown", never a guess. Written by `bind-statuses`.
+not hold is "phase unknown", never a guess. Written by `bind-statuses`
+after `board-setup` has created anything missing.
 _Avoid_: status mapping table, state aliases
 
 **Done issue without a trace of work**:
@@ -356,10 +357,11 @@ _Avoid_: stale issue, false done (both suggest moving the issue back)
 
 **Exemption**:
 A validated exception on a frozen rule: the node allowed to act despite it,
-the narrow scope it may touch, and the reason. Four exist today, all on
+the narrow scope it may touch, and the reason. Five exist today, all on
 `no-repo-change-before-in-progress`: `platform-determine` writes the user-owned
 nerdway config and `statuses-bind` writes its `statuses` key, both before any
-issue is In Progress; `auto-issue-mode` sets
+issue is In Progress; `board-setup` creates tracker statuses, columns or
+labels and records the map through `bind-statuses`; `auto-issue-mode` sets
 In Progress itself for the one issue it runs, invoking the skill being the
 user's consent; `issue-next-step` sets In Progress for the one issue it
 diagnosed, only after the user agrees in chat, and changes nothing in the

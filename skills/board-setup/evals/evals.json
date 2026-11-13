@@ -63,6 +63,30 @@
       ]
     },
     {
+      "id": "linear-defaults-bind-no-create",
+      "prompt": "Run /board-setup on Linear. The platform is tracker: linear, linear.team DEMO. board.rights returns native yes (workspace admin) and label no. status.list (the default-states probe) prints Backlog, Todo, In Progress, In Review, Done. bind-statuses is available.",
+      "expected_output": "The skill reads board.rights and the five default workflow states, creates nothing, and invokes bind-statuses with strategy native and the adapter default map (Backlog / Todo / In Progress / In Review / Done). It does not open a workflow editor, does not run status.create, and does not call workflowStateCreate.",
+      "files": [],
+      "assertions": [
+        "The agent runs board.rights as a read",
+        "The agent runs status.list or the default-states probe and finds all five Linear defaults",
+        "The agent runs no status.create and does not link a Linear workflow editor",
+        "The agent invokes bind-statuses with strategy native and the five default names"
+      ]
+    },
+    {
+      "id": "linear-missing-default-stops",
+      "prompt": "Run /board-setup on Linear. linear.team is DEMO. status.list (the default-states probe) prints Backlog, Todo, In Progress, Done and omits In Review. The user is a workspace admin.",
+      "expected_output": "The skill reports that In Review is missing from the team's workflow states and stops. It creates nothing, does not link a workflow editor, does not run status.create, and does not write the statuses map.",
+      "files": [],
+      "assertions": [
+        "The agent names In Review as missing",
+        "The agent runs no status.create and does not open or link the Linear workflow settings",
+        "The agent does not invoke bind-statuses with a map that lacks In Review",
+        "The agent makes no tracker write"
+      ]
+    },
+    {
       "id": "403-drops-exactly-one-level",
       "prompt": "Run /board-setup on GitHub Issues with github.project 1. board.rights returns native yes and label yes. The user says yes to adding In Review. status.create returns HTTP 403. label.create would succeed.",
       "expected_output": "The skill stops the native write, reports that 403 dropped the level from native to label, and asks again for the label-level proposal. It does not skip to comment and does not retry the native write.",

@@ -47,8 +47,9 @@ How a project gets onto a strategy is `board-setup`: it reads `board.rights`
 and picks the highest level the viewer can use.
 
 - `native` when the board can be edited (GitHub Project `viewerCanUpdate`,
-  Linear workspace admin or team owner, GitLab Planner 15+ for board lists,
-  Azure DevOps team admin, Jira workflow edit — asked when unknown).
+  GitLab Planner 15+ for board lists, Azure DevOps team admin, Jira
+  workflow edit — asked when unknown). Linear is always `native` when the
+  five default states exist; `board-setup` never creates Linear states.
 - else `label` when labels or tags can be created (GitHub `permissions.push`,
   GitLab Reporter 20+, Azure DevOps tags need no admin; Linear and Jira do
   not support `label`).

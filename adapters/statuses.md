@@ -18,8 +18,8 @@ Core skills dispatch on five phases, never on a tracker's own state names:
 
 ## Resolving the strategy and map
 
-1. The `statuses` block of the platform config (`## Platform` in the repo
-   `CLAUDE.md`, read from disk as `adapters/platform.md` describes, else
+1. The `statuses` block of the platform config (the user-owned nerdway
+   store, read from disk as `adapters/platform.md` describes, else
    `platform:` on the entity page), when present.
 2. Otherwise the tracker adapter's `## Statuses` default.
 
@@ -41,6 +41,26 @@ strategy whose recipes are `—` is not supported by that tracker: stop and
 report "strategy `<strategy>` is not supported by `trackers/<tracker>` — run
 `/bind-statuses`".
 
+## Rights cascade
+
+How a project gets onto a strategy is `board-setup`: it reads `board.rights`
+and picks the highest level the viewer can use.
+
+- `native` when the board can be edited (GitHub Project `viewerCanUpdate`,
+  Linear workspace admin or team owner, GitLab Planner 15+ for board lists,
+  Azure DevOps team admin, Jira workflow edit — asked when unknown).
+- else `label` when labels or tags can be created (GitHub `permissions.push`,
+  GitLab Reporter 20+, Azure DevOps tags need no admin; Linear and Jira do
+  not support `label`).
+- else `comment`.
+
+A 403 on a write drops exactly one level and asks again. `unknown` is a
+first-class right: the skill asks rather than guessing. GitLab cascade
+`native` still records `strategy: label`, because board columns there are
+label lists. Creating anything on the tracker needs an explicit yes
+(`no-tracker-label-without-consent`). Mapping the names that already exist
+is `bind-statuses`.
+
 ## Reading a phase back
 
 The recipe yields a **value**; the phase is the map key holding that value.
@@ -61,7 +81,9 @@ The tracker's own state field.
 An adapter names the field it treats as the state. On Azure DevOps Boards it
 is the column of the team's board (the stock processes have too few states
 for five phases): the map holds column names, and a write sets the column
-together with the state that column maps.
+together with the state that column maps. On GitHub Issues under `native`
+it is the Project (v2) Status field (`github.project`); a closed issue
+still reads as `done` regardless of the option.
 
 ## `label`
 
@@ -83,7 +105,7 @@ One label per phase, plus the issue's open/closed flag.
   - `open` → remove every mapped label, reopen the issue when closed;
   - a label → remove every other mapped label, add this one, reopen the issue
     when closed.
-- Labels are created only by `bind-statuses`, and only with the user's
+- Labels are created only by `board-setup`, and only with the user's
   consent (`no-tracker-label-without-consent`).
 
 ## `comment`

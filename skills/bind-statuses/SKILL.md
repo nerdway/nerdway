@@ -6,20 +6,24 @@ description: >-
   (native states, labels plus open/closed, or `Status:` marker comments) and a
   phase → value map — and record it as the `statuses` key of the user-owned
   nerdway platform config, mirrored on the nerdbrain entity page. Lists
-  the tracker's real states or labels where its CLI can, recommends a map,
-  creates missing labels only with consent. Use for `/bind-statuses`, at the
-  end of `determine-platform`, or when the user asks how workflow statuses map
-  to the tracker ("zmapuj statusy", "powiąż statusy", "bind statuses", "status
-  labels").
+  the tracker's real states or labels where its CLI can, recommends a map.
+  Mapping only: creating missing statuses, columns or labels is
+  `board-setup`. Use for `/bind-statuses`, at the end of
+  `determine-platform` or `board-setup`, or when the user asks how
+  workflow statuses map to the tracker ("zmapuj statusy", "powiąż
+  statusy", "bind statuses", "status labels").
 ---
 
 # Bind statuses
 
-One pass: **read → propose strategy → list → propose map (ask) → (create
-labels with consent) → write both places → validate → return**. The result is
-the `statuses` block of the `PlatformConfig` schema in `workflow-graph.json`.
-What each strategy means lives in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`
-— read it first.
+One pass: **read → propose strategy → list → propose map (ask) → write
+both places → validate → return**. The result is the `statuses` block of
+the `PlatformConfig` schema in `workflow-graph.json`. What each strategy
+means lives in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` — read it
+first. Creating missing statuses, columns or labels is `board-setup`;
+this skill maps names that already exist. When the caller (`board-setup`)
+passes a strategy and map, use those as the recommendation in Step 2 and
+Step 4.
 
 This skill may run at any issue status: it writes only the user-owned nerdway
 config store (the `statuses` key, and on Azure DevOps Boards the `team`,
@@ -69,8 +73,8 @@ and `ado.workItemType` before Step 2, keeping values the block already holds:
 
 **Jira Cloud (`tracker: jira`).** `native` maps phases to the project's
 workflow status names as the site spells them (often not English). Do
-**not** add statuses or edit the board here — that is a separate
-board-setup skill. Run `status.list`: unique `fields.status.name` values
+**not** add statuses or edit the board here — that is `/board-setup`.
+Run `status.list`: unique `fields.status.name` values
 with `fields.status.statusCategory.key` (`new`, `indeterminate`, `done`).
 Propose a native map by category (`new` → `backlog` and `todo`;
 `indeterminate` → `in-progress` and `in-review`; `done` → `done`). Ask
@@ -112,11 +116,10 @@ Build the recommended map:
   `status.list` returned when it ran. On Jira Cloud ignore English example
   names unless `status.list` actually returned them; group by
   `statusCategory.key` and ask when a category is ambiguous. On Azure DevOps a
-  board with fewer than five columns cannot hold the map: propose the missing
-  columns in the same question — each with the state it maps (a `todo` column
-  maps the `Proposed` state, an `in-review` column an `InProgress` one) and
-  its place on the board — e.g. `Todo` after `New`, `Resolved` renamed
-  `In Review`.
+  board with fewer than five columns cannot hold the map: stop and ask the
+  user to run `/board-setup`, which adds the missing columns. On GitHub
+  `native`, Status options the map needs that `status.list` did not return
+  are created by `/board-setup`, not here.
 - `label` — `backlog: open`, `todo: status::todo`,
   `in-progress: status::in-progress`, `in-review: status::in-review`,
   `done: closed`; reuse an existing label that clearly means the same phase.
@@ -145,27 +148,19 @@ into shell commands), `open`/`closed` only under `label` (`done: closed`
 always there, `open` only for `backlog`) — `adapters/statuses.md` has the
 reasons.
 
-## Step 5 — Create missing labels (label strategy only, with consent)
+## Step 5 — Missing names point to `board-setup`
 
-List the confirmed label values that `label.list` did not return (never
-`open`/`closed`). None missing → skip. Otherwise ask, naming each label:
-*"Create these labels on `<tracker>`: `status::todo`, …?"* Only on an explicit
-yes run `label.create` once per label. On no, stop: the map cannot be written
-while its labels do not exist — offer `comment` instead.
+List the confirmed map values that `status.list` / `label.list` did not
+return (never `open`/`closed`). None missing → go to Step 6. Otherwise
+stop and tell the user to run `/board-setup`, which creates missing
+statuses, columns or labels with consent, then come back here. Offer
+`comment` if they cannot or will not change the board. Do not run
+`label.create` or `status.create` from this skill.
 
-When `label.create` is `—` because the tracker creates a label on first use
-(Azure DevOps tags), ask the same question; the yes lets the map be written,
-and the first `issue.set-status` of each phase creates its tag.
-
-**Missing board columns (`native` on Azure DevOps, with consent).** List the
-confirmed columns the board does not have and ask, naming each with its state
-and place: *"Add these columns to board `<board>` of `<team>`: `Todo` (state
-New, after `New`), …?"* Only on an explicit yes run the adapter's add-columns
-recipe, all changes in one `PUT`. On no, or when the `PUT` fails with HTTP 403
-(not a team admin), stop and offer `label` on tags instead.
-
-This is the `no-tracker-label-without-consent` rule: nothing is created on the
-tracker without that yes.
+When `label.create` is `—` because the tracker creates a tag on first use
+(Azure DevOps tags) and the cascade is `label`, the map may be written;
+the first `issue.set-status` of each phase creates its tag. That is not
+a board-column write.
 
 ## Step 6 — Write both places
 
@@ -222,9 +217,8 @@ store again as `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes.
   are the `statuses` key (plus `ado.team`, `ado.board`, `ado.workItemType` on
   Azure DevOps) through `write-platform-config.ts`, and the entity-page
   mirror.
-- The only tracker writes are `label.create` and, on Azure DevOps, the one
-  add-columns `PUT`, each after an explicit yes.
-  Never change an issue's state, labels or comments here.
+- No tracker writes from this skill: creating statuses, columns or labels
+  is `board-setup`. Never change an issue's state, labels or comments here.
 - Vault access goes through the filesystem by default; an MCP server is the
   transport only where the vault filesystem is absent (ADR-0010). Never git
   against the vault (ADR-0004).
@@ -232,6 +226,8 @@ store again as `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes.
 ## Related skills
 
 - `nerdway:determine-platform` — chains here once the platform is recorded.
+- `nerdway:board-setup` — creates missing statuses, columns or labels, then
+  chains here with the strategy and map.
 - `nerdway:issue-workflow`, `nerdway:issue-start`, `nerdway:issue-close`,
   `nerdway:project-continue` — read and write phases through the strategy
   this skill binds.

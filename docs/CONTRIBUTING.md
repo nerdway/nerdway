@@ -51,7 +51,7 @@ Run the session-start install check by hand, the way the hooks in `hooks/hooks.j
 echo '{"cwd":"'"$PWD"'"}' | NERDWAY_MAIN_VERSION=9.9.9 NERDWAY_SKILL_DIRS= node scripts/check-install.ts --runtime claude
 ```
 
-Run the session-start nerdbrain inject by hand the same way. `NERDBRAIN_VAULT` points it at another vault directory (a missing one gives the `mcp` hint), `NERDBRAIN_INJECT_BUDGET` changes the byte budget, and `--runtime cursor` prints Cursor's envelope instead:
+Run the session-start nerdbrain inject by hand the same way. `NERDWAY_WIKI` (then the legacy `NERDBRAIN_VAULT`) points it at another vault directory (a missing one gives the `mcp` hint), `NERDBRAIN_INJECT_BUDGET` changes the byte budget, and `--runtime cursor` prints Cursor's envelope instead. Without those env vars the path comes from `wiki.path` or `<config dir>/wiki` (`scripts/resolve-vault.ts`):
 
 ```bash
 echo '{"cwd":"'"$PWD"'"}' | node hooks/session-start.ts --runtime claude

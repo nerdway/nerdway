@@ -1241,3 +1241,13 @@ test("PlatformConfig.pr.collapse_details is an optional boolean", () => {
   assert.ok(!schema?.schema.required?.includes("pr"));
   assert.ok(!pr.required?.includes("collapse_details"));
 });
+
+test("PlatformConfig includes an optional wiki.path string", () => {
+  const schema = realContract.schemas.find((entry) => entry.id === "PlatformConfig");
+  const wiki = schema?.schema.properties?.wiki;
+  assert.ok(wiki);
+  assert.equal(wiki.type, "object");
+  assert.equal(wiki.properties?.path?.type, "string");
+  assert.ok(!schema?.schema.required?.includes("wiki"));
+  assert.ok(!wiki.required?.includes("path"));
+});

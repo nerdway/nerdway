@@ -66,10 +66,11 @@ project context injected at session start.
 _Avoid_: project note, wiki page (ambiguous)
 
 **Tier**:
-The vault-availability signal: `file` (vault directory present, access
+The vault-availability signal: `file` (the resolved vault directory present, access
 through the filesystem), `mcp` (directory absent, the vault reachable only
 through a configured MCP server, as in a Claude Code cloud session) or `none`
-(neither). The plugin's SessionStart hook probes `file` and `none`; `mcp` is
+(neither). `<VAULT>` is resolved once by `resolveVault` (env, then `wiki.path`,
+then `<config dir>/wiki`). The plugin's SessionStart hook probes `file` and `none`; `mcp` is
 found by the vault skills' own probe (`ToolSearch` for the connector tools
 when the directory is absent), because the hook runs in a cloud session too
 but sees no connector tools, so there it injects only a hint pointing at that
@@ -254,9 +255,10 @@ defaults merged with `<config dir>/<project-slug>/config.yml`), mirrored as
 legacy `linear:` block on an entity page is read as its alias. An optional
 `statuses` block binds the canonical phases to the tracker. An optional
 `pr.collapse_details` boolean (default true) chooses the collapsed or flat
-readiness description layout. Skills read it from
+readiness description layout. Optional `wiki.path` is the vault directory
+(`resolveVault`). Skills read it from
 disk through `adapters/platform.md`, never from a leftover `## Platform` section
-or a `CLAUDE.md` in context. See ADR-0018.
+or a `CLAUDE.md` in context. See ADR-0018, ADR-0020 and ADR-0021.
 _Avoid_: platform settings, integration (both hide that it is one YAML object in two places)
 
 **Adapter**:

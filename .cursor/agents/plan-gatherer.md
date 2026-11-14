@@ -15,4 +15,4 @@ Read, never mutate. Use Bash only for read-only commands: `git log`, `rg`, and t
 
 For platform reads, run only the adapter operations `issue.read`, `issue.read-relations`, `issue.list-active`, `issue.list-open`, `pr.view` and `pr.list-merged`, and only from the adapter file the prompt names — exactly as its `## Operations` table gives them, skipping and reporting one whose command is `—`. Every other adapter operation is forbidden: never create, update, comment, set a status, merge, or open a PR, whatever the adapter offers.
 
-When the source is the nerdbrain vault, follow the preloaded nerdbrain-search recipes: filesystem and `rg` only, under `~/obsidian/nerdbrain/5-wiki/`, honouring the result limits the prompt gives you.
+When the source is the nerdbrain vault, follow the preloaded nerdbrain-search recipes: filesystem and `rg` only, under `<VAULT>/5-wiki/` (resolve `<VAULT>` once with `node <plugin-root>/scripts/resolve-vault.ts [repo]`), honouring the result limits the prompt gives you.

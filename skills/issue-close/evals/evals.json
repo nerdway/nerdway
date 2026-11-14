@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": "gate-stops-without-guide",
-      "prompt": "Close out issue DEMO-600 on Linear: its PR is reviewed and green. The nerdbrain vault exists at ~/obsidian/nerdbrain/5-wiki, no file under 5-wiki/guides/ mentions DEMO-600, and the issue has no comment starting with `## Personal guide`.",
+      "prompt": "Close out issue DEMO-600 on Linear: its PR is reviewed and green. The nerdbrain vault exists at <VAULT>/5-wiki, no file under 5-wiki/guides/ mentions DEMO-600, and the issue has no comment starting with `## Personal guide`.",
       "expected_output": "Step 0 finds the vault, finds no guide mentioning DEMO-600 and no `## Personal guide` comment, and stops before any commit, push or merge, telling the caller to run nerdway:nerd-personal-docs DEMO-600 first and then run the close-out again.",
       "files": [],
       "assertions": [
@@ -16,7 +16,7 @@
     },
     {
       "id": "gate-passes-with-guide",
-      "prompt": "Close out issue DEMO-601 on Linear with VCS GitHub. The vault exists and ~/obsidian/nerdbrain/5-wiki/guides/pangolin.md has a history entry `[DEMO-601](https://linear.app/example/issue/DEMO-601)`. The checkout is on the issue branch `demo-601-pangolin-export`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerdway:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-601.",
+      "prompt": "Close out issue DEMO-601 on Linear with VCS GitHub. The vault exists and <VAULT>/5-wiki/guides/pangolin.md has a history entry `[DEMO-601](https://linear.app/example/issue/DEMO-601)`. The checkout is on the issue branch `demo-601-pangolin-export`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerdway:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-601.",
       "expected_output": "Step 0 finds pangolin.md and notes its path, Steps 0b and 0c pass, and the close-out goes on through commit, push and merge to the base branch and phase done; the Report names the guide path.",
       "files": [],
       "assertions": [
@@ -37,18 +37,18 @@
     },
     {
       "id": "gate-no-vault",
-      "prompt": "Close out issue DEMO-603 on Linear with VCS GitHub on a machine where ~/obsidian/nerdbrain does not exist. The checkout is on the issue branch `demo-603-cache-headers`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerdway:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-603.",
+      "prompt": "Close out issue DEMO-603 on Linear with VCS GitHub on a machine where the resolved vault directory does not exist. The checkout is on the issue branch `demo-603-cache-headers`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerdway:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-603.",
       "expected_output": "Step 0 sees no vault, notes that the guide was not checked and goes on without searching; Steps 0b and 0c pass and the close-out commits, pushes and merges; the Report says the machine has no nerdbrain vault.",
       "files": [],
       "assertions": [
-        "The agent checks for ~/obsidian/nerdbrain/5-wiki with test -d and, finding no vault, does not search for a guide",
+        "The agent resolves <VAULT> once, checks for <VAULT>/5-wiki with test -d and, finding no vault, does not search for a guide",
         "The agent does not stop at the guide check and goes on to the commit, push and merge steps",
         "The Report says there is no nerdbrain vault on this machine and the guide was not checked"
       ]
     },
     {
       "id": "children-gate-stops-open-child",
-      "prompt": "Close out issue DEMO-610 on Linear with VCS GitHub: its PR is reviewed and green, and ~/obsidian/nerdbrain/5-wiki/guides/plugin.md mentions DEMO-610. DEMO-610 has two sub-issues: DEMO-611 in Done and DEMO-612 in Backlog. issue.url gives https://linear.app/example/issue/DEMO-611 and https://linear.app/example/issue/DEMO-612 for them.",
+      "prompt": "Close out issue DEMO-610 on Linear with VCS GitHub: its PR is reviewed and green, and <VAULT>/5-wiki/guides/plugin.md mentions DEMO-610. DEMO-610 has two sub-issues: DEMO-611 in Done and DEMO-612 in Backlog. issue.url gives https://linear.app/example/issue/DEMO-611 and https://linear.app/example/issue/DEMO-612 for them.",
       "expected_output": "Step 0 finds the guide. Step 0b reads the children with issue.read-relations, reads each child's phase with issue.read-status, finds DEMO-612 in backlog and stops before any commit, push or merge, listing DEMO-612 with its phase and link and saying to finish or detach it and run the close-out again.",
       "files": [],
       "assertions": [
@@ -116,7 +116,7 @@
     },
     {
       "id": "merge-fails-stops",
-      "prompt": "Close out issue DEMO-670 on Linear with VCS GitHub. A guide in ~/obsidian/nerdbrain/5-wiki/guides/ mentions DEMO-670, the issue has no children, the PR description ends with `<!-- nerdway:pr-body -->`, and the working tree is clean. The checkout is on the issue branch `demo-670-csv-import`, and `git push` succeeds. pr.view-base returns `{\"baseRefName\":\"main\",\"isDraft\":false}`. `gh pr merge --merge` exits 1 with `Pull request is not mergeable: the merge commit cannot be cleanly created.`",
+      "prompt": "Close out issue DEMO-670 on Linear with VCS GitHub. A guide in <VAULT>/5-wiki/guides/ mentions DEMO-670, the issue has no children, the PR description ends with `<!-- nerdway:pr-body -->`, and the working tree is clean. The checkout is on the issue branch `demo-670-csv-import`, and `git push` succeeds. pr.view-base returns `{\"baseRefName\":\"main\",\"isDraft\":false}`. `gh pr merge --merge` exits 1 with `Pull request is not mergeable: the merge commit cannot be cleanly created.`",
       "expected_output": "Steps 0 to 2 pass, pr.mark-ready is skipped because the PR is not a draft, and the merge fails. The close-out stops at Step 3 and reports the error verbatim: it does not resolve the conflict, retry with another merge method, rebase, switch to main or set the issue to done.",
       "files": [],
       "assertions": [

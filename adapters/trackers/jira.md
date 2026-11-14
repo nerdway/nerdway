@@ -118,9 +118,19 @@ candidate resolves, stop and ask the user for the ID — never guess it.
 | `issue.set-status` | the write recipe of the resolved strategy in `## Status strategies` | writes a canonical phase; never `in-progress` on the agent's own initiative |
 | `issue.comment` | `acli jira workitem comment create --key <ID> --body "$(cat body.md)"` | markdown/plain body, including a Session summary |
 | `issue.relate` | `acli jira workitem link create --out <ID> --in <OTHER-ID> --type Relates --yes` | a Relates link, shown on both; if the type name is rejected, `acli jira workitem link type` lists the site's names |
-| `status.list` | the status-list recipe below | unique workflow status **names** with `statusCategory.key` (`new`, `indeterminate`, `done`); `bind-statuses` maps the five phases to those names, or `comment` when five distinct names cannot be bound |
+| `status.list` | the status-list recipe below | unique workflow status **names** with `statusCategory.key` (`new`, `indeterminate`, `done`); `bind-statuses` maps the five phases to those names, or `comment` when five distinct names cannot be bound. Missing names are listed by `board-setup` |
 | `label.list` | — | `label` is not a supported status strategy |
 | `label.create` | — | `label` is not a supported status strategy |
+| `board.rights` | — | `acli` does not expose `ADMINISTER_PROJECTS` or site admin; `native` is `unknown` and the skill asks; `label` is `no` because Jira does not support the label strategy |
+| `status.create` | — | no API writes to Jira workflows (no stored token, no REST mutation); guided path: list the missing statuses, link the workflow editor, the user adds them, then `status.list` reads them back |
+
+Guided path for `status.create` — only with the user's consent. `acli`
+has no workflow-write command and this adapter stores no token, so there
+is no REST mutation. List the names `status.list` does not yet return
+that the five-phase map needs, print the project's workflow editor URL
+(`https://<HOST>/jira/software/projects/<PROJECT>/settings/issuetypes`),
+ask the user to add those statuses, then re-run `status.list`. HTTP 403
+or "you cannot edit this workflow" → drop to `comment`.
 
 Type-discovery recipe for `<TYPE>` — never assume an English type name.
 When `jira.issueType` is a non-empty string, that is `<TYPE>`. Otherwise
@@ -302,9 +312,11 @@ include a review column by default. The YAML below is an **English-language
 example** for a site that actually has those names. Do not copy it onto a
 localized project. `bind-statuses` lists current names via `status.list`,
 maps by `statusCategory.key`, and asks when a category is ambiguous. Adding
-statuses to a board is a separate skill; this adapter does not mutate the
-workflow. When the project cannot bind five distinct names, `bind-statuses`
-records `strategy: comment` instead.
+statuses to a board is `board-setup`: with admin rights it lists the
+missing names and links the workflow editor; without them it switches to
+`comment`. This adapter does not mutate the workflow. When the project
+cannot bind five distinct names, `bind-statuses` records `strategy:
+comment` instead.
 
 Default strategy and map, used when the platform config has no `statuses`
 block (semantics in `adapters/statuses.md`):

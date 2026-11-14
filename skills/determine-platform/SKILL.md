@@ -57,8 +57,8 @@ github:
 
 | Key | Values | Identifier block |
 |-----|--------|------------------|
-| `tracker` | `linear`, `github`, `gitlab`, `ado`, `jira`, `none` | `linear: {team, project}` (project = UUID); `jira: {site, project, issueType?}` (site = Cloud hostname, project = key, optional localized work-item type); GitHub/GitLab/ADO trackers reuse the VCS block of the same platform; an ADO tracker's `ado.team`, `ado.board` and `ado.workItemType` are written by `bind-statuses` |
-| `vcs` | `github`, `gitlab`, `ado` | `github: {owner, repo}`, `gitlab: {group, project}`, `ado: {org, project}` |
+| `tracker` | `linear`, `github`, `gitlab`, `ado`, `jira`, `none` | `linear: {team, project}` (project = UUID); `jira: {site, project, issueType?}` (site = Cloud hostname, project = key, optional localized work-item type); GitHub/GitLab/ADO trackers reuse the VCS block of the same platform; an ADO tracker's `ado.team`, `ado.board` and `ado.workItemType` are written by `bind-statuses`; optional `github.project` is the GitHub Project (v2) number for the `native` strategy |
+| `vcs` | `github`, `gitlab`, `ado` | `github: {owner, repo, project?}`, `gitlab: {group, project}`, `ado: {org, project}` |
 
 ## Step 1 — Read what is already recorded
 
@@ -139,6 +139,15 @@ team key from `team.list`, the project from `project.list`; for Jira Cloud:
 optionally `jira.issueType` from the adapter's type-discovery recipe — leave
 it unset when several types look equally likely).
 
+When `tracker` is `github`, list the owner's Projects (`gh project list
+--owner <github.owner> --format json --limit 100` in
+`adapters/trackers/github.md` `## CLI`). One project → record its `number`
+as `github.project`. Several → ask which one, recommending a title that
+matches the repo, or none. None → omit `github.project`; GitHub stays on
+labels until `/board-setup` records a project. `--keys github` replaces
+the whole `github` object, so write `owner`, `repo` and `project` together
+when the number is known.
+
 A combination with no adapter file yet is still recorded — the core skill
 that needs it will stop with "adapter not available yet". Never substitute
 Linear for it.
@@ -203,4 +212,6 @@ the platform from this output, or reads the store again as
 - `nerdway:issue-writer` — delegates here when no platform is configured.
 - `nerdway:bind-statuses` — the chain this skill ends with; also runs on
   its own.
+- `nerdway:board-setup` — creates missing statuses, columns or labels and
+  records `github.project` when a Project is chosen later.
 - `nerdway:nerdbrain-wiki` — the write procedure for the entity-page mirror.

@@ -241,7 +241,7 @@ After execution, print a compact summary:
 Created:
   Directory: <path>
   GitHub:    <url>
-  Linear:    <team>/<name> (<uuid>)   (or 'GitHub Issues — run /bind-statuses to create the status labels')
+  Linear:    <team>/<name> (<uuid>)   (or 'GitHub Issues — run /board-setup to create the status labels')
   Wiki:      <vault-path> (or 'disabled')
 Now picking spec skill...
 ```

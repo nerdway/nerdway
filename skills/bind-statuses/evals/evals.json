@@ -1,0 +1,27 @@
+{
+  "skill_name": "bind-statuses",
+  "evals": [
+    {
+      "id": "mapping-only-points-to-board-setup",
+      "prompt": "Run /bind-statuses on a GitHub Issues repo whose label.list does not include status::todo, status::in-progress or status::in-review. The platform is tracker: github, default strategy label. The user confirms the default label map.",
+      "expected_output": "The skill proposes the label map, then stops without creating labels: the three status::* names are missing, so it tells the user to run /board-setup. It does not run label.create or status.create.",
+      "files": [],
+      "assertions": [
+        "The agent does not run label.create",
+        "The agent does not run status.create",
+        "The agent tells the user to run /board-setup for the missing labels"
+      ]
+    },
+    {
+      "id": "ado-columns-point-to-board-setup",
+      "prompt": "Run /bind-statuses on Azure DevOps Boards. ado.team, ado.board and ado.workItemType are already set. status.list (the board columns) returns New, Active, Closed. The adapter default map wants New, Todo, Active, In Review, Closed. The user would accept native.",
+      "expected_output": "The skill does not PUT new columns. It stops and asks the user to run /board-setup to add Todo and In Review, rather than running the add-columns recipe itself.",
+      "files": [],
+      "assertions": [
+        "The agent does not run the add-columns PUT",
+        "The agent names /board-setup as the skill that adds the missing columns",
+        "The agent does not create tracker columns, labels or tags"
+      ]
+    }
+  ]
+}

@@ -139,7 +139,7 @@ Other starting points:
 
 ## Skills
 
-Twenty skills ship in `skills/`. Invoke one with `/<name>` or `/nerdway:<name>`.
+Twenty-one skills ship in `skills/`. Invoke one with `/<name>` or `/nerdway:<name>`.
 
 ### Workflow
 
@@ -163,7 +163,8 @@ Twenty skills ship in `skills/`. Invoke one with `/<name>` or `/nerdway:<name>`.
 | [`project-continue`](skills/project-continue/SKILL.md) | Answer "where are we" for the current project: verify the newest checkpoint against the repo and tracker, and record a fresh one with consent. |
 | [`nerd-orchestrate`](skills/nerd-orchestrate/SKILL.md) | Orchestrate a project's unplanned issues: report progress, plan every open issue without a plan comment, then ask before auto-issue-mode. |
 | [`determine-platform`](skills/determine-platform/SKILL.md) | Establish which tracker holds the project's issues and which VCS host holds its code, and record that in the user-owned nerdway config store. |
-| [`bind-statuses`](skills/bind-statuses/SKILL.md) | Bind the five canonical workflow phases to how the project's tracker shows them and record the map in the user-owned nerdway config store. |
+| [`bind-statuses`](skills/bind-statuses/SKILL.md) | Bind the five canonical workflow phases to how the project's tracker shows them and record the map in the user-owned nerdway config store. Mapping only. |
+| [`board-setup`](skills/board-setup/SKILL.md) | Decide native / label / comment from the viewer's rights, create missing statuses, columns or labels with consent, then bind the map through `bind-statuses`. On Linear it only reads the five default workflow states. |
 | [`retro`](skills/retro/SKILL.md) | Turn the lessons of the current session into tracker issues: propose candidates by category and hand accepted ones to issue-writer. |
 
 ### Vault

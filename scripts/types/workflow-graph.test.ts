@@ -1189,3 +1189,44 @@ test("rule 25: an escaped pipe inside a recipe does not shift the columns", () =
   assert.equal(errors.length, 1);
   assert.match(errors[0], /label needs both/);
 });
+
+test("the real contract declares board.rights and status.create on the trackers axis", () => {
+  const ops = realContract.adapters?.trackers.operations ?? [];
+  assert.ok(ops.includes("board.rights"));
+  assert.ok(ops.includes("status.create"));
+  assert.equal(ops[ops.length - 2], "board.rights");
+  assert.equal(ops[ops.length - 1], "status.create");
+});
+
+test("the real contract has an irreversible board-setup node behind chat-approval", () => {
+  const node = realContract.nodes.find((entry) => entry.id === "board-setup");
+  assert.ok(node);
+  assert.equal(node.skill, "board-setup");
+  assert.equal(node.runtime, "conversational");
+  assert.equal(node.phase, "write");
+  assert.equal(node.irreversible, true);
+  assert.deepEqual(node.in, ["PlatformConfig"]);
+  assert.deepEqual(node.out, ["PlatformConfig"]);
+  assert.deepEqual(node.dependsOn, ["platform-determine"]);
+  assert.equal(node.gates.length, 1);
+  assert.equal(node.gates[0].kind, "decision");
+  assert.equal(node.gates[0].mechanism, "chat-approval");
+  assert.equal(node.gates[0].rule, "no-tracker-label-without-consent");
+});
+
+test("the real contract exempts board-setup from no-repo-change-before-in-progress", () => {
+  const rule = realContract.frozenRules?.find((entry) => entry.id === "no-repo-change-before-in-progress");
+  const exemption = rule?.exemptions?.find((entry) => entry.node === "board-setup");
+  assert.ok(exemption);
+  assert.match(exemption.scope, /No file in the repo is changed/);
+  assert.match(exemption.reason, /In Progress/);
+});
+
+test("PlatformConfig.github includes an optional project field", () => {
+  const schema = realContract.schemas.find((entry) => entry.id === "PlatformConfig");
+  const github = schema?.schema.properties?.github;
+  assert.ok(github?.properties?.project);
+  assert.equal(github.properties.project.type, "string");
+  assert.match(github.properties.project.description ?? "", /Project/);
+  assert.ok(!github.required?.includes("project"));
+});

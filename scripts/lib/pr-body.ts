@@ -13,12 +13,17 @@ function blocks(body: string): string[][] {
     .filter((lines) => lines.length > 0);
 }
 
+function isStartParagraph(lines: string[]): boolean {
+  const first = lines[0];
+  return first !== undefined && !first.startsWith("#") && !first.startsWith("<");
+}
+
 export function classifyPrBody(body: string): PrBodyState {
   if (body.includes(READINESS_MARKER)) return "readiness";
   const [first, ...rest] = blocks(body);
   if (first === undefined) return "draft";
   const magicBlock = MAGIC_LINE.test(first[0]) && first.every((line) => MAGIC_LINE.test(line) || URL_LINE.test(line));
-  return magicBlock && rest.length <= 1 ? "draft" : "manual";
+  return magicBlock && (rest.length === 0 || (rest.length === 1 && isStartParagraph(rest[0]))) ? "draft" : "manual";
 }
 
 export function prBodyFromInput(input: string): string {

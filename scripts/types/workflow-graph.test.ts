@@ -1230,3 +1230,14 @@ test("PlatformConfig.github includes an optional project field", () => {
   assert.match(github.properties.project.description ?? "", /Project/);
   assert.ok(!github.required?.includes("project"));
 });
+
+test("PlatformConfig.pr.collapse_details is an optional boolean", () => {
+  const schema = realContract.schemas.find((entry) => entry.id === "PlatformConfig");
+  const pr = schema?.schema.properties?.pr;
+  assert.ok(pr);
+  assert.equal(pr.type, "object");
+  assert.equal(pr.properties?.collapse_details?.type, "boolean");
+  assert.match(pr.properties?.collapse_details?.description ?? "", /absent/);
+  assert.ok(!schema?.schema.required?.includes("pr"));
+  assert.ok(!pr.required?.includes("collapse_details"));
+});

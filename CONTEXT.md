@@ -177,12 +177,14 @@ _Avoid_: test results (covers only the tests, not every criterion)
 
 **Opis gotowości**:
 The readiness description: the PR/MR description rewritten for a human
-reviewer once the Criteria verification table is complete — why, what
-changed, scope, the criteria table as evidence and the merge risk. Written on
-the session model in `issue-workflow` step 6b (and through it in stage 4 of
-`auto-issue-mode`); it ends with the marker `<!-- nerdway:pr-body -->`, and
-only a start draft or a description with that marker is overwritten.
-`issue-close` stops while the description is still the start draft.
+reviewer once the Criteria verification table is complete. By default it
+opens with a short Summary and puts why, what changed, scope, the criteria
+table as evidence and the merge risk inside a collapsed Details block
+(`pr.collapse_details`, absent = true). Written on the session model in
+`issue-workflow` step 6b (and through it in stage 4 of `auto-issue-mode`);
+it ends with the marker `<!-- nerdway:pr-body -->`, and only a start draft
+or a description with that marker is overwritten. `issue-close` stops while
+the description is still the start draft.
 _Avoid_: PR summary (the one paragraph of the start draft), changelog
 
 **Workflow island**:
@@ -250,7 +252,9 @@ host (`github`, `gitlab`, `ado`) plus the identifiers each needs — schema
 defaults merged with `<config dir>/<project-slug>/config.yml`), mirrored as
 `platform:` on the entity page, and is established by `determine-platform`; a
 legacy `linear:` block on an entity page is read as its alias. An optional
-`statuses` block binds the canonical phases to the tracker. Skills read it from
+`statuses` block binds the canonical phases to the tracker. An optional
+`pr.collapse_details` boolean (default true) chooses the collapsed or flat
+readiness description layout. Skills read it from
 disk through `adapters/platform.md`, never from a leftover `## Platform` section
 or a `CLAUDE.md` in context. See ADR-0018.
 _Avoid_: platform settings, integration (both hide that it is one YAML object in two places)

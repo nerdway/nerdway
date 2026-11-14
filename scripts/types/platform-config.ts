@@ -28,11 +28,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function scalar(value: string): string {
+function parseScalar(value: string): string | boolean {
   const quoted = QUOTED_SCALAR.exec(value);
   if (quoted !== null) return quoted[2];
   const comment = value.search(/\s#/);
-  return (comment === -1 ? value : value.slice(0, comment)).trim();
+  const text = (comment === -1 ? value : value.slice(0, comment)).trim();
+  if (text === "true") return true;
+  if (text === "false") return false;
+  return text;
 }
 
 function normalizeNewlines(text: string): string {
@@ -82,7 +85,7 @@ export function parseYaml(text: string): YamlResult {
       errors.push(`${where}: unsupported YAML value for ${key} — lists, flow collections and block scalars are not read`);
       return;
     }
-    parent[key] = scalar(value);
+    parent[key] = parseScalar(value);
   });
 
   return errors.length > 0 ? { errors } : { value: root, errors };
@@ -102,6 +105,8 @@ function emitLines(value: Record<string, unknown>, indent: number): string[] {
   for (const [key, child] of Object.entries(value)) {
     if (typeof child === "string") {
       lines.push(`${pad}${key}: ${emitScalar(child)}`);
+    } else if (typeof child === "boolean") {
+      lines.push(`${pad}${key}: ${child ? "true" : "false"}`);
     } else if (isRecord(child)) {
       lines.push(`${pad}${key}:`);
       lines.push(...emitLines(child, indent + 1));
@@ -251,6 +256,22 @@ function validateGithubBlock(raw: Record<string, unknown>, trackerAdapter: strin
   return errors;
 }
 
+function validatePrBlock(raw: Record<string, unknown>): string[] {
+  if (raw.pr === undefined) return [];
+  if (!isRecord(raw.pr)) return ["pr must be an object"];
+  const value = raw.pr.collapse_details;
+  if (value === undefined) return [];
+  if (typeof value !== "boolean") {
+    return [`pr.collapse_details must be a boolean, got ${JSON.stringify(value)}`];
+  }
+  return [];
+}
+
+export function prCollapseDetails(raw: Record<string, unknown>): boolean {
+  if (!isRecord(raw.pr) || raw.pr.collapse_details === undefined) return true;
+  return raw.pr.collapse_details === true;
+}
+
 export function validatePlatformConfig(raw: unknown, vocabulary: PlatformVocabulary, trackerAdapter: string | undefined): string[] {
   if (!isRecord(raw)) return ["platform config must be a YAML map"];
   const errors: string[] = [];
@@ -263,6 +284,7 @@ export function validatePlatformConfig(raw: unknown, vocabulary: PlatformVocabul
   if (raw.tracker === "ado") errors.push(...validateAdoBlock(raw, trackerAdapter));
   if (raw.tracker === "jira") errors.push(...validateJiraBlock(raw));
   if (raw.tracker === "github") errors.push(...validateGithubBlock(raw, trackerAdapter));
+  errors.push(...validatePrBlock(raw));
   if (raw.statuses === undefined) return errors;
   if (raw.tracker === "none") {
     errors.push("statuses is set, but tracker is none — there is no tracker to bind phases to");

@@ -107,8 +107,14 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/vault/<tier>.md
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory.
 
+**Vault root.** Resolve `<VAULT>` once:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
+```
+
 **Tier probe** (the same steps as `## Tier` of `adapters/vault/mcp.md`): the
-directory `~/obsidian/nerdbrain` exists → `file`. Otherwise `ToolSearch` with
+directory `<VAULT>` exists → `file`. Otherwise `ToolSearch` with
 the query `+nerdbrain` and `max_results` 1: a result naming a
 `mcp__claude_ai_nerdbrain__*` tool → `mcp`; none → `none`. The connector tools
 stay deferred: an operation loads only the names it needs

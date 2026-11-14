@@ -12,8 +12,10 @@ file. In the recipes below a bare tool name such as `vault_read` stands for
 
 The probe is the calling skill's, in this order:
 
-1. The directory `~/obsidian/nerdbrain` exists → tier `file`; this adapter is
-   not read.
+1. Resolve `<VAULT>` once with
+   `node "<plugin root>/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"`
+   (`${CLAUDE_PLUGIN_ROOT}` or two directories up from the skill). The
+   directory `<VAULT>` exists → tier `file`; this adapter is not read.
 2. Otherwise `ToolSearch` with the query `+nerdbrain` and `max_results` 1. A
    result naming a `mcp__claude_ai_nerdbrain__*` tool → tier `mcp`. No such
    tool → tier `none`: no adapter, no read, no write.
@@ -25,7 +27,7 @@ nothing pre-loads the sixteen tools of the connector.
 
 ## Paths
 
-Vault-relative paths, without the `~/obsidian/nerdbrain` prefix:
+Vault-relative paths, without the `<VAULT>` prefix:
 
 ```
 PAGE=5-wiki/entities/projects/<slug>.md

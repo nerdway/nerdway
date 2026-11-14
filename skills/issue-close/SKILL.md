@@ -88,10 +88,17 @@ This skill never writes the guide. The caller writes it beforehand with
 close-out, `auto-issue-mode`'s close-out stage); this step only checks that
 it happened. Take the first case that matches:
 
-1. **No vault on this machine.**
+1. **No vault on this machine.** Resolve `<VAULT>` once:
 
    ```bash
-   test -d ~/obsidian/nerdbrain/5-wiki
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
+   ```
+
+   If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
+   directories up from this skill's base directory.
+
+   ```bash
+   test -d <VAULT>/5-wiki
    ```
 
    Non-zero exit → note "no nerdbrain vault on this machine, guide not
@@ -100,13 +107,13 @@ it happened. Take the first case that matches:
    search for it as a whole word:
 
    ```bash
-   rg -l -w -F "<ID>" ~/obsidian/nerdbrain/5-wiki/guides/
+   rg -l -w -F "<ID>" <VAULT>/5-wiki/guides/
    ```
 
    Otherwise (`#123`) search for the issue link that `issue.url` gives:
 
    ```bash
-   rg -l -F "<issue url>" ~/obsidian/nerdbrain/5-wiki/guides/
+   rg -l -F "<issue url>" <VAULT>/5-wiki/guides/
    ```
 
    A listed file → note its path for the Report and go to Step 0b.

@@ -1,5 +1,13 @@
 # User-owned platform config, outside the repository
 
+*Amended 2026-11-14: migration is copy-only. The hook never writes, rewrites
+or deletes `CLAUDE.md`. A leftover `## Platform` section is copied into the
+user store and then ignored; every session reminds the user they can remove
+it by hand. A conflict is asked once; after `--resolve keep-user|take-repo|merge`
+a sidecar `<configDir>/<slug>/legacy-platform.resolved` records the sha256
+fingerprint of the section's canonical JSON, and a later identical leftover
+is `stale-differs` until the section changes.*
+
 The grilling session of GitHub issue #13 chose a hard migration: the
 platform config (tracker, VCS, identifiers, status bindings) leaves the
 repo `CLAUDE.md` and lives in a user-owned store. nerdway must not leave
@@ -23,12 +31,14 @@ replaces the default's key whole; missing keys come from defaults. The
 files hold identifiers and status bindings only; tokens stay in `gh` /
 `acli` / vault auth.
 
-Clear-case migration writes the project file, reads it back, compares,
-then removes only the `## Platform` section (and deletes `CLAUDE.md` if
-nothing else is left). Conflict or doubt (project config exists and
-differs, the section is unreadable, the slug is ambiguous) removes
-nothing, reports CLI exit `5`, and the agent asks the user to keep the
-user config, take the repo values, or merge before anything is deleted.
+Clear-case migration writes the project file, reads it back, and
+compares. It never edits or deletes `CLAUDE.md`. A leftover section that
+matches the user config is `stale`; a leftover that differs after a
+recorded resolve is `stale-differs`; both print a one-line reminder that
+the section is no longer read. Conflict or doubt (project config exists
+and differs with no matching fingerprint, the section is unreadable, the
+slug is ambiguous) writes nothing, reports CLI exit `5`, and the agent
+asks the user to keep the user config, take the repo values, or merge.
 
 ## Considered Options
 
@@ -59,9 +69,9 @@ user config, take the repo values, or merge before anything is deleted.
   with `--print`, and maps `found | absent | invalid | migration-needed`
   to exits `0`, `3`, `4`, `5`. `--resolve keep-user|take-repo|merge`
   finishes a conflict.
-- This repository's own `CLAUDE.md` is migrated by the same mechanism.
-  Claude Code's "not loaded as project context" warning for a root
-  `CLAUDE.md` goes away when the file is gone.
+- This repository's own leftover `## Platform` section is migrated by the
+  same mechanism. The file itself stays until someone removes the section
+  by hand.
 - Windows `%APPDATA%` is covered by injecting `env` and `platform` in
   tests. A real Windows run is a manual check, not CI.
 - The frozen-rule exemptions on `platform-determine` and `statuses-bind`

@@ -197,9 +197,10 @@ number that proves it — before dispatching the next.
    `issue-workflow`'s **Review threads on the PR/MR** section does and
    re-runs the tests after that step. A failing suite stops the stage. Only
    then it writes the readiness description exactly as `issue-workflow`
-   step 6b does — the template, the classifier, the overwrite rule and the
-   length rule all live there — from stage 3's criteria table, which its
-   prompt carries, and this stage's review results. Then it runs
+   step 6b does — the template, the layout flag, the classifier, the
+   overwrite rule and the length rule all live there — from stage 3's
+   criteria table, which its prompt carries, and this stage's review
+   results. Then it runs
    `pr.mark-ready` (skipped when the adapter lists `—`).
    Report: each finding with its fix commit or the reason it was not applied,
    the island's `stats` and `gaps` (or the degraded flag), the threads

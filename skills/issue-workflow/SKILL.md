@@ -548,9 +548,19 @@ on the session model, never in `issue-close`. What it holds — sections,
 language, the marker — is defined once in the bundled
 `readiness-description-template.md`; this step says how it reaches the PR/MR.
 
-1. **Write it to a file** from the template, the diff, the table of 6a and,
-   once a review has run, its results.
-2. **Read the state of the current description.** Pipe the output of
+1. **Pick the layout.** Read `pr.collapse_details` with one CLI call:
+
+   ```bash
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/validate-platform-config.ts --print pr.collapse_details "$(git rev-parse --show-toplevel)"
+   ```
+
+   `true`, a missing key, or no config (the command still prints `true`) →
+   the template's collapsed body (Summary, then Details, After merge outside).
+   `false` → the template's flat body (today's layout, no Summary). Exit 4
+   or 5 → stop as `adapters/platform.md` says.
+2. **Write it to a file** from the chosen body of the template, the diff,
+   the table of 6a and, once a review has run, its results.
+3. **Read the state of the current description.** Pipe the output of
    `pr.view` through the classifier:
 
    ```bash
@@ -561,11 +571,11 @@ language, the marker — is defined once in the bundled
    most one paragraph — or an empty description), `readiness` (a description
    carrying the marker `<!-- nerdway:pr-body -->`), or `manual` (anything
    else: someone changed the description by hand).
-3. **Overwrite only what the workflow wrote.** `draft` or `readiness` → run
+4. **Overwrite only what the workflow wrote.** `draft` or `readiness` → run
    `pr.edit-body` with the file. `manual` → leave the description as it is,
    post the file with `pr.comment`, and tell the user that the new version
    went out as a comment because the description was changed by hand.
-4. **Keep within the platform's limit.** Count the characters
+5. **Keep within the platform's limit.** Count the characters
    (`wc -m < <file>`) against the limit the notes of the adapter's
    `pr.edit-body` give (Azure DevOps: 4000). Over the limit, the description
    keeps a shortened Evidence table — the `fail` rows and the key criteria —

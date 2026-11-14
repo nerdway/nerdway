@@ -1,28 +1,43 @@
 # Vault adapter: filesystem
 
-Selected by tier `file`: the vault directory `~/obsidian/nerdbrain` exists on
+Selected by tier `file`: the resolved vault directory `<VAULT>` exists on
 this machine, so the vault is plain files, read with `Read` and `rg` and
 written with `Edit` and `Write`, identically on desktop and headless server.
 The filesystem write is the whole recipe; propagation between machines is
-Obsidian Sync, not this adapter's concern.
+Obsidian Sync, not this adapter's concern. Obsidian remains a supported
+place to keep the files; it is no longer the only or default location.
 
 ## Tier
 
 `file` is the default wherever the vault directory exists. The tier probe of
-the calling skill checks the directory before anything else, so a connector
-that happens to be configured on a machine with the files never wins over
-them. Tier `none` (no directory and no connector) selects no adapter: nothing
-is read and nothing is written.
+the calling skill resolves `<VAULT>` and checks that directory before
+anything else, so a connector that happens to be configured on a machine
+with the files never wins over them. Tier `none` (no directory and no
+connector) selects no adapter: nothing is read and nothing is written.
 
 ## Paths
 
-Absolute paths under the vault root:
+Resolve `<VAULT>` once per session. `<plugin root>` is
+`${CLAUDE_PLUGIN_ROOT}`, or two directories up from the skill's base
+directory when that variable was not substituted:
+
+```bash
+node "<plugin root>/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
+```
+
+Stdout is the absolute path. `--json` prints `{path, source, exists}`
+where `source` is `env`, `project`, `defaults` or `default`. The command
+does not create the directory. Resolution order is documented on
+`resolveVault` in `scripts/lib/nerdway-config.ts`: env `NERDWAY_WIKI`,
+then legacy env `NERDBRAIN_VAULT`, then `wiki.path` in the project
+config, then in the user defaults config, then `<config dir>/wiki`.
+
+Absolute paths under that root:
 
 ```
-VAULT=~/obsidian/nerdbrain
-PAGE=$VAULT/5-wiki/entities/projects/<slug>.md
-INDEX=$VAULT/5-wiki/index.md
-LOG=$VAULT/5-wiki/log.md
+PAGE=<VAULT>/5-wiki/entities/projects/<slug>.md
+INDEX=<VAULT>/5-wiki/index.md
+LOG=<VAULT>/5-wiki/log.md
 ```
 
 `<slug>` is the entity page slug the SessionStart hook injects. A related
@@ -51,9 +66,9 @@ page is the same path with its own slug.
 Filenames only, then context snippets capped at 40 lines:
 
 ```bash
-rg -il "<term>" ~/obsidian/nerdbrain/5-wiki/
+rg -il "<term>" <VAULT>/5-wiki/
 
-rg -i -n -C2 "<term>" ~/obsidian/nerdbrain/5-wiki/ | head -n 40
+rg -i -n -C2 "<term>" <VAULT>/5-wiki/ | head -n 40
 ```
 
 ### Recipe 2: `graph.links`
@@ -69,7 +84,7 @@ Matches both regular links (`[[slug]]`, `[[slug|alias]]`) and embeds
 
 ```bash
 SLUG=<slug>
-rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' ~/obsidian/nerdbrain/5-wiki/
+rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' <VAULT>/5-wiki/
 ```
 
 ### Recipe 4: `graph.hop1`
@@ -77,12 +92,12 @@ rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' ~/obsidian/nerdbrain/5-wiki/
 Outgoing links of the page, then its backlinks:
 
 ```bash
-PAGE=~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md
+PAGE=<VAULT>/5-wiki/entities/projects/<slug>.md
 SLUG=<slug>
 
 rg -o '!?\[\[[^\]]+\]\]' "$PAGE"
 
-rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' ~/obsidian/nerdbrain/5-wiki/
+rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' <VAULT>/5-wiki/
 ```
 
 ### Recipe 5: `page.prepend-capped`

@@ -4,6 +4,8 @@
 
 *Amended by ADR-0010 (DEMO-450): the MCP/REST prohibition in Consequences no longer applies. The filesystem stays the default vault path wherever the vault directory exists; where it does not (a Claude Code cloud session), an MCP server in front of Obsidian is an allowed transport.*
 
+*Amended by ADR-0020 (2026-11-14): the filesystem recipe is unchanged, but the vault directory is no longer hardcoded. `resolveVault` reads env, then `wiki.path`, then `<config dir>/wiki`. Obsidian remains a supported location.*
+
 The nerdbrain vault must be manageable from headless remote servers, where no
 Obsidian app, REST API, or `obsidian` CLI exists — and the official Obsidian
 CLI (v1.12+) only remote-controls a running desktop app, while Obsidian

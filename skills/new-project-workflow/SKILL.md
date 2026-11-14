@@ -68,7 +68,7 @@ Run these checks in one tool batch. Their results feed into the plan and the ski
 | Remote configured? | `git -C <dir> remote get-url origin` | Skip repo creation if yes |
 | GitHub CLI authenticated? | `auth.check` (VCS adapter) | Flag if not |
 | GitHub repo exists? | `repo.view` (VCS adapter) | Skip repo creation if yes; surface URL |
-| Nerdbrain reachable? | `test -d ~/obsidian/nerdbrain/5-wiki` (vault directory present) | Decide whether to include wiki step |
+| Nerdbrain reachable? | Resolve `<VAULT>` with `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"`, then `test -d <VAULT>/5-wiki` | Decide whether to include wiki step |
 
 The Linear-project existence check is deferred to **Step 2** because it requires the team selection to disambiguate.
 
@@ -211,7 +211,7 @@ from step 4.4 is the container.
 
 ### 4.6 — Nerdbrain entity page (conditional)
 
-Only run if inspection confirmed nerdbrain is reachable. Create `~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md` using the `nerdbrain-wiki` skill's `entity-page-template.md`, prefilled with:
+Only run if inspection confirmed nerdbrain is reachable. Create `<VAULT>/5-wiki/entities/projects/<slug>.md` using the `nerdbrain-wiki` skill's `entity-page-template.md`, prefilled with:
 
 - `slug: <name>`
 - `remote: <github-url>`

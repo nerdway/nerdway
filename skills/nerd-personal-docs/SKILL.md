@@ -43,11 +43,15 @@ No guide for work that needs one means the issue is not finished.
 
 ## Vault and paths
 
-- The vault is `~/obsidian/nerdbrain`. Check it before anything else:
+- Resolve `<VAULT>` once, then check it before anything else:
 
   ```bash
-  test -d ~/obsidian/nerdbrain/5-wiki
+  node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
+  test -d <VAULT>/5-wiki
   ```
+
+  If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
+  directories up from this skill's base directory.
 
   A non-zero exit means this machine has no vault: write nothing, report
   "no nerdbrain vault on this machine, guide not written" and stop. The

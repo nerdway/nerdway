@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { mergePlatformConfigs, migrateLegacyPlatform, readPlatformConfig, resolveConfigDir, resolveSlug } from "./nerdway-config.ts";
+import { mergePlatformConfigs, migrateLegacyPlatform, readPlatformConfig, resolveConfigDir, resolveSlug, resolveVault } from "./nerdway-config.ts";
 import type { PlatformVocabulary } from "../types/platform-config.ts";
 
 test("slug comes from the slug file, else the remote, else the directory name", () => {
@@ -379,6 +379,190 @@ test("readPlatformConfig: defaults apply when the project file omits a key", () 
     assert.equal(read.value.tracker, "github");
     assert.equal(read.value.vcs, "gitlab");
     assert.deepEqual(read.value.github, { owner: "acme", repo: "app" });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+function vaultOf(repo: string, env: NodeJS.ProcessEnv, extra: { home?: string; platform?: NodeJS.Platform; cwd?: string } = {}) {
+  return resolveVault(repo, env, { home: extra.home ?? repo, platform: extra.platform ?? "linux", gitRemote: () => "", ...extra });
+}
+
+test("resolveVault: NERDWAY_WIKI wins over NERDBRAIN_VAULT, config and the default", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-env-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(configDir, "repo"));
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: /from-defaults\n");
+    writeFileSync(join(configDir, "repo", "config.yml"), "wiki:\n  path: /from-project\n");
+    const wiki = join(root, "from-env");
+    mkdirSync(wiki);
+    const result = vaultOf(repo, { ...env, NERDWAY_WIKI: wiki, NERDBRAIN_VAULT: join(root, "legacy") });
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    assert.equal(result.path, wiki);
+    assert.equal(result.source, "env");
+    assert.equal(result.exists, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: NERDBRAIN_VAULT is the legacy env after NERDWAY_WIKI", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-legacy-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: /from-defaults\n");
+    const legacy = join(root, "legacy-vault");
+    const result = vaultOf(repo, { ...env, NERDBRAIN_VAULT: legacy });
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    assert.equal(result.path, legacy);
+    assert.equal(result.source, "env");
+    assert.equal(result.exists, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: project wiki.path wins over defaults and the implicit default", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-project-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(configDir, "repo"));
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: /from-defaults\n");
+    writeFileSync(join(configDir, "repo", "config.yml"), "wiki:\n  path: /from-project\n");
+    const result = vaultOf(repo, env);
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    assert.equal(result.path, "/from-project");
+    assert.equal(result.source, "project");
+    assert.equal(result.exists, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: defaults wiki.path wins over the implicit default", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-defaults-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: /from-defaults\n");
+    const result = vaultOf(repo, env);
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    assert.equal(result.path, "/from-defaults");
+    assert.equal(result.source, "defaults");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: implicit default is <configDir>/wiki and is not created", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-default-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    const result = vaultOf(repo, env);
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    assert.equal(result.path, join(configDir, "wiki"));
+    assert.equal(result.source, "default");
+    assert.equal(result.exists, false);
+    assert.equal(existsSync(join(configDir, "wiki")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: expands ~ in wiki.path against home", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-tilde-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: ~/obsidian/custom\n");
+    const home = join(root, "home");
+    const result = vaultOf(repo, env, { home });
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    assert.equal(result.path, join(home, "obsidian", "custom"));
+    assert.equal(result.source, "defaults");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: a relative wiki.path is resolved against configDir", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-rel-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: notes/wiki\n");
+    const result = vaultOf(repo, env);
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    assert.equal(result.path, join(configDir, "notes", "wiki"));
+    assert.equal(result.source, "defaults");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: a non-string wiki.path is invalid", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-type-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path:\n    nested: x\n");
+    const result = vaultOf(repo, env);
+    assert.equal(result.status, "invalid");
+    if (result.status !== "invalid") return;
+    assert.match(result.errors[0], /wiki\.path must be a string/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: wiki as a scalar is invalid", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-wiki-scalar-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "wiki: /tmp/wiki\n");
+    const result = vaultOf(repo, env);
+    assert.equal(result.status, "invalid");
+    if (result.status !== "invalid") return;
+    assert.match(result.errors[0], /wiki must be an object/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: default on Windows is %APPDATA%\\nerdway\\wiki", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-win-"));
+  try {
+    const repo = join(root, "repo");
+    mkdirSync(repo);
+    const appdata = join(root, "AppData", "Roaming");
+    const result = vaultOf(
+      repo,
+      { APPDATA: appdata },
+      { platform: "win32", home: join(root, "Users", "dev") },
+    );
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    assert.equal(result.path, join(appdata, "nerdway", "wiki"));
+    assert.equal(result.source, "default");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: empty NERDWAY_WIKI falls through to the next source", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-empty-env-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: /from-defaults\n");
+    const result = vaultOf(repo, { ...env, NERDWAY_WIKI: "  ", NERDBRAIN_VAULT: "" });
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    assert.equal(result.path, "/from-defaults");
+    assert.equal(result.source, "defaults");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

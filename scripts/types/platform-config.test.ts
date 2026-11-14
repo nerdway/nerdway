@@ -104,6 +104,22 @@ test("accepts a config without statuses: the adapter default applies", () => {
   assert.deepEqual(validatePlatformConfig(config(), vocabulary, adapter()), []);
 });
 
+test("accepts wiki.path as a string", () => {
+  assert.deepEqual(validatePlatformConfig({ ...config(), wiki: { path: "~/vault" } }, vocabulary, adapter()), []);
+});
+
+test("rejects a non-string wiki.path", () => {
+  const errors = validatePlatformConfig({ ...config(), wiki: { path: { nested: "x" } } }, vocabulary, adapter());
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /wiki\.path must be a string/);
+});
+
+test("rejects wiki as a scalar", () => {
+  const errors = validatePlatformConfig({ ...config(), wiki: "/tmp/wiki" }, vocabulary, adapter());
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /wiki must be an object/);
+});
+
 test("accepts an explicit native map", () => {
   assert.deepEqual(validatePlatformConfig(config({ strategy: "native", map: nativeMap }), vocabulary, adapter()), []);
 });

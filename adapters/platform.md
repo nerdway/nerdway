@@ -13,8 +13,13 @@ The config directory is `NERDWAY_CONFIG_DIR` when set, else
 `$XDG_CONFIG_HOME/nerdway`, else `~/.config/nerdway` on Linux and macOS, else
 `%APPDATA%\nerdway` on Windows. The slug is the same `resolveSlug` as the
 nerdbrain wiki (`.nerdbrain-slug` override, else the `origin` remote with
-aliases, else the directory name). The files hold identifiers and status
-bindings only; tokens stay in `gh` / `acli` / vault auth.
+aliases, else the directory name). The files hold identifiers, status
+bindings and the optional `wiki.path` vault directory; tokens stay in `gh` /
+`acli` / vault auth. `wiki.path` is any directory: `~` is expanded and a
+relative path is resolved against the config directory. Skills that need the
+vault call `node "<plugin root>/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"`
+rather than reading this key themselves. The platform-config writer does not
+inject `wiki.path`; absent, `resolveVault` uses `<config dir>/wiki`.
 
 ## Read the store, never the context
 

@@ -278,7 +278,16 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 
 ### `nerdbrain-wiki` / `nerdbrain-search` - personal second brain (optional)
 
-These maintain a personal Obsidian vault with one entity page per project - the plan-phase island reads it as one of its five context sources, and decisions made during work are written back. They assume a specific vault layout under `~/obsidian/nerdbrain/` and matching rules in your user rules / `AGENTS.md` / `~/.claude/CLAUDE.md`; without that setup they simply stay inactive.
+These maintain a personal wiki with one entity page per project - the plan-phase island reads it as one of its five context sources, and decisions made during work are written back. The vault can live anywhere, including an Obsidian folder; the plugin no longer assumes a single default location. Skills resolve the directory once (`resolveVault` / `scripts/resolve-vault.ts`) from env `NERDWAY_WIKI` (then the legacy `NERDBRAIN_VAULT`), then `wiki.path` in the project config, then in the user defaults, then `<config dir>/wiki`. The layout inside the vault (`5-wiki/`) and matching rules in your user rules / `AGENTS.md` / `~/.claude/CLAUDE.md` are unchanged; without a reachable vault they simply stay inactive.
+
+**Existing users:** if you already keep the vault in Obsidian, set that directory so nothing moves:
+
+```yaml
+wiki:
+  path: <your current vault directory>
+```
+
+Put it in `<config dir>/config.yml` (user defaults) or the project overlay, or set `NERDWAY_WIKI` (or the legacy `NERDBRAIN_VAULT`). The previous hardcoded default is recorded in [ADR-0020](adr/0020-configurable-wiki-location.md). The plugin does not create the wiki directory by itself.
 
 ## Troubleshooting
 

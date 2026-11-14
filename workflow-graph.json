@@ -113,7 +113,7 @@
   "schemas": [
     {
       "id": "PlatformConfig",
-      "description": "The project's platform: which tracker holds its issues, which VCS host holds its code, and the identifiers each needs. Kept in the user-owned nerdway store (`<config dir>/config.yml` defaults merged with `<config dir>/<project-slug>/config.yml`; config dir is `NERDWAY_CONFIG_DIR`, else `$XDG_CONFIG_HOME/nerdway`, else `~/.config/nerdway` on Linux and macOS, else `%APPDATA%\\nerdway` on Windows) and mirrored as `platform:` on the entity page; the tracker and vcs values name the adapter files core skills read.",
+      "description": "The project's platform: which tracker holds its issues, which VCS host holds its code, and the identifiers each needs. Kept in the user-owned nerdway store (`<config dir>/config.yml` defaults merged with `<config dir>/<project-slug>/config.yml`; config dir is `NERDWAY_CONFIG_DIR`, else `$XDG_CONFIG_HOME/nerdway`, else `~/.config/nerdway` on Linux and macOS, else `%APPDATA%\\nerdway` on Windows) and mirrored as `platform:` on the entity page; the tracker and vcs values name the adapter files core skills read. Optional `wiki.path` is the vault directory (`resolveVault` in `scripts/lib/nerdway-config.ts`).",
       "schema": {
         "type": "object",
         "title": "Platform config",
@@ -291,6 +291,18 @@
               }
             },
             "required": ["strategy", "map"]
+          },
+          "wiki": {
+            "type": "object",
+            "title": "Wiki",
+            "description": "Optional location of the personal wiki / vault. `path` is any directory; `~` is expanded and a relative path is resolved against the config directory. Absent, `resolveVault` uses env `NERDWAY_WIKI` then `NERDBRAIN_VAULT`, then this key from the project file then the defaults file, then `<config dir>/wiki`. The platform-config writer does not inject the key.",
+            "properties": {
+              "path": {
+                "type": "string",
+                "title": "Path",
+                "description": "Directory of the wiki. Existing Obsidian users set this to their current vault directory (or set `NERDWAY_WIKI`)."
+              }
+            }
           }
         },
         "required": ["tracker", "vcs"]

@@ -4,6 +4,8 @@
 
 *Amended by DEMO-454: the `mcp` tier is operational through `adapters/vault/mcp.md`. The skill's own probe finds it, not a SessionStart hook, because a cloud session runs no hook: the vault directory exists → `file`; otherwise `ToolSearch` for a `mcp__claude_ai_nerdbrain__*` tool → `mcp`, none → `none`. On `mcp` a page is read section by section through its heading path (`<H1>::<Section>`, root taken from the document map), never as a whole, since one untargeted read of an entity page cost 37.4k tokens; every patch carries the full heading path. The graph operations are unsupported on that tier and a recall degrades with an annotation instead of failing.*
 
+*Amended by ADR-0020 (2026-11-14): "the vault directory exists" means the path `resolveVault` returns, not a hardcoded Obsidian folder. The `file` / `mcp` / `none` probe is otherwise unchanged.*
+
 ADR-0001 made the filesystem the only path to the nerdbrain vault: every
 skill reads it with `Read` and `rg` and writes it with `Edit` and `Write`,
 and the Obsidian MCP server and the Obsidian Local REST API (port 27124)

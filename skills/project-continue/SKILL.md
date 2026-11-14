@@ -78,8 +78,14 @@ the page path from the slug and **read the file itself** — the hook injects a
 whitelist of sections and `## Checkpoints` is lazy, so it is never in the
 inject and may even be cut by the byte budget:
 
+Resolve `<VAULT>` once:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
 ```
-Read ~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md
+
+```
+Read <VAULT>/5-wiki/entities/projects/<slug>.md
 ```
 
 Take the first bullet under `## Checkpoints` (entries are newest first) and

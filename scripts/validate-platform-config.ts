@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { migrateLegacyPlatform, migrationNotice, readPlatformConfig, type ResolveChoice } from "./lib/nerdway-config.ts";
 import { pluginVocabulary, trackerAdapterSources } from "./lib/platform-read.ts";
-import { validateAdapterDefaults } from "./types/platform-config.ts";
+import { prCollapseDetails, validateAdapterDefaults } from "./types/platform-config.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(here, "..");
@@ -27,10 +27,40 @@ function argument(args: string[], name: string): string | undefined {
   return at === -1 ? undefined : args[at + 1];
 }
 
+const FIELD = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*$/;
+const PR_COLLAPSE_DETAILS = "pr.collapse_details";
+
+function printFieldName(argv: string[]): string | undefined {
+  const at = argv.indexOf("--print");
+  if (at === -1) return undefined;
+  const next = argv[at + 1];
+  return next !== undefined && FIELD.test(next) ? next : undefined;
+}
+
+function fieldAt(value: unknown, path: string): unknown {
+  let current: unknown = value;
+  for (const key of path.split(".")) {
+    if (typeof current !== "object" || current === null || Array.isArray(current)) return undefined;
+    current = (current as Record<string, unknown>)[key];
+  }
+  return current;
+}
+
+function resolvedField(value: Record<string, unknown>, path: string): unknown {
+  if (path === PR_COLLAPSE_DETAILS) return prCollapseDetails(value);
+  return fieldAt(value, path);
+}
+
 const args = process.argv.slice(2);
 const print = args.includes("--print");
+const printField = printFieldName(args);
 const resolveArg = argument(args, "--resolve");
-const positional = args.filter((arg, index) => arg !== "--print" && arg !== "--resolve" && args[index - 1] !== "--resolve");
+const positional = args.filter((arg, index) => {
+  if (arg === "--print" || arg === "--resolve") return false;
+  if (args[index - 1] === "--resolve") return false;
+  if (printField !== undefined && arg === printField && args[index - 1] === "--print") return false;
+  return true;
+});
 const target = resolve(positional[0] ?? pluginRoot);
 const sources = { vocabulary, trackerAdapters };
 
@@ -61,7 +91,15 @@ if (print) {
     process.exit(1);
   }
   if (read.status === "found") {
-    console.log(JSON.stringify(read.value, null, 2));
+    if (printField !== undefined) {
+      console.log(JSON.stringify(resolvedField(read.value, printField)));
+    } else {
+      console.log(JSON.stringify(read.value, null, 2));
+    }
+    process.exit(EXIT_FOUND);
+  }
+  if (read.status === "absent" && printField === PR_COLLAPSE_DETAILS) {
+    console.log("true");
     process.exit(EXIT_FOUND);
   }
   const label =

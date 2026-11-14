@@ -245,6 +245,18 @@
             },
             "required": ["site", "project"]
           },
+          "pr": {
+            "type": "object",
+            "title": "Pull request",
+            "description": "Optional PR/MR description layout. Absent, the readiness description collapses the detailed sections.",
+            "properties": {
+              "collapse_details": {
+                "type": "boolean",
+                "title": "Collapse details",
+                "description": "When true or absent, the readiness PR/MR description opens with a short Summary and puts Why, What changed, Scope, Evidence and Merge risk inside a collapsed Details block. When false, the description uses the flat section layout with no Summary."
+              }
+            }
+          },
           "statuses": {
             "type": "object",
             "title": "Statuses",

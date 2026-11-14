@@ -155,7 +155,9 @@ draft `issue-start` wrote.
    <pr.view command> | node ${CLAUDE_PLUGIN_ROOT}/scripts/pr-body-state.ts
    ```
 
-   It prints one word: `draft`, `readiness` or `manual`.
+   It prints one word: `draft`, `readiness` or `manual`. Both the collapsed
+   layout (Summary plus a Details block) and the flat layout count as
+   `readiness` when they carry the marker.
 2. `readiness` (the readiness description, with its marker) or `manual` (a
    description someone wrote by hand) → note the word for the Report and go
    to Step 1.

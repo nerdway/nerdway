@@ -155,8 +155,8 @@ Linear for it.
 ## Step 4 — Write both places
 
 **User nerdway config** — write through the script, never by editing a repo
-file. Carry over an existing top-level `statuses` key. Pipe the YAML object
-to:
+file. Carry over existing top-level `statuses` and `pr` keys. Pipe the YAML
+object to:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/write-platform-config.ts" --repo "$(git rev-parse --show-toplevel)"

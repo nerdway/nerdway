@@ -59,6 +59,7 @@ github:
 |-----|--------|------------------|
 | `tracker` | `linear`, `github`, `gitlab`, `ado`, `jira`, `none` | `linear: {team, project}` (project = UUID); `jira: {site, project, issueType?}` (site = Cloud hostname, project = key, optional localized work-item type); GitHub/GitLab/ADO trackers reuse the VCS block of the same platform; an ADO tracker's `ado.team`, `ado.board` and `ado.workItemType` are written by `bind-statuses`; optional `github.project` is the GitHub Project (v2) number for the `native` strategy |
 | `vcs` | `github`, `gitlab`, `ado` | `github: {owner, repo, project?}`, `gitlab: {group, project}`, `ado: {org, project}` |
+| `wiki` | optional `{path}` | Vault directory for `resolveVault`. Do not write this key here; carry it over when it is already in the project file. Absent, the implicit default is `<config dir>/wiki`. |
 
 ## Step 1 — Read what is already recorded
 
@@ -71,8 +72,10 @@ Check the sources in this order and keep the first one that yields a config:
    (a leftover `## Platform` section that could not be migrated) stops this
    skill: ask the user to keep the user config, take the repo values, or
    merge, then run `--resolve` as that recipe says before writing anything.
-2. **Entity page frontmatter** (`~/obsidian/nerdbrain/5-wiki/entities/projects/<slug>.md`,
-   slug from the SessionStart inject): the `platform:` key.
+2. **Entity page frontmatter** (`<VAULT>/5-wiki/entities/projects/<slug>.md`,
+   slug from the SessionStart inject; resolve `<VAULT>` once with
+   `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"`):
+   the `platform:` key.
 3. **Legacy entity page alias**: a `linear:` block without `platform:` means
    `tracker: linear` with its `team` and `project`; take `vcs` and its
    identifiers from the git remote (Step 2, first row). `linear: none` records
@@ -155,7 +158,8 @@ Linear for it.
 ## Step 4 — Write both places
 
 **User nerdway config** — write through the script, never by editing a repo
-file. Carry over an existing top-level `statuses` key. Pipe the YAML object
+file. Carry over an existing top-level `statuses` key and an existing
+top-level `wiki` key. Pipe the YAML object
 to:
 
 ```bash
@@ -171,7 +175,7 @@ exists. Follow `nerdway:nerdbrain-wiki` for the write (filesystem only,
 `updated:` bump, one `log.md` line):
 
 - set the frontmatter key `platform:` to the same object, keeping an existing
-  `platform.statuses`;
+  `platform.statuses`, and omit `wiki` — `wiki.path` is machine-local;
 - remove the legacy `linear:` block together with its nested lines and
   comment lines — one source, never two;
 - nothing else on the page changes.

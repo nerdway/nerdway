@@ -1230,3 +1230,13 @@ test("PlatformConfig.github includes an optional project field", () => {
   assert.match(github.properties.project.description ?? "", /Project/);
   assert.ok(!github.required?.includes("project"));
 });
+
+test("PlatformConfig includes an optional wiki.path string", () => {
+  const schema = realContract.schemas.find((entry) => entry.id === "PlatformConfig");
+  const wiki = schema?.schema.properties?.wiki;
+  assert.ok(wiki);
+  assert.equal(wiki.type, "object");
+  assert.equal(wiki.properties?.path?.type, "string");
+  assert.ok(!schema?.schema.required?.includes("wiki"));
+  assert.ok(!wiki.required?.includes("path"));
+});

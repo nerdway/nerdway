@@ -4,7 +4,7 @@ import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { renderContextOutput, type Runtime } from "../scripts/lib/install-check.ts";
-import { resolveSlug } from "../scripts/lib/nerdway-config.ts";
+import { resolveConfigDir, resolveSlug, resolveVault } from "../scripts/lib/nerdway-config.ts";
 
 const ALWAYS = new Set(["Purpose", "Stack", "Commands", "Conventions", "Active context"]);
 
@@ -201,18 +201,25 @@ function budgetFrom(value: string | undefined): number {
   return parsed;
 }
 
+function sessionVault(projectDir: string, env: NodeJS.ProcessEnv, home: string): string {
+  const result = resolveVault(projectDir, env, { home });
+  if (result.status === "ok") return result.path;
+  return join(resolveConfigDir(env, process.platform, home), "wiki");
+}
+
 const invoked = process.argv[1];
 if (invoked !== undefined && import.meta.url === pathToFileURL(resolve(invoked)).href) {
   const raw = readFileSync(0, "utf8");
   const home = homedir();
   const args = process.argv.slice(2);
   const runtime: Runtime = args[args.indexOf("--runtime") + 1] === "cursor" ? "cursor" : "claude";
+  const projectDir = projectDirectory(raw, process.cwd());
   const options: SessionOptions = {
-    vault: process.env.NERDBRAIN_VAULT ?? join(home, "obsidian", "nerdbrain"),
+    vault: sessionVault(projectDir, process.env, home),
     aliasesPath: process.env.NERDBRAIN_ALIASES ?? join(home, ".claude", "nerdbrain.aliases"),
     killSwitchPath: join(home, ".claude", "nerdbrain.disabled"),
     budget: budgetFrom(process.env.NERDBRAIN_INJECT_BUDGET),
-    projectDir: projectDirectory(raw, process.cwd()),
+    projectDir,
   };
   process.stdout.write(renderSessionOutput(options, runtime));
 }

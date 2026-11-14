@@ -238,6 +238,21 @@ function validateJiraBlock(raw: Record<string, unknown>): string[] {
   return errors;
 }
 
+export type WikiPathRead =
+  | { kind: "missing" }
+  | { kind: "ok"; path: string }
+  | { kind: "invalid"; errors: string[] };
+
+export function wikiPathFromConfig(raw: Record<string, unknown>): WikiPathRead {
+  if (!Object.hasOwn(raw, "wiki")) return { kind: "missing" };
+  if (!isRecord(raw.wiki)) return { kind: "invalid", errors: ["wiki must be an object"] };
+  if (!Object.hasOwn(raw.wiki, "path")) return { kind: "missing" };
+  if (typeof raw.wiki.path !== "string") return { kind: "invalid", errors: ["wiki.path must be a string"] };
+  const path = raw.wiki.path.trim();
+  if (path.length === 0) return { kind: "invalid", errors: ["wiki.path must be a string"] };
+  return { kind: "ok", path };
+}
+
 function validateGithubBlock(raw: Record<string, unknown>, trackerAdapter: string | undefined): string[] {
   const github = isRecord(raw.github) ? raw.github : {};
   const strategy = raw.statuses === undefined ? defaultStrategy(trackerAdapter) : isRecord(raw.statuses) ? raw.statuses.strategy : undefined;
@@ -263,6 +278,8 @@ export function validatePlatformConfig(raw: unknown, vocabulary: PlatformVocabul
   if (raw.tracker === "ado") errors.push(...validateAdoBlock(raw, trackerAdapter));
   if (raw.tracker === "jira") errors.push(...validateJiraBlock(raw));
   if (raw.tracker === "github") errors.push(...validateGithubBlock(raw, trackerAdapter));
+  const wiki = wikiPathFromConfig(raw);
+  if (wiki.kind === "invalid") errors.push(...wiki.errors);
   if (raw.statuses === undefined) return errors;
   if (raw.tracker === "none") {
     errors.push("statuses is set, but tracker is none — there is no tracker to bind phases to");

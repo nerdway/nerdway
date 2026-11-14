@@ -240,6 +240,34 @@ test("projectDirectory takes the Claude Code cwd before any workspace root", () 
   assert.equal(projectDirectory('{"cwd":""}', "/other"), "/other");
 });
 
+test("the script prefers NERDWAY_WIKI over NERDBRAIN_VAULT", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-"));
+  try {
+    const project = join(root, "demo");
+    const wiki = join(root, "nerdway-wiki");
+    mkdirSync(project);
+    mkdirSync(join(wiki, "5-wiki", "entities", "projects"), { recursive: true });
+    writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
+    writeFileSync(join(wiki, "5-wiki", "entities", "projects", "demo.md"), ALWAYS_PAGE);
+    const result = spawnSync(process.execPath, ["hooks/session-start.ts", "--runtime", "cursor"], {
+      input: JSON.stringify({ cwd: project }),
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: root,
+        NERDWAY_WIKI: wiki,
+        NERDBRAIN_VAULT: join(root, "missing-vault"),
+      },
+    });
+    assert.equal(result.status, 0);
+    const text = contextOf(result.stdout);
+    assert.equal(text.includes("tier: `file`"), true);
+    assert.equal(text.includes("## Project page from nerdbrain wiki"), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("the script reads stdin and writes the stub for a project with no page", () => {
   const root = mkdtempSync(join(tmpdir(), "session-start-"));
   try {

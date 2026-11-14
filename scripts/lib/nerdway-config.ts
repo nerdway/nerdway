@@ -1,14 +1,15 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 import {
   emitYaml,
   parseYaml,
   readPlatform,
   validatePlatformConfig,
+  wikiPathFromConfig,
   type PlatformRead,
   type PlatformVocabulary,
 } from "../types/platform-config.ts";
@@ -18,14 +19,27 @@ export interface ResolveSlugOptions {
   gitRemote?: (projectDir: string) => string;
 }
 
-export interface ReadPlatformOptions {
-  vocabulary: PlatformVocabulary;
-  trackerAdapters: ReadonlyMap<string, string>;
+export interface ConfigLocationOptions {
   platform?: NodeJS.Platform;
   home?: string;
   aliasesPath?: string;
   gitRemote?: (projectDir: string) => string;
 }
+
+export interface ReadPlatformOptions extends ConfigLocationOptions {
+  vocabulary: PlatformVocabulary;
+  trackerAdapters: ReadonlyMap<string, string>;
+}
+
+export type VaultSource = "env" | "project" | "defaults" | "default";
+
+export interface ResolveVaultOptions extends ConfigLocationOptions {
+  cwd?: string;
+}
+
+export type ResolveVaultResult =
+  | { status: "ok"; path: string; source: VaultSource; exists: boolean }
+  | { status: "invalid"; errors: string[] };
 
 export interface WritePlatformOptions extends ReadPlatformOptions {
   defaults?: boolean;
@@ -186,12 +200,71 @@ export function readPlatformConfig(
   return { status: "found", value, errors: [] };
 }
 
-function configPaths(repoRoot: string, env: NodeJS.ProcessEnv, options: ReadPlatformOptions): { configDir: string; slug: string } {
+function configPaths(repoRoot: string, env: NodeJS.ProcessEnv, options: ConfigLocationOptions): { configDir: string; slug: string } {
   const home = options.home ?? homedir();
   return {
     configDir: resolveConfigDir(env, options.platform ?? process.platform, home),
     slug: resolveSlug(repoRoot, { aliasesPath: options.aliasesPath, gitRemote: options.gitRemote }),
   };
+}
+
+function expandUserPath(raw: string, home: string): string {
+  const text = raw.trim();
+  if (text === "~") return home;
+  if (text.startsWith("~/") || text.startsWith(`~${sep}`)) return join(home, text.slice(2));
+  return text;
+}
+
+function absoluteWikiPath(raw: string, home: string, baseDir: string): string {
+  const expanded = expandUserPath(raw, home);
+  return isAbsolute(expanded) ? resolve(expanded) : resolve(baseDir, expanded);
+}
+
+function wikiPathFromYaml(file: YamlFile, where: string): { kind: "missing" } | { kind: "ok"; path: string } | { kind: "invalid"; errors: string[] } {
+  if (file.kind === "missing") return { kind: "missing" };
+  if (file.kind === "invalid") return { kind: "missing" };
+  const read = wikiPathFromConfig(file.value);
+  if (read.kind === "invalid") return { kind: "invalid", errors: read.errors.map((error) => `${where}: ${error}`) };
+  return read;
+}
+
+/**
+ * Resolve the wiki / vault directory.
+ *
+ * Order: env `NERDWAY_WIKI`, then legacy env `NERDBRAIN_VAULT`; then
+ * `wiki.path` in `<configDir>/<slug>/config.yml`, then in
+ * `<configDir>/config.yml` (`~` expanded, relative paths against
+ * `configDir`); then `<configDir>/wiki`. The writer does not inject
+ * `wiki.path` into a newly generated defaults file — the last step is
+ * the implicit default. This function never creates the directory.
+ */
+export function resolveVault(repoRoot: string, env: NodeJS.ProcessEnv, options: ResolveVaultOptions = {}): ResolveVaultResult {
+  const home = options.home ?? homedir();
+  const { configDir, slug } = configPaths(repoRoot, env, { ...options, home });
+  const fromEnv = trimmed(env.NERDWAY_WIKI) ?? trimmed(env.NERDBRAIN_VAULT);
+  if (fromEnv !== undefined) {
+    const path = absoluteWikiPath(fromEnv, home, options.cwd ?? process.cwd());
+    return { status: "ok", path, source: "env", exists: existsSync(path) };
+  }
+
+  const project = slug.length === 0 ? { kind: "missing" as const } : readYamlFile(join(configDir, slug, "config.yml"));
+  const fromProject = wikiPathFromYaml(project, slug.length === 0 ? "project config" : `${slug}/config.yml`);
+  if (fromProject.kind === "invalid") return { status: "invalid", errors: fromProject.errors };
+  if (fromProject.kind === "ok") {
+    const path = absoluteWikiPath(fromProject.path, home, configDir);
+    return { status: "ok", path, source: "project", exists: existsSync(path) };
+  }
+
+  const defaults = readYamlFile(join(configDir, "config.yml"));
+  const fromDefaults = wikiPathFromYaml(defaults, "config.yml");
+  if (fromDefaults.kind === "invalid") return { status: "invalid", errors: fromDefaults.errors };
+  if (fromDefaults.kind === "ok") {
+    const path = absoluteWikiPath(fromDefaults.path, home, configDir);
+    return { status: "ok", path, source: "defaults", exists: existsSync(path) };
+  }
+
+  const path = join(configDir, "wiki");
+  return { status: "ok", path, source: "default", exists: existsSync(path) };
 }
 
 export function writePlatformConfig(

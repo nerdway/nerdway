@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 import {
   emitYaml,
@@ -41,8 +42,13 @@ export interface MigratePlatformOptions extends ReadPlatformOptions {
 
 export type MigrationResult =
   | { status: "migrated"; path: string }
+  | { status: "stale"; path: string }
+  | { status: "stale-differs"; path: string }
   | { status: "unchanged" }
   | { status: "conflict"; errors: string[] };
+
+const RESOLVED_SIDECAR = "legacy-platform.resolved";
+const FINGERPRINT = /^[0-9a-f]{64}$/;
 
 function trimmed(value: string | undefined): string | undefined {
   if (value === undefined) return undefined;
@@ -250,25 +256,67 @@ function sameConfig(left: Record<string, unknown>, right: Record<string, unknown
   return canonical(left) === canonical(right);
 }
 
-function removePlatformSection(markdown: string): string {
-  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
-  const start = lines.findIndex((line) => line.trimEnd() === "## Platform");
-  if (start === -1) return markdown;
-  const end = lines.findIndex((line, index) => index > start && line.startsWith("## "));
-  const before = lines.slice(0, start);
-  const after = end === -1 ? [] : lines.slice(end);
-  while (before.length > 0 && before[before.length - 1].trim() === "") before.pop();
-  while (after.length > 0 && after[0].trim() === "") after.shift();
-  const kept = [...before, ...(before.length > 0 && after.length > 0 ? [""] : []), ...after];
-  const out = kept.join("\n").replace(/[ \t\n]+$/, "");
-  return out.length === 0 ? "" : `${out}\n`;
+function fingerprintOf(value: Record<string, unknown>): string {
+  return createHash("sha256").update(canonical(value)).digest("hex");
 }
 
-function applyPlatformRemoval(repoRoot: string): void {
-  const path = join(repoRoot, "CLAUDE.md");
-  const next = removePlatformSection(readFileSync(path, "utf8"));
-  if (next.trim().length === 0) unlinkSync(path);
-  else writeFileSync(path, next);
+function recordedFingerprint(path: string): string | null {
+  const text = readText(path);
+  if (text === null) return null;
+  const hash = text.trim().toLowerCase();
+  return FINGERPRINT.test(hash) ? hash : null;
+}
+
+function writeResolvedFingerprint(path: string, value: Record<string, unknown>): boolean {
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    const hash = fingerprintOf(value);
+    writeFileSync(path, `${hash}\n`);
+    return recordedFingerprint(path) === hash;
+  } catch {
+    return false;
+  }
+}
+
+export function migrationNotice(result: MigrationResult): string {
+  switch (result.status) {
+    case "migrated":
+      return `nerdway: copied ## Platform from CLAUDE.md to ${result.path}. CLAUDE.md was not changed; the section is no longer read and you can remove it.`;
+    case "stale":
+      return `nerdway: ## Platform in CLAUDE.md matches ${result.path} and is no longer read; you can remove it.`;
+    case "stale-differs":
+      return `nerdway: ## Platform in CLAUDE.md differs from ${result.path} and is ignored (resolved earlier); you can remove it.`;
+    case "unchanged":
+    case "conflict":
+      return "";
+  }
+}
+
+function writeProjectAndReadBack(
+  repoRoot: string,
+  env: NodeJS.ProcessEnv,
+  options: MigratePlatformOptions,
+  toWrite: Record<string, unknown>,
+  projectExists: boolean,
+): MigrationResult | { status: "ok"; path: string } {
+  const written = writePlatformConfig(repoRoot, env, toWrite, options);
+  if (written.status !== "ok") return { status: "conflict", errors: written.errors };
+  const readBack = readYamlFile(written.path);
+  if (readBack.kind !== "ok" || !sameConfig(readBack.value, toWrite)) {
+    if (!projectExists) {
+      try {
+        unlinkSync(written.path);
+      } catch {
+        return { status: "conflict", errors: ["wrote the project config but the read-back did not match"] };
+      }
+    }
+    return { status: "conflict", errors: ["wrote the project config but the read-back did not match"] };
+  }
+  return { status: "ok", path: written.path };
+}
+
+function leftoverStatus(user: Record<string, unknown>, legacy: Record<string, unknown>): "stale" | "stale-differs" {
+  return sameConfig(user, legacy) ? "stale" : "stale-differs";
 }
 
 export function migrateLegacyPlatform(
@@ -290,22 +338,31 @@ export function migrateLegacyPlatform(
   }
 
   const projectPath = join(configDir, slug, "config.yml");
+  const sidecar = join(configDir, slug, RESOLVED_SIDECAR);
   const existing = readYamlFile(projectPath);
   if (existing.kind === "invalid") {
     return { status: "conflict", errors: existing.errors.map((error) => `${slug}/config.yml: ${error}`) };
   }
 
   const projectExists = existing.kind === "ok";
-  const differs = projectExists && !sameConfig(existing.value, legacy.value);
-  if (differs && options.resolve === undefined) {
-    return {
-      status: "conflict",
-      errors: [
-        "legacy ## Platform section differs from the user project config",
-        "ask the user: keep the user config, take the repo values, or merge",
-        "then run: node scripts/validate-platform-config.ts --resolve keep-user|take-repo|merge <repo>",
-      ],
-    };
+  if (projectExists && sameConfig(existing.value, legacy.value)) {
+    return { status: "stale", path: projectPath };
+  }
+
+  if (options.resolve === undefined) {
+    if (projectExists && recordedFingerprint(sidecar) === fingerprintOf(legacy.value)) {
+      return { status: "stale-differs", path: projectPath };
+    }
+    if (projectExists) {
+      return {
+        status: "conflict",
+        errors: [
+          "legacy ## Platform section differs from the user project config",
+          "ask the user: keep the user config, take the repo values, or merge",
+          "then run: node scripts/validate-platform-config.ts --resolve keep-user|take-repo|merge <repo>",
+        ],
+      };
+    }
   }
 
   let toWrite: Record<string, unknown> | null = null;
@@ -318,21 +375,19 @@ export function migrateLegacyPlatform(
   }
 
   if (toWrite !== null) {
-    const written = writePlatformConfig(repoRoot, env, toWrite, options);
-    if (written.status !== "ok") return { status: "conflict", errors: written.errors };
-    const readBack = readYamlFile(written.path);
-    if (readBack.kind !== "ok" || !sameConfig(readBack.value, toWrite)) {
-      if (!projectExists) {
-        try {
-          unlinkSync(written.path);
-        } catch {
-          return { status: "conflict", errors: ["wrote the project config but the read-back did not match"] };
-        }
-      }
-      return { status: "conflict", errors: ["wrote the project config but the read-back did not match"] };
-    }
+    const written = writeProjectAndReadBack(repoRoot, env, options, toWrite, projectExists);
+    if (written.status !== "ok") return written;
   }
 
-  applyPlatformRemoval(repoRoot);
-  return { status: "migrated", path: projectPath };
+  if (!projectExists && options.resolve === undefined) {
+    return { status: "migrated", path: projectPath };
+  }
+
+  if (!writeResolvedFingerprint(sidecar, legacy.value)) {
+    return { status: "conflict", errors: ["could not record the resolution fingerprint"] };
+  }
+
+  const after = readYamlFile(projectPath);
+  const user = after.kind === "ok" ? after.value : projectExists ? existing.value : legacy.value;
+  return { status: leftoverStatus(user, legacy.value), path: projectPath };
 }

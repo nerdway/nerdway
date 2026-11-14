@@ -25,11 +25,13 @@ once the user store has it.
 
 A SessionStart hook migrates a leftover `## Platform` section by itself in
 the clear case (no project config yet, the section parses, the slug is
-unambiguous): it writes the project file, reads it back, compares, then
-removes only that section. On conflict or any doubt it removes nothing and
-reports; ask the user to keep the user config, take the repo values, or
-merge, then run `--resolve keep-user|take-repo|merge` before anything is
-deleted.
+unambiguous): it writes the project file, reads it back, and compares. It
+never edits or deletes `CLAUDE.md`. Every later session reminds the user
+the leftover section is no longer read and can be removed by hand. On
+conflict or any doubt it writes nothing and reports; ask the user to keep
+the user config, take the repo values, or merge, then run
+`--resolve keep-user|take-repo|merge`. After a resolve, the user config
+wins and the leftover is ignored until the section changes.
 
 ## The recipe
 

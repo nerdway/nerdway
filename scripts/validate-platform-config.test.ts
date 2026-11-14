@@ -24,7 +24,7 @@ function repoWithConfig(yaml: string | null, claudeMd?: string) {
     writeFileSync(join(configDir, "repo", "config.yml"), yaml);
   }
   if (claudeMd !== undefined) writeFileSync(join(repo, "CLAUDE.md"), claudeMd);
-  return { root, repo, env: { NERDWAY_CONFIG_DIR: configDir } as NodeJS.ProcessEnv };
+  return { root, repo, configDir, env: { NERDWAY_CONFIG_DIR: configDir } as NodeJS.ProcessEnv };
 }
 
 const VALID = "tracker: github\nvcs: github\ngithub:\n  owner: acme\n  repo: app\n";
@@ -98,23 +98,41 @@ test("--print: clear-case migration writes the user config then prints it", () =
     const result = run(["--print", repo], env);
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(JSON.parse(result.stdout), { tracker: "github", vcs: "github", github: { owner: "nerdway", repo: "nerdway" } });
-    assert.equal(existsSync(join(repo, "CLAUDE.md")), false);
+    assert.equal(readFileSync(join(repo, "CLAUDE.md"), "utf8"), LEGACY);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-test("--resolve keep-user|take-repo|merge finishes a conflict and removes the section", () => {
+test("--resolve keep-user|take-repo|merge finishes a conflict and leaves CLAUDE.md untouched", () => {
   for (const choice of ["keep-user", "take-repo", "merge"] as const) {
-    const { root, repo, env } = repoWithConfig(VALID, LEGACY);
+    const { root, repo, configDir, env } = repoWithConfig(VALID, LEGACY);
     try {
       const result = run(["--print", "--resolve", choice, repo], env);
       assert.equal(result.status, 0, `${choice}: ${result.stderr}`);
-      assert.equal(existsSync(join(repo, "CLAUDE.md")), false, choice);
+      assert.equal(readFileSync(join(repo, "CLAUDE.md"), "utf8"), LEGACY, choice);
+      assert.equal(existsSync(join(configDir, "repo", "legacy-platform.resolved")), true, choice);
       const value = JSON.parse(result.stdout) as { github: { owner: string } };
       assert.equal(value.github.owner, choice === "take-repo" ? "nerdway" : "acme", choice);
+      if (choice === "keep-user") {
+        assert.match(result.stderr, /ignored \(resolved earlier\)/);
+      } else if (choice === "take-repo") {
+        assert.match(result.stderr, /matches .* and is no longer read/);
+      }
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  }
+});
+
+test("--resolve without --print prints the same wording as the hook", () => {
+  const { root, repo, env } = repoWithConfig(VALID, LEGACY);
+  try {
+    const result = run(["--resolve", "keep-user", repo], env);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /nerdway: ## Platform in CLAUDE.md differs from .* and is ignored \(resolved earlier\); you can remove it\./);
+    assert.equal(readFileSync(join(repo, "CLAUDE.md"), "utf8"), LEGACY);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });

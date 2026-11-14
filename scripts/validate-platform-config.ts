@@ -1,7 +1,7 @@
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { migrateLegacyPlatform, readPlatformConfig, type ResolveChoice } from "./lib/nerdway-config.ts";
+import { migrateLegacyPlatform, migrationNotice, readPlatformConfig, type ResolveChoice } from "./lib/nerdway-config.ts";
 import { pluginVocabulary, trackerAdapterSources } from "./lib/platform-read.ts";
 import { validateAdapterDefaults } from "./types/platform-config.ts";
 
@@ -44,6 +44,11 @@ if (resolveArg !== undefined) {
     console.error(`${target}: migration-needed`);
     for (const error of migrated.errors) console.error(`  - ${error}`);
     process.exit(EXIT_MIGRATION);
+  }
+  const notice = migrationNotice(migrated);
+  if (notice.length > 0) {
+    if (print) console.error(notice);
+    else console.log(notice);
   }
 }
 

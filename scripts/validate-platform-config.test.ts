@@ -136,3 +136,42 @@ test("--resolve without --print prints the same wording as the hook", () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("--print pr.collapse_details: absent key and absent config are true", () => {
+  const present = repoWithConfig(VALID);
+  const missing = repoWithConfig(null);
+  try {
+    const withConfig = run(["--print", "pr.collapse_details", present.repo], present.env);
+    assert.equal(withConfig.status, 0, withConfig.stderr);
+    assert.equal(withConfig.stdout.trim(), "true");
+    const withoutConfig = run(["--print", "pr.collapse_details", missing.repo], missing.env);
+    assert.equal(withoutConfig.status, 0, withoutConfig.stderr);
+    assert.equal(withoutConfig.stdout.trim(), "true");
+  } finally {
+    rmSync(present.root, { recursive: true, force: true });
+    rmSync(missing.root, { recursive: true, force: true });
+  }
+});
+
+test("--print pr.collapse_details: false is printed as false", () => {
+  const { root, repo, env } = repoWithConfig(`${VALID}pr:\n  collapse_details: false\n`);
+  try {
+    const result = run(["--print", "pr.collapse_details", repo], env);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout.trim(), "false");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("--print: a non-boolean pr.collapse_details exits 4 with a clear error", () => {
+  const { root, repo, env } = repoWithConfig(`${VALID}pr:\n  collapse_details: yes\n`);
+  try {
+    const result = run(["--print", repo], env);
+    assert.equal(result.status, 4);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /pr\.collapse_details must be a boolean/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

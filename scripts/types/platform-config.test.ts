@@ -5,6 +5,7 @@ import {
   emitYaml,
   parseYaml,
   platformYaml,
+  prCollapseDetails,
   readPlatform,
   supportedStrategies,
   validateAdapterDefaults,
@@ -432,4 +433,43 @@ test("emitYaml: quotes a value that would be a YAML boolean or that starts with 
   const parsed = parseYaml(yaml);
   assert.deepEqual(parsed.errors, []);
   assert.deepEqual(parsed.value, { team: "No", note: "yes", board: "#1" });
+});
+
+test("parseYaml: unquoted true and false are booleans; quoted stay strings", () => {
+  const { value, errors } = parseYaml("on: true\noff: false\nquoted: \"true\"\nflag: true # collapsed\n");
+  assert.deepEqual(errors, []);
+  assert.deepEqual(value, { on: true, off: false, quoted: "true", flag: true });
+});
+
+test("emitYaml: round-trips booleans without quoting them", () => {
+  const value = { tracker: "github", vcs: "github", pr: { collapse_details: false } };
+  const yaml = emitYaml(value);
+  assert.match(yaml, /collapse_details: false\n/);
+  const parsed = parseYaml(yaml);
+  assert.deepEqual(parsed.errors, []);
+  assert.deepEqual(parsed.value, value);
+});
+
+test("pr.collapse_details: absent is valid and defaults to true", () => {
+  assert.deepEqual(validatePlatformConfig(config(), vocabulary, adapter()), []);
+  assert.equal(prCollapseDetails(config()), true);
+  assert.equal(prCollapseDetails({ ...config(), pr: {} }), true);
+});
+
+test("pr.collapse_details: accepts true and false", () => {
+  assert.deepEqual(validatePlatformConfig({ ...config(), pr: { collapse_details: true } }, vocabulary, adapter()), []);
+  assert.deepEqual(validatePlatformConfig({ ...config(), pr: { collapse_details: false } }, vocabulary, adapter()), []);
+  assert.equal(prCollapseDetails({ ...config(), pr: { collapse_details: true } }), true);
+  assert.equal(prCollapseDetails({ ...config(), pr: { collapse_details: false } }), false);
+});
+
+test("pr.collapse_details: rejects a non-boolean with a clear error", () => {
+  for (const value of ["true", "false", "yes", 1, { nested: true }]) {
+    const errors = validatePlatformConfig({ ...config(), pr: { collapse_details: value } }, vocabulary, adapter());
+    assert.equal(errors.length, 1, JSON.stringify(value));
+    assert.match(errors[0], /pr\.collapse_details must be a boolean/);
+  }
+  const notObject = validatePlatformConfig({ ...config(), pr: "true" }, vocabulary, adapter());
+  assert.equal(notObject.length, 1);
+  assert.match(notObject[0], /pr must be an object/);
 });

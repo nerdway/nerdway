@@ -33,6 +33,33 @@ test("a description carrying the marker is a readiness description, whatever els
   assert.equal(classifyPrBody(`Fixes DEMO-1\n\nOne paragraph.\n${READINESS_MARKER}`), "readiness");
 });
 
+test("a collapsed readiness description with the marker is still readiness", () => {
+  const body = [
+    "Fixes DEMO-1",
+    "",
+    "## Summary",
+    "",
+    "Short intro.",
+    "",
+    "<details>",
+    "<summary>Details</summary>",
+    "",
+    "## Why",
+    "",
+    "The problem.",
+    "",
+    "</details>",
+    "",
+    READINESS_MARKER,
+  ].join("\n");
+  assert.equal(classifyPrBody(body), "readiness");
+});
+
+test("a magic-line block followed by a Summary heading is not the start draft", () => {
+  assert.equal(classifyPrBody("Fixes DEMO-1\n\n## Summary\nShort intro.\n"), "manual");
+  assert.equal(classifyPrBody("Fixes DEMO-1\n\n## Summary\n\nShort intro.\n"), "manual");
+});
+
 test("a second paragraph without the marker is a description someone changed by hand", () => {
   assert.equal(classifyPrBody("Fixes DEMO-1\n\nAdds the thing.\n\nAlso note the migration."), "manual");
 });

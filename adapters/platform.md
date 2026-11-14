@@ -1,7 +1,8 @@
 # Platform config — reading it from disk
 
-Every project records its platform (tracker, VCS, their identifiers and the
-optional `statuses` block) in a user-owned store outside the repository.
+Every project records its platform (tracker, VCS, their identifiers, the
+optional `statuses` block and the optional `pr` layout flag) in a user-owned
+store outside the repository.
 Defaults live in `<config dir>/config.yml`; the project overlay lives in
 `<config dir>/<project-slug>/config.yml`. A key present in the project file
 replaces the default's key whole; missing keys come from defaults. This file
@@ -13,8 +14,9 @@ The config directory is `NERDWAY_CONFIG_DIR` when set, else
 `$XDG_CONFIG_HOME/nerdway`, else `~/.config/nerdway` on Linux and macOS, else
 `%APPDATA%\nerdway` on Windows. The slug is the same `resolveSlug` as the
 nerdbrain wiki (`.nerdbrain-slug` override, else the `origin` remote with
-aliases, else the directory name). The files hold identifiers and status
-bindings only; tokens stay in `gh` / `acli` / vault auth.
+aliases, else the directory name). The files hold identifiers, status
+bindings and optional PR/MR layout flags; tokens stay in `gh` / `acli` /
+vault auth.
 
 ## Read the store, never the context
 
@@ -61,7 +63,7 @@ the skill's next source.
 **2. Manual read (fallback).** Resolve the config directory as above and the
 project slug the same way SessionStart does. Read
 `<config dir>/<slug>/config.yml` if it exists, then `<config dir>/config.yml`.
-Each file is a YAML map of strings and nested maps. For every top-level key,
+Each file is a YAML map of strings, booleans and nested maps. For every top-level key,
 the project file wins whole; keys missing there come from defaults. The
 merged object is the platform config. Its keys are listed in
 `determine-platform` (schema `PlatformConfig` in `workflow-graph.json`).

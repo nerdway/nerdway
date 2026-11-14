@@ -32,15 +32,28 @@
     {
       "id": "readiness-description-replaces-start-draft",
       "prompt": "DEMO-630 is In Progress on Linear with VCS GitHub. The implementation is committed and pushed, and every row of the Criteria verification table is pass. The PR body is still the one issue-start wrote:\n\nFixes DEMO-630\n\nAdds retry to the export job.\n\nThe repo's merged PRs are written in Polish.",
-      "expected_output": "Before offering the review, the agent writes the readiness description from readiness-description-template.md in Polish, pipes pr.view through scripts/pr-body-state.ts, gets draft, and replaces the body with pr.edit-body. The new body opens with `Fixes DEMO-630`, has the why, what changed, scope, evidence table, merge risk sections, no After merge section without steps, ends with the `<!-- nerdway:pr-body -->` marker, and names DEMO-630 nowhere else.",
+      "expected_output": "Before offering the review, the agent reads pr.collapse_details (absent, so true), writes the collapsed readiness description from readiness-description-template.md in Polish, pipes pr.view through scripts/pr-body-state.ts, gets draft, and replaces the body with pr.edit-body. The new body opens with `Fixes DEMO-630`, then a Summary, then Why / What changed / Scope / Evidence / Merge risk inside `<details><summary>Details</summary>`, no After merge section without steps, ends with the `<!-- nerdway:pr-body -->` marker, and names DEMO-630 nowhere else.",
       "files": [],
       "assertions": [
+        "The agent reads pr.collapse_details through validate-platform-config.ts --print before writing the body",
         "The agent runs scripts/pr-body-state.ts on the pr.view output before writing the body",
         "The agent replaces the body with pr.edit-body, not gh pr edit",
-        "The new body starts with `Fixes DEMO-630` and ends with `<!-- nerdway:pr-body -->`",
+        "The new body starts with `Fixes DEMO-630`, has a Summary, wraps Why through Merge risk in a Details block, and ends with `<!-- nerdway:pr-body -->`",
         "The evidence section is the criteria table without tracker links",
         "The merge risk section says whether the merge is a one-way or a two-way door and names the blast radius",
         "DEMO-630 appears only in the Fixes line"
+      ]
+    },
+    {
+      "id": "readiness-description-flat-when-collapse-off",
+      "prompt": "DEMO-633 is In Progress on Linear with VCS GitHub. The implementation is committed and pushed, and every row of the Criteria verification table is pass. The PR body is still the start draft. The nerdway platform config has `pr.collapse_details: false`. The repo's merged PRs are written in English.",
+      "expected_output": "The agent reads pr.collapse_details as false and writes the flat readiness description: Fixes line, Why, What changed, Scope, Evidence, Merge risk, no Summary, no Details block, no After merge without steps, marker last. It replaces the start draft with pr.edit-body.",
+      "files": [],
+      "assertions": [
+        "The agent reads pr.collapse_details through validate-platform-config.ts --print",
+        "The new body has no Summary heading and no details/summary HTML",
+        "The new body has Why, What changed, Scope, Evidence and Merge risk as top-level sections",
+        "The new body ends with `<!-- nerdway:pr-body -->`"
       ]
     },
     {

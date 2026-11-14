@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { renderContextOutput, type Runtime } from "../scripts/lib/install-check.ts";
-import { migrateLegacyPlatform } from "../scripts/lib/nerdway-config.ts";
+import { migrateLegacyPlatform, migrationNotice } from "../scripts/lib/nerdway-config.ts";
 import { pluginVocabulary, trackerAdapterSources } from "../scripts/lib/platform-read.ts";
 import { projectDirectory } from "./session-start.ts";
 
@@ -28,16 +28,16 @@ export function runMigrate(runtime: Runtime, raw: string, env: NodeJS.ProcessEnv
     trackerAdapters: trackerAdapterSources(pluginRoot),
   });
   if (result.status === "unchanged") return "";
-  if (result.status === "migrated") {
-    return renderContextOutput(`nerdway: migrated ## Platform from CLAUDE.md to ${result.path}`, runtime, { event: "SessionStart" });
+  if (result.status === "conflict") {
+    const report = [
+      "nerdway: a legacy ## Platform section in CLAUDE.md could not be migrated.",
+      ...result.errors,
+      "Ask the user to keep the user config, take the repo values, or merge, then run:",
+      `node scripts/validate-platform-config.ts --resolve keep-user|take-repo|merge ${dir}`,
+    ].join("\n");
+    return renderContextOutput(report, runtime, { event: "SessionStart" });
   }
-  const report = [
-    "nerdway: a legacy ## Platform section in CLAUDE.md could not be migrated.",
-    ...result.errors,
-    "Ask the user to keep the user config, take the repo values, or merge, then run:",
-    `node scripts/validate-platform-config.ts --resolve keep-user|take-repo|merge ${dir}`,
-  ].join("\n");
-  return renderContextOutput(report, runtime, { event: "SessionStart" });
+  return renderContextOutput(migrationNotice(result), runtime, { event: "SessionStart" });
 }
 
 function argument(args: string[], name: string): string | undefined {

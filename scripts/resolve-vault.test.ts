@@ -61,7 +61,7 @@ test("resolve-vault.ts rejects a non-string wiki.path with exit 4", () => {
     const result = run([repo], { NERDWAY_CONFIG_DIR: configDir });
     assert.equal(result.status, 4);
     assert.equal(result.stdout, "");
-    assert.match(result.stderr, /wiki\.path must be a string/);
+    assert.match(result.stderr, /wiki\.path: expected string/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

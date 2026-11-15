@@ -1,32 +1,31 @@
-import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
-import { readPlatform, wikiPathFromConfig, type PlatformRead, type PlatformVocabulary } from "../types/platform-config.ts";
+import { readPlatform, type PlatformRead, type PlatformVocabulary } from "../types/platform-config.ts";
 
 import {
+  configPaths,
+  resolveConfigDir,
+  resolveSlug,
+  trimmed,
+  type ConfigLocationOptions,
+  type ResolveSlugOptions,
+} from "./config-location.ts";
+import {
   applySectionPatch,
-  hasPlatformSection,
-  platformPart,
-  platformReplacePlan,
+  extractSection,
+  getSection,
+  hasSection,
+  inspectConfig,
+  readSection,
   unknownSectionNotices,
-  validateKnownSections,
+  writeSection,
 } from "./config-sections.ts";
 import { parseConfig, patchSections } from "./yaml.ts";
 
-export interface ResolveSlugOptions {
-  aliasesPath?: string;
-  gitRemote?: (projectDir: string) => string;
-}
-
-export interface ConfigLocationOptions {
-  platform?: NodeJS.Platform;
-  home?: string;
-  aliasesPath?: string;
-  gitRemote?: (projectDir: string) => string;
-}
+export { resolveConfigDir, resolveSlug, type ConfigLocationOptions, type ResolveSlugOptions };
 
 export interface ReadPlatformOptions extends ConfigLocationOptions {
   vocabulary: PlatformVocabulary;
@@ -66,36 +65,12 @@ export type MigrationResult =
 const RESOLVED_SIDECAR = "legacy-platform.resolved";
 const FINGERPRINT = /^[0-9a-f]{64}$/;
 
-export { platformPart };
-
 function sectionContext(value: Record<string, unknown>, options: ReadPlatformOptions) {
   return { vocabulary: options.vocabulary, trackerAdapter: options.trackerAdapters.get(String(value.tracker)) };
 }
 
 function platformErrors(value: Record<string, unknown>, options: ReadPlatformOptions): string[] {
-  return validateKnownSections(value, sectionContext(value, options)).errors;
-}
-
-function trimmed(value: string | undefined): string | undefined {
-  if (value === undefined) return undefined;
-  const text = value.trim();
-  return text.length > 0 ? text : undefined;
-}
-
-export function resolveConfigDir(
-  env: NodeJS.ProcessEnv,
-  platform: NodeJS.Platform,
-  home: string,
-): string {
-  const override = trimmed(env.NERDWAY_CONFIG_DIR);
-  if (override !== undefined) return override;
-  const xdg = trimmed(env.XDG_CONFIG_HOME);
-  if (xdg !== undefined) return join(xdg, "nerdway");
-  if (platform === "win32") {
-    const appdata = trimmed(env.APPDATA);
-    if (appdata !== undefined) return join(appdata, "nerdway");
-  }
-  return join(home, ".config", "nerdway");
+  return inspectConfig(value, sectionContext(value, options)).errors;
 }
 
 function isFile(path: string): boolean {
@@ -112,63 +87,6 @@ function readText(path: string): string | null {
   } catch {
     return null;
   }
-}
-
-function slugFromFile(text: string): string {
-  const line = text.split("\n", 1)[0] ?? "";
-  return line.replace(/[^a-z0-9-]/g, "").slice(0, 200);
-}
-
-function aliasFor(host: string, aliases: string): string {
-  const line = aliases.split("\n").find((item) => item.startsWith(`${host}=`));
-  if (line === undefined) return "";
-  const value = line.slice(host.length + 1).split("=")[0] ?? "";
-  return value.replace(/[^a-z0-9-]/g, "");
-}
-
-function stripRemotePrefix(url: string): string {
-  const https = `https:${"/".repeat(2)}`;
-  const http = `http:${"/".repeat(2)}`;
-  if (url.startsWith("git@")) return url.slice(4);
-  if (url.startsWith(https)) return url.slice(https.length);
-  if (url.startsWith(http)) return url.slice(http.length);
-  return url;
-}
-
-function slugFromRemote(url: string, aliases: string | null): string {
-  let cleaned = stripRemotePrefix(url);
-  const colon = cleaned.indexOf(":");
-  if (colon !== -1) cleaned = `${cleaned.slice(0, colon)}/${cleaned.slice(colon + 1)}`;
-  cleaned = cleaned.replace(/\.git$/, "");
-  if (aliases !== null) {
-    const slash = cleaned.indexOf("/");
-    const host = slash === -1 ? cleaned : cleaned.slice(0, slash);
-    const alias = aliasFor(host, aliases);
-    if (alias.length > 0) {
-      const rest = slash === -1 ? cleaned : cleaned.slice(slash + 1);
-      cleaned = `${alias}/${rest}`;
-    }
-  }
-  return cleaned.replace(/[/.]/g, "-").toLowerCase();
-}
-
-function gitRemote(projectDir: string): string {
-  try {
-    return execFileSync("git", ["-C", projectDir, "config", "--get", "remote.origin.url"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
-    return "";
-  }
-}
-
-export function resolveSlug(projectDir: string, options: ResolveSlugOptions = {}): string {
-  const slugPath = join(projectDir, ".nerdbrain-slug");
-  if (isFile(slugPath)) return slugFromFile(readText(slugPath) ?? "");
-  const remote = (options.gitRemote ?? gitRemote)(projectDir).trim();
-  if (remote.length > 0) return slugFromRemote(remote, options.aliasesPath === undefined ? null : readText(options.aliasesPath));
-  return basename(projectDir).toLowerCase().replace(/[^a-z0-9-]/g, "");
 }
 
 export function mergePlatformConfigs(
@@ -210,21 +128,15 @@ export function readPlatformConfig(
     ...unknownSectionNotices(defaultsValue, "config.yml"),
     ...unknownSectionNotices(projectValue, slug.length === 0 ? "project config" : `${slug}/config.yml`),
   ];
-  if (!hasPlatformSection(defaultsValue) && !hasPlatformSection(projectValue)) {
+  const value = mergePlatformConfigs(defaultsValue, projectValue);
+  const mapErrors = inspectConfig(value, sectionContext(value, options)).errors.filter((error) => error === "extensions must be a map");
+  if (mapErrors.length > 0) return { status: "invalid", errors: mapErrors, notices };
+  if (!hasSection("platform", defaultsValue) && !hasSection("platform", projectValue)) {
     return { status: "absent", errors: ["no platform config"], notices };
   }
-  const value = mergePlatformConfigs(defaultsValue, projectValue);
   const errors = platformErrors(value, options);
   if (errors.length > 0) return { status: "invalid", errors, notices };
   return { status: "found", value, errors: [], notices };
-}
-
-function configPaths(repoRoot: string, env: NodeJS.ProcessEnv, options: ConfigLocationOptions): { configDir: string; slug: string } {
-  const home = options.home ?? homedir();
-  return {
-    configDir: resolveConfigDir(env, options.platform ?? process.platform, home),
-    slug: resolveSlug(repoRoot, { aliasesPath: options.aliasesPath, gitRemote: options.gitRemote }),
-  };
 }
 
 function expandUserPath(raw: string, home: string): string {
@@ -239,12 +151,20 @@ function absoluteWikiPath(raw: string, home: string, baseDir: string): string {
   return isAbsolute(expanded) ? resolve(expanded) : resolve(baseDir, expanded);
 }
 
-function wikiPathFromYaml(file: YamlFile, where: string): { kind: "missing" } | { kind: "ok"; path: string } | { kind: "invalid"; errors: string[] } {
-  if (file.kind === "missing") return { kind: "missing" };
-  if (file.kind === "invalid") return { kind: "missing" };
-  const read = wikiPathFromConfig(file.value);
-  if (read.kind === "invalid") return { kind: "invalid", errors: read.errors.map((error) => `${where}: ${error}`) };
-  return read;
+function wikiPathFromSection(
+  repoRoot: string,
+  env: NodeJS.ProcessEnv,
+  options: ResolveVaultOptions,
+  layer: "defaults" | "project",
+): { kind: "missing" } | { kind: "ok"; path: string } | { kind: "invalid"; errors: string[] } {
+  const read = readSection("wiki", { repoRoot, env, layer, ...options });
+  if (read.status === "invalid") return { kind: "invalid", errors: read.errors };
+  if (read.status !== "found" || typeof read.value !== "object" || read.value === null || Array.isArray(read.value)) {
+    return { kind: "missing" };
+  }
+  const path = (read.value as Record<string, unknown>).path;
+  if (typeof path !== "string") return { kind: "missing" };
+  return { kind: "ok", path };
 }
 
 /**
@@ -259,23 +179,21 @@ function wikiPathFromYaml(file: YamlFile, where: string): { kind: "missing" } | 
  */
 export function resolveVault(repoRoot: string, env: NodeJS.ProcessEnv, options: ResolveVaultOptions = {}): ResolveVaultResult {
   const home = options.home ?? homedir();
-  const { configDir, slug } = configPaths(repoRoot, env, { ...options, home });
+  const { configDir } = configPaths(repoRoot, env, { ...options, home });
   const fromEnv = trimmed(env.NERDWAY_WIKI) ?? trimmed(env.NERDBRAIN_VAULT);
   if (fromEnv !== undefined) {
     const path = absoluteWikiPath(fromEnv, home, options.cwd ?? process.cwd());
     return { status: "ok", path, source: "env", exists: existsSync(path) };
   }
 
-  const project = slug.length === 0 ? { kind: "missing" as const } : readYamlFile(join(configDir, slug, "config.yml"));
-  const fromProject = wikiPathFromYaml(project, slug.length === 0 ? "project config" : `${slug}/config.yml`);
+  const fromProject = wikiPathFromSection(repoRoot, env, { ...options, home }, "project");
   if (fromProject.kind === "invalid") return { status: "invalid", errors: fromProject.errors };
   if (fromProject.kind === "ok") {
     const path = absoluteWikiPath(fromProject.path, home, configDir);
     return { status: "ok", path, source: "project", exists: existsSync(path) };
   }
 
-  const defaults = readYamlFile(join(configDir, "config.yml"));
-  const fromDefaults = wikiPathFromYaml(defaults, "config.yml");
+  const fromDefaults = wikiPathFromSection(repoRoot, env, { ...options, home }, "defaults");
   if (fromDefaults.kind === "invalid") return { status: "invalid", errors: fromDefaults.errors };
   if (fromDefaults.kind === "ok") {
     const path = absoluteWikiPath(fromDefaults.path, home, configDir);
@@ -292,6 +210,28 @@ export function writePlatformConfig(
   input: Record<string, unknown>,
   options: WritePlatformOptions,
 ): WritePlatformResult {
+  const io = {
+    repoRoot,
+    env,
+    vocabulary: options.vocabulary,
+    trackerAdapters: options.trackerAdapters,
+    platform: options.platform,
+    home: options.home,
+    aliasesPath: options.aliasesPath,
+    gitRemote: options.gitRemote,
+    target: (options.defaults ? "defaults" : "project") as "defaults" | "project",
+  };
+  if (options.keys === undefined) {
+    const section = getSection("platform");
+    const owned: Record<string, unknown> = {};
+    if (section?.scope === "core") {
+      for (const key of section.keys) {
+        if (Object.hasOwn(input, key)) owned[key] = input[key];
+      }
+    }
+    return writeSection("platform", owned, io);
+  }
+
   const { configDir, slug } = configPaths(repoRoot, env, options);
   const defaultsPath = join(configDir, "config.yml");
   const projectPath = join(configDir, slug, "config.yml");
@@ -299,29 +239,21 @@ export function writePlatformConfig(
   const existing = readYamlFile(projectPath);
   if (defaults.kind === "invalid") return { status: "invalid", errors: defaults.errors.map((error) => `config.yml: ${error}`) };
   if (existing.kind === "invalid") return { status: "invalid", errors: existing.errors.map((error) => `${slug}/config.yml: ${error}`) };
-
+  const plan = keyedPlan(input, options.keys);
   if (options.defaults) {
     const existingDefaults = defaults.kind === "ok" ? defaults.value : {};
-    const plan = options.keys === undefined ? platformReplacePlan(existingDefaults, input) : keyedPlan(input, options.keys);
     const nextDefaults = applySectionPatch(existingDefaults, plan.set, plan.remove);
     const project = existing.kind === "ok" ? existing.value : {};
     const merged = mergePlatformConfigs(nextDefaults, project);
-    if (existing.kind === "ok" || Object.keys(project).length > 0) {
-      const errors = platformErrors(merged, options);
-      if (errors.length > 0) return { status: "invalid", errors };
-    } else {
-      const errors = platformErrors(nextDefaults, options);
-      if (errors.length > 0) return { status: "invalid", errors };
-    }
+    const errors = platformErrors(existing.kind === "ok" || Object.keys(project).length > 0 ? merged : nextDefaults, options);
+    if (errors.length > 0) return { status: "invalid", errors };
     mkdirSync(configDir, { recursive: true });
     const text = defaults.kind === "ok" ? defaults.text : "";
     writeFileSync(defaultsPath, patchSections(text, plan.set, plan.remove));
     return { status: "ok", path: defaultsPath };
   }
-
   if (slug.length === 0) return { status: "invalid", errors: ["project slug is empty"] };
   const current = existing.kind === "ok" ? existing.value : {};
-  const plan = options.keys === undefined ? platformReplacePlan(current, input) : keyedPlan(input, options.keys);
   const nextProject = applySectionPatch(current, plan.set, plan.remove);
   const merged = mergePlatformConfigs(defaults.kind === "ok" ? defaults.value : {}, nextProject);
   const errors = platformErrors(merged, options);
@@ -400,7 +332,7 @@ function writeProjectAndReadBack(
   const written = writePlatformConfig(repoRoot, env, toWrite, options);
   if (written.status !== "ok") return { status: "conflict", errors: written.errors };
   const readBack = readYamlFile(written.path);
-  if (readBack.kind !== "ok" || !sameConfig(platformPart(readBack.value), platformPart(toWrite))) {
+  if (readBack.kind !== "ok" || !sameConfig(extractSection("platform", readBack.value), extractSection("platform", toWrite))) {
     if (!projectExists) {
       try {
         unlinkSync(written.path);

@@ -81,13 +81,13 @@ test("accepts wiki.path as a string", () => {
 test("rejects a non-string wiki.path", () => {
   const errors = sectionErrors({ ...config(), wiki: { path: { nested: "x" } } });
   assert.equal(errors.length, 1);
-  assert.match(errors[0], /wiki\.path must be a string/);
+  assert.match(errors[0], /wiki\.path: expected string/);
 });
 
 test("rejects wiki as a scalar", () => {
   const errors = sectionErrors({ ...config(), wiki: "/tmp/wiki" });
   assert.equal(errors.length, 1);
-  assert.match(errors[0], /wiki must be an object/);
+  assert.match(errors[0], /wiki: expected object/);
 });
 
 test("accepts an explicit native map", () => {
@@ -401,9 +401,9 @@ test("pr.collapse_details: rejects a non-boolean with a clear error", () => {
   for (const value of ["true", "false", "yes", 1, { nested: true }]) {
     const errors = sectionErrors({ ...config(), pr: { collapse_details: value } });
     assert.equal(errors.length, 1, JSON.stringify(value));
-    assert.match(errors[0], /pr\.collapse_details must be a boolean/);
+    assert.match(errors[0], /pr\.collapse_details: expected boolean/);
   }
   const notObject = sectionErrors({ ...config(), pr: "true" });
   assert.equal(notObject.length, 1);
-  assert.match(notObject[0], /pr must be an object/);
+  assert.match(notObject[0], /pr: expected object/);
 });

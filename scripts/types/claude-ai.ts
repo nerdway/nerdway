@@ -2,6 +2,10 @@
 // upload (Plugins API, "Upload requirements") and reports what breaks those
 // rules as sync warnings; `claude plugin validate` checks none of them
 // (DEMO-365).
+import { readFrontmatter } from "../lib/yaml.ts";
+
+export { readFrontmatter } from "../lib/yaml.ts";
+
 export const NAME_MAX = 64;
 export const DISPLAY_NAME_MAX = 64;
 export const PLUGIN_DESCRIPTION_MAX = 500;
@@ -10,9 +14,6 @@ export const RESERVED_SKILL_NAME_WORDS = ["anthropic", "claude"] as const;
 
 const NAME = /^[\p{Ll}\p{Nd}-]+$/u;
 const ANGLE_BRACKET = /[<>]/;
-const FIELD = /^([A-Za-z0-9_-]+):(?:[ \t]+(.*))?$/;
-const BLOCK_SCALAR = /^([>|])[+-]?$/;
-const QUOTED = /^(["'])(.*)\1$/;
 
 export type ComponentFile = { path: string; text: string };
 
@@ -23,40 +24,10 @@ export type ClaudeAiManifests = {
   cursorMarketplace: Record<string, unknown>;
 };
 
-export type Frontmatter = { fields: Record<string, string>; error?: string };
+export type { Frontmatter } from "../lib/yaml.ts";
 
-function unquote(value: string): string {
-  const quoted = QUOTED.exec(value);
-  if (quoted === null) return value;
-  return quoted[1] === "'" ? quoted[2].replace(/''/g, "'") : quoted[2].replace(/\\"/g, '"');
-}
-
-export function readFrontmatter(text: string): Frontmatter {
-  const lines = text.replace(/\r\n/g, "\n").split("\n");
-  if (lines[0] !== "---") return { fields: {}, error: "no YAML frontmatter on the first line" };
-  const end = lines.indexOf("---", 1);
-  if (end === -1) return { fields: {}, error: "YAML frontmatter is not closed" };
-
-  const fields: Record<string, string> = {};
-  const body = lines.slice(1, end);
-  for (let index = 0; index < body.length; index += 1) {
-    const match = FIELD.exec(body[index]);
-    if (match === null) continue;
-    const [, key, raw = ""] = match;
-    const value = raw.trim();
-    const block = BLOCK_SCALAR.exec(value);
-    if (block === null) {
-      if (value !== "") fields[key] = unquote(value);
-      continue;
-    }
-    const continuation: string[] = [];
-    while (index + 1 < body.length && (body[index + 1].trim() === "" || /^\s/.test(body[index + 1]))) {
-      index += 1;
-      continuation.push(body[index].trim());
-    }
-    fields[key] = (block[1] === ">" ? continuation.join(" ") : continuation.join("\n")).replace(/\s+$/, "");
-  }
-  return { fields };
+function fieldString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
 }
 
 function nameErrors(label: string, name: unknown): string[] {
@@ -120,7 +91,8 @@ function componentErrors(kind: "skill" | "agent", files: ComponentFile[]): strin
       errors.push(`${file.path}: ${error}`);
       continue;
     }
-    const { name, description } = fields;
+    const name = fieldString(fields.name);
+    const description = fieldString(fields.description);
     errors.push(...nameErrors(file.path, name));
     if (name !== undefined && ANGLE_BRACKET.test(name)) {
       errors.push(`${file.path}: name contains "<" or ">"; claude.ai rejects XML tags in it`);

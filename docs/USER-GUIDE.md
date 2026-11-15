@@ -136,6 +136,8 @@ pr:
 
 A non-boolean value fails validation. The project file's `pr` key replaces the defaults' `pr` key whole, like every other top-level key. A defaults file that holds only this key is not a platform setup.
 
+Config files are YAML 1.2. Comments, block scalars, flow collections, quoted strings and anchors are accepted. A write changes only the section it is updating, so comments you left and keys the plugin does not know stay. Unknown top-level sections (your own tools adding a key next to `tracker` or `wiki`) are preserved and reported as a notice, never as an error.
+
 ## A day with the plugin
 
 A typical feature, from idea to merged PR - with the graph moments marked:

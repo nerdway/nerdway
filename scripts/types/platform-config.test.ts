@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { parseConfig, parseDocument } from "../lib/yaml.ts";
+import { validateKnownSections } from "../lib/config-sections.ts";
 import {
-  emitYaml,
-  parseYaml,
   platformYaml,
   prCollapseDetails,
   readPlatform,
@@ -46,40 +46,9 @@ function config(statuses?: unknown) {
   return { tracker: "linear", vcs: "github", linear: { team: "DEMO", project: "uuid" }, ...(statuses === undefined ? {} : { statuses }) };
 }
 
-test("parseYaml: reads the nested platform config shape as strings", () => {
-  const yaml = ["tracker: linear", "vcs: github", "linear:", "  team: DEMO", "  project: 72aa8034", "statuses:", "  strategy: label", "  map:", "    todo: status::todo", '    done: "closed"'].join("\n");
-  const { value, errors } = parseYaml(yaml);
-  assert.deepEqual(errors, []);
-  assert.deepEqual(value, {
-    tracker: "linear",
-    vcs: "github",
-    linear: { team: "DEMO", project: "72aa8034" },
-    statuses: { strategy: "label", map: { todo: "status::todo", done: "closed" } },
-  });
-});
-
-test("parseYaml: keeps a value with spaces and skips blank and comment lines", () => {
-  const { value, errors } = parseYaml("# platform\n\nado:\n  project: 'My Project'\n");
-  assert.deepEqual(errors, []);
-  assert.deepEqual(value, { ado: { project: "My Project" } });
-});
-
-test("parseYaml: reports a list instead of guessing", () => {
-  const { errors } = parseYaml("tracker: linear\nlabels:\n  - a\n");
-  assert.equal(errors.length, 1);
-  assert.match(errors[0], /line 3/);
-});
-
-test("parseYaml: reports flow collections and block scalars", () => {
-  assert.equal(parseYaml("map: {todo: Todo}").errors.length, 1);
-  assert.match(parseYaml("note: |\n  text").errors[0], /line 1/);
-});
-
-test("parseYaml: reports a duplicate key", () => {
-  const { errors } = parseYaml("tracker: linear\ntracker: github");
-  assert.equal(errors.length, 1);
-  assert.match(errors[0], /tracker/);
-});
+function sectionErrors(raw: Record<string, unknown>, source = adapter()): string[] {
+  return validateKnownSections(raw, { vocabulary, trackerAdapter: source }).errors;
+}
 
 test("platformYaml: takes the yaml block of the line-start ## Platform section only", () => {
   const markdown = ["# Repo", "", "Prose naming ## Platform inline.", "", "## Platform", "", "```yaml", "tracker: linear", "```", "", "## Other", "", "```yaml", "tracker: github", "```"].join("\n");
@@ -106,17 +75,17 @@ test("accepts a config without statuses: the adapter default applies", () => {
 });
 
 test("accepts wiki.path as a string", () => {
-  assert.deepEqual(validatePlatformConfig({ ...config(), wiki: { path: "~/vault" } }, vocabulary, adapter()), []);
+  assert.deepEqual(sectionErrors({ ...config(), wiki: { path: "~/vault" } }), []);
 });
 
 test("rejects a non-string wiki.path", () => {
-  const errors = validatePlatformConfig({ ...config(), wiki: { path: { nested: "x" } } }, vocabulary, adapter());
+  const errors = sectionErrors({ ...config(), wiki: { path: { nested: "x" } } });
   assert.equal(errors.length, 1);
   assert.match(errors[0], /wiki\.path must be a string/);
 });
 
 test("rejects wiki as a scalar", () => {
-  const errors = validatePlatformConfig({ ...config(), wiki: "/tmp/wiki" }, vocabulary, adapter());
+  const errors = sectionErrors({ ...config(), wiki: "/tmp/wiki" });
   assert.equal(errors.length, 1);
   assert.match(errors[0], /wiki must be an object/);
 });
@@ -234,31 +203,18 @@ test("validateAdapterDefaults: rejects a Statuses section with no yaml block", (
   assert.match(errors[0], /yaml/);
 });
 
-test("parseYaml: rejects a __proto__ key instead of swapping the prototype", () => {
-  const { value, errors } = parseYaml("map:\n  __proto__:\n    backlog: Backlog");
-  assert.equal(value, undefined);
-  assert.match(errors[0], /__proto__/);
-});
-
-test("parseYaml: strips a trailing comment from plain and quoted values", () => {
-  const { value, errors } = parseYaml("tracker: linear # main\nmap:\n  todo: 'Todo' # planned");
+test("a __proto__ key does not pollute Object.prototype", () => {
+  const { value, errors } = parseDocument("map:\n  __proto__:\n    backlog: Backlog");
   assert.deepEqual(errors, []);
-  assert.deepEqual(value, { tracker: "linear", map: { todo: "Todo" } });
-});
-
-test("parseYaml: rejects a sibling indented deeper than the first key of its map", () => {
-  assert.match(parseYaml("tracker: linear\n  vcs: github").errors[0], /line 2/);
-});
-
-test("parseYaml: rejects a dedent to an indentation no enclosing map uses", () => {
-  assert.match(parseYaml("a:\n    b: one\n  c: two").errors[0], /line 3/);
+  assert.equal((value as { polluted?: unknown } | undefined)?.polluted, undefined);
+  assert.equal(Object.getPrototypeOf(value ?? {}).polluted, undefined);
 });
 
 test("platformYaml: reads a CRLF file", () => {
   const markdown = "## Platform\r\n\r\n```yaml\r\ntracker: linear\r\nvcs: github\r\n```\r\n";
   const { yaml, errors } = platformYaml(markdown);
   assert.deepEqual(errors, []);
-  assert.deepEqual(parseYaml(yaml ?? "").value, { tracker: "linear", vcs: "github" });
+  assert.deepEqual(parseConfig(yaml ?? "").value, { tracker: "linear", vcs: "github" });
 });
 
 test("rejects a map value carrying shell quoting or expansion characters", () => {
@@ -409,6 +365,7 @@ test("readPlatform: a valid section is found, with the parsed object", () => {
     status: "found",
     value: { tracker: "linear", vcs: "github", linear: { team: "DEMO" } },
     errors: [],
+    notices: [],
   });
 });
 
@@ -427,65 +384,26 @@ test("readPlatform: a broken section is invalid, never absent, so the caller sto
   assert.match(badValue.errors[0], /basecamp/);
 });
 
-test("emitYaml: round-trips maps of strings and nested maps", () => {
-  const value = {
-    tracker: "linear",
-    vcs: "github",
-    linear: { team: "DEMO", project: "72aa8034" },
-    github: { owner: "nerdway", repo: "nerdway" },
-    statuses: {
-      strategy: "native",
-      map: { backlog: "Backlog", todo: "Todo", "in-progress": "In Progress", "in-review": "In Review", done: "Done" },
-    },
-  };
-  const yaml = emitYaml(value);
-  const parsed = parseYaml(yaml);
-  assert.deepEqual(parsed.errors, []);
-  assert.deepEqual(parsed.value, value);
-});
-
-test("emitYaml: quotes a value that would be a YAML boolean or that starts with a special character", () => {
-  const yaml = emitYaml({ team: "No", note: "yes", board: "#1" });
-  const parsed = parseYaml(yaml);
-  assert.deepEqual(parsed.errors, []);
-  assert.deepEqual(parsed.value, { team: "No", note: "yes", board: "#1" });
-});
-
-test("parseYaml: unquoted true and false are booleans; quoted stay strings", () => {
-  const { value, errors } = parseYaml("on: true\noff: false\nquoted: \"true\"\nflag: true # collapsed\n");
-  assert.deepEqual(errors, []);
-  assert.deepEqual(value, { on: true, off: false, quoted: "true", flag: true });
-});
-
-test("emitYaml: round-trips booleans without quoting them", () => {
-  const value = { tracker: "github", vcs: "github", pr: { collapse_details: false } };
-  const yaml = emitYaml(value);
-  assert.match(yaml, /collapse_details: false\n/);
-  const parsed = parseYaml(yaml);
-  assert.deepEqual(parsed.errors, []);
-  assert.deepEqual(parsed.value, value);
-});
-
 test("pr.collapse_details: absent is valid and defaults to true", () => {
-  assert.deepEqual(validatePlatformConfig(config(), vocabulary, adapter()), []);
+  assert.deepEqual(sectionErrors(config()), []);
   assert.equal(prCollapseDetails(config()), true);
   assert.equal(prCollapseDetails({ ...config(), pr: {} }), true);
 });
 
 test("pr.collapse_details: accepts true and false", () => {
-  assert.deepEqual(validatePlatformConfig({ ...config(), pr: { collapse_details: true } }, vocabulary, adapter()), []);
-  assert.deepEqual(validatePlatformConfig({ ...config(), pr: { collapse_details: false } }, vocabulary, adapter()), []);
+  assert.deepEqual(sectionErrors({ ...config(), pr: { collapse_details: true } }), []);
+  assert.deepEqual(sectionErrors({ ...config(), pr: { collapse_details: false } }), []);
   assert.equal(prCollapseDetails({ ...config(), pr: { collapse_details: true } }), true);
   assert.equal(prCollapseDetails({ ...config(), pr: { collapse_details: false } }), false);
 });
 
 test("pr.collapse_details: rejects a non-boolean with a clear error", () => {
   for (const value of ["true", "false", "yes", 1, { nested: true }]) {
-    const errors = validatePlatformConfig({ ...config(), pr: { collapse_details: value } }, vocabulary, adapter());
+    const errors = sectionErrors({ ...config(), pr: { collapse_details: value } });
     assert.equal(errors.length, 1, JSON.stringify(value));
     assert.match(errors[0], /pr\.collapse_details must be a boolean/);
   }
-  const notObject = validatePlatformConfig({ ...config(), pr: "true" }, vocabulary, adapter());
+  const notObject = sectionErrors({ ...config(), pr: "true" });
   assert.equal(notObject.length, 1);
   assert.match(notObject[0], /pr must be an object/);
 });

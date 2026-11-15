@@ -15,6 +15,8 @@ Every skill that talks to a tracker or a VCS host reads the project's **platform
 
 The config directory is `NERDWAY_CONFIG_DIR` when set, else `$XDG_CONFIG_HOME/nerdway`, else `~/.config/nerdway` on Linux and macOS, else `%APPDATA%\nerdway` on Windows. The slug is the same `resolveSlug` as the nerdbrain wiki. For every top-level key, the project file wins whole; keys missing there come from defaults. Optional `wiki.path` is the vault directory (`resolveVault` in `scripts/lib/nerdway-config.ts`; skills call `scripts/resolve-vault.ts`). The platform-config writer does not inject that key: a newly generated defaults file relies on the implicit default `<config dir>/wiki`.
 
+YAML is parsed and written through one wrapper (`scripts/lib/yaml.ts`) over a vendored copy of the `yaml` library (`vendor/yaml/`, ISC, YAML 1.2). There is no `package.json` and no install step: `node` loads the ESM build as-is. A config-sections registry (`scripts/lib/config-sections.ts`) validates the known top-level sections separately: platform keys (`tracker`, `vcs`, `statuses` and adapter ids), `wiki`, and `pr`. Unknown top-level keys are kept and reported as notices, never as errors, so a later extension can add its own section. Writers patch only the section they change through the Document API, so comments, key order and every other section stay. See [ADR-0022](adr/0022-vendored-yaml-and-config-sections.md).
+
 ```yaml
 tracker: linear
 vcs: github

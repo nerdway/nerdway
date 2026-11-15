@@ -24,6 +24,8 @@ jobs:
         run: node scripts/validate-human-docs.ts
       - name: No private-track strings in the public tree
         run: node scripts/scrub-check.ts
+      - name: Vendored yaml checksums
+        run: node scripts/validate-vendor.ts
       - name: Test suite
         run: node --test 'scripts/**/*.test.ts' 'hooks/*.test.ts'
       - name: Workflow contract and adapters

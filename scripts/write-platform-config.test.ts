@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { parseYaml } from "./types/platform-config.ts";
+import { parseConfig } from "./lib/yaml.ts";
 
 const script = join(dirname(fileURLToPath(import.meta.url)), "write-platform-config.ts");
 
@@ -28,7 +28,7 @@ test("write-platform-config writes a validated project config", () => {
     const run = write(["--repo", repo], yaml, { NERDWAY_CONFIG_DIR: join(root, "config") });
     assert.equal(run.status, 0, run.stderr);
     const written = readFileSync(join(root, "config", "repo", "config.yml"), "utf8");
-    assert.deepEqual(parseYaml(written).value, {
+    assert.deepEqual(parseConfig(written).value, {
       tracker: "github",
       vcs: "github",
       github: { owner: "nerdway", repo: "nerdway" },
@@ -45,7 +45,7 @@ test("write-platform-config --defaults writes the user-wide config.yml", () => {
     const run = write(["--defaults"], yaml, { NERDWAY_CONFIG_DIR: join(root, "config") });
     assert.equal(run.status, 0, run.stderr);
     const written = readFileSync(join(root, "config", "config.yml"), "utf8");
-    assert.deepEqual(parseYaml(written).value, {
+    assert.deepEqual(parseConfig(written).value, {
       tracker: "github",
       vcs: "github",
       github: { owner: "acme", repo: "app" },
@@ -86,7 +86,7 @@ test("write-platform-config --keys merges only those keys into the project confi
       { NERDWAY_CONFIG_DIR: configDir },
     );
     assert.equal(run.status, 0, run.stderr);
-    const written = parseYaml(readFileSync(join(configDir, "repo", "config.yml"), "utf8")).value;
+    const written = parseConfig(readFileSync(join(configDir, "repo", "config.yml"), "utf8")).value;
     assert.equal(written?.tracker, "github");
     assert.deepEqual(written?.github, { owner: "nerdway", repo: "nerdway" });
     assert.deepEqual(written?.ado, { org: "acme", project: "Shop", team: "Shop Team", board: "Stories" });

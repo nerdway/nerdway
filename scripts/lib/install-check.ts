@@ -1,4 +1,5 @@
 import { compareVersions } from "./version.ts";
+import { readFrontmatter } from "./yaml.ts";
 
 export type VersionDrift = { kind: "version-drift"; installed: string; main: string };
 
@@ -19,10 +20,9 @@ export const HISTORICAL_SKILL_NAMES = [
 ] as const;
 
 function frontmatterName(text: string): string | null {
-  const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
-  if (!frontmatter) return null;
-  const name = /^name:\s*["']?([^"'\r\n]+?)["']?\s*$/m.exec(frontmatter[1]);
-  return name?.[1] ?? null;
+  const { fields, error } = readFrontmatter(text);
+  if (error !== undefined) return null;
+  return typeof fields.name === "string" ? fields.name : null;
 }
 
 export function findStaleSkillCopies(entries: SkillEntry[], currentNames: string[]): StaleSkillCopy[] {

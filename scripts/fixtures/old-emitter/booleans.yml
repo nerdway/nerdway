@@ -1,0 +1,4 @@
+tracker: github
+vcs: github
+pr:
+  collapse_details: false

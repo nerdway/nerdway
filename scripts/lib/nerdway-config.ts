@@ -64,6 +64,29 @@ export type MigrationResult =
 const RESOLVED_SIDECAR = "legacy-platform.resolved";
 const FINGERPRINT = /^[0-9a-f]{64}$/;
 
+export const NON_PLATFORM_KEYS = ["wiki", "pr"] as const;
+
+export function platformPart(config: Record<string, unknown>): Record<string, unknown> {
+  const next: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(config)) {
+    if ((NON_PLATFORM_KEYS as readonly string[]).includes(key)) continue;
+    next[key] = value;
+  }
+  return next;
+}
+
+function keepNonPlatformKeys(existing: Record<string, unknown>, next: Record<string, unknown>): Record<string, unknown> {
+  const kept: Record<string, unknown> = {};
+  for (const key of NON_PLATFORM_KEYS) {
+    if (Object.hasOwn(existing, key) && !Object.hasOwn(next, key)) kept[key] = existing[key];
+  }
+  return { ...kept, ...next };
+}
+
+function platformErrors(value: Record<string, unknown>, options: ReadPlatformOptions): string[] {
+  return validatePlatformConfig(value, options.vocabulary, options.trackerAdapters.get(String(value.tracker)));
+}
+
 function trimmed(value: string | undefined): string | undefined {
   if (value === undefined) return undefined;
   const text = value.trim();
@@ -191,11 +214,13 @@ export function readPlatformConfig(
   const project = slug.length === 0 ? { kind: "missing" as const } : readYamlFile(join(configDir, slug, "config.yml"));
   if (defaults.kind === "invalid") return { status: "invalid", errors: defaults.errors.map((error) => `config.yml: ${error}`) };
   if (project.kind === "invalid") return { status: "invalid", errors: project.errors.map((error) => `${slug}/config.yml: ${error}`) };
-  if (defaults.kind === "missing" && project.kind === "missing") {
+  const defaultsValue = defaults.kind === "ok" ? defaults.value : {};
+  const projectValue = project.kind === "ok" ? project.value : {};
+  if (Object.keys(platformPart(defaultsValue)).length === 0 && Object.keys(platformPart(projectValue)).length === 0) {
     return { status: "absent", errors: ["no platform config"] };
   }
-  const value = mergePlatformConfigs(defaults.kind === "ok" ? defaults.value : {}, project.kind === "ok" ? project.value : {});
-  const errors = validatePlatformConfig(value, options.vocabulary, options.trackerAdapters.get(String(value.tracker)));
+  const value = mergePlatformConfigs(defaultsValue, projectValue);
+  const errors = platformErrors(value, options);
   if (errors.length > 0) return { status: "invalid", errors };
   return { status: "found", value, errors: [] };
 }
@@ -282,14 +307,15 @@ export function writePlatformConfig(
   if (existing.kind === "invalid") return { status: "invalid", errors: existing.errors.map((error) => `${slug}/config.yml: ${error}`) };
 
   if (options.defaults) {
-    const nextDefaults = input;
+    const existingDefaults = defaults.kind === "ok" ? defaults.value : {};
+    const nextDefaults = keepNonPlatformKeys(existingDefaults, input);
     const project = existing.kind === "ok" ? existing.value : {};
     const merged = mergePlatformConfigs(nextDefaults, project);
     if (existing.kind === "ok" || Object.keys(project).length > 0) {
-      const errors = validatePlatformConfig(merged, options.vocabulary, options.trackerAdapters.get(String(merged.tracker)));
+      const errors = platformErrors(merged, options);
       if (errors.length > 0) return { status: "invalid", errors };
     } else {
-      const errors = validatePlatformConfig(nextDefaults, options.vocabulary, options.trackerAdapters.get(String(nextDefaults.tracker)));
+      const errors = platformErrors(nextDefaults, options);
       if (errors.length > 0) return { status: "invalid", errors };
     }
     mkdirSync(configDir, { recursive: true });
@@ -298,9 +324,9 @@ export function writePlatformConfig(
   }
 
   if (slug.length === 0) return { status: "invalid", errors: ["project slug is empty"] };
-  let nextProject = input;
+  const current = existing.kind === "ok" ? existing.value : {};
+  let nextProject = keepNonPlatformKeys(current, input);
   if (options.keys !== undefined) {
-    const current = existing.kind === "ok" ? existing.value : {};
     const patch: Record<string, unknown> = {};
     for (const key of options.keys) {
       if (Object.hasOwn(input, key)) patch[key] = input[key];
@@ -308,7 +334,7 @@ export function writePlatformConfig(
     nextProject = { ...current, ...patch };
   }
   const merged = mergePlatformConfigs(defaults.kind === "ok" ? defaults.value : {}, nextProject);
-  const errors = validatePlatformConfig(merged, options.vocabulary, options.trackerAdapters.get(String(merged.tracker)));
+  const errors = platformErrors(merged, options);
   if (errors.length > 0) return { status: "invalid", errors };
   mkdirSync(join(configDir, slug), { recursive: true });
   writeFileSync(projectPath, emitYaml(nextProject));
@@ -375,7 +401,7 @@ function writeProjectAndReadBack(
   const written = writePlatformConfig(repoRoot, env, toWrite, options);
   if (written.status !== "ok") return { status: "conflict", errors: written.errors };
   const readBack = readYamlFile(written.path);
-  if (readBack.kind !== "ok" || !sameConfig(readBack.value, toWrite)) {
+  if (readBack.kind !== "ok" || !sameConfig(platformPart(readBack.value), platformPart(toWrite))) {
     if (!projectExists) {
       try {
         unlinkSync(written.path);

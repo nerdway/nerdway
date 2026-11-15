@@ -523,7 +523,7 @@ test("resolveVault: a non-string wiki.path is invalid", () => {
     const result = vaultOf(repo, env);
     assert.equal(result.status, "invalid");
     if (result.status !== "invalid") return;
-    assert.match(result.errors[0], /wiki\.path must be a string/);
+    assert.match(result.errors[0], /wiki\.path: expected string/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -537,7 +537,7 @@ test("resolveVault: wiki as a scalar is invalid", () => {
     const result = vaultOf(repo, env);
     assert.equal(result.status, "invalid");
     if (result.status !== "invalid") return;
-    assert.match(result.errors[0], /wiki must be an object/);
+    assert.match(result.errors[0], /wiki: expected object/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -709,6 +709,57 @@ test("readPlatformConfig: unknown sections on a valid platform are notices, neve
     assert.deepEqual(read.value.custom, { token: "x" });
     assert.equal(read.errors.length, 0);
     assert.ok(read.notices.some((notice) => /unknown section custom/.test(notice)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("readPlatformConfig: unregistered extensions.id is preserved with a notice", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-ext-unreg-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(configDir, "repo"));
+    writeFileSync(
+      join(configDir, "repo", "config.yml"),
+      "tracker: github\nvcs: github\ngithub:\n  owner: nerdway\n  repo: nerdway\nextensions:\n  demo:\n    enabled: true\n",
+    );
+    const read = readOf(repo, env);
+    assert.equal(read.status, "found");
+    if (read.status !== "found") return;
+    assert.deepEqual((read.value.extensions as { demo: unknown }).demo, { enabled: true });
+    assert.equal(read.errors.length, 0);
+    assert.ok(read.notices.some((notice) => /extensions\.demo: no section registered/.test(notice)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("readPlatformConfig: a non-map extensions value is an error", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-ext-scalar-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "tracker: github\nvcs: github\ngithub:\n  owner: nerdway\n  repo: nerdway\nextensions: yes\n");
+    const read = readOf(repo, env);
+    assert.equal(read.status, "invalid");
+    assert.match(read.errors.join("\n"), /extensions must be a map/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("writePlatformConfig: a commented wiki.path-only defaults file keeps comments and wiki", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-write-commented-wiki-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "# vault lives here\nwiki:\n  path: /from-defaults # keep\n");
+    const written = writeOf(repo, env, PLATFORM, { defaults: true });
+    assert.equal(written.status, "ok");
+    const text = readFileSync(join(configDir, "config.yml"), "utf8");
+    assert.match(text, /# vault lives here/);
+    assert.match(text, /path: \/from-defaults # keep/);
+    const value = parseConfig(text).value;
+    assert.deepEqual(value?.wiki, { path: "/from-defaults" });
+    assert.equal(value?.tracker, "github");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

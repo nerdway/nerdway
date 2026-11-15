@@ -1,6 +1,8 @@
 # Vendored yaml library and config section registry
 
-*2026-11-15.*
+*2026-11-15. Amended by ADR-0023: the registry is now the public
+section API (`defineSection` / `readSection` / `writeSection`);
+unknown keys still stay. The extension loader remains out of scope.*
 
 nerdway used to read and write YAML with a hand-written subset parser
 (`parseYaml` / `emitYaml`). That subset dropped comments on write, rejected

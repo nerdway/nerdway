@@ -1,9 +1,10 @@
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { readSection } from "./lib/config-sections.ts";
 import { migrateLegacyPlatform, migrationNotice, readPlatformConfig, type ResolveChoice } from "./lib/nerdway-config.ts";
 import { pluginVocabulary, trackerAdapterSources } from "./lib/platform-read.ts";
-import { prCollapseDetails, validateAdapterDefaults } from "./types/platform-config.ts";
+import { validateAdapterDefaults } from "./types/platform-config.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(here, "..");
@@ -46,9 +47,13 @@ function fieldAt(value: unknown, path: string): unknown {
   return current;
 }
 
-function resolvedField(value: Record<string, unknown>, path: string): unknown {
-  if (path === PR_COLLAPSE_DETAILS) return prCollapseDetails(value);
-  return fieldAt(value, path);
+function prCollapseDetailsFromStore(repoRoot: string, env: NodeJS.ProcessEnv): { status: "ok"; value: boolean } | { status: "invalid"; errors: string[] } {
+  const read = readSection("pr", { repoRoot, env });
+  if (read.status === "invalid") return { status: "invalid", errors: read.errors };
+  if (read.status !== "found" || typeof read.value !== "object" || read.value === null || Array.isArray(read.value)) {
+    return { status: "ok", value: true };
+  }
+  return { status: "ok", value: (read.value as Record<string, unknown>).collapse_details === true };
 }
 
 const args = process.argv.slice(2);
@@ -90,17 +95,24 @@ if (print) {
     for (const error of errors) console.error(`  - ${error}`);
     process.exit(1);
   }
+  if (printField === PR_COLLAPSE_DETAILS && (read.status === "found" || read.status === "absent")) {
+    for (const notice of read.notices ?? []) console.error(`notice: ${notice}`);
+    const flag = prCollapseDetailsFromStore(target, process.env);
+    if (flag.status === "invalid") {
+      console.error(`${target}: invalid platform config`);
+      for (const error of flag.errors) console.error(`  - ${error}`);
+      process.exit(EXIT_INVALID);
+    }
+    console.log(JSON.stringify(flag.value));
+    process.exit(EXIT_FOUND);
+  }
   if (read.status === "found") {
     for (const notice of read.notices) console.error(`notice: ${notice}`);
     if (printField !== undefined) {
-      console.log(JSON.stringify(resolvedField(read.value, printField)));
+      console.log(JSON.stringify(fieldAt(read.value, printField)));
     } else {
       console.log(JSON.stringify(read.value, null, 2));
     }
-    process.exit(EXIT_FOUND);
-  }
-  if (read.status === "absent" && printField === PR_COLLAPSE_DETAILS) {
-    console.log("true");
     process.exit(EXIT_FOUND);
   }
   const label =

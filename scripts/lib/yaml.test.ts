@@ -139,6 +139,26 @@ test("patchSection deletes a key when the value is undefined", () => {
   assert.equal(patched, "wiki:\n  path: /v\n");
 });
 
+test("patchSection writes a nested extensions.id path and keeps the rest", () => {
+  const text = "# keep me\nwiki:\n  path: /vault # vault\ntracker: github\nextensions:\n  other:\n    n: 1\n  demo:\n    enabled: false\n";
+  const patched = patchSection(text, "extensions.demo", { enabled: true });
+  assert.match(patched, /# keep me/);
+  assert.match(patched, /path: \/vault # vault/);
+  assert.match(patched, /tracker: github/);
+  assert.match(patched, /other:\n    n: 1/);
+  assert.match(patched, /demo:\n    enabled: true/);
+});
+
+test("patchSection creates extensions when the nested path is new", () => {
+  const patched = patchSection("wiki:\n  path: /v\n", "extensions.demo", { enabled: true });
+  assert.deepEqual(parseDocument(patched).value, { wiki: { path: "/v" }, extensions: { demo: { enabled: true } } });
+});
+
+test("patchSection deletes a nested extensions.id path", () => {
+  const patched = patchSection("extensions:\n  demo:\n    enabled: true\n  other:\n    n: 1\n", "extensions.demo", undefined);
+  assert.deepEqual(parseDocument(patched).value, { extensions: { other: { n: 1 } } });
+});
+
 test("stringify emits a trailing newline and nested maps", () => {
   const yaml = stringify({ tracker: "github", github: { owner: "nerdway" } });
   assert.equal(yaml.endsWith("\n"), true);

@@ -45,6 +45,8 @@ type YamlDocument = {
   toString: (options?: { lineWidth?: number }) => string;
   set: (key: string, value: unknown) => void;
   delete: (key: string) => boolean;
+  setIn: (path: Iterable<unknown>, value: unknown) => void;
+  deleteIn: (path: Iterable<unknown>) => boolean;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -133,8 +135,16 @@ export function patchSections(text: string, set: Record<string, unknown>, remove
 }
 
 export function patchSection(text: string, key: string, value: unknown): string {
-  if (value === undefined) return patchSections(text, {}, [key]);
-  return patchSections(text, { [key]: value });
+  if (!key.includes(".")) {
+    if (value === undefined) return patchSections(text, {}, [key]);
+    return patchSections(text, { [key]: value });
+  }
+  const { doc, errors } = loadDocument(text);
+  if (errors.length > 0) throw new Error(errors.join("\n"));
+  const path = key.split(".");
+  if (value === undefined) doc.deleteIn(path);
+  else doc.setIn(path, value);
+  return doc.toString({ lineWidth: 0 });
 }
 
 export function readFrontmatter(text: string): Frontmatter {

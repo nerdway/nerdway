@@ -136,7 +136,7 @@ pr:
 
 A non-boolean value fails validation. The project file's `pr` key replaces the defaults' `pr` key whole, like every other top-level key. A defaults file that holds only this key is not a platform setup.
 
-Config files are YAML 1.2. Comments, block scalars, flow collections, quoted strings and anchors are accepted. A write changes only the section it is updating, so comments you left and keys the plugin does not know stay. Unknown top-level sections (your own tools adding a key next to `tracker` or `wiki`) are preserved and reported as a notice, never as an error.
+Config files are YAML 1.2. Comments, block scalars, flow collections, quoted strings and anchors are accepted. A write changes only the section it is updating, so comments you left and keys the plugin does not know stay. Unknown top-level keys (a tool adding a key next to `tracker` or `wiki`) are preserved and reported as a notice that points you at `extensions:`. Third-party settings belong under `extensions.<id>`; an id with no section registered is also preserved, with a notice. A non-map `extensions` value is an error. The plugin does not load extension code; the [config section API](CONFIG-SECTIONS.md) is what a future loader will call.
 
 ## A day with the plugin
 

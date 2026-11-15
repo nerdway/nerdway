@@ -246,6 +246,21 @@ updated in place. On resume, tracker edits are the source of truth over chat
 and over an older Grill state block.
 _Avoid_: grill checklist (the heading is the name)
 
+**Section**:
+A named unit of user config registered through the section API: an id, a
+scope (`core` or `extension`), a JSON Schema subset, and for core sections
+an optional validator. Core sections own top-level keys (platform owns
+eight legacy keys; wiki and pr own one each). Read and write go through
+`readSection` / `writeSection` in `scripts/lib/config-sections.ts`.
+_Avoid_: config block, namespace (hide the registry)
+
+**Extension section**:
+A section with scope `extension`, living only under `extensions.<id>` in
+the user config. It has a schema and no validator function. This repo
+does not load or discover third-party code; registration is the API those
+loaders will call.
+_Avoid_: plugin section, extra key
+
 **Platform config**:
 The project's tracker (`linear`, `github`, `gitlab`, `ado`, `jira`, `none`) and VCS
 host (`github`, `gitlab`, `ado`) plus the identifiers each needs — schema
@@ -258,7 +273,7 @@ legacy `linear:` block on an entity page is read as its alias. An optional
 readiness description layout. Optional `wiki.path` is the vault directory
 (`resolveVault`). Skills read it from
 disk through `adapters/platform.md`, never from a leftover `## Platform` section
-or a `CLAUDE.md` in context. See ADR-0018, ADR-0020 and ADR-0021.
+or a `CLAUDE.md` in context. See ADR-0018, ADR-0020, ADR-0021 and ADR-0023.
 _Avoid_: platform settings, integration (both hide that it is one YAML object in two places)
 
 **Adapter**:

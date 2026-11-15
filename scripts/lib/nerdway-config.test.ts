@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { mergePlatformConfigs, migrateLegacyPlatform, readPlatformConfig, resolveConfigDir, resolveSlug, resolveVault } from "./nerdway-config.ts";
-import type { PlatformVocabulary } from "../types/platform-config.ts";
+import { mergePlatformConfigs, migrateLegacyPlatform, readPlatformConfig, resolveConfigDir, resolveSlug, resolveVault, writePlatformConfig } from "./nerdway-config.ts";
+import { parseYaml, prCollapseDetails, type PlatformVocabulary } from "../types/platform-config.ts";
 
 test("slug comes from the slug file, else the remote, else the directory name", () => {
   const root = mkdtempSync(join(tmpdir(), "nerdway-slug-"));
@@ -127,6 +127,15 @@ function optionsOf(repo: string, extra: { gitRemote?: (dir: string) => string } 
 
 function readOf(repo: string, env: NodeJS.ProcessEnv, extra: { gitRemote?: (dir: string) => string } = {}) {
   return readPlatformConfig(repo, env, optionsOf(repo, extra));
+}
+
+function writeOf(
+  repo: string,
+  env: NodeJS.ProcessEnv,
+  input: Record<string, unknown>,
+  extra: { defaults?: boolean; keys?: string[] } = {},
+) {
+  return writePlatformConfig(repo, env, input, { ...optionsOf(repo), ...extra });
 }
 
 const LEGACY = "## Platform\n\n```yaml\ntracker: github\nvcs: github\ngithub:\n  owner: nerdway\n  repo: nerdway\n```\n";
@@ -563,6 +572,109 @@ test("resolveVault: empty NERDWAY_WIKI falls through to the next source", () => 
     if (result.status !== "ok") return;
     assert.equal(result.path, "/from-defaults");
     assert.equal(result.source, "defaults");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+const PLATFORM = {
+  tracker: "github",
+  vcs: "github",
+  github: { owner: "nerdway", repo: "nerdway" },
+};
+
+test("readPlatformConfig: defaults with only wiki and no overlay are absent", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-wiki-only-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: /from-defaults\n");
+    const read = readOf(repo, env);
+    assert.equal(read.status, "absent");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("readPlatformConfig: defaults with only pr and no overlay are absent", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-pr-only-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "pr:\n  collapse_details: false\n");
+    const read = readOf(repo, env);
+    assert.equal(read.status, "absent");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("readPlatformConfig: wiki and pr defaults plus a valid overlay are found and still resolve", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-wiki-pr-overlay-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(configDir, "repo"));
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: /from-defaults\npr:\n  collapse_details: false\n");
+    writeFileSync(
+      join(configDir, "repo", "config.yml"),
+      "tracker: github\nvcs: github\ngithub:\n  owner: nerdway\n  repo: nerdway\n",
+    );
+    const read = readOf(repo, env);
+    assert.equal(read.status, "found");
+    if (read.status !== "found") return;
+    assert.deepEqual(read.value.wiki, { path: "/from-defaults" });
+    assert.deepEqual(read.value.pr, { collapse_details: false });
+    assert.equal(read.value.tracker, "github");
+    assert.equal(prCollapseDetails(read.value), false);
+    const vault = vaultOf(repo, env);
+    assert.equal(vault.status, "ok");
+    if (vault.status !== "ok") return;
+    assert.equal(vault.path, "/from-defaults");
+    assert.equal(vault.source, "defaults");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("readPlatformConfig: defaults with tracker and no vcs are still invalid", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-partial-platform-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "tracker: github\n");
+    const read = readOf(repo, env);
+    assert.equal(read.status, "invalid");
+    assert.match(read.errors.join("\n"), /vcs/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("writePlatformConfig: rewriting defaults keeps wiki.path", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-write-keep-wiki-defaults-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: /from-defaults\n");
+    const written = writeOf(repo, env, PLATFORM, { defaults: true });
+    assert.equal(written.status, "ok");
+    const value = parseYaml(readFileSync(join(configDir, "config.yml"), "utf8")).value;
+    assert.deepEqual(value?.wiki, { path: "/from-defaults" });
+    assert.equal(value?.tracker, "github");
+    assert.equal(value?.vcs, "github");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("writePlatformConfig: rewriting a project overlay keeps wiki.path", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-write-keep-wiki-project-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(configDir, "repo"));
+    writeFileSync(join(configDir, "repo", "config.yml"), "wiki:\n  path: /from-project\n");
+    const written = writeOf(repo, env, PLATFORM);
+    assert.equal(written.status, "ok");
+    const value = parseYaml(readFileSync(join(configDir, "repo", "config.yml"), "utf8")).value;
+    assert.deepEqual(value?.wiki, { path: "/from-project" });
+    assert.equal(value?.tracker, "github");
+    assert.equal(value?.vcs, "github");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

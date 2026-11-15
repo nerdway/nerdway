@@ -42,6 +42,19 @@ test("readPlatformFile reads the user config and reports a missing store as abse
   }
 });
 
+test("readPlatformFile: defaults with only wiki.path and no overlay are absent", () => {
+  const root = mkdtempSync(join(tmpdir(), "platform-read-wiki-only-"));
+  try {
+    const repo = join(root, "repo");
+    mkdirSync(repo);
+    mkdirSync(join(root, "config"));
+    writeFileSync(join(root, "config", "config.yml"), "wiki:\n  path: /vault\n");
+    assert.equal(readPlatformFile(pluginRoot, repo, { NERDWAY_CONFIG_DIR: join(root, "config") }).status, "absent");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("readPlatformFile reports a broken project file as invalid", () => {
   const root = mkdtempSync(join(tmpdir(), "platform-read-broken-"));
   try {

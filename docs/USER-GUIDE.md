@@ -134,7 +134,7 @@ pr:
   collapse_details: false
 ```
 
-A non-boolean value fails validation. The project file's `pr` key replaces the defaults' `pr` key whole, like every other top-level key.
+A non-boolean value fails validation. The project file's `pr` key replaces the defaults' `pr` key whole, like every other top-level key. A defaults file that holds only this key is not a platform setup.
 
 ## A day with the plugin
 
@@ -298,7 +298,7 @@ wiki:
   path: <your current vault directory>
 ```
 
-Put it in `<config dir>/config.yml` (user defaults) or the project overlay, or set `NERDWAY_WIKI` (or the legacy `NERDBRAIN_VAULT`). The previous hardcoded default is recorded in [ADR-0021](adr/0021-configurable-wiki-location.md). The plugin does not create the wiki directory by itself.
+Put it in `<config dir>/config.yml` (user defaults) or the project overlay, or set `NERDWAY_WIKI` (or the legacy `NERDBRAIN_VAULT`). A defaults file that holds only `wiki.path` (or only `pr.*`) is valid and is not a platform setup: a repository without its own overlay still looks unconfigured, so `/determine-platform` runs as on a first-time repo. The previous hardcoded default is recorded in [ADR-0021](adr/0021-configurable-wiki-location.md). The plugin does not create the wiki directory by itself.
 
 ## Troubleshooting
 

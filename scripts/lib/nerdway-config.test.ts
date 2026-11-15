@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { mergePlatformConfigs, migrateLegacyPlatform, readPlatformConfig, resolveConfigDir, resolveSlug, resolveVault, writePlatformConfig } from "./nerdway-config.ts";
-import { parseYaml, prCollapseDetails, type PlatformVocabulary } from "../types/platform-config.ts";
+import { prCollapseDetails, type PlatformVocabulary } from "../types/platform-config.ts";
+import { parseConfig } from "./yaml.ts";
 
 test("slug comes from the slug file, else the remote, else the directory name", () => {
   const root = mkdtempSync(join(tmpdir(), "nerdway-slug-"));
@@ -654,7 +655,7 @@ test("writePlatformConfig: rewriting defaults keeps wiki.path", () => {
     writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: /from-defaults\n");
     const written = writeOf(repo, env, PLATFORM, { defaults: true });
     assert.equal(written.status, "ok");
-    const value = parseYaml(readFileSync(join(configDir, "config.yml"), "utf8")).value;
+    const value = parseConfig(readFileSync(join(configDir, "config.yml"), "utf8")).value;
     assert.deepEqual(value?.wiki, { path: "/from-defaults" });
     assert.equal(value?.tracker, "github");
     assert.equal(value?.vcs, "github");
@@ -671,7 +672,7 @@ test("writePlatformConfig: rewriting a project overlay keeps wiki.path", () => {
     writeFileSync(join(configDir, "repo", "config.yml"), "wiki:\n  path: /from-project\n");
     const written = writeOf(repo, env, PLATFORM);
     assert.equal(written.status, "ok");
-    const value = parseYaml(readFileSync(join(configDir, "repo", "config.yml"), "utf8")).value;
+    const value = parseConfig(readFileSync(join(configDir, "repo", "config.yml"), "utf8")).value;
     assert.deepEqual(value?.wiki, { path: "/from-project" });
     assert.equal(value?.tracker, "github");
     assert.equal(value?.vcs, "github");
@@ -680,4 +681,56 @@ test("writePlatformConfig: rewriting a project overlay keeps wiki.path", () => {
   }
 });
 
+test("readPlatformConfig: a file with only an unknown section is absent and reports a notice", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-unknown-only-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "custom:\n  token: x\n");
+    const read = readOf(repo, env);
+    assert.equal(read.status, "absent");
+    assert.ok(read.notices?.some((notice) => /unknown section custom/.test(notice)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("readPlatformConfig: unknown sections on a valid platform are notices, never errors", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-unknown-found-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(configDir, "repo"));
+    writeFileSync(
+      join(configDir, "repo", "config.yml"),
+      "tracker: github\nvcs: github\ngithub:\n  owner: nerdway\n  repo: nerdway\ncustom:\n  token: x\n",
+    );
+    const read = readOf(repo, env);
+    assert.equal(read.status, "found");
+    if (read.status !== "found") return;
+    assert.deepEqual(read.value.custom, { token: "x" });
+    assert.equal(read.errors.length, 0);
+    assert.ok(read.notices.some((notice) => /unknown section custom/.test(notice)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("writePlatformConfig: rewriting platform keys keeps comments and unknown sections", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-write-keep-unknown-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(configDir, "repo"));
+    const original = "# keep me\ntracker: github\nvcs: github\ngithub:\n  owner: acme\n  repo: app\ncustom:\n  token: x\n";
+    writeFileSync(join(configDir, "repo", "config.yml"), original);
+    const written = writeOf(repo, env, PLATFORM);
+    assert.equal(written.status, "ok");
+    const text = readFileSync(join(configDir, "repo", "config.yml"), "utf8");
+    assert.match(text, /# keep me/);
+    assert.match(text, /custom:\n  token: x/);
+    const value = parseConfig(text).value;
+    assert.deepEqual(value?.custom, { token: "x" });
+    assert.deepEqual(value?.github, { owner: "nerdway", repo: "nerdway" });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 

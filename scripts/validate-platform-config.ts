@@ -91,6 +91,7 @@ if (print) {
     process.exit(1);
   }
   if (read.status === "found") {
+    for (const notice of read.notices) console.error(`notice: ${notice}`);
     if (printField !== undefined) {
       console.log(JSON.stringify(resolvedField(read.value, printField)));
     } else {
@@ -113,6 +114,7 @@ let summary = "";
 if (read.status === "found") {
   const strategy = (read.value.statuses as { strategy?: unknown } | undefined)?.strategy;
   summary = `tracker ${String(read.value.tracker)}, vcs ${String(read.value.vcs)}, statuses ${strategy === undefined ? "from the adapter default" : String(strategy)}`;
+  for (const notice of read.notices) console.error(`notice: ${notice}`);
 } else if (read.status === "invalid") {
   errors.push(...read.errors.map((error) => `${target}: ${error}`));
 } else if (read.status === "migration-needed") {

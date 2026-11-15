@@ -1,3 +1,4 @@
+import { parseConfig } from "../lib/yaml.ts";
 import { hasRecipes, sectionBody, tableRows, UNSUPPORTED } from "./workflow-graph.ts";
 
 export interface PlatformVocabulary {
@@ -7,11 +8,6 @@ export interface PlatformVocabulary {
   phases: string[];
 }
 
-export interface YamlResult {
-  value?: Record<string, unknown>;
-  errors: string[];
-}
-
 export interface PlatformYaml {
   yaml?: string;
   errors: string[];
@@ -19,105 +15,14 @@ export interface PlatformYaml {
 
 const RESERVED = { open: "backlog", closed: "done" } as const;
 
-const YAML_LINE = /^([A-Za-z0-9_-]+):(?:\s+(.*))?$/;
-const UNSUPPORTED_SCALAR = /^[[{|>&*!-]/;
-const QUOTED_SCALAR = /^(["'])(.*)\1(?:\s+#.*)?$/;
 const SHELL_UNSAFE = /['"`$\\\n]/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseScalar(value: string): string | boolean {
-  const quoted = QUOTED_SCALAR.exec(value);
-  if (quoted !== null) return quoted[2];
-  const comment = value.search(/\s#/);
-  const text = (comment === -1 ? value : value.slice(0, comment)).trim();
-  if (text === "true") return true;
-  if (text === "false") return false;
-  return text;
-}
-
 function normalizeNewlines(text: string): string {
   return text.replace(/\r\n/g, "\n");
-}
-
-export function parseYaml(text: string): YamlResult {
-  const root: Record<string, unknown> = {};
-  const stack: { indent: number; childIndent?: number; node: Record<string, unknown> }[] = [{ indent: -1, node: root }];
-  const errors: string[] = [];
-
-  text.split("\n").forEach((line, index) => {
-    const trimmed = line.trim();
-    if (trimmed === "" || trimmed.startsWith("#")) return;
-    const where = `line ${index + 1}`;
-    const indent = line.length - line.trimStart().length;
-    const match = YAML_LINE.exec(trimmed);
-    if (/^\s*\t/.test(line) || match === null) {
-      errors.push(`${where}: unsupported YAML — only nested \`key: value\` maps are read`);
-      return;
-    }
-    while (indent <= stack[stack.length - 1].indent) stack.pop();
-    const frame = stack[stack.length - 1];
-    frame.childIndent ??= indent;
-    if (indent !== frame.childIndent) {
-      errors.push(`${where}: inconsistent indentation — siblings of one map must start in the same column`);
-      return;
-    }
-    const parent = frame.node;
-    const [, key, rawValue] = match;
-    if (key === "__proto__") {
-      errors.push(`${where}: key __proto__ is not allowed`);
-      return;
-    }
-    if (Object.hasOwn(parent, key)) {
-      errors.push(`${where}: duplicate key ${key}`);
-      return;
-    }
-    if (rawValue === undefined || rawValue.trim() === "") {
-      const child: Record<string, unknown> = {};
-      parent[key] = child;
-      stack.push({ indent, node: child });
-      return;
-    }
-    const value = rawValue.trim();
-    if (UNSUPPORTED_SCALAR.test(value)) {
-      errors.push(`${where}: unsupported YAML value for ${key} — lists, flow collections and block scalars are not read`);
-      return;
-    }
-    parent[key] = parseScalar(value);
-  });
-
-  return errors.length > 0 ? { errors } : { value: root, errors };
-}
-
-const UNQUOTED_SCALAR = /^[A-Za-z0-9_./:+-]+$/;
-const RESERVED_SCALAR = /^(?:true|false|null|yes|no|on|off|y|n|~)$/i;
-
-function emitScalar(value: string): string {
-  if (value.length > 0 && UNQUOTED_SCALAR.test(value) && !RESERVED_SCALAR.test(value)) return value;
-  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
-}
-
-function emitLines(value: Record<string, unknown>, indent: number): string[] {
-  const pad = "  ".repeat(indent);
-  const lines: string[] = [];
-  for (const [key, child] of Object.entries(value)) {
-    if (typeof child === "string") {
-      lines.push(`${pad}${key}: ${emitScalar(child)}`);
-    } else if (typeof child === "boolean") {
-      lines.push(`${pad}${key}: ${child ? "true" : "false"}`);
-    } else if (isRecord(child)) {
-      lines.push(`${pad}${key}:`);
-      lines.push(...emitLines(child, indent + 1));
-    }
-  }
-  return lines;
-}
-
-export function emitYaml(value: Record<string, unknown>): string {
-  const lines = emitLines(value, 0);
-  return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
 }
 
 function onlyYamlBlock(body: string, where: string): PlatformYaml {
@@ -202,7 +107,7 @@ const JIRA_OPTIONAL_KEYS: readonly string[] = ["issueType"];
 function defaultStrategy(adapterSource: string | undefined): unknown {
   if (adapterSource === undefined) return undefined;
   const block = onlyYamlBlock(sectionBody(normalizeNewlines(adapterSource), "Statuses") ?? "", "## Statuses");
-  return block.yaml === undefined ? undefined : parseYaml(block.yaml).value?.strategy;
+  return block.yaml === undefined ? undefined : parseConfig(block.yaml).value?.strategy;
 }
 
 function validateAdoBlock(raw: Record<string, unknown>, trackerAdapter: string | undefined): string[] {
@@ -271,17 +176,6 @@ function validateGithubBlock(raw: Record<string, unknown>, trackerAdapter: strin
   return errors;
 }
 
-function validatePrBlock(raw: Record<string, unknown>): string[] {
-  if (raw.pr === undefined) return [];
-  if (!isRecord(raw.pr)) return ["pr must be an object"];
-  const value = raw.pr.collapse_details;
-  if (value === undefined) return [];
-  if (typeof value !== "boolean") {
-    return [`pr.collapse_details must be a boolean, got ${JSON.stringify(value)}`];
-  }
-  return [];
-}
-
 export function prCollapseDetails(raw: Record<string, unknown>): boolean {
   if (!isRecord(raw.pr) || raw.pr.collapse_details === undefined) return true;
   return raw.pr.collapse_details === true;
@@ -299,9 +193,6 @@ export function validatePlatformConfig(raw: unknown, vocabulary: PlatformVocabul
   if (raw.tracker === "ado") errors.push(...validateAdoBlock(raw, trackerAdapter));
   if (raw.tracker === "jira") errors.push(...validateJiraBlock(raw));
   if (raw.tracker === "github") errors.push(...validateGithubBlock(raw, trackerAdapter));
-  errors.push(...validatePrBlock(raw));
-  const wiki = wikiPathFromConfig(raw);
-  if (wiki.kind === "invalid") errors.push(...wiki.errors);
   if (raw.statuses === undefined) return errors;
   if (raw.tracker === "none") {
     errors.push("statuses is set, but tracker is none — there is no tracker to bind phases to");
@@ -318,16 +209,16 @@ export function validateAdapterDefaults(name: string, adapterSource: string, voc
   const source = normalizeNewlines(adapterSource);
   const block = onlyYamlBlock(sectionBody(source, "Statuses") ?? "", where);
   if (block.yaml === undefined) return block.errors;
-  const parsed = parseYaml(block.yaml);
+  const parsed = parseConfig(block.yaml);
   if (parsed.value === undefined) return parsed.errors.map((error) => `${where}: ${error}`);
   return validateStatuses(where, parsed.value, vocabulary, supportedStrategies(source));
 }
 
 export type PlatformRead =
-  | { status: "found"; value: Record<string, unknown>; errors: [] }
-  | { status: "absent"; errors: string[] }
-  | { status: "invalid"; errors: string[] }
-  | { status: "migration-needed"; errors: string[] };
+  | { status: "found"; value: Record<string, unknown>; errors: []; notices: string[] }
+  | { status: "absent"; errors: string[]; notices?: string[] }
+  | { status: "invalid"; errors: string[]; notices?: string[] }
+  | { status: "migration-needed"; errors: string[]; notices?: string[] };
 
 export function readPlatform(
   markdown: string | undefined,
@@ -339,9 +230,9 @@ export function readPlatform(
     return { status: "absent", errors: ["no line-start ## Platform section"] };
   }
   const section = platformYaml(markdown);
-  const parsed = section.yaml === undefined ? { value: undefined, errors: section.errors } : parseYaml(section.yaml);
+  const parsed = section.yaml === undefined ? { value: undefined, errors: section.errors } : parseConfig(section.yaml);
   if (parsed.value === undefined) return { status: "invalid", errors: parsed.errors };
   const errors = validatePlatformConfig(parsed.value, vocabulary, trackerAdapters.get(String(parsed.value.tracker)));
   if (errors.length > 0) return { status: "invalid", errors };
-  return { status: "found", value: parsed.value, errors: [] };
+  return { status: "found", value: parsed.value, errors: [], notices: [] };
 }

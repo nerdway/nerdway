@@ -4,15 +4,17 @@ import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSyn
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 
+import { readPlatform, wikiPathFromConfig, type PlatformRead, type PlatformVocabulary } from "../types/platform-config.ts";
+
 import {
-  emitYaml,
-  parseYaml,
-  readPlatform,
-  validatePlatformConfig,
-  wikiPathFromConfig,
-  type PlatformRead,
-  type PlatformVocabulary,
-} from "../types/platform-config.ts";
+  applySectionPatch,
+  hasPlatformSection,
+  platformPart,
+  platformReplacePlan,
+  unknownSectionNotices,
+  validateKnownSections,
+} from "./config-sections.ts";
+import { parseConfig, patchSections } from "./yaml.ts";
 
 export interface ResolveSlugOptions {
   aliasesPath?: string;
@@ -64,27 +66,14 @@ export type MigrationResult =
 const RESOLVED_SIDECAR = "legacy-platform.resolved";
 const FINGERPRINT = /^[0-9a-f]{64}$/;
 
-export const NON_PLATFORM_KEYS = ["wiki", "pr"] as const;
+export { platformPart };
 
-export function platformPart(config: Record<string, unknown>): Record<string, unknown> {
-  const next: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(config)) {
-    if ((NON_PLATFORM_KEYS as readonly string[]).includes(key)) continue;
-    next[key] = value;
-  }
-  return next;
-}
-
-function keepNonPlatformKeys(existing: Record<string, unknown>, next: Record<string, unknown>): Record<string, unknown> {
-  const kept: Record<string, unknown> = {};
-  for (const key of NON_PLATFORM_KEYS) {
-    if (Object.hasOwn(existing, key) && !Object.hasOwn(next, key)) kept[key] = existing[key];
-  }
-  return { ...kept, ...next };
+function sectionContext(value: Record<string, unknown>, options: ReadPlatformOptions) {
+  return { vocabulary: options.vocabulary, trackerAdapter: options.trackerAdapters.get(String(value.tracker)) };
 }
 
 function platformErrors(value: Record<string, unknown>, options: ReadPlatformOptions): string[] {
-  return validatePlatformConfig(value, options.vocabulary, options.trackerAdapters.get(String(value.tracker)));
+  return validateKnownSections(value, sectionContext(value, options)).errors;
 }
 
 function trimmed(value: string | undefined): string | undefined {
@@ -191,14 +180,15 @@ export function mergePlatformConfigs(
 
 type YamlFile =
   | { kind: "missing" }
-  | { kind: "ok"; value: Record<string, unknown> }
+  | { kind: "ok"; value: Record<string, unknown>; text: string }
   | { kind: "invalid"; errors: string[] };
 
 function readYamlFile(path: string): YamlFile {
   if (!isFile(path)) return { kind: "missing" };
-  const parsed = parseYaml(readFileSync(path, "utf8"));
+  const text = readFileSync(path, "utf8");
+  const parsed = parseConfig(text);
   if (parsed.value === undefined) return { kind: "invalid", errors: parsed.errors };
-  return { kind: "ok", value: parsed.value };
+  return { kind: "ok", value: parsed.value, text };
 }
 
 export function readPlatformConfig(
@@ -216,13 +206,17 @@ export function readPlatformConfig(
   if (project.kind === "invalid") return { status: "invalid", errors: project.errors.map((error) => `${slug}/config.yml: ${error}`) };
   const defaultsValue = defaults.kind === "ok" ? defaults.value : {};
   const projectValue = project.kind === "ok" ? project.value : {};
-  if (Object.keys(platformPart(defaultsValue)).length === 0 && Object.keys(platformPart(projectValue)).length === 0) {
-    return { status: "absent", errors: ["no platform config"] };
+  const notices = [
+    ...unknownSectionNotices(defaultsValue, "config.yml"),
+    ...unknownSectionNotices(projectValue, slug.length === 0 ? "project config" : `${slug}/config.yml`),
+  ];
+  if (!hasPlatformSection(defaultsValue) && !hasPlatformSection(projectValue)) {
+    return { status: "absent", errors: ["no platform config"], notices };
   }
   const value = mergePlatformConfigs(defaultsValue, projectValue);
   const errors = platformErrors(value, options);
-  if (errors.length > 0) return { status: "invalid", errors };
-  return { status: "found", value, errors: [] };
+  if (errors.length > 0) return { status: "invalid", errors, notices };
+  return { status: "found", value, errors: [], notices };
 }
 
 function configPaths(repoRoot: string, env: NodeJS.ProcessEnv, options: ConfigLocationOptions): { configDir: string; slug: string } {
@@ -308,7 +302,8 @@ export function writePlatformConfig(
 
   if (options.defaults) {
     const existingDefaults = defaults.kind === "ok" ? defaults.value : {};
-    const nextDefaults = keepNonPlatformKeys(existingDefaults, input);
+    const plan = options.keys === undefined ? platformReplacePlan(existingDefaults, input) : keyedPlan(input, options.keys);
+    const nextDefaults = applySectionPatch(existingDefaults, plan.set, plan.remove);
     const project = existing.kind === "ok" ? existing.value : {};
     const merged = mergePlatformConfigs(nextDefaults, project);
     if (existing.kind === "ok" || Object.keys(project).length > 0) {
@@ -319,26 +314,30 @@ export function writePlatformConfig(
       if (errors.length > 0) return { status: "invalid", errors };
     }
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(defaultsPath, emitYaml(nextDefaults));
+    const text = defaults.kind === "ok" ? defaults.text : "";
+    writeFileSync(defaultsPath, patchSections(text, plan.set, plan.remove));
     return { status: "ok", path: defaultsPath };
   }
 
   if (slug.length === 0) return { status: "invalid", errors: ["project slug is empty"] };
   const current = existing.kind === "ok" ? existing.value : {};
-  let nextProject = keepNonPlatformKeys(current, input);
-  if (options.keys !== undefined) {
-    const patch: Record<string, unknown> = {};
-    for (const key of options.keys) {
-      if (Object.hasOwn(input, key)) patch[key] = input[key];
-    }
-    nextProject = { ...current, ...patch };
-  }
+  const plan = options.keys === undefined ? platformReplacePlan(current, input) : keyedPlan(input, options.keys);
+  const nextProject = applySectionPatch(current, plan.set, plan.remove);
   const merged = mergePlatformConfigs(defaults.kind === "ok" ? defaults.value : {}, nextProject);
   const errors = platformErrors(merged, options);
   if (errors.length > 0) return { status: "invalid", errors };
   mkdirSync(join(configDir, slug), { recursive: true });
-  writeFileSync(projectPath, emitYaml(nextProject));
+  const text = existing.kind === "ok" ? existing.text : "";
+  writeFileSync(projectPath, patchSections(text, plan.set, plan.remove));
   return { status: "ok", path: projectPath };
+}
+
+function keyedPlan(input: Record<string, unknown>, keys: string[]): { set: Record<string, unknown>; remove: string[] } {
+  const set: Record<string, unknown> = {};
+  for (const key of keys) {
+    if (Object.hasOwn(input, key)) set[key] = input[key];
+  }
+  return { set, remove: [] };
 }
 
 function canonical(value: unknown): string {

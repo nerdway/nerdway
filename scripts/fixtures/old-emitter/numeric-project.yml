@@ -1,0 +1,4 @@
+tracker: github
+vcs: github
+github:
+  project: 12

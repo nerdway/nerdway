@@ -1,4 +1,5 @@
 import type { SkillEval, SkillEvalsFile } from "../types/evals.ts";
+import { readFrontmatter, stringify } from "./yaml.ts";
 
 export interface NativeCaseFile {
   path: string;
@@ -37,21 +38,14 @@ export function caseName(skill: string, id: string): string {
 }
 
 function frontmatter(fields: Record<string, unknown>, body: string): string {
-  const lines = Object.entries(fields)
-    .filter(([, value]) => value !== undefined)
-    .map(([key, value]) => `${key}: ${JSON.stringify(value)}`);
-  return `---\n${lines.join("\n")}\n---\n\n${body}\n`;
+  const yaml = stringify(Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined))).trimEnd();
+  return `---\n${yaml}\n---\n\n${body}\n`;
 }
 
 export function parseFrontmatter(content: string): { fields: Record<string, unknown>; body: string } {
-  const match = /^---\n([\s\S]*?)\n---\n\n?([\s\S]*)$/.exec(content);
-  if (match === null) throw new Error("no frontmatter block");
-  const fields: Record<string, unknown> = {};
-  for (const line of match[1].split("\n")) {
-    const at = line.indexOf(": ");
-    fields[line.slice(0, at)] = JSON.parse(line.slice(at + 2));
-  }
-  return { fields, body: match[2] };
+  const result = readFrontmatter(content);
+  if (result.error !== undefined) throw new Error(result.error);
+  return { fields: result.fields, body: result.body };
 }
 
 function evalDirDepth(evalDir: string): number {

@@ -164,13 +164,24 @@ test("--print pr.collapse_details: false is printed as false", () => {
   }
 });
 
+test("--print pr.collapse_details: a pr-only file prints the stored value", () => {
+  const { root, repo, env } = repoWithConfig("pr:\n  collapse_details: false\n");
+  try {
+    const result = run(["--print", "pr.collapse_details", repo], env);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout.trim(), "false");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("--print: a non-boolean pr.collapse_details exits 4 with a clear error", () => {
   const { root, repo, env } = repoWithConfig(`${VALID}pr:\n  collapse_details: yes\n`);
   try {
     const result = run(["--print", repo], env);
     assert.equal(result.status, 4);
     assert.equal(result.stdout, "");
-    assert.match(result.stderr, /pr\.collapse_details must be a boolean/);
+    assert.match(result.stderr, /pr\.collapse_details: expected boolean/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

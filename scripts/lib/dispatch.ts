@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { parseRepoTag, repoFromLabels, type RepoLabel } from "./repo-tag.ts";
 
 export type WorkKind = "code" | "local" | "hardware" | "research" | "vault";
@@ -118,25 +122,10 @@ export function decideDispatch(input: DispatchInput): DispatchResult {
   return decided(input, "cursor-cloud", "github-with-repo-tag", { repo, handoff: handoffOf(input) });
 }
 
-const EXECUTOR_PROMPT = `You are the cloud executor for nerdway issue {{issue}} in {{repo}}.
-
-Inputs:
-- Repository: {{repo}}
-- Issue: {{issue}} ({{issueUrl}})
-- Plan comment: {{planComment}}
-- Allowed files:
-{{files}}
-- Base branch: the repository default branch
-
-Duties, in order:
-1. Run nerdway:issue-workflow on the issue in Implementation (Start if branch and PR are missing).
-2. Change only the allowed files.
-3. Run the repo's tests and validators.
-4. Post a ## Session summary comment on the issue.
-5. Leave the PR as a draft or ready for review. Never merge, never set Done, never change another issue.
-
-Output: the final message ends with the draft PR URL on its own line.
-`;
+const EXECUTOR_PROMPT = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "..", "..", "skills", "slack-intake", "executor-prompt.md"),
+  "utf8",
+);
 
 export function buildExecutorPrompt(decision: DispatchDecision): string {
   if (decision.executor !== "cursor-cloud" || decision.handoff === undefined) {

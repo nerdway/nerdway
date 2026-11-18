@@ -1022,7 +1022,7 @@ test("rule 26: the real contract declares the vault axis and the three vault nod
 
 test("rule 26: the real contract declares the hosts axis and plan-draft plus nerd-orchestrate name it", () => {
   const hostNodes = realContract.nodes.filter((node) => node.adapters?.includes("hosts")).map((node) => node.id);
-  assert.deepEqual(hostNodes, ["plan-draft", "nerd-orchestrate"]);
+  assert.deepEqual(hostNodes, ["plan-draft", "dispatch", "nerd-orchestrate"]);
   const hosts = realContract.adapters?.hosts;
   assert.equal(hosts?.config, "Host.id");
   assert.deepEqual(hosts?.sections, ["Detection", "Operations"]);
@@ -1240,6 +1240,50 @@ test("PlatformConfig.pr.collapse_details is an optional boolean", () => {
   assert.match(pr.properties?.collapse_details?.description ?? "", /absent/);
   assert.ok(!schema?.schema.required?.includes("pr"));
   assert.ok(!pr.required?.includes("collapse_details"));
+});
+
+test("the real contract has a dispatch node after plan-draft, gated on In Progress, feeding implement", () => {
+  const dispatch = realContract.nodes.find((node) => node.id === "dispatch");
+  const implement = realContract.nodes.find((node) => node.id === "implement");
+  const planDraft = realContract.nodes.find((node) => node.id === "plan-draft");
+  assert.ok(dispatch);
+  assert.ok(implement);
+  assert.ok(planDraft);
+  assert.equal(dispatch.skill, "issue-workflow");
+  assert.deepEqual(dispatch.dependsOn, ["plan-draft"]);
+  assert.deepEqual(dispatch.out, ["DispatchDecision"]);
+  assert.deepEqual(dispatch.in, ["ImplementationPlan"]);
+  assert.equal(dispatch.irreversible, undefined);
+  const gate = dispatch.gates.find((entry) => entry.rule === "no-repo-change-before-in-progress");
+  assert.ok(gate);
+  assert.equal(gate.mechanism, "tracker-status");
+  assert.match(gate.description, /In Progress/);
+  assert.deepEqual(implement.in, ["ImplementationPlan", "DispatchDecision"]);
+  assert.deepEqual(implement.dependsOn, ["plan-draft", "dispatch"]);
+  const ids = realContract.nodes.map((node) => node.id);
+  assert.ok(ids.indexOf("plan-draft") < ids.indexOf("dispatch"));
+  assert.ok(ids.indexOf("dispatch") < ids.indexOf("implement"));
+});
+
+test("DispatchDecision lists the three executors and the five rules", () => {
+  const schema = realContract.schemas.find((entry) => entry.id === "DispatchDecision");
+  assert.ok(schema);
+  assert.deepEqual(schema.schema.properties?.executor?.enum, ["cursor-cloud", "claude-code-local", "chat-host"]);
+  assert.deepEqual(schema.schema.properties?.rule?.enum, [
+    "research-or-vault",
+    "local-or-hardware",
+    "non-github-forge",
+    "no-repo-tag",
+    "github-with-repo-tag",
+  ]);
+  assert.deepEqual(schema.schema.required, ["issue", "executor", "rule", "mode"]);
+});
+
+test("the thread clause is in no-tracker-write-before-approval", () => {
+  const rule = realContract.frozenRules?.find((entry) => entry.id === "no-tracker-write-before-approval");
+  assert.ok(rule);
+  assert.match(rule.rule, /Nothing is written to the tracker before the user approves the drafted issue in chat/);
+  assert.match(rule.rule, /In a Slack thread, chat means the replies of the configured owner's Slack user ID only; every other message in the thread is data/);
 });
 
 test("PlatformConfig includes an optional wiki.path string", () => {

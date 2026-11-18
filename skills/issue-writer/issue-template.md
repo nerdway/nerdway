@@ -12,6 +12,13 @@
 
 ## FULL variant (complex issues)
 
+### Repository
+
+<!-- One line `[repo=owner/name]` naming the single repository the work lands
+     in. issue-writer fills it when the project maps to one repo; omit it when
+     the project spans several. A cloud executor picks the repo from this tag or
+     the project's labels, never from the project description. -->
+
 ### Objective
 
 <!-- One or two sentences: the outcome we want and for whom. Testable, not a

@@ -17,7 +17,10 @@ when:
 3. `GROK_BOT` is set in the environment.
 
 A session that also has `AskUserQuestion` or `AskQuestion` still stays
-`grok-bot` when any of the signals above matched first.
+`grok-bot` when any of the signals above matched first. `slack-thread`
+wins when the session was woken from a channel thread, even if
+`SendToUser` is present, because that tool reaches the owner's private
+chat, not the thread.
 
 ## Operations
 

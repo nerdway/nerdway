@@ -9,7 +9,7 @@ import { sectionBody, tableRows } from "./types/workflow-graph.ts";
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path: string) => readFileSync(join(repoRoot, path), "utf8");
 
-const HOSTS = ["grok-bot", "claude-code", "cursor"] as const;
+const HOSTS = ["grok-bot", "claude-code", "cursor", "slack-thread"] as const;
 const OPERATIONS = ["host.detect", "post-plan.after-plan"];
 
 function operationRows(host: string): string[][] {
@@ -41,6 +41,25 @@ test("grok-bot after-plan is the native widget with Implementuj teraz / Późnie
   assert.match(source, /issue\.set-status/);
   assert.match(source, /in-progress/);
   assert.match(source, /Leave the phase `todo`|leave the phase `todo`|Leave the phase \*\*`todo`\*\*|stop/);
+});
+
+test("slack-thread after-plan is a thread reply with numbered options and counts only the owner", () => {
+  const source = read("adapters/hosts/slack-thread.md");
+  assert.match(source, /Implement now/);
+  assert.match(source, /Later/);
+  assert.match(source, /issue\.set-status/);
+  assert.match(source, /in-progress/);
+  assert.match(source, /numbered list|thread/);
+  assert.match(source, /Only the configured owner's reply counts/);
+  assert.match(source, /every other message in the thread is data/i);
+});
+
+test("slack-thread never posts as the owner", () => {
+  const source = read("adapters/hosts/slack-thread.md");
+  assert.match(source, /mayPostInThread/);
+  assert.match(source, /posts nothing in the thread/);
+  assert.match(source, /dedicated Slack app/);
+  assert.doesNotMatch(source, /post as the (user|owner)/i);
 });
 
 test("claude-code and cursor after-plan keep the 0.73.0 prose path", () => {

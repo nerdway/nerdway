@@ -49,3 +49,16 @@ test("empty session falls back to claude-code prose path", () => {
 test("grok-bot wins over claude-code when both tools are present", () => {
   assert.equal(detectHost({ tools: ["AskUserQuestion", "SendToUser"] }), "grok-bot");
 });
+
+test("slackThread selects slack-thread over SendToUser", () => {
+  assert.equal(detectHost({ slackThread: true, tools: ["SendToUser"] }), "slack-thread");
+  assert.equal(detectHost({ slackThread: true, tools: ["AskQuestion"] }), "slack-thread");
+});
+
+test("explicit NERDWAY_HOST still wins", () => {
+  assert.equal(
+    detectHost({ env: { NERDWAY_HOST: "cursor" }, slackThread: true, tools: ["SendToUser"] }),
+    "cursor",
+  );
+  assert.equal(detectHost({ env: { NERDWAY_HOST: "slack-thread" }, tools: ["SendToUser"] }), "slack-thread");
+});

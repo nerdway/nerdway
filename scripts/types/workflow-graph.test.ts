@@ -1030,7 +1030,7 @@ test("rule 26: the real contract declares the hosts axis and plan-draft plus ner
   assert.ok(!realContract.nodes.some((node) => node.id === "auto-issue-mode" && node.adapters?.includes("hosts")));
   const host = realContract.schemas.find((entry) => entry.id === "Host");
   assert.ok(host);
-  assert.deepEqual(host.schema.properties?.id?.enum, ["grok-bot", "claude-code", "cursor"]);
+  assert.deepEqual(host.schema.properties?.id?.enum, ["grok-bot", "claude-code", "cursor", "slack-thread"]);
 });
 
 test("nerd-orchestrate is a conversational orchestrate node with width 2 and no new host operation", () => {

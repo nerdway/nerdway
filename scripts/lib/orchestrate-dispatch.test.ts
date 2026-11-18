@@ -38,6 +38,19 @@ test("grok-bot stays sequential or CloudAgent and never uses local worktrees as 
   });
 });
 
+test("slack-thread stays sequential or CloudAgent like grok-bot", () => {
+  assert.deepEqual(aimDispatchForHost("slack-thread", true), {
+    maxParallel: 1,
+    worktrees: false,
+    cloudAgent: true,
+  });
+  assert.deepEqual(aimDispatchForHost("slack-thread", false), {
+    maxParallel: 1,
+    worktrees: false,
+    cloudAgent: true,
+  });
+});
+
 test("dispatch follows the same host detect as DEMO-478", () => {
   assert.equal(detectHost({ tools: ["AskUserQuestion"] }), "claude-code");
   assert.equal(detectHost({ tools: ["AskQuestion"] }), "cursor");

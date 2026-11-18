@@ -1,10 +1,11 @@
-export const HOST_IDS = ["grok-bot", "claude-code", "cursor"] as const;
+export const HOST_IDS = ["grok-bot", "claude-code", "cursor", "slack-thread"] as const;
 
 export type HostId = (typeof HOST_IDS)[number];
 
 export type HostDetectInput = {
   env?: Record<string, string | undefined>;
   tools?: string[];
+  slackThread?: boolean;
 };
 
 const EXPLICIT_KEYS = ["NERDWAY_HOST", "AGENT_HOST"] as const;
@@ -39,6 +40,8 @@ export function detectHost(input: HostDetectInput = {}): HostId {
     const value = env[key]?.trim();
     if (isHostId(value)) return value;
   }
+
+  if (input.slackThread === true) return "slack-thread";
 
   if (hasTool(tools, "sendtouser") || set(env, "GROK_BOT")) return "grok-bot";
   if (hasTool(tools, "askuserquestion") || set(env, "CLAUDE_CODE") || set(env, "CLAUDECODE")) {

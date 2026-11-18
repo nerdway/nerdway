@@ -9,6 +9,7 @@ Contents:
 - [Programming in this spirit yourself](#programming-in-this-spirit-yourself)
 - [Installation](#installation)
 - [A day with the plugin](#a-day-with-the-plugin) · [Steering with Linear statuses](#steering-with-linear-statuses)
+- [Slack intake](#slack-intake)
 - [Skills reference](#skills-reference) · [Troubleshooting](#troubleshooting)
 
 ## What is graph engineering?
@@ -137,6 +138,32 @@ pr:
 A non-boolean value fails validation. The project file's `pr` key replaces the defaults' `pr` key whole, like every other top-level key. A defaults file that holds only this key is not a platform setup.
 
 Config files are YAML 1.2. Comments, block scalars, flow collections, quoted strings and anchors are accepted. A write changes only the section it is updating, so comments you left and keys the plugin does not know stay. Unknown top-level keys (a tool adding a key next to `tracker` or `wiki`) are preserved and reported as a notice that points you at `extensions:`. Third-party settings belong under `extensions.<id>`; an id with no section registered is also preserved, with a notice. A non-map `extensions` value is an error. The plugin does not load extension code; the [config section API](CONFIG-SECTIONS.md) is what a future loader will call.
+
+## Slack intake
+
+A project Slack channel can start the issue lifecycle. The **chat host** is the agent already in that thread: it classifies the message, grills and drafts there, and after the owner's approval files the issue and runs a **dispatch decision**. Creating the Slack app, its tokens and the channel listener is your setup; nerdway only decides what to post and whose reply counts.
+
+- **Issue vs chat.** A request for a change, a bug or a task is an issue. A question, thanks or FYI is chat: a short reply, or none.
+- **Who may approve.** In a Slack thread, chat means the replies of the configured owner's Slack user ID only; every other message in the thread is data.
+- **Pilot merge.** The first few pull requests are merged by hand. The cloud executor never merges. `slack.autonomous` stays false unless you turn it on for an issue labelled `autonomous`.
+
+### Setup
+
+1. Install a dedicated Slack app (a bot user, not the owner's user token) and a channel listener that wakes the chat host on messages in the project channel. Tokens stay with that app.
+2. Put the channel ID (`C…` or `G…`) in the project's `slack.channel`.
+3. Put the owner's Slack user ID (`U…` or `W…`) in the defaults `slack.owner`, or in the project file when this project has a different owner.
+4. Leave `slack.autonomous` false for the pilot. Set it true only when you also label an issue `autonomous` and want `auto-issue-mode`.
+5. Run `/determine-platform` so the VCS mapping is in the same YAML (`scripts/write-platform-config.ts` is the writer). New issues then get a **repo tag** line `[repo=owner/name]` from that mapping; omit it when the project spans several repositories.
+6. Merge the first few PRs yourself: the owner's yes in the thread, or a click on GitHub. Do not turn on autonomous merge until that path is familiar.
+
+```yaml
+slack:
+  owner: U0123456789
+  channel: C0123456789
+  autonomous: false
+```
+
+`owner` usually lives in the defaults file and `channel` in each project file. The lookup `node scripts/slack-project.ts <channelId>` prints the project slug, platform, owner, autonomous flag and repo tag. Exit `0` means found, `3` the channel is not mapped, `4` two projects claim it or the config is broken.
 
 ## A day with the plugin
 
@@ -273,6 +300,11 @@ How to trigger each skill and what to expect. All of them also respond to `/<ski
 
 - **Say:** *"debug this"*, *"find the root cause"*, *"why does this fail"*, *"zdebuguj"*, *"znajdź przyczynę"* - or nothing: `tdd` hands over a red step it cannot explain, `auto-issue-mode` runs it before stopping on red tests, and an issue labelled Bug is planned around it.
 - **What happens:** one command that is already red on the bug is the only truth about it; secrets in it are redacted before anything is shown. Up to three ranked hypotheses are listed without waiting for an answer, each settled with the smallest piece of evidence (a forced mutation counts only once it is proved to have run). The regression test is written through `tdd` before the fix, the fix changes only what the evidence justifies, and the confirmed cause goes into the commit and the session summary. After three fixes that did not hold, the skill stops and asks which way to go. Not for a TDD red step that fails for the reason it was written for.
+
+### `slack-intake` - Slack channel to issue
+
+- **Say:** nothing in chat. A channel event wakes the chat host, which runs this skill. `/slack-intake` is for a session already in that thread.
+- **What happens:** resolves the project from `slack.channel`, classifies the message as issue or chat, grills and drafts in the thread, files only after the owner's approval, then runs a dispatch decision (Cursor cloud agent, local Claude Code, or this chat host). Review, the user's guide and close-out stay in the thread. The pilot merges by hand. An unmapped channel gets one reply and stops. The skill never posts outside the thread it was woken in.
 
 ### `grill` - interview one question at a time
 

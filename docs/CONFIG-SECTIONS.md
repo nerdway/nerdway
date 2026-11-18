@@ -21,6 +21,7 @@ sections are:
   `gitlab`, `ado`, `jira`
 - `wiki` - `wiki`
 - `pr` - `pr`
+- `slack` - `slack`
 
 An **extension section** owns exactly `extensions.<id>`. The id must
 match `^[a-z][a-z0-9-]*$`. Core sections keep their own top-level keys;
@@ -33,6 +34,10 @@ wiki:
   path: ~/notes
 pr:
   collapse_details: true
+slack:
+  owner: U0123456789
+  channel: C0123456789
+  autonomous: false
 extensions:
   demo:
     enabled: true
@@ -89,7 +94,7 @@ registry.registerSection(demo);
 ```
 
 Calling `createSectionRegistry()` returns a mutable copy of the built-in
-registry (platform, wiki, pr already registered). The module default is
+registry (platform, wiki, pr, slack already registered). The module default is
 that same set, frozen, so tests and a future loader do not share
 mutable global state. Calling `registerSection(def)` without a registry
 uses the frozen default and throws.
@@ -114,10 +119,12 @@ The call `writeSection(id, value, { target: "defaults" | "project", repoRoot, en
 validates first, then patches through `patchSection` (a top-level key,
 or the `extensions.<id>` path). Comments and every other section stay.
 
-Platform, wiki and pull-request readers use this API:
-`readPlatformConfig`, `writePlatformConfig`, `resolveVault` and
+Platform, wiki, pull-request and Slack readers use this API:
+`readPlatformConfig`, `writePlatformConfig`, `resolveVault`,
+`readSlackConfig` and
 `validate-platform-config.ts --print pr.collapse_details`. They do not
-keep a private list of keys.
+keep a private list of keys. The `slack` section has no writer CLI; the
+user edits the YAML and `validate-platform-config.ts` checks it.
 
 ## Unknown content
 

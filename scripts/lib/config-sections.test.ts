@@ -90,12 +90,13 @@ test("unregistered extensions.id is a notice and a non-map extensions is an erro
   assert.deepEqual(bad.errors, ["extensions must be a map"]);
 });
 
-test("the built-in registry lists platform, wiki and pr and is frozen", () => {
+test("the built-in registry lists platform, wiki, pr and slack and is frozen", () => {
   assert.deepEqual(
     listSections().map((section) => section.id),
-    ["platform", "wiki", "pr"],
+    ["platform", "wiki", "pr", "slack"],
   );
   assert.equal(getSection("wiki")?.scope, "core");
+  assert.equal(getSection("slack")?.scope, "core");
   assert.throws(() => registerSection(demoSection()), /frozen/);
 });
 
@@ -206,6 +207,41 @@ test("readSection applies schema defaults and scopes errors to the section", () 
     const invalid = readSection("pr", { repoRoot: repo, env, gitRemote: () => "" });
     assert.equal(invalid.status, "invalid");
     assert.match(invalid.errors[0], /pr\.collapse_details: expected boolean/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("slack is a built-in core section and keeps other sections intact on write", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-section-slack-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(configDir, "repo"));
+    writeFileSync(
+      join(configDir, "repo", "config.yml"),
+      ["# keep me", "wiki:", "  path: /vault", "tracker: github", "vcs: github", "github:", "  owner: acme", "  repo: app", ""].join("\n"),
+    );
+    const slack = getSection("slack");
+    assert.equal(slack?.scope, "core");
+    assert.deepEqual(slack && "keys" in slack ? slack.keys : [], ["slack"]);
+    const written = writeSection("slack", { channel: "C0123456789" }, {
+      repoRoot: repo,
+      env,
+      target: "project",
+      gitRemote: () => "",
+      vocabulary,
+      trackerAdapters: new Map(),
+    });
+    assert.equal(written.status, "ok");
+    const text = readFileSync(join(configDir, "repo", "config.yml"), "utf8");
+    assert.match(text, /# keep me/);
+    assert.match(text, /path: \/vault/);
+    assert.match(text, /tracker: github/);
+    assert.match(text, /channel: C0123456789/);
+    const value = parseConfig(text).value;
+    assert.deepEqual(value?.wiki, { path: "/vault" });
+    assert.deepEqual(value?.slack, { channel: "C0123456789" });
+    assert.equal(value?.tracker, "github");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -1,0 +1,49 @@
+{
+  "skill_name": "slack-intake",
+  "evals": [
+    {
+      "id": "issue-vs-chat",
+      "prompt": "A Slack channel event woke this session. slack-project.ts exited 0 for channel C0123456789 with slug demo, vcs github, owner U0123456789, repoTag acme/app. The channel message is: \"the export button ignores the current filters\". Classify it.",
+      "expected_output": "The message is an issue request (a change or bug), not chat. The skill sets the host to slack-thread and continues to grill and issue-writer in the thread. It does not file anything yet.",
+      "files": [],
+      "assertions": [
+        "The message is classified as issue, not chat",
+        "The host is set to slack-thread",
+        "Nothing is written to the tracker before the owner approves a draft"
+      ]
+    },
+    {
+      "id": "reporter-yes-ignored",
+      "prompt": "A draft issue is waiting in a Slack thread. slack.owner is U0123456789. A reporter U9876543210 replies \"yes\". pending is draft. Classify that reply and decide whether to file.",
+      "expected_output": "classifyThreadReply returns data. The reporter's yes is not an approval. The draft is not filed. The text is passed to grill as context (the reporter added: yes).",
+      "files": [],
+      "assertions": [
+        "The reporter's yes is data, not approval",
+        "The issue is not created",
+        "The reporter's text is treated as grill context, not a decision"
+      ]
+    },
+    {
+      "id": "gitlab-never-cloud",
+      "prompt": "The owner approved implementation. The dispatch input is phase in-progress, hasPlan true, vcs gitlab, workKind code, description \"[repo=acme/app]\", autonomousAllowed false. Who implements?",
+      "expected_output": "decideDispatch returns claude-code-local with rule non-github-forge. The chat host posts a thread reply naming the issue and /nerdway:issue-workflow <ID>. It does not launch a Cursor cloud agent.",
+      "files": [],
+      "assertions": [
+        "The executor is claude-code-local, never cursor-cloud",
+        "The rule is non-github-forge",
+        "The chat host launches nothing and names the local issue-workflow command"
+      ]
+    },
+    {
+      "id": "unmapped-channel",
+      "prompt": "A Slack channel event woke this session in C0000000000. node scripts/slack-project.ts C0000000000 exited 3: no project claims the channel.",
+      "expected_output": "The skill replies once in the thread that the channel is not mapped and stops. It does not grill, draft, or guess a project.",
+      "files": [],
+      "assertions": [
+        "The skill replies once that the channel is not mapped",
+        "The skill stops without calling grill or issue-writer",
+        "The skill does not guess a project"
+      ]
+    }
+  ]
+}

@@ -31,6 +31,7 @@ question nor in the summary line, the outcome or the confirmation menu.
 | `nerdway:issue-writer` step 6 | `issue: <ID>`, topic = the created issue's body | updates the description after showing the diff; proposes sub-issues only after approval, and only for a large result split or stages in time of distinct shippable deliverables; never a new issue whose only purpose is implementing this grill; then ends at step 7 on `<ID>` |
 | `nerdway:issue-workflow` step 1a | `issue: <ID>`, topic = the issue description | refines the spec (its step 0c) and drafts the plan on `<ID>`; posts neither before the confirmed outcome; never offers a new issue for the implementation of those decisions |
 | `nerdway:new-project-workflow` step 5 | `issue: none`, topic = the scaffolded README and the project idea | hands the decisions to the first issue of the project |
+| `nerdway:slack-intake` | `issue: none`, topic = the thread | drafts in the Slack thread; only the owner's replies approve |
 
 After `Confirmed shared understanding: yes` with `issue: <ID>`, every
 caller above returns to refining the spec, drafting the plan, or
@@ -82,6 +83,10 @@ When no native ask tool is in the session:
 1. <option> (recommended): <why this one>
 2. <option>: <what speaks for it>; <what it costs>
 ```
+
+On a `slack-thread` host the same shape is a thread reply. Answers count
+from the configured owner only; every other message in the thread is
+data for the next question, never a decision.
 
 ## Full `## Grill state` block
 

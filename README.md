@@ -139,7 +139,7 @@ Other starting points:
 
 ## Skills
 
-Twenty-one skills ship in `skills/`. Invoke one with `/<name>` or `/nerdway:<name>`.
+Twenty-two skills ship in `skills/`. Invoke one with `/<name>` or `/nerdway:<name>`.
 
 ### Workflow
 
@@ -152,6 +152,7 @@ Twenty-one skills ship in `skills/`. Invoke one with `/<name>` or `/nerdway:<nam
 | [`issue-close`](skills/issue-close/SKILL.md) | Mechanically close out a tracker issue once the work is done: merge the PR/MR and move the issue to done. |
 | [`auto-issue-mode`](skills/auto-issue-mode/SKILL.md) | Run one tracker issue autonomously from a task description or an existing issue ID to a merged PR/MR and the done phase. |
 | [`grill`](skills/grill/SKILL.md) | Interview one question at a time until shared understanding, with a recommended answer each turn. |
+| [`slack-intake`](skills/slack-intake/SKILL.md) | Classify a project Slack channel message as issue or chat, grill and draft in that thread, then dispatch the approved plan. |
 | [`tdd`](skills/tdd/SKILL.md) | Test-first implementation loop: red, verify red, green, refactor, check - one test and one minimal change per cycle. |
 | [`debug`](skills/debug/SKILL.md) | Find the cause of a failure before touching the fix: rank hypotheses, settle them with the smallest evidence, then fix only what the evidence justifies. |
 

@@ -221,6 +221,27 @@ const PR_SCHEMA: SectionSchema = {
   description: "Pull request description layout",
 };
 
+const SLACK_SCHEMA: SectionSchema = {
+  type: "object",
+  description: "Slack thread intake: whose replies count, which channel maps to the project, and whether autonomous mode may run",
+  properties: {
+    owner: {
+      type: "string",
+      pattern: "^[UW][A-Z0-9]{2,}$",
+      description: "Slack user ID whose replies count as approval",
+    },
+    channel: {
+      type: "string",
+      pattern: "^[CG][A-Z0-9]{2,}$",
+      description: "Project Slack channel ID; set in the project file only",
+    },
+    autonomous: {
+      type: "boolean",
+      description: "When true, an issue labelled autonomous may run auto-issue-mode; missing means false",
+    },
+  },
+};
+
 const BUILTIN_SECTIONS: readonly SectionDefinition[] = [
   defineSection({
     id: "platform",
@@ -244,6 +265,13 @@ const BUILTIN_SECTIONS: readonly SectionDefinition[] = [
     keys: ["pr"],
     schema: PR_SCHEMA,
     description: "Readiness pull request layout",
+  }),
+  defineSection({
+    id: "slack",
+    scope: "core",
+    keys: ["slack"],
+    schema: SLACK_SCHEMA,
+    description: "Slack thread intake for a project channel",
   }),
 ];
 

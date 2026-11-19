@@ -478,6 +478,29 @@ runs validators only, so a metric that needs a new collection channel, a log
 file or a clock is not measured at all: it is rejected, not deferred.
 _Avoid_: telemetry, instrumentation (both imply a channel this repo does not have)
 
+**Chat host**:
+The agent session already talking with the user (in a Slack thread, that
+is the session woken by a channel event). Review, the user's guide and
+close-out stay with it. Implementation may move to a Cursor cloud agent
+or to local Claude Code after a dispatch decision.
+_Avoid_: Slack bot (the posting identity is a dedicated app; the chat
+host is the nerdway session)
+
+**Dispatch decision**:
+The `DispatchDecision` payload from the `dispatch` node: who implements
+the approved plan (`cursor-cloud`, `claude-code-local`, or `chat-host`),
+which rule fired, and the mode (`issue-workflow` or `auto-issue-mode`).
+Choosing writes nothing; the launch belongs to `implement`.
+_Avoid_: AIM (that is auto-issue-mode, a mode on the decision, not the
+decision itself)
+
+**Repo tag**:
+The `[repo=owner/name]` line on an issue, or a tracker label in the
+`repo` group named `owner/name` (or the string `repo=owner/name`). A
+cloud executor picks the repository from this tag, never from the
+project description.
+_Avoid_: git remote (the tag is on the issue, not inferred at dispatch)
+
 **Cursor Plugin**:
 The Cursor-native packaging at `.cursor-plugin/plugin.json`, which points at
 the existing `skills/` and `agents/` trees and at `hooks/cursor.hooks.json`.

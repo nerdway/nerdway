@@ -9,7 +9,7 @@ export type AimDispatch = {
 };
 
 export function aimDispatchForHost(host: HostId, worktreeAvailable: boolean): AimDispatch {
-  if (host === "grok-bot") {
+  if (host === "grok-bot" || host === "slack-thread") {
     return { maxParallel: 1, worktrees: false, cloudAgent: true };
   }
   if (worktreeAvailable) {

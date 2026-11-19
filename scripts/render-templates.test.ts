@@ -23,6 +23,43 @@ for (const template of buildTemplates(contract)) {
 
 const bodyOf = (id: string) => contract.schemas.find((entry) => entry.id === id)?.schema;
 
+test("the FULL issue template opens with a Repository section that explains the `[repo=owner/name]` line", () => {
+  const full = buildTemplates(contract)
+    .find((template) => template.path === "skills/issue-writer/issue-template.md")
+    ?.content.split("---")[0];
+  assert.ok(full);
+  assert.match(full, /## FULL variant \(complex issues\)/);
+  const repositoryAt = full.indexOf("### Repository");
+  const objectiveAt = full.indexOf("### Objective");
+  assert.ok(repositoryAt !== -1 && objectiveAt !== -1 && repositoryAt < objectiveAt);
+  assert.match(full, /\[repo=owner\/name\]/);
+  assert.match(full, /never from the project description/);
+});
+
+test("MINIMAL and CHILD stay without it", () => {
+  const source = buildTemplates(contract).find(
+    (template) => template.path === "skills/issue-writer/issue-template.md",
+  )?.content;
+  assert.ok(source);
+  const [, minimal, child] = source.split("---");
+  assert.ok(minimal);
+  assert.ok(child);
+  assert.doesNotMatch(minimal, /### Repository/);
+  assert.doesNotMatch(child, /### Repository/);
+  assert.match(minimal, /## MINIMAL variant/);
+  assert.match(child, /## CHILD sub-issue/);
+});
+
+test("an IssueSpec instance with repo renders the tag line verbatim", () => {
+  const rendered = renderSchema(bodyOf("IssueSpec"), {
+    repo: "[repo=acme/app]",
+    objective: "Typed edge state",
+    acceptanceCriteria: ["the validator rejects an entry with no body"],
+  });
+  assert.match(rendered, /^## Issue spec\n\n### Repository\n\n\[repo=acme\/app\]\n/m);
+  assert.ok(rendered.includes("[repo=acme/app]"));
+});
+
 test("a partially filled instance of the real IssueSpec writes no placeholder junk into the comment", () => {
   const rendered = renderSchema(bodyOf("IssueSpec"), {
     objective: "Typed edge state",

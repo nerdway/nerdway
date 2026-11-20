@@ -97,7 +97,7 @@ Reading order if you want to go deeper: [Workflow topology](ARCHITECTURE.md#work
 
 ## Installation
 
-Requirements, installation in Claude Code, Cursor and other agents, and updating are in the [README](../README.md#requirements). Without dynamic workflows everything still runs, only sequentially (see [degradation](#degradation-is-part-of-the-design)).
+Requirements, installation in Claude Code, Cursor and other agents, and updating are in the [README](../README.md#requirements). Without dynamic workflows everything still runs, only sequentially (see [degradation](#degradation-is-part-of-the-design)). Coming from 0.75.0 or earlier, follow [Upgrading](UPGRADING.md): the slash prefix, the environment variables, the platform config location and the wiki location changed without aliases.
 
 ### The plugin tells you when it is out of date
 
@@ -344,5 +344,6 @@ Put it in `<config dir>/config.yml` (user defaults) or the project overlay, or s
 - **`/plugin update` says nothing changed**: run `/plugin marketplace update nerdway` first; if it still reports no change, no new version has been released yet.
 - **The session opens with "nerdway plugin X is installed, main is Y" or "stale copy of the nerdway skill"**: see [The plugin tells you when it is out of date](#the-plugin-tells-you-when-it-is-out-of-date); follow the fix the line ends with.
 - **`nerdway blocked git commit` (or `git push`)**: the branch has no issue ID; see [No commit without an issue](#no-commit-without-an-issue). Create or pick the issue and work on its branch, or restart the agent with `NERDWAY_NO_ISSUE=1` when the work really has no issue.
+- **Commands, variables or the platform config stopped working after an update from 0.75.0 or earlier**: old names are ignored without a warning; walk through [Upgrading](UPGRADING.md).
 - **A skill doesn't trigger**: invoke it explicitly with the slash form, e.g. `/issue-workflow DEMO-123` or `/nerdway:issue-workflow DEMO-123`.
 - **The plan or review runs sequentially and slowly**: dynamic workflows are unavailable or disabled; see [Installation](#installation). The result is the same, only slower.

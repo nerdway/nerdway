@@ -117,7 +117,7 @@ The config directory is the first of these that applies:
 3. `%APPDATA%\nerdway` on Windows;
 4. `~/.config/nerdway`.
 
-The slug is the first line of a `.nerdbrain-slug` file in the repo root when there is one. Otherwise it comes from the `origin` remote, with `/` and `.` turned into `-`: `github.com/owner/repo` becomes `github-com-owner-repo`. A repository without a remote uses its directory name.
+The slug is the first line of a `.nerdbrain-slug` file in the repo root when there is one. Otherwise it comes from the `origin` remote, with `/` and `.` turned into `-`: `github.com/acme/app` becomes `github-com-acme-app`. A repository without a remote uses its directory name.
 
 What happens automatically: on session start, a leftover `## Platform` section in `CLAUDE.md` is copied into the user config when the case is clear. The plugin never writes or deletes `CLAUDE.md`. When the section and an existing user config differ, the agent asks you once to keep the user config, take the repo values, or merge them, and runs the same command you can run yourself:
 

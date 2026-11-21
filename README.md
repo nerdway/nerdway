@@ -6,6 +6,8 @@ You describe the work in Linear, GitHub Issues, GitLab Issues, Azure DevOps Boar
 
 ## Install
 
+Upgrading from 0.75.0 or earlier? Several names and the config location changed; follow [Upgrading](docs/UPGRADING.md) first.
+
 ### Claude Code
 
 Add the marketplace:
@@ -218,6 +220,7 @@ Install notes, day-to-day steering, and the full skill reference are in the [Use
 ## Docs, support, and contributing
 
 - [User Guide](docs/USER-GUIDE.md): a day with the plugin, steering with statuses, and the reference of every skill with its trigger phrases.
+- [Upgrading](docs/UPGRADING.md): moving an install of 0.75.0 or earlier to the current release, step by step.
 - [Support](docs/SUPPORT.md): MIT license, GitHub Issues, and https://nerdway.si.
 - [Contributing](docs/CONTRIBUTING.md): checking a change and releasing a version.
 

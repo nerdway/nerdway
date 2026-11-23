@@ -1,6 +1,6 @@
 # Upgrading from 0.75.0 or earlier
 
-This page takes an install of nerdway 0.75.0 or earlier to the current `main` (0.86.0). Several changes in between are breaking and have no compatibility alias: old names are ignored without a warning. Work through the sections in order, or jump to [Upgrade order](#upgrade-order) for the short version.
+This page takes an install of nerdway 0.75.0 or earlier to the current `main` (0.87.0). Several changes in between are breaking and have no compatibility alias: old names are ignored without a warning. Work through the sections in order, or jump to [Upgrade order](#upgrade-order) for the short version.
 
 Upgrades from one recent `main` commit to the next need nothing from this page. The install check at session start tells you when your copy is behind and how to update it (see [The plugin tells you when it is out of date](USER-GUIDE.md#the-plugin-tells-you-when-it-is-out-of-date)).
 
@@ -38,7 +38,7 @@ grep '"version"' ~/.cursor/plugins/local/nerdway/.claude-plugin/plugin.json
 
 Some checks below run a script that ships with the plugin. In the commands, `<plugin dir>` is one of these:
 
-- Claude Code: `~/.claude/plugins/cache/nerdway/nerdway/<version>`, for example `~/.claude/plugins/cache/nerdway/nerdway/0.86.0`.
+- Claude Code: `~/.claude/plugins/cache/nerdway/nerdway/<version>`, for example `~/.claude/plugins/cache/nerdway/nerdway/0.87.0`.
 - Cursor local install: `~/.cursor/plugins/local/nerdway`.
 - Any clone of `https://github.com/nerdway/nerdway` at the same version.
 
@@ -67,7 +67,7 @@ What changed with the identity:
 - **The readiness PR marker** is `<!-- nerdway:pr-body -->`. A pull request opened before the upgrade still carries the old marker, so the workflow treats its description as written by hand and posts the new readiness description as a comment instead of replacing it. To let the workflow manage that description again, replace the old marker line in the PR description with `<!-- nerdway:pr-body -->`.
 - **Stale copies of plugin skills** in your own skill directories (`~/.claude/skills`, `~/.cursor/skills`, `~/.agents/skills`, and the same under a project) shadow the plugin's current skills. The install check names each one at session start as `stale copy of the nerdway skill <name> at <path>: remove it`. Delete each directory it names.
 
-You are done with this step when the plugin list shows `nerdway@nerdway` at 0.86.0 and your agent lists the skills as `nerdway:<name>`.
+You are done with this step when the plugin list shows `nerdway@nerdway` at 0.87.0 and your agent lists the skills as `nerdway:<name>`.
 
 ## Environment variables
 
@@ -246,7 +246,7 @@ None of these needs an action unless you start using the feature.
 
 You are done when:
 
-- the plugin list (`claude plugin list`) or the Cursor manifest shows 0.86.0, and a new session prints no install warning;
+- the plugin list (`claude plugin list`) or the Cursor manifest shows 0.87.0, and a new session prints no install warning;
 - the environment (`env | grep '^NERDWAY_'`) shows the variables you use, and your profiles hold no old names;
 - the platform check (`validate-platform-config.ts --print <your repo>`) prints your platform for every project;
 - the section search (`grep -n '^## Platform' <your repo>/CLAUDE.md`) prints nothing;

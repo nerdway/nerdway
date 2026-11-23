@@ -182,3 +182,40 @@ export function commentBodies(input: unknown): string[] {
     return [];
   });
 }
+
+const CHECKPOINT_OUTCOME_HEADING = "## Checkpoint";
+
+/** Format the `## Checkpoint` comment that answers a drained `## Pending checkpoint`. */
+export function formatCheckpointOutcome(outcome: { page: string; verification: string }): string {
+  return `${CHECKPOINT_OUTCOME_HEADING}\n\nPage: ${outcome.page}\nVerified: ${outcome.verification}\n`;
+}
+
+function verifiedCheckpointPage(body: string): string | undefined {
+  const lines = normalize(body).split("\n").map((value) => value.trim());
+  if (lines[0] !== CHECKPOINT_OUTCOME_HEADING) return undefined;
+  const page = line(lines, "Page");
+  const verification = line(lines, "Verified");
+  return page && verification?.startsWith("verified ") ? page : undefined;
+}
+
+/**
+ * The queue items still waiting for the live wiki, oldest first. A guide is
+ * open while the newest `## Personal guide` outcome is `Pending:` for its
+ * path; a checkpoint is open until a later verified `## Checkpoint` comment
+ * names its page.
+ */
+export function openPending(bodies: readonly string[]): Pending[] {
+  const outcome = latestGuideOutcome(bodies);
+  const open: Pending[] = [];
+  bodies.forEach((body, index) => {
+    for (const item of parsePending([body])) {
+      if (item.kind === "checkpoint") {
+        const answered = bodies.slice(index + 1).some((later) => verifiedCheckpointPage(later) === item.page);
+        if (!answered) open.push(item);
+      }
+    }
+  });
+  const guides = parsePending(bodies).filter((item): item is PendingGuide => item.kind === "guide");
+  const pendingGuide = outcome.kind === "pending" ? guides.filter((item) => item.path === outcome.path).at(-1) : undefined;
+  return pendingGuide === undefined ? open : [pendingGuide, ...open];
+}

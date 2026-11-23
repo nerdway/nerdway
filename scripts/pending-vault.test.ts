@@ -39,3 +39,19 @@ test("format-outcome and outcome agree; a verification line must come from the v
   assert.equal(run(["format-guide", "--path", "g.md", "--mode", "create", "--entity", "none", "--out", tmpdir()], "  ").status, 2);
   assert.equal(run(["nope"]).status, 2);
 });
+
+test("open lists a queued checkpoint until format-checkpoint-outcome answers it", () => {
+  const out = mkdtempSync(join(tmpdir(), "pending-vault-open-"));
+  try {
+    const page = "entities/projects/github-com-acme-app.md";
+    const entry = "- 2026-11-23 #7: plan accepted";
+    const formatted = run(["format-checkpoint", "--page", page, "--entry", entry, "--out", out]);
+    const queued = readFileSync(formatted.stdout.trim(), "utf8");
+    assert.deepEqual(JSON.parse(run(["open"], JSON.stringify([queued])).stdout), [{ kind: "checkpoint", page, entry }]);
+    const answer = run(["format-checkpoint-outcome", "--page", page, "--verification", `verified ${page} 9 bytes sha256:111111111111 on desk 2026-11-23`]);
+    assert.equal(answer.status, 0, answer.stderr);
+    assert.deepEqual(JSON.parse(run(["open"], JSON.stringify([queued, answer.stdout])).stdout), []);
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+});

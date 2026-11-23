@@ -3,14 +3,17 @@ import { join, resolve } from "node:path";
 
 import {
   commentBodies,
+  formatCheckpointOutcome,
   formatGuideOutcome,
   formatPending,
   latestGuideOutcome,
+  openPending,
   parsePending,
   type Pending,
 } from "./lib/pending-vault.ts";
 
 // pending-vault.ts list            < comments.json   -> JSON array of complete queue items
+// pending-vault.ts open            < comments.json   -> JSON array of the items still waiting for the live wiki
 // pending-vault.ts outcome         < comments.json   -> JSON of the newest `## Personal guide` outcome
 // pending-vault.ts format-guide --path <p> --mode create|update --entity <slug|none> --out <dir> < guide.md
 // pending-vault.ts format-checkpoint --page <p> --entry <line> --out <dir>
@@ -18,6 +21,7 @@ import {
 // pending-vault.ts format-outcome verified --path <p> --verification <line>
 // pending-vault.ts format-outcome pending --path <p>
 // pending-vault.ts format-outcome not-needed --reason <text>
+// pending-vault.ts format-checkpoint-outcome --page <p> --verification <line>
 // comments.json: `gh issue view --json comments`, an array of bodies, or an array of `{ body }`.
 
 const EXIT_USAGE = 2;
@@ -59,6 +63,9 @@ switch (command) {
   case "list":
     console.log(JSON.stringify(parsePending(commentBodies(stdinJson()))));
     break;
+  case "open":
+    console.log(JSON.stringify(openPending(commentBodies(stdinJson()))));
+    break;
   case "outcome":
     console.log(JSON.stringify(latestGuideOutcome(commentBodies(stdinJson()))));
     break;
@@ -85,6 +92,12 @@ switch (command) {
     else fail("format-outcome needs verified, pending or not-needed");
     break;
   }
+  case "format-checkpoint-outcome": {
+    const verification = option(args, "--verification");
+    if (!verification.startsWith("verified ")) fail("--verification must be the line verify-vault-file.ts printed");
+    process.stdout.write(formatCheckpointOutcome({ page: option(args, "--page"), verification }));
+    break;
+  }
   default:
-    fail("usage: pending-vault.ts list|outcome|format-guide|format-checkpoint|format-outcome ...");
+    fail("usage: pending-vault.ts list|open|outcome|format-guide|format-checkpoint|format-outcome|format-checkpoint-outcome ...");
 }

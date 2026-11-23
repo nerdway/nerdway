@@ -3,6 +3,8 @@ import { test } from "node:test";
 
 import {
   commentBodies,
+  formatCheckpointOutcome,
+  openPending,
   formatGuideOutcome,
   formatPending,
   latestGuideOutcome,
@@ -93,4 +95,19 @@ test("commentBodies reads strings, objects with body, and the gh issue view shap
   assert.deepEqual(commentBodies([{ body: "b" }, { other: 1 }]), ["b"]);
   assert.deepEqual(commentBodies({ comments: [{ body: "c" }] }), ["c"]);
   assert.deepEqual(commentBodies(null), []);
+});
+
+test("openPending keeps a guide until a verified outcome follows and a checkpoint until a verified Checkpoint comment follows", () => {
+  const verifiedLine = "verified guides/acme-app.md 1 bytes sha256:000000000000 on desk 2026-11-23";
+  const queuedGuide = [...formatPending(guide), formatGuideOutcome({ kind: "pending", path: guide.path })];
+  const queuedCheckpoint = formatPending(checkpoint);
+  assert.deepEqual(openPending([...queuedGuide, ...queuedCheckpoint]), [guide, checkpoint]);
+
+  const drainedGuide = [...queuedGuide, formatGuideOutcome({ kind: "verified", path: guide.path, verification: verifiedLine })];
+  assert.deepEqual(openPending([...drainedGuide, ...queuedCheckpoint]), [checkpoint]);
+
+  const answered = formatCheckpointOutcome({ page: checkpoint.page, verification: "verified entities/projects/github-com-acme-app.md 9 bytes sha256:111111111111 on desk 2026-11-23" });
+  assert.match(answered, /^## Checkpoint\n\nPage: entities\/projects\/github-com-acme-app\.md\nVerified: verified /);
+  assert.deepEqual(openPending([...drainedGuide, ...queuedCheckpoint, answered]), []);
+  assert.deepEqual(openPending([answered, ...queuedCheckpoint]), [checkpoint]);
 });

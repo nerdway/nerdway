@@ -86,6 +86,12 @@ When the PR completes, `Fixes #<n>` moves the work item to its `Completed`
 state and the board's last column — the link alone does not. The close-out
 writes `done` anyway; writing the column the item already sits in succeeds.
 
+The non-closing form is `Refs <ID>` (or `Refs #<n>` with `tracker: ado`): the
+work item stays linked (`--work-items`, the `#<n>` mention) and only `Fixes`
+moves it to `Completed`. `issue-close` switches the line from `Fixes` to `Refs`
+before completing the PR when the personal guide is still pending; the rest of
+the description stays as it is (`node scripts/pr-body-state.ts --refs`).
+
 ## URL
 
 `az repos pr create` prints no URL. Build it from its JSON output as

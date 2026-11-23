@@ -33,3 +33,16 @@ test("rejects arguments with the usage line", () => {
   assert.equal(status, 2);
   assert.equal(stdout, "");
 });
+
+test("--magic prints fixes or refs for the magic-word block", () => {
+  assert.deepEqual(run(JSON.stringify({ body: "Fixes #4\n\nOne." }), ["--magic"]), { status: 0, stdout: "fixes\n" });
+  assert.deepEqual(run("Refs #4\n\nOne.\n\n<!-- nerdway:pr-body -->\n", ["--magic"]), { status: 0, stdout: "refs\n" });
+});
+
+test("--refs prints the description with Refs in place of Fixes", () => {
+  assert.deepEqual(run(JSON.stringify({ body: "Fixes #4\n\nOne." }), ["--refs"]), { status: 0, stdout: "Refs #4\n\nOne." });
+});
+
+test("an unknown argument is a usage error", () => {
+  assert.equal(run("", ["--nope"]).status, 2);
+});

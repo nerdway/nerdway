@@ -58,6 +58,12 @@ the same repo, `Fixes owner/repo#123` for an issue in another repo. GitHub
 closes the issue itself, but only when the PR merges into the repo's
 **default branch**.
 
+The non-closing form is `Refs <ID>`: it links the PR to the issue on GitHub
+and through the Linear integration (a non-closing magic word there) and leaves
+the issue open at merge. `issue-close` switches the line from `Fixes <ID>` to
+`Refs <ID>` before merging when the personal guide is still pending; the rest
+of the body stays as it is (`node scripts/pr-body-state.ts --refs`).
+
 ## URL
 
 `gh pr create` prints the PR URL; `gh repo view <name>` and

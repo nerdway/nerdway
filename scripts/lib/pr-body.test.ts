@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { READINESS_MARKER, classifyPrBody, prBodyFromInput } from "./pr-body.ts";
+import { READINESS_MARKER, classifyPrBody, magicWord, prBodyFromInput, withRefs } from "./pr-body.ts";
 
 test("the start draft is the Fixes line and one paragraph", () => {
   assert.equal(classifyPrBody("Fixes DEMO-1\n\nAdds the thing for the people who need it."), "draft");
@@ -82,4 +82,25 @@ test("the input is the raw description or the JSON a pr.view command prints", ()
   assert.equal(prBodyFromInput(JSON.stringify({ title: "t", description: "Fixes #3" })), "Fixes #3");
   assert.equal(prBodyFromInput(JSON.stringify({ title: "t", description: null })), "");
   assert.equal(prBodyFromInput(JSON.stringify("Fixes DEMO-1")), "Fixes DEMO-1");
+});
+
+test("a start draft whose magic line is Refs is still a draft", () => {
+  assert.equal(classifyPrBody("Refs DEMO-1\n\nAdds the thing."), "draft");
+  assert.equal(classifyPrBody("Refs DEMO-1\nhttps://linear.app/team/issue/DEMO-1\n\nAdds the thing."), "draft");
+  assert.equal(classifyPrBody("Fixes DEMO-1\nRefs DEMO-2\n\nAdds the thing."), "draft");
+});
+
+test("withRefs switches every leading Fixes line to Refs and keeps the rest byte for byte", () => {
+  const body = `Fixes #31\nFixes acme/app#2\n\n## Summary\n\nFixes the thing.\n\n${READINESS_MARKER}\n`;
+  assert.equal(withRefs(body), `Refs #31\nRefs acme/app#2\n\n## Summary\n\nFixes the thing.\n\n${READINESS_MARKER}\n`);
+  assert.equal(withRefs("Refs #31\n\nx"), "Refs #31\n\nx");
+  assert.equal(withRefs("Fixes DEMO-1\r\nhttps://example.com/DEMO-1\r\n\r\nx"), "Refs DEMO-1\nhttps://example.com/DEMO-1\n\nx");
+});
+
+test("magicWord reads the first block: fixes, refs, mixed or none", () => {
+  assert.equal(magicWord("Fixes #1\n\nx"), "fixes");
+  assert.equal(magicWord("Refs #1\n\nx"), "refs");
+  assert.equal(magicWord("Fixes #1\nRefs #2\n\nx"), "mixed");
+  assert.equal(magicWord("## Summary\n\nFixes #1"), "none");
+  assert.equal(magicWord(""), "none");
 });

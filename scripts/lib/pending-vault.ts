@@ -95,7 +95,8 @@ function guideFrom(fields: Map<string, string>, text: string): PendingGuide | nu
 /** Read every complete queue item from the issue's comment bodies (oldest first). */
 export function parsePending(bodies: readonly string[]): Pending[] {
   const items: Pending[] = [];
-  const parts = new Map<string, { total: number; chunks: Map<number, string>; fields?: Map<string, string> }>();
+  type Parts = { total: number; chunks: Map<number, string>; fields?: Map<string, string> };
+  const parts = new Map<string, Parts>();
   for (const body of bodies) {
     const split = splitHead(body);
     if (split === null) continue;
@@ -112,7 +113,7 @@ export function parsePending(bodies: readonly string[]): Pending[] {
       const path = fields.get("Path");
       if (part === null || !path) continue;
       const total = Number(part[2]);
-      const slot = parts.get(path) ?? { total, chunks: new Map() };
+      const slot: Parts = parts.get(path) ?? { total, chunks: new Map<number, string>() };
       slot.chunks.set(Number(part[1]), rest);
       if (part[1] === "1") slot.fields = fields;
       parts.set(path, slot);

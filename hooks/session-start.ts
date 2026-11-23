@@ -1,15 +1,25 @@
-import { readFileSync, realpathSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve, sep } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { renderContextOutput, type Runtime } from "../scripts/lib/install-check.ts";
 import { resolveConfigDir, resolveSlug, resolveVault } from "../scripts/lib/nerdway-config.ts";
+import { detectMachine } from "../scripts/lib/workstation.ts";
 
 const ALWAYS = new Set(["Purpose", "Stack", "Commands", "Conventions", "Active context"]);
 
+/** What the drain nudge needs; the hook asks the tracker nothing. */
+export interface DrainProbe {
+  workstation: boolean;
+  configured: boolean;
+  stampPath: string;
+  now: number;
+}
+
 export interface SessionOptions {
   vault: string;
+  drain?: DrainProbe;
   aliasesPath: string;
   killSwitchPath: string;
   budget: number;
@@ -139,6 +149,28 @@ function insideVault(projectDir: string, vault: string): boolean {
   }
 }
 
+const DRAIN_INTERVAL_MS = 24 * 60 * 60 * 1000;
+export const DRAIN_LINE = "nerdway: this workstation has the live wiki; drain pending guides: `/nerdway:nerd-personal-docs drain`";
+
+function drainNudge(options: SessionOptions): string {
+  const drain = options.drain;
+  if (drain === undefined || !drain.workstation || !drain.configured || !isDir(options.vault)) return "";
+  try {
+    if (drain.now - statSync(drain.stampPath).mtimeMs < DRAIN_INTERVAL_MS) return "";
+  } catch {
+    // no stamp yet
+  }
+  try {
+    mkdirSync(dirname(drain.stampPath), { recursive: true });
+    writeFileSync(drain.stampPath, `${new Date(drain.now).toISOString()}\n`);
+    const seconds = drain.now / 1000;
+    utimesSync(drain.stampPath, seconds, seconds);
+  } catch {
+    return "";
+  }
+  return DRAIN_LINE;
+}
+
 function buildContext(options: SessionOptions): string {
   if (isFile(options.killSwitchPath) || isFile(join(options.projectDir, ".nerdbrain-disabled"))) return "";
   if (insideVault(options.projectDir, options.vault)) return "";
@@ -167,7 +199,9 @@ function buildContext(options: SessionOptions): string {
     ctx += "## Project not yet in nerdbrain wiki\n\n";
     ctx += `No page at \`entities/projects/${slug}.md\` in the wiki directory \`${options.vault}\` yet. Build understanding during the session and, when a write trigger fires (see user rules / AGENTS.md / CLAUDE.md), invoke the \`nerdbrain-wiki\` skill to create it.\n`;
   }
-  return rstripNewlines(enforceBudget(ctx, options.budget, pagePath));
+  const nudge = drainNudge(options);
+  const body = rstripNewlines(enforceBudget(ctx, options.budget, pagePath));
+  return nudge.length > 0 ? `${body}\n\n${nudge}` : body;
 }
 
 export function renderSession(options: SessionOptions): string {
@@ -201,6 +235,21 @@ function budgetFrom(value: string | undefined): number {
   return parsed;
 }
 
+function cacheDir(env: NodeJS.ProcessEnv, home: string): string {
+  return env.NERDWAY_CACHE_DIR || env.CLAUDE_PLUGIN_DATA || join(home, ".cache", "nerdway");
+}
+
+function drainProbe(projectDir: string, env: NodeJS.ProcessEnv, home: string, runtime: Runtime, aliasesPath: string): DrainProbe {
+  const slug = resolveSlug(projectDir, { aliasesPath });
+  const configDir = resolveConfigDir(env, process.platform, home);
+  return {
+    workstation: detectMachine({ env, host: runtime === "cursor" ? "cursor" : "claude-code" }).kind === "workstation",
+    configured: existsSync(join(configDir, slug, "config.yml")),
+    stampPath: join(cacheDir(env, home), "drain", `${slug}.stamp`),
+    now: Date.now(),
+  };
+}
+
 function sessionVault(projectDir: string, env: NodeJS.ProcessEnv, home: string): string {
   const result = resolveVault(projectDir, env, { home });
   if (result.status === "ok") return result.path;
@@ -214,9 +263,11 @@ if (invoked !== undefined && import.meta.url === pathToFileURL(resolve(invoked))
   const args = process.argv.slice(2);
   const runtime: Runtime = args[args.indexOf("--runtime") + 1] === "cursor" ? "cursor" : "claude";
   const projectDir = projectDirectory(raw, process.cwd());
+  const aliasesPath = process.env.NERDBRAIN_ALIASES ?? join(home, ".claude", "nerdbrain.aliases");
   const options: SessionOptions = {
     vault: sessionVault(projectDir, process.env, home),
-    aliasesPath: process.env.NERDBRAIN_ALIASES ?? join(home, ".claude", "nerdbrain.aliases"),
+    drain: drainProbe(projectDir, process.env, home, runtime, aliasesPath),
+    aliasesPath,
     killSwitchPath: join(home, ".claude", "nerdbrain.disabled"),
     budget: budgetFrom(process.env.NERDBRAIN_INJECT_BUDGET),
     projectDir,

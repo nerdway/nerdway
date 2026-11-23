@@ -315,3 +315,49 @@ test("the script writes the Claude Code envelope for --runtime claude and by def
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+const DRAIN_LINE = "nerdway: this workstation has the live wiki; drain pending guides: `/nerdway:nerd-personal-docs drain`";
+
+function drainSetup(root: string): { project: string; stampPath: string } {
+  const project = join(root, "demo");
+  mkdirSync(join(root, "vault"), { recursive: true });
+  mkdirSync(project);
+  writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
+  return { project, stampPath: join(root, "cache", "drain", "demo.stamp") };
+}
+
+test("a workstation with the live wiki and a platform config gets the drain line once a day", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-drain-"));
+  try {
+    const { project, stampPath } = drainSetup(root);
+    const now = Date.parse("2026-11-23T08:00:00Z");
+    const drain = { workstation: true, configured: true, stampPath, now };
+    const first = contextOf(renderSession(options(root, project, { drain })));
+    assert.equal(first.includes(DRAIN_LINE), true);
+    const again = contextOf(renderSession(options(root, project, { drain: { ...drain, now: now + 60 * 60 * 1000 } })));
+    assert.equal(again.includes(DRAIN_LINE), false);
+    const nextDay = contextOf(renderSession(options(root, project, { drain: { ...drain, now: now + 25 * 60 * 60 * 1000 } })));
+    assert.equal(nextDay.includes(DRAIN_LINE), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("no drain line on a remote machine, without a wiki directory, or without a platform config", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-drain-"));
+  try {
+    const { project, stampPath } = drainSetup(root);
+    const now = Date.parse("2026-11-23T08:00:00Z");
+    for (const drain of [
+      { workstation: false, configured: true, stampPath, now },
+      { workstation: true, configured: false, stampPath, now },
+    ]) {
+      assert.equal(contextOf(renderSession(options(root, project, { drain }))).includes(DRAIN_LINE), false, JSON.stringify(drain));
+    }
+    const noWiki = options(root, project, { vault: join(root, "missing"), drain: { workstation: true, configured: true, stampPath, now } });
+    assert.equal(contextOf(renderSession(noWiki)).includes(DRAIN_LINE), false);
+    assert.equal(contextOf(renderSession(options(root, project))).includes(DRAIN_LINE), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

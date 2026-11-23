@@ -3,8 +3,7 @@
 Selected by tier `mcp`: the vault directory is absent (a Claude Code cloud
 session) and the vault is reachable through the `nerdbrain` connector, whose
 tools are named `mcp__claude_ai_nerdbrain__*` and sit in front of an Obsidian
-instance with the Local REST API; propagation to the other machines is
-Obsidian Sync, as on every tier. Every operation is a tool call, nothing is a
+instance with the Local REST API. Every operation is a tool call, nothing is a
 file. In the recipes below a bare tool name such as `vault_read` stands for
 `mcp__claude_ai_nerdbrain__vault_read`.
 
@@ -19,6 +18,13 @@ The probe is the calling skill's, in this order:
 2. Otherwise `ToolSearch` with the query `+nerdbrain` and `max_results` 1. A
    result naming a `mcp__claude_ai_nerdbrain__*` tool → tier `mcp`. No such
    tool → tier `none`: no adapter, no read, no write.
+
+This tier is a remote transport: the agent is not on the workstation, and
+the plugin does not rely on any sync to carry a write to it. It serves reads
+(recall, plan context) and the page upkeep `nerdbrain-wiki` runs on request,
+but it never receives a guide or a Checkpoints entry: those are
+queued on the issue as `## Pending guide` or `## Pending checkpoint` and
+drained later on a workstation with the live wiki (ADR-0025).
 
 The connector tools stay deferred. An operation loads exactly the names it
 needs right before the call, as

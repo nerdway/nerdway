@@ -1,19 +1,31 @@
 # Vault adapter: filesystem
 
-Selected by tier `file`: the resolved vault directory `<VAULT>` exists on
-this machine, so the vault is plain files, read with `Read` and `rg` and
+Selected by tier `file`: the resolved wiki directory `<VAULT>` exists on
+this machine, so the wiki is plain files, read with `Read` and `rg` and
 written with `Edit` and `Write`, identically on desktop and headless server.
-The filesystem write is the whole recipe; propagation between machines is
-Obsidian Sync, not this adapter's concern. Obsidian remains a supported
-place to keep the files; it is no longer the only or default location.
+`<VAULT>` is any directory: the default `<config dir>/wiki`, a plain folder
+named by `wiki.path`, or a folder inside an Obsidian vault. Obsidian is one
+optional way to keep the files; nothing here checks for it. How copies reach
+other machines is whatever the user runs, and the plugin never relies on it.
 
 ## Tier
 
-`file` is the default wherever the vault directory exists. The tier probe of
+`file` is the default wherever the wiki directory exists. The tier probe of
 the calling skill resolves `<VAULT>` and checks that directory before
 anything else, so a connector that happens to be configured on a machine
 with the files never wins over them. Tier `none` (no directory and no
 connector) selects no adapter: nothing is read and nothing is written.
+
+Reads work on every machine that has the directory. Writes of a personal
+guide or a Checkpoints entry need the **live wiki**: `resolve-vault.ts
+--json` prints `live: true` only when the directory exists and the session
+runs on a user workstation. A directory on a remote agent machine is a copy,
+even when it is complete, and is never written. After the write, run
+`node "<plugin root>/scripts/verify-vault-file.ts" <VAULT> <path> --contains <issue URL>`
+on the same machine; the write counts only when it exits 0, and its printed
+line is the evidence on the issue. With no live wiki, or a host without
+`workstation.exec`, the text is queued on the issue as a `## Pending guide`
+or `## Pending checkpoint` comment (ADR-0025).
 
 ## Paths
 
@@ -25,8 +37,11 @@ directory when that variable was not substituted:
 node "<plugin root>/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
 ```
 
-Stdout is the absolute path. `--json` prints `{path, source, exists}`
-where `source` is `env`, `project`, `defaults` or `default`. The command
+Stdout is the absolute path. `--json` prints
+`{path, source, exists, live, machine, reason}` where `source` is `env`,
+`project`, `defaults` or `default`, `machine` is `workstation` or `remote`
+and `reason` is `workstation`, `remote` or `missing`; pass `--host <host>`
+with the detected host so a chat host counts as remote. The command
 does not create the directory. Resolution order is documented on
 `resolveVault` in `scripts/lib/nerdway-config.ts`: env `NERDWAY_WIKI`,
 then legacy env `NERDBRAIN_VAULT`, then `wiki.path` in the project

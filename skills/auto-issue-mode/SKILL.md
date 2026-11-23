@@ -209,25 +209,29 @@ number that proves it — before dispatching the next.
    (`pr.comment`), with the reason.
 5. **Close-out.** `personal-docs` depends on `wiki-write`: do not start
    `nerd-personal-docs` until this run has written the session's
-   `## Checkpoints` entry (or recorded an explicit skip: `tier=none` or no
+   `## Checkpoints` entry in the live wiki and verified it, queued it on the
+   issue (`pending: queued on the issue`), or recorded the explicit skip (no
    entity page). If this run has not done that yet, write it first — the same
    step as `issue-workflow`'s Session summary, with the pre-merge branch and
    HEAD. A Session summary comment alone is not enough. Then run
    `nerdway:nerd-personal-docs` with the ID and
    platform: this subagent runs on the session model, so the guide is not
    written on `issue-close`'s Haiku. It writes or updates the user's guide in
-   the nerdbrain vault and records a `## Personal guide` comment on the
-   issue, or says the machine has no vault. Then run
-   `nerdway:issue-close` with the ID and platform (its Step 0 checks the
-   guide, its Step 0b that every child of the issue is `done` and its
+   the live wiki and verifies it there, or queues it on the issue when no
+   workstation is reachable, and records a `## Personal guide` comment
+   (`Guide:` plus `Verified:`, `Pending:`, or `Not needed:`). Then run
+   `nerdway:issue-close` with the ID and platform (its Step 0 reads the
+   guide outcome and, with `Pending:`, merges with `Refs <ID>` and leaves
+   the issue In Review; its Step 0b that every child of the issue is `done` and its
    Step 0c that stage 4 replaced the start draft of the PR/MR description;
    then it
    commits leftovers, pushes, merges, switches to the base branch, writes
-   phase `done`).
+   phase `done`, or `in-review` while the guide is pending).
    `issue-close` does not print the merge hash, so once it finishes read it
    with `git rev-parse --short HEAD` on the base branch (its `git pull` puts
-   the merge commit at HEAD). Report: the guide path (or why none was
-   written), merge commit (short), base branch.
+   the merge commit at HEAD). Report: the guide as verified (path and verify
+   line) or pending on the issue, or why none was needed, then the merge
+   commit (short) and base branch. Never report a guide as "written" alone.
 6. **Nerdbrain.** Dispatched only after stage 5's report arrives, so it knows
    the merge; its prompt carries stage 5's merge commit and base branch. It
    makes one logical wiki write with `nerdway:nerdbrain-wiki` (one
@@ -253,10 +257,14 @@ number that proves it — before dispatching the next.
      other than the run's own issue, Backlog included (ID and title); else
      `none`.
 
-   The whole stage, checkpoint included, is skipped when the vault is
-   unreachable (`tier=none`, directory missing); the checkpoint alone is
-   skipped when the project has no entity page. Report: what was written, the
-   checkpoint line (or why none was written), or why nothing was.
+   The checkpoint goes only to the live wiki and is verified there
+   (`nerdbrain-wiki` *Checkpoints entries go to the live wiki only*); with
+   no live wiki reachable it is queued on the issue as `## Pending
+   checkpoint` for the drain. The other wiki writes of the stage are skipped
+   when the vault is unreachable (`tier=none`, directory missing); the
+   checkpoint alone is skipped when the project has no entity page. Report:
+   what was written, the checkpoint with its verify line or as pending, or
+   why nothing was.
 
 A version bump is a stage only when the argument asks for one or the repo's
 conventions (`CLAUDE.md`, the entity page) require it on every change; it then

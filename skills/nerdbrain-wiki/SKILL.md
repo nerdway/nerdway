@@ -131,14 +131,38 @@ the adapter says.
 | every write | `page.bump-updated` |
 
 **If the probe gives `tier=none`**: wiki is unreachable this session. Do not attempt writes. Mention briefly if the
-user asks something the wiki would have answered. When this skill is the
-`wiki-write` node after a Session summary, name that skip out loud
-(`skipped: tier=none`) in the summary and the report — never silently.
+user asks something the wiki would have answered.
 
-When this skill is the `wiki-write` node after a Session summary, a failed
-write with a reachable vault and an entity page is a failed step, not a
-skip (`killsRun`). The only other allowed skip is a project with no entity
-page, also named out loud (`skipped: no entity page`).
+**Checkpoints entries go to the live wiki only** (frozen rule
+`vault-write-live-and-verified`, ADR-0025). When this skill is the
+`wiki-write` node after a Session summary, probe first:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" --json --host <host> "$(git rev-parse --show-toplevel)"
+```
+
+1. `live: true` → `page.prepend-capped` on the `file` tier, then verify on
+   the same machine with the entry's first 60 characters:
+
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/verify-vault-file.ts" <WIKI> entities/projects/<slug>.md --contains "<first 60 characters of the entry>"
+   ```
+
+   The Session summary's Checkpoint field names the page and the printed
+   `verified …` line.
+2. `live: false` → run the probe, the write and the verify on a workstation
+   through the host adapter's `workstation.exec` when it has a recipe and a
+   workstation is reachable. Otherwise do not write (not to a wiki copy on
+   this machine, not through `mcp`): queue the entry on the issue with
+   `node "${CLAUDE_PLUGIN_ROOT}/scripts/pending-vault.ts" format-checkpoint --page entities/projects/<slug>.md --entry "<entry>" --out <dir>`
+   and the tracker adapter's `issue.comment`; the Checkpoint field says
+   `pending: queued on the issue`. `nerdway:nerd-personal-docs drain`
+   writes it later.
+
+A failed write or verify on the live wiki with an entity page is a failed
+step, not a skip (`killsRun`). The only allowed skip is a project with no
+entity page, named out loud (`skipped: no entity page`); a queued entry is
+named too, never silent.
 
 ## Checkpoints
 
@@ -168,7 +192,7 @@ machine switch.
 The branch and hash are what make drift detectable later: `project-continue`
 checks that the hash is still an ancestor of the branch tip and that the
 issue's phase still matches. The date is a git-independent "how old is this" hint;
-never rely on it alone, since Obsidian Sync can deliver the page late.
+never rely on it alone, since a synced copy of the wiki can arrive late.
 
 **Write mode — Prepend, capped:** insert the new entry directly under the
 heading, before the existing ones, and drop entries beyond the newest **10**.

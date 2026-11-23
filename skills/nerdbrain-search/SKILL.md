@@ -1,7 +1,7 @@
 ---
 name: nerdbrain-search
 description: >-
-  The four recall operations of the nerdbrain Obsidian vault (5-wiki/): phrase
+  The four recall operations of the nerdbrain wiki directory: phrase
   search, outgoing [[links]] extraction, backlinks to a page, and 1-hop graph
   assembly for an entity page, each named by its operation ID of the vault
   adapter axis. Invoke whenever another skill's recall step needs to search
@@ -12,7 +12,7 @@ description: >-
 
 # nerdbrain-search: the four recall operations
 
-Four operations against `5-wiki/` of the vault. This skill owns what each one
+Four operations against the wiki directory `<WIKI>`. This skill owns what each one
 means and how its result is used; how it runs is the recipe of the vault
 adapter for the current tier:
 
@@ -23,14 +23,14 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/vault/<tier>.md
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory.
 
-**Vault root.** Resolve `<VAULT>` once:
+**Wiki root.** Resolve `<WIKI>`, the wiki directory itself, once:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
 ```
 
 **Tier probe** (the same steps as `## Tier` of `adapters/vault/mcp.md`): the
-directory `<VAULT>` exists → `file`. Otherwise `ToolSearch` with
+directory `<WIKI>` exists → `file`. Otherwise `ToolSearch` with
 the query `+nerdbrain` and `max_results` 1: a result naming a
 `mcp__claude_ai_nerdbrain__*` tool → `mcp`; none → `none`. The connector tools
 stay deferred: an operation loads only the names it needs

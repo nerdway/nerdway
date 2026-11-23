@@ -1,6 +1,6 @@
 # Upgrading from 0.75.0 or earlier
 
-This page takes an install of nerdway 0.75.0 or earlier to the current `main` (0.86.0). Several changes in between are breaking and have no compatibility alias: old names are ignored without a warning. Work through the sections in order, or jump to [Upgrade order](#upgrade-order) for the short version.
+This page takes an install of nerdway 0.75.0 or earlier to the current `main` (0.87.0). Several changes in between are breaking and have no compatibility alias: old names are ignored without a warning. Work through the sections in order, or jump to [Upgrade order](#upgrade-order) for the short version.
 
 Upgrades from one recent `main` commit to the next need nothing from this page. The install check at session start tells you when your copy is behind and how to update it (see [The plugin tells you when it is out of date](USER-GUIDE.md#the-plugin-tells-you-when-it-is-out-of-date)).
 
@@ -32,12 +32,13 @@ grep '"version"' ~/.cursor/plugins/local/nerdway/.claude-plugin/plugin.json
 | [Wiki location](#wiki-location) | 0.83.0, 0.83.1 | yes, if you used the old default vault path | set `wiki.path` | `resolve-vault.ts` |
 | [YAML and config sections](#yaml-and-config-sections) | 0.84.0, 0.85.0 | only for files with duplicate keys | fix duplicate keys | `validate-platform-config.ts` |
 | [Slack intake](#new-and-changed-skills) | 0.86.0 | no | none, unless you use it | `slack-project.ts` |
+| [Live wiki and wiki root](#live-wiki-and-wiki-root) | 0.87.0 | yes, if `wiki.path` or `NERDWAY_WIKI` points at a vault root that holds the wiki in a subfolder | append that subfolder to the value | `resolve-vault.ts --json` |
 
 ## The plugin directory
 
 Some checks below run a script that ships with the plugin. In the commands, `<plugin dir>` is one of these:
 
-- Claude Code: `~/.claude/plugins/cache/nerdway/nerdway/<version>`, for example `~/.claude/plugins/cache/nerdway/nerdway/0.86.0`.
+- Claude Code: `~/.claude/plugins/cache/nerdway/nerdway/<version>`, for example `~/.claude/plugins/cache/nerdway/nerdway/0.87.0`.
 - Cursor local install: `~/.cursor/plugins/local/nerdway`.
 - Any clone of `https://github.com/nerdway/nerdway` at the same version.
 
@@ -66,7 +67,7 @@ What changed with the identity:
 - **The readiness PR marker** is `<!-- nerdway:pr-body -->`. A pull request opened before the upgrade still carries the old marker, so the workflow treats its description as written by hand and posts the new readiness description as a comment instead of replacing it. To let the workflow manage that description again, replace the old marker line in the PR description with `<!-- nerdway:pr-body -->`.
 - **Stale copies of plugin skills** in your own skill directories (`~/.claude/skills`, `~/.cursor/skills`, `~/.agents/skills`, and the same under a project) shadow the plugin's current skills. The install check names each one at session start as `stale copy of the nerdway skill <name> at <path>: remove it`. Delete each directory it names.
 
-You are done with this step when the plugin list shows `nerdway@nerdway` at 0.86.0 and your agent lists the skills as `nerdway:<name>`.
+You are done with this step when the plugin list shows `nerdway@nerdway` at 0.87.0 and your agent lists the skills as `nerdway:<name>`.
 
 ## Environment variables
 
@@ -174,6 +175,29 @@ Check where the wiki resolves; `source` is `env`, `project`, `defaults` or `defa
 node <plugin dir>/scripts/resolve-vault.ts --json <your repo>
 ```
 
+## Live wiki and wiki root
+
+Version 0.87.0, breaking for one setup.
+
+**Wiki root.** The resolved path is the wiki directory itself: `guides/`, `entities/projects/<slug>.md`, `index.md` and `log.md` sit directly in it. Skills no longer append a fixed `5-wiki` subfolder. If your `wiki.path`, `NERDWAY_WIKI` or `NERDBRAIN_VAULT` points at the root of an Obsidian vault that keeps the wiki in its `5-wiki` subfolder, append `/5-wiki` to the value:
+
+```yaml
+wiki:
+  path: <your vault directory>/5-wiki
+```
+
+The default `<config dir>/wiki` (`~/.config/nerdway/wiki` on Linux and macOS) is unchanged, so a default install keeps working.
+
+**Live wiki.** Guides and Checkpoints entries are written only to the wiki directory on your own machine (a workstation), and count only after the plugin checked the file there. A cloud session, a chat bot's box or a sandbox never writes into its copy of the wiki, and the `mcp` connector tier no longer receives these writes; reads are unchanged. Without a reachable workstation, the text is posted on the issue as `## Pending guide` or `## Pending checkpoint`, the PR merges with `Refs <ID>` and the issue stays In Review. The next session on your workstation prints a once-a-day line asking you to run `/nerdway:nerd-personal-docs drain`, which writes, verifies and finishes those issues. If you closed issues from remote sessions before, expect them to queue now.
+
+The machine probe reads `NERDWAY_MACHINE` (`workstation` or `remote`) first; set it where the probe guesses wrong, for example `NERDWAY_MACHINE=remote` in a sandbox that holds a copy of your wiki.
+
+Check the wiki root and the machine; on your workstation `path` is the folder that holds `index.md`, and `live` is `true`:
+
+```bash
+node <plugin dir>/scripts/resolve-vault.ts --json <your repo>
+```
+
 ## YAML and config sections
 
 Versions 0.84.0 and 0.85.0, breaking only for a file with a duplicate key.
@@ -216,14 +240,14 @@ None of these needs an action unless you start using the feature.
 2. Remove any plugin or marketplace installed under another id, then install `nerdway@nerdway`.
 3. Update saved prompts, rules files and scripts to the `nerdway:` prefix, and delete stale skill copies the install check names.
 4. Open a session in each repository that has a `## Platform` section in `CLAUDE.md`, and answer the conflict question if the agent asks it.
-5. Set `wiki.path` (or `NERDWAY_WIKI`) if you keep a wiki.
+5. Set `wiki.path` (or `NERDWAY_WIKI`) if you keep a wiki, pointing at the folder that holds `index.md` and `entities/`.
 6. Remove the `## Platform` section from each `CLAUDE.md` and commit.
 7. Run the checks below.
 
 You are done when:
 
-- the plugin list (`claude plugin list`) or the Cursor manifest shows 0.86.0, and a new session prints no install warning;
+- the plugin list (`claude plugin list`) or the Cursor manifest shows 0.87.0, and a new session prints no install warning;
 - the environment (`env | grep '^NERDWAY_'`) shows the variables you use, and your profiles hold no old names;
 - the platform check (`validate-platform-config.ts --print <your repo>`) prints your platform for every project;
 - the section search (`grep -n '^## Platform' <your repo>/CLAUDE.md`) prints nothing;
-- the wiki check (`resolve-vault.ts --json <your repo>`) prints your wiki directory with `"exists":true`, if you keep a wiki.
+- the wiki check (`resolve-vault.ts --json <your repo>`) prints your wiki directory with `"exists":true` and, on your workstation, `"live":true`, if you keep a wiki.

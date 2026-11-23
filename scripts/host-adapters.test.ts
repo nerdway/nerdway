@@ -10,7 +10,7 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path: string) => readFileSync(join(repoRoot, path), "utf8");
 
 const HOSTS = ["grok-bot", "claude-code", "cursor", "slack-thread"] as const;
-const OPERATIONS = ["host.detect", "post-plan.after-plan"];
+const OPERATIONS = ["host.detect", "post-plan.after-plan", "workstation.exec"];
 
 function operationRows(host: string): string[][] {
   const path = `adapters/hosts/${host}.md`;

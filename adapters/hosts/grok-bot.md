@@ -28,6 +28,7 @@ chat, not the thread.
 |-----------|--------|-------|
 | `host.detect` | recipe 1 below | returns `grok-bot` when this adapter's Detection signals match |
 | `post-plan.after-plan` | recipe 2 below | interactive `issue-workflow` only; AIM never runs this |
+| `workstation.exec` | recipe 3 below | the host's machine tools: `ListMachines`, then `Shell` with that `machineId`; `—` when no user computer is registered or online |
 
 ### Recipe 1: `host.detect`
 
@@ -52,3 +53,20 @@ If the native widget is missing after detect still chose this host, ask the
 same two options as a numbered list. "1" or "tak" picks Implementuj teraz.
 A synthetic host skip (`Questions skipped by the user`, no other user text)
 is not an answer: re-ask as the numbered list; do not invent a choice.
+
+### Recipe 3: `workstation.exec`
+
+The bot's own box is a remote machine, even when it holds a copy of the wiki.
+Call `ListMachines`; when a user computer is registered and online, pass its
+`machineId` to `Shell` (and to `Read` for a check) so the command runs there.
+Run the plugin's scripts from the plugin copy on that computer, or copy the
+guide text across with `CopyFromBox` first. With no registered computer, or
+the user's local-tool approval declined, the recipe is `—` and the write is
+queued on the issue.
+
+Run the three steps of a guide or Checkpoints write on that computer, each
+through `Shell` with its `machineId`: the live-wiki probe
+(`node <plugin dir>/scripts/resolve-vault.ts --json`, `live` must be `true`;
+no `--host`, because the command runs on the user computer, not in this
+session's box), the write, then
+`node <plugin dir>/scripts/verify-vault-file.ts <WIKI> <path> --contains <issue URL>`.

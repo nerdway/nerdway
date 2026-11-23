@@ -63,6 +63,11 @@ same), but only when the MR merges into the project's **default branch** and
 the project has automatic issue closing enabled; the close-out writes `done`
 anyway, and closing an already closed issue succeeds.
 
+The non-closing form is `Refs <ID>`: GitLab links the issue and does not close
+it at merge. `issue-close` switches the line from `Fixes <ID>` to `Refs <ID>`
+before merging when the personal guide is still pending; the rest of the
+description stays as it is (`node scripts/pr-body-state.ts --refs`).
+
 ## URL
 
 `glab mr create` prints the MR URL.

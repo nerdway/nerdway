@@ -2,7 +2,7 @@
 name: nerdbrain-wiki
 description: >-
   HOW to create or update a nerdbrain second-brain entity page at
-  5-wiki/entities/projects/{slug}.md in the user's Obsidian vault. Invoke when
+  entities/projects/{slug}.md in the user's wiki directory. Invoke when
   about to write such a wiki page — a write trigger fired, you need section
   update modes (Edit/Append/Prepend-capped), the checkpoint entry format for
   `## Checkpoints`, the vault adapter operations behind each write, the
@@ -19,7 +19,7 @@ This skill is the **HOW**. The user rules / `AGENTS.md` / global
 rules (vault root, never git against the vault). Use the `obsidian-markdown` skill for note
 syntax.
 
-Entity pages live at `5-wiki/entities/projects/<slug>.md` and are **English-only**
+Entity pages live at `<WIKI>/entities/projects/<slug>.md` and are **English-only**
 (tokenization efficiency). Index and log entries follow the vault language
 (currently PL).
 
@@ -74,7 +74,7 @@ Do not read related pages or run vault searches outside these two triggers.
 
 **`related:`/`[[link]]` follow:** an entity page's `related:` frontmatter
 holds `"[[slug]]"` entries; `slug` → path
-`5-wiki/entities/projects/<slug>.md` (same convention as the rest of this
+`<WIKI>/entities/projects/<slug>.md` (same convention as the rest of this
 skill). The path is already known, so `page.read-section` it directly, only
 the section(s) relevant to the task — same always/lazy contract as the
 current page, not the whole file.
@@ -107,14 +107,14 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/vault/<tier>.md
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory.
 
-**Vault root.** Resolve `<VAULT>` once:
+**Wiki root.** Resolve `<WIKI>`, the wiki directory itself, once:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
 ```
 
 **Tier probe** (the same steps as `## Tier` of `adapters/vault/mcp.md`): the
-directory `<VAULT>` exists → `file`. Otherwise `ToolSearch` with
+directory `<WIKI>` exists → `file`. Otherwise `ToolSearch` with
 the query `+nerdbrain` and `max_results` 1: a result naming a
 `mcp__claude_ai_nerdbrain__*` tool → `mcp`; none → `none`. The connector tools
 stay deferred: an operation loads only the names it needs
@@ -131,14 +131,38 @@ the adapter says.
 | every write | `page.bump-updated` |
 
 **If the probe gives `tier=none`**: wiki is unreachable this session. Do not attempt writes. Mention briefly if the
-user asks something the wiki would have answered. When this skill is the
-`wiki-write` node after a Session summary, name that skip out loud
-(`skipped: tier=none`) in the summary and the report — never silently.
+user asks something the wiki would have answered.
 
-When this skill is the `wiki-write` node after a Session summary, a failed
-write with a reachable vault and an entity page is a failed step, not a
-skip (`killsRun`). The only other allowed skip is a project with no entity
-page, also named out loud (`skipped: no entity page`).
+**Checkpoints entries go to the live wiki only** (frozen rule
+`vault-write-live-and-verified`, ADR-0025). When this skill is the
+`wiki-write` node after a Session summary, probe first:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" --json --host <host> "$(git rev-parse --show-toplevel)"
+```
+
+1. `live: true` → `page.prepend-capped` on the `file` tier, then verify on
+   the same machine with the entry's first 60 characters:
+
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/verify-vault-file.ts" <WIKI> entities/projects/<slug>.md --contains "<first 60 characters of the entry>"
+   ```
+
+   The Session summary's Checkpoint field names the page and the printed
+   `verified …` line.
+2. `live: false` → run the probe, the write and the verify on a workstation
+   through the host adapter's `workstation.exec` when it has a recipe and a
+   workstation is reachable. Otherwise do not write (not to a wiki copy on
+   this machine, not through `mcp`): queue the entry on the issue with
+   `node "${CLAUDE_PLUGIN_ROOT}/scripts/pending-vault.ts" format-checkpoint --page entities/projects/<slug>.md --entry "<entry>" --out <dir>`
+   and the tracker adapter's `issue.comment`; the Checkpoint field says
+   `pending: queued on the issue`. `nerdway:nerd-personal-docs drain`
+   writes it later.
+
+A failed write or verify on the live wiki with an entity page is a failed
+step, not a skip (`killsRun`). The only allowed skip is a project with no
+entity page, named out loud (`skipped: no entity page`); a queued entry is
+named too, never silent.
 
 ## Checkpoints
 
@@ -168,7 +192,7 @@ machine switch.
 The branch and hash are what make drift detectable later: `project-continue`
 checks that the hash is still an ancestor of the branch tip and that the
 issue's phase still matches. The date is a git-independent "how old is this" hint;
-never rely on it alone, since Obsidian Sync can deliver the page late.
+never rely on it alone, since a synced copy of the wiki can arrive late.
 
 **Write mode — Prepend, capped:** insert the new entry directly under the
 heading, before the existing ones, and drop entries beyond the newest **10**.
@@ -190,9 +214,9 @@ line-start `## Active context` and treat the section as empty.
 ## Index and log maintenance
 
 **New entity page created:**
-1. `index.append` under `## Projekty` of `5-wiki/index.md`:
+1. `index.append` under `## Projekty` of `<WIKI>/index.md`:
    `- [[<slug>]] — <one-line description>` (description in vault language, PL)
-2. `log.append` to `5-wiki/log.md`:
+2. `log.append` to `<WIKI>/log.md`:
    `## [YYYY-MM-DD] entity | <slug> (new project page)`
 
 Write page + index + log together as one logical wiki write.

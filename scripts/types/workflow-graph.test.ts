@@ -1020,13 +1020,13 @@ test("rule 26: the real contract declares the vault axis and the three vault nod
   assert.equal(vault?.operations.length, 13);
 });
 
-test("rule 26: the real contract declares the hosts axis and plan-draft plus nerd-orchestrate name it", () => {
+test("rule 26: the real contract declares the hosts axis and the nodes that reach a workstation name it", () => {
   const hostNodes = realContract.nodes.filter((node) => node.adapters?.includes("hosts")).map((node) => node.id);
-  assert.deepEqual(hostNodes, ["plan-draft", "dispatch", "nerd-orchestrate"]);
+  assert.deepEqual(hostNodes, ["plan-draft", "dispatch", "personal-docs", "wiki-write", "nerd-orchestrate"]);
   const hosts = realContract.adapters?.hosts;
   assert.equal(hosts?.config, "Host.id");
   assert.deepEqual(hosts?.sections, ["Detection", "Operations"]);
-  assert.deepEqual(hosts?.operations, ["host.detect", "post-plan.after-plan"]);
+  assert.deepEqual(hosts?.operations, ["host.detect", "post-plan.after-plan", "workstation.exec"]);
   assert.ok(!realContract.nodes.some((node) => node.id === "auto-issue-mode" && node.adapters?.includes("hosts")));
   const host = realContract.schemas.find((entry) => entry.id === "Host");
   assert.ok(host);
@@ -1066,7 +1066,9 @@ test("the real contract will not close out on session-summary alone when the vau
   assert.ok(personalDocs.in.includes("EntityPageUpdate"));
   assert.equal(wikiWrite.failure.killsRun, true);
   assert.match(wikiWrite.failure.fallback, /never silent/);
-  assert.match(wikiWrite.failure.fallback, /tier=none/);
+  assert.match(wikiWrite.failure.fallback, /live wiki/);
+  assert.match(wikiWrite.failure.fallback, /## Pending checkpoint/);
+  assert.doesNotMatch(wikiWrite.failure.fallback, /tier=none/);
 });
 
 test("the real SessionSummary requires a Checkpoint field naming the write or the skip", () => {
@@ -1075,8 +1077,9 @@ test("the real SessionSummary requires a Checkpoint field naming the write or th
   const checkpoint = summary.schema.properties?.checkpoint;
   assert.ok(checkpoint);
   assert.equal(checkpoint.title, "Checkpoint");
-  assert.match(checkpoint.description ?? "", /skipped: tier=none/);
+  assert.match(checkpoint.description ?? "", /pending: queued on the issue/);
   assert.match(checkpoint.description ?? "", /skipped: no entity page/);
+  assert.doesNotMatch(checkpoint.description ?? "", /tier=none/);
   assert.ok(summary.schema.required?.includes("checkpoint"));
 });
 
@@ -1294,4 +1297,27 @@ test("PlatformConfig includes an optional wiki.path string", () => {
   assert.equal(wiki.properties?.path?.type, "string");
   assert.ok(!schema?.schema.required?.includes("wiki"));
   assert.ok(!wiki.required?.includes("path"));
+});
+
+test("the real contract freezes vault-write-live-and-verified and close enforces it", () => {
+  const rule = realContract.frozenRules?.find((entry) => entry.id === "vault-write-live-and-verified");
+  assert.ok(rule);
+  assert.match(rule.rule, /live wiki/);
+  assert.match(rule.rule, /verify/);
+  assert.match(rule.rule, /queued on the issue/);
+  const gated = realContract.nodes.filter((node) => node.gates.some((gate) => gate.rule === "vault-write-live-and-verified"));
+  assert.deepEqual(gated.map((node) => node.id), ["close"]);
+  const checkpointRule = realContract.frozenRules?.find((entry) => entry.id === "session-summary-requires-checkpoint");
+  assert.doesNotMatch(checkpointRule?.rule ?? "", /tier=none/);
+  assert.match(checkpointRule?.rule ?? "", /Pending checkpoint/);
+});
+
+test("the real PersonalGuide is pending instead of no-vault and carries the verify line", () => {
+  const guide = realContract.schemas.find((entry) => entry.id === "PersonalGuide");
+  assert.ok(guide);
+  assert.deepEqual(guide.schema.properties?.outcome?.enum, ["written", "updated", "not-needed", "pending"]);
+  assert.equal(guide.schema.properties?.verification?.type, "string");
+  const update = realContract.schemas.find((entry) => entry.id === "EntityPageUpdate");
+  assert.equal(update?.schema.properties?.pending?.type, "boolean");
+  assert.equal(update?.schema.properties?.verification?.type, "string");
 });

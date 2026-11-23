@@ -50,7 +50,7 @@ function contextOf(output: string): string {
 }
 
 test("trimPage keeps the whitelist and names every other section", () => {
-  const path = "/vault/5-wiki/entities/projects/demo.md";
+  const path = "/vault/entities/projects/demo.md";
   const trimmed = trimPage(ALWAYS_PAGE, path);
   assert.equal(trimmed.includes("## Purpose\n"), true);
   assert.equal(trimmed.includes("## Stack\n"), true);
@@ -128,10 +128,10 @@ test("an existing page is trimmed into the inject and a missing vault stays a st
   try {
     const project = join(root, "demo");
     const vault = join(root, "vault");
-    mkdirSync(join(vault, "5-wiki", "entities", "projects"), { recursive: true });
+    mkdirSync(join(vault, "entities", "projects"), { recursive: true });
     mkdirSync(project);
     writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
-    writeFileSync(join(vault, "5-wiki", "entities", "projects", "demo.md"), ALWAYS_PAGE);
+    writeFileSync(join(vault, "entities", "projects", "demo.md"), ALWAYS_PAGE);
     const page = contextOf(renderSession(options(root, project)));
     assert.equal(page.includes("tier: `file`"), true);
     assert.equal(page.includes("## Project page from nerdbrain wiki"), true);
@@ -149,11 +149,11 @@ test("in tier file the Claude Code inject carries exactly the Cursor context", (
   try {
     const project = join(root, "demo");
     const vault = join(root, "vault");
-    mkdirSync(join(vault, "5-wiki", "entities", "projects"), { recursive: true });
+    mkdirSync(join(vault, "entities", "projects"), { recursive: true });
     mkdirSync(project);
     writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
     writeFileSync(
-      join(vault, "5-wiki", "entities", "projects", "demo.md"),
+      join(vault, "entities", "projects", "demo.md"),
       ALWAYS_PAGE.replace("why\n", `why ${"ż".repeat(400)}\n`),
     );
     const markers = { 8192: "[omitted: Gotchas, Decisions — read ", 600: "[truncated — read full page: " };
@@ -201,7 +201,7 @@ test("without a vault directory the inject points at the mcp adapter", () => {
     assert.equal(text.includes("`mcp__claude_ai_nerdbrain__*`"), true);
     assert.equal(text.includes("the tier is `mcp`"), true);
     assert.equal(text.includes("Purpose, Stack, Commands, Conventions, Active context"), true);
-    assert.equal(text.includes("`5-wiki/entities/projects/demo.md`"), true);
+    assert.equal(text.includes("`<WIKI>/entities/projects/demo.md`"), true);
     assert.equal(text.includes("`page.read-section`"), true);
     assert.equal(text.includes("`adapters/vault/mcp.md`"), true);
     assert.equal(text.includes("`<H1>::<Section>`"), true);
@@ -246,9 +246,9 @@ test("the script prefers NERDWAY_WIKI over NERDBRAIN_VAULT", () => {
     const project = join(root, "demo");
     const wiki = join(root, "nerdway-wiki");
     mkdirSync(project);
-    mkdirSync(join(wiki, "5-wiki", "entities", "projects"), { recursive: true });
+    mkdirSync(join(wiki, "entities", "projects"), { recursive: true });
     writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
-    writeFileSync(join(wiki, "5-wiki", "entities", "projects", "demo.md"), ALWAYS_PAGE);
+    writeFileSync(join(wiki, "entities", "projects", "demo.md"), ALWAYS_PAGE);
     const result = spawnSync(process.execPath, ["hooks/session-start.ts", "--runtime", "cursor"], {
       input: JSON.stringify({ cwd: project }),
       encoding: "utf8",
@@ -311,6 +311,52 @@ test("the script writes the Claude Code envelope for --runtime claude and by def
       assert.equal(parsed.hookSpecificOutput.hookEventName, "SessionStart");
       assert.equal(parsed.hookSpecificOutput.additionalContext.includes("slug: `demo`"), true);
     }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+const DRAIN_LINE = "nerdway: this workstation has the live wiki; drain pending guides: `/nerdway:nerd-personal-docs drain`";
+
+function drainSetup(root: string): { project: string; stampPath: string } {
+  const project = join(root, "demo");
+  mkdirSync(join(root, "vault"), { recursive: true });
+  mkdirSync(project);
+  writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
+  return { project, stampPath: join(root, "cache", "drain", "demo.stamp") };
+}
+
+test("a workstation with the live wiki and a platform config gets the drain line once a day", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-drain-"));
+  try {
+    const { project, stampPath } = drainSetup(root);
+    const now = Date.parse("2026-11-23T08:00:00Z");
+    const drain = { workstation: true, configured: true, stampPath, now };
+    const first = contextOf(renderSession(options(root, project, { drain })));
+    assert.equal(first.includes(DRAIN_LINE), true);
+    const again = contextOf(renderSession(options(root, project, { drain: { ...drain, now: now + 60 * 60 * 1000 } })));
+    assert.equal(again.includes(DRAIN_LINE), false);
+    const nextDay = contextOf(renderSession(options(root, project, { drain: { ...drain, now: now + 25 * 60 * 60 * 1000 } })));
+    assert.equal(nextDay.includes(DRAIN_LINE), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("no drain line on a remote machine, without a wiki directory, or without a platform config", () => {
+  const root = mkdtempSync(join(tmpdir(), "session-start-drain-"));
+  try {
+    const { project, stampPath } = drainSetup(root);
+    const now = Date.parse("2026-11-23T08:00:00Z");
+    for (const drain of [
+      { workstation: false, configured: true, stampPath, now },
+      { workstation: true, configured: false, stampPath, now },
+    ]) {
+      assert.equal(contextOf(renderSession(options(root, project, { drain }))).includes(DRAIN_LINE), false, JSON.stringify(drain));
+    }
+    const noWiki = options(root, project, { vault: join(root, "missing"), drain: { workstation: true, configured: true, stampPath, now } });
+    assert.equal(contextOf(renderSession(noWiki)).includes(DRAIN_LINE), false);
+    assert.equal(contextOf(renderSession(options(root, project))).includes(DRAIN_LINE), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

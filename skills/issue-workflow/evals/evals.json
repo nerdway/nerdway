@@ -301,6 +301,29 @@
         "The agent does not use the statuses.md prose ask as the first after-plan prompt",
         "On Później the agent leaves todo and does not Start"
       ]
+    },
+    {
+      "id": "session-summary-queues-checkpoint-without-live-wiki",
+      "prompt": "DEMO-660 on GitHub Issues with VCS GitHub. This session is a Cursor cloud worker (CURSOR_AGENT_WORKER_ID is set); resolve-vault.ts --json reports exists: true, live: false, machine: remote, and the cursor host adapter's workstation.exec is `—` there. The project has an entity page. The session finished part of the implementation; post the session summary.",
+      "expected_output": "The agent posts `## Session summary` and, in the same step, does not write the Checkpoints entry into the wiki copy on this machine: it formats the entry with pending-vault.ts format-checkpoint and posts the `## Pending checkpoint` comment on the issue. The summary's Checkpoint field reads `pending: queued on the issue`, and the report names the queued entry.",
+      "files": [],
+      "assertions": [
+        "The agent writes nothing into the wiki directory on this machine",
+        "The agent posts a `## Pending checkpoint` comment with the Page line and the entry",
+        "The Session summary's Checkpoint field says `pending: queued on the issue`, not a skip and not a page path",
+        "The agent does not report the checkpoint as written"
+      ]
+    },
+    {
+      "id": "close-out-reports-pending-guide",
+      "prompt": "DEMO-661 on Linear with VCS GitHub. The user asks to close DEMO-661 from a Slack thread session; the Checkpoints entry is already queued on the issue. nerd-personal-docs reports that no live wiki is reachable and that it queued the guide and posted `## Personal guide` / `Pending: guides/export-job.md`.",
+      "expected_output": "The agent runs nerd-personal-docs, then issue-close, which merges with `Refs DEMO-661` and leaves the issue In Review. The agent reports the guide as pending on DEMO-661 and says the drain on a workstation will finish the issue; it never calls the guide written.",
+      "files": [],
+      "assertions": [
+        "The agent reports the guide as pending, never as written",
+        "The agent says the issue stays In Review until the drain verifies the guide",
+        "The agent does not move DEMO-661 to done"
+      ]
     }
   ]
 }

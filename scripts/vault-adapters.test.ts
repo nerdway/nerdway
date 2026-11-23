@@ -186,3 +186,18 @@ test(`${GATHERER} holds no connector tool outside the mcp read operations`, () =
   const offenders = gathererTools().filter((tool) => tool.startsWith(CONNECTOR_PREFIX) && !readTools.has(tool));
   assert.deepEqual(offenders, []);
 });
+
+test(`${FILE_ADAPTER} writes guides and Checkpoints only to the live wiki and relies on no sync tool`, () => {
+  const tier = sectionBody(read(FILE_ADAPTER), "Tier") ?? "";
+  assert.match(tier, /live wiki/);
+  assert.match(tier, /verify-vault-file\.ts/);
+  assert.match(tier, /Pending guide/);
+  assert.doesNotMatch(read(FILE_ADAPTER), /Obsidian Sync/);
+});
+
+test(`${MCP_ADAPTER} is read-only for guides and Checkpoints entries`, () => {
+  const tier = sectionBody(read(MCP_ADAPTER), "Tier") ?? "";
+  assert.match(tier, /never receives a guide or a Checkpoints entry/);
+  assert.match(tier, /queued on the issue/);
+  assert.doesNotMatch(read(MCP_ADAPTER), /propagation to the other machines is\s+Obsidian Sync/);
+});

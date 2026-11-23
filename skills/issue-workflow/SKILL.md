@@ -306,9 +306,9 @@ Decisions ...]` marker, `Read` the full entity page at the path given in that
 marker and extract `## Decisions` (per `nerdbrain-wiki`'s lazy-section
 contract). Cursor `sessionStart` is fire-and-forget — the inject may arrive
 after the first turn. If no inject is present, infer `<slug>` from the repo
-and resolve `<VAULT>` once with
+and resolve `<WIKI>` once with
 `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"`,
-then `Read` `<VAULT>/5-wiki/entities/projects/<slug>.md` when
+then `Read` `<WIKI>/entities/projects/<slug>.md` when
 that file exists. Skip this step silently — no error — if the vault is
 unreachable (`tier=none`), the page is a stub, or the section is missing/empty.
 
@@ -745,19 +745,26 @@ without the Checkpoints write is not a finished session and not a green light
 for this close-out.
 
 1. **Checkpoint must already exist.** The session's `## Checkpoints` entry on
-   the entity page — or an explicit skip (`skipped: tier=none` / `skipped: no
-   entity page`) named in the Session summary — is a precondition. If this
+   the entity page, written to the live wiki and verified, or queued on the
+   issue (`pending: queued on the issue`), or the explicit skip
+   (`skipped: no entity page`) named in the Session summary, is a
+   precondition. If this
    session posted `## Session summary` without that write, the session-summary
    step failed: stop, write the checkpoint (or name the skip), and only then
    continue. Do not treat the tracker comment as enough.
 2. **Guide for the user.** Invoke **`nerdway:nerd-personal-docs`** with the
    issue ID and the resolved platform, here in the main session, so the guide
    is written on the session model and not on `issue-close`'s Haiku. It writes
-   or updates the guide in the nerdbrain vault and records the outcome as a
-   `## Personal guide` comment on the issue, or says the machine has no vault.
-   If it stops with an error, stop and report; do not call `issue-close`.
+   or updates the guide in the live wiki and verifies it there, or queues the
+   text on the issue when no workstation is reachable, and records the
+   outcome as a `## Personal guide` comment (`Guide:` plus `Verified:`,
+   `Pending:`, or `Not needed:`). Report the guide as verified or pending,
+   never as "written" alone. If it stops with an error, stop and report; do
+   not call `issue-close`.
 3. **Close.** Invoke **`nerdway:issue-close`** with the issue ID. Its
-   Step 0 checks the guide from step 1 and stops the close-out without it;
+   Step 0 reads the guide outcome from step 1 and stops the close-out
+   without `Verified:`, `Pending:` or `Not needed:`; with `Pending:` it
+   merges with `Refs <ID>` and leaves the issue In Review until the drain;
    its Step 0b stops it while any child of the issue is not `done`; its
    Step 0c stops it while the PR/MR description is still the start draft
    (write the readiness description with step 6b, then close again). Then it
@@ -787,8 +794,8 @@ start with `## Session summary` and include:
 - open questions / next steps,
 - metrics, whenever an island ran this session,
 - **Checkpoint** — the entity-page path that received the `## Checkpoints`
-  entry, or an explicit skip (`skipped: tier=none` or `skipped: no entity
-  page`).
+  entry with the verify line, or `pending: queued on the issue`, or the
+  explicit skip `skipped: no entity page`.
 
 The summary must be enough to resume from the tracker alone. The `metrics` section is
 where a run's `PlanContext.stats` and `gaps` become durable — the comment is the
@@ -798,7 +805,10 @@ loses the figure for good.
 **Checkpoint on the entity page (same step).** Right after the comment is
 posted, record the session as one `## Checkpoints` entry on the project's
 nerdbrain entity page, following `nerdbrain-wiki`'s **Prepend, capped** mode
-(entry format, cap of 10, `updated:` bump, `log.md` line live there):
+(entry format, cap of 10, `updated:` bump, `log.md` line live there). The
+entry goes only to the live wiki and is verified there; with no live wiki
+reachable it is queued on the issue as `## Pending checkpoint` (the
+`nerdbrain-wiki` *Checkpoints entries go to the live wiki only* steps):
 
 ```
 - YYYY-MM-DD — <ID> · <phase after the session> · <branch> @ <git rev-parse --short HEAD> — next: <one line, English>
@@ -817,13 +827,13 @@ This is the same step as the tracker comment, not a follow-up. Posting
 the session is not finished, and it is not a green light for
 `nerd-personal-docs` or `issue-close`. The frozen rule
 `session-summary-requires-checkpoint` holds it; `personal-docs` depends on
-`wiki-write`, and a failed write with a reachable vault kills the run.
+`wiki-write`, and a failed write or verify on the live wiki kills the run.
 
-Skip only when the vault is unreachable (`tier=none`) or the project has
-no entity page — and name that skip in the summary's **Checkpoint** field
-and in the report (`skipped: tier=none` or `skipped: no entity page`).
-Never skip it silently; the tracker comment is not a substitute for the
-entity-page entry when the vault is in play. This entry is what
+Skip only when the project has no entity page, and name that skip in the
+summary's **Checkpoint** field and in the report (`skipped: no entity
+page`). A queued entry is named the same way (`pending: queued on the
+issue`). Never skip it silently; the Session summary comment is not a
+substitute for the entity-page entry. This entry is what
 `project-continue` reads back when the user asks "where were we" on this or
 another machine, so the branch and hash must be the real values after the
 session's last push.

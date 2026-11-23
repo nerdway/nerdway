@@ -9,7 +9,21 @@ import { fileURLToPath } from "node:url";
 const script = join(dirname(fileURLToPath(import.meta.url)), "resolve-vault.ts");
 
 function run(args: string[], env: NodeJS.ProcessEnv) {
-  const { NERDWAY_CONFIG_DIR: _ignored, NERDWAY_WIKI: _wiki, NERDBRAIN_VAULT: _legacy, ...base } = process.env;
+  const {
+    NERDWAY_CONFIG_DIR: _ignored,
+    NERDWAY_WIKI: _wiki,
+    NERDBRAIN_VAULT: _legacy,
+    NERDWAY_MACHINE: _machine,
+    NERDWAY_HOST: _host,
+    AGENT_HOST: _agentHost,
+    GROK_BOT: _bot,
+    CLAUDE_CODE_REMOTE: _remote,
+    CURSOR_AGENT_WORKER_ID: _worker,
+    CURSOR_WORKER_POOL_NAME: _pool,
+    CODESPACES: _codespaces,
+    CLOUD_AGENT_INJECTED_SECRET_NAMES: _cloud,
+    ...base
+  } = process.env;
   return spawnSync(process.execPath, [script, ...args], {
     encoding: "utf8",
     env: { ...base, ...env },
@@ -44,6 +58,9 @@ test("resolve-vault.ts --json prints path, source and exists", () => {
       path: join(configDir, "wiki"),
       source: "default",
       exists: false,
+      live: false,
+      machine: "workstation",
+      reason: "missing",
     });
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -62,6 +79,26 @@ test("resolve-vault.ts rejects a non-string wiki.path with exit 4", () => {
     assert.equal(result.status, 4);
     assert.equal(result.stdout, "");
     assert.match(result.stderr, /wiki\.path: expected string/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolve-vault.ts --json --host marks a chat host as remote and never live", () => {
+  const root = mkdtempSync(join(tmpdir(), "resolve-vault-host-"));
+  try {
+    const repo = join(root, "repo");
+    mkdirSync(repo);
+    const wiki = join(root, "wiki");
+    mkdirSync(wiki);
+    const local = run(["--json", repo], { NERDWAY_WIKI: wiki });
+    assert.equal(JSON.parse(local.stdout).live, true);
+    const chat = run(["--json", "--host", "slack-thread", repo], { NERDWAY_WIKI: wiki });
+    assert.equal(chat.status, 0, chat.stderr);
+    assert.deepEqual(JSON.parse(chat.stdout), { path: wiki, source: "env", exists: true, live: false, machine: "remote", reason: "remote" });
+    const unknown = run(["--json", "--host", "codex", repo], { NERDWAY_WIKI: wiki });
+    assert.equal(unknown.status, 2);
+    assert.match(unknown.stderr, /unknown host/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

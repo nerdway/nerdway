@@ -4,16 +4,16 @@ model: haiku
 description: >-
   Mechanically close out a tracker issue (Linear, GitHub Issues, GitLab
   Issues, Azure DevOps Boards, Jira Cloud) once the work
-  is done: check that the user's nerdbrain guide for the issue exists (the
-  caller writes it first with nerd-personal-docs; without it the close-out
-  stops), check that every child of the issue is done (an unfinished child
+  is done: check the guide outcome the caller recorded with
+  nerd-personal-docs (verified or not needed continues; pending merges with
+  Refs and leaves the issue In Review; else it stops), check that every child of the issue is done (an unfinished child
   stops it before the merge), check that the PR/MR description is no longer
   the start draft (the caller writes the readiness description first), commit any
   leftover changes, push, merge the PR (GitHub, Azure DevOps) or MR (GitLab),
   switch the
   checkout to the PR/MR base branch, and move the issue to done. Purely
-  procedural with explicit commands and no multi-step reasoning — pinned to Haiku
-  (the `model` frontmatter above) to keep it cheap. Invoked by
+  procedural with explicit commands, pinned to Haiku (the `model`
+  frontmatter above) to keep it cheap. Invoked by
   issue-workflow's close-out, or directly when the user asks to
   close/merge/finish an issue ("domknij", "zamknij", "zmerguj i zamknij", "close
   out", "merge and close"). Tracker and VCS commands come from the platform
@@ -85,47 +85,35 @@ Call it `<ID>` below.
 
 This skill never writes the guide. The caller writes it beforehand with
 `nerdway:nerd-personal-docs` on the session model (`issue-workflow`'s
-close-out, `auto-issue-mode`'s close-out stage); this step only checks that
-it happened. Take the first case that matches:
+close-out, `auto-issue-mode`'s close-out stage) and records the outcome as a
+`## Personal guide` comment; this step only reads that comment. A guide file
+found by a search is not enough: only the verify line on the issue proves it
+reached the live wiki.
 
-1. **No vault on this machine.** Resolve `<VAULT>` once:
+1. Run `issue.read`, take the comment bodies oldest first as a JSON array of
+   strings (GitHub's `issue.read` JSON may be passed as it is) and pipe them
+   to the reader:
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
+   <comments JSON> | node ${CLAUDE_PLUGIN_ROOT}/scripts/pending-vault.ts outcome
    ```
 
    If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
-   directories up from this skill's base directory.
+   directories up from this skill's base directory. It prints the newest
+   `## Personal guide` outcome as JSON with a `kind`.
+2. `verified` (a `Guide:` line with the `Verified:` line of the verify
+   command) or `not-needed` → note the guide path or the reason for the
+   Report and go to Step 0b.
+3. `pending` (`Pending: <path>`: no live wiki was reachable and the guide is
+   queued on the issue) → note **guide pending** and go to Step 0b. Step 2b
+   switches the magic word before the merge, and Step 5 writes `in-review`
+   instead of `done`.
+4. Anything else (`none`, or `unverified`: a `Guide:` line without
+   `Verified:`) → stop — commit, push and merge nothing — and report exactly:
 
-   ```bash
-   test -d <VAULT>/5-wiki
-   ```
-
-   Non-zero exit → note "no nerdbrain vault on this machine, guide not
-   checked" for the Report and go to Step 0b.
-2. **A guide mentions the issue.** When `<ID>` has the `TEAM-123` form,
-   search for it as a whole word:
-
-   ```bash
-   rg -l -w -F "<ID>" <VAULT>/5-wiki/guides/
-   ```
-
-   Otherwise (`#123`) search for the issue link that `issue.url` gives:
-
-   ```bash
-   rg -l -F "<issue url>" <VAULT>/5-wiki/guides/
-   ```
-
-   A listed file → note its path for the Report and go to Step 0b.
-3. **The caller recorded that no guide is needed.** Run `issue.read`; a
-   comment whose first line is `## Personal guide` and which holds a line
-   starting with `Not needed:` → note that reason for the Report and go to
-   Step 0b.
-4. **Otherwise stop** — commit, push and merge nothing — and report exactly:
-
-   > No guide for `<ID>` in `5-wiki/guides/` and no `## Personal guide`
-   > comment saying none is needed. Run `nerdway:nerd-personal-docs <ID>`
-   > first, then run the close-out again.
+   > No verified guide for `<ID>`: the issue has no `## Personal guide`
+   > comment with `Verified:`, `Pending:` or `Not needed:`. Run
+   > `nerdway:nerd-personal-docs <ID>` first, then run the close-out again.
 
 ## Step 0b — Children check (gate)
 
@@ -204,6 +192,29 @@ If it fails because there is no upstream, set it:
 git push -u origin "$(git branch --show-current)"
 ```
 
+## Step 2b — Keep the issue open while the guide is pending (only when Step 0 noted guide pending)
+
+Skip this step unless Step 0 noted **guide pending**. A merged `Fixes <ID>`
+would close the issue on GitHub, GitLab and Azure DevOps and through the
+Linear integration, before the guide exists. Switch the magic-word line to
+the non-closing `Refs <ID>` (the VCS adapter's `## Magic words`):
+
+1. Write the new description to a file:
+
+   ```bash
+   <pr.view command> | node ${CLAUDE_PLUGIN_ROOT}/scripts/pr-body-state.ts --refs > <file>
+   ```
+
+2. Replace the description with `pr.edit-body` and `<file>`.
+3. Check it:
+
+   ```bash
+   <pr.view command> | node ${CLAUDE_PLUGIN_ROOT}/scripts/pr-body-state.ts --magic
+   ```
+
+   `refs` → go to Step 3. Anything else, or a failed edit → stop before the
+   merge and report the error.
+
 ## Step 3 — Merge
 
 From the VCS adapter, in this order:
@@ -228,7 +239,14 @@ Use the base branch captured in Step 3 — **do not assume `main`**:
 git checkout <base> && git pull
 ```
 
-## Step 5 — Move the issue to `done`
+## Step 5 — Move the issue to `done` (or `in-review` while the guide is pending)
+
+With **guide pending** from Step 0, write the phase `in-review` with
+`issue.set-status` instead of `done`, and report "guide pending on `<ID>`:
+the merge is done, the issue stays In Review until
+`nerdway:nerd-personal-docs drain` writes and verifies the guide on a
+workstation". Otherwise:
+
 
 Run `issue.set-status` from the tracker adapter with the phase `done`: the
 write recipe of the resolved strategy with `map.done` (`Done` on Linear and
@@ -244,11 +262,13 @@ merge already closed is closed again without error.
 
 ## Report
 
-Confirm briefly what happened: the guide check (the guide path, the
-not-needed reason, or the missing vault), the children check (no children,
+Confirm briefly what happened: the guide check (the guide path with its
+verify line, the not-needed reason, or guide pending with the `Refs`
+switch), the children check (no children,
 or how many, all done), the description check (`readiness` or `manual`),
 committed (or clean), pushed, merged,
-now on `<base>`, issue `<ID>` moved to done. If any step stopped early, report
+now on `<base>`, issue `<ID>` moved to done (or left In Review with the
+guide pending). If any step stopped early, report
 which one and why. Either way, end with the issue link from `issue.url`, in
 the shape *Asking the human to move a phase* in
 `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives.

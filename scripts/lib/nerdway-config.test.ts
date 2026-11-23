@@ -785,3 +785,57 @@ test("writePlatformConfig: rewriting platform keys keeps comments and unknown se
   }
 });
 
+
+test("resolveVault: an existing directory on a workstation is the live wiki, for every source and without .obsidian", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-live-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(configDir, "wiki"));
+    const fromDefault = vaultOf(repo, { ...env, NERDWAY_MACHINE: "workstation" });
+    assert.equal(fromDefault.status, "ok");
+    if (fromDefault.status !== "ok") return;
+    assert.equal(fromDefault.source, "default");
+    assert.equal(fromDefault.live, true);
+    assert.equal(fromDefault.machine, "workstation");
+    assert.equal(fromDefault.reason, "workstation");
+    const plain = join(root, "plain-wiki");
+    mkdirSync(plain);
+    const fromEnv = vaultOf(repo, { ...env, NERDWAY_MACHINE: "workstation", NERDWAY_WIKI: plain });
+    assert.equal(fromEnv.status === "ok" && fromEnv.live, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: a directory on a remote machine is never live, even as a full copy", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-remote-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(configDir, "wiki", ".obsidian"), { recursive: true });
+    for (const extra of [{ NERDWAY_MACHINE: "remote" }, { CLAUDE_CODE_REMOTE: "true" }, { NERDWAY_HOST: "slack-thread" }]) {
+      const result = vaultOf(repo, { ...env, ...extra });
+      assert.equal(result.status, "ok");
+      if (result.status !== "ok") return;
+      assert.equal(result.exists, true);
+      assert.equal(result.live, false, JSON.stringify(extra));
+      assert.equal(result.machine, "remote");
+      assert.equal(result.reason, "remote");
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault: a missing directory is not live; the host option feeds the machine probe", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-vault-missing-"));
+  try {
+    const { env, repo } = configEnv(root);
+    const missing = vaultOf(repo, { ...env, NERDWAY_MACHINE: "workstation" });
+    assert.equal(missing.status === "ok" && missing.live, false);
+    assert.equal(missing.status === "ok" && missing.reason, "missing");
+    const chat = resolveVault(repo, env, { home: repo, platform: "linux", gitRemote: () => "", host: "slack-thread" });
+    assert.equal(chat.status === "ok" && chat.machine, "remote");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

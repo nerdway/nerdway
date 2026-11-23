@@ -1,22 +1,19 @@
 ---
 name: nerd-personal-docs
 description: >-
-  Write or update a human-readable guide for the user in the nerdbrain
-  wiki directory (guides/{topic}.md) whenever finished work created or
-  changed something the user will use, operate, fix or do by hand - a tool,
-  service, machine, config or workflow. Mandatory step before an issue is
-  closed: issue-workflow and auto-issue-mode run it on the session model
-  before they call issue-close, which refuses to merge without it. Based on
-  nerd-documentation-write, with one reversal: the reader is the user inside
-  their own stack, so links to the related issues, PRs and commits are
-  REQUIRED. The guide covers how to use it, the manual steps only the user can
-  do (Kroki ręczne), troubleshooting, where secrets and config live, and the
-  history with links. Use also when the user asks to document something for
-  themselves ("udokumentuj dla mnie", "napisz przewodnik", "personal docs",
-  "write a guide in nerdbrain", "drain pending guides"). Writes only to the
-  live wiki, the resolved wiki directory on a user workstation, verifies the
-  file there, and queues the full text on the issue when no workstation is
-  reachable; the drain mode writes the queued guides and checkpoints later.
+  Write or update a human-readable guide for the user in the wiki directory
+  (guides/{topic}.md) whenever finished work created or changed something the
+  user will use, operate, fix or do by hand - a tool, service, machine, config
+  or workflow. Mandatory before an issue is closed: issue-workflow and
+  auto-issue-mode run it before issue-close, which refuses to merge without
+  it. Based on nerd-documentation-write, reversed: the reader is the user, so
+  links to the issues, PRs and commits are REQUIRED. Covers usage, the manual
+  steps only the user can do (Kroki ręczne), troubleshooting, where secrets
+  and config live, and the history. Writes only to the live wiki on a user
+  workstation and verifies the file there; otherwise queues the text on the
+  issue, and its drain mode writes the queue later. Use also when the user
+  asks ("udokumentuj dla mnie", "napisz przewodnik", "personal docs", "write
+  a guide in nerdbrain", "drain pending guides").
 ---
 
 # nerd-personal-docs: guides for the user in nerdbrain

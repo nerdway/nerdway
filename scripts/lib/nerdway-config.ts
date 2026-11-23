@@ -5,6 +5,7 @@ import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 import { readPlatform, type PlatformRead, type PlatformVocabulary } from "../types/platform-config.ts";
 
+import type { HostId } from "./host-detect.ts";
 import {
   configPaths,
   resolveConfigDir,
@@ -24,6 +25,7 @@ import {
   writeSection,
 } from "./config-sections.ts";
 import { parseConfig, patchSections } from "./yaml.ts";
+import { detectMachine, type MachineKind } from "./workstation.ts";
 
 export { resolveConfigDir, resolveSlug, type ConfigLocationOptions, type ResolveSlugOptions };
 
@@ -36,10 +38,21 @@ export type VaultSource = "env" | "project" | "defaults" | "default";
 
 export interface ResolveVaultOptions extends ConfigLocationOptions {
   cwd?: string;
+  host?: HostId;
 }
 
+export type LiveReason = "workstation" | "remote" | "missing";
+
 export type ResolveVaultResult =
-  | { status: "ok"; path: string; source: VaultSource; exists: boolean }
+  | {
+      status: "ok";
+      path: string;
+      source: VaultSource;
+      exists: boolean;
+      live: boolean;
+      machine: MachineKind;
+      reason: LiveReason;
+    }
   | { status: "invalid"; errors: string[] };
 
 export interface WritePlatformOptions extends ReadPlatformOptions {
@@ -168,7 +181,8 @@ function wikiPathFromSection(
 }
 
 /**
- * Resolve the wiki / vault directory.
+ * Resolve the wiki directory: the full path of the directory that holds the
+ * wiki content itself (guides/, entities/, index.md, log.md).
  *
  * Order: env `NERDWAY_WIKI`, then legacy env `NERDBRAIN_VAULT`; then
  * `wiki.path` in `<configDir>/<slug>/config.yml`, then in
@@ -176,32 +190,32 @@ function wikiPathFromSection(
  * `configDir`); then `<configDir>/wiki`. The writer does not inject
  * `wiki.path` into a newly generated defaults file — the last step is
  * the implicit default. This function never creates the directory.
+ *
+ * `live` is true when the directory exists and this session runs on a user
+ * workstation (`detectMachine`), whatever the directory is: a plain folder or
+ * an Obsidian vault. A directory on a remote agent machine is never live.
  */
 export function resolveVault(repoRoot: string, env: NodeJS.ProcessEnv, options: ResolveVaultOptions = {}): ResolveVaultResult {
   const home = options.home ?? homedir();
   const { configDir } = configPaths(repoRoot, env, { ...options, home });
+  const machine = detectMachine({ env, host: options.host }).kind;
+  const located = (path: string, source: VaultSource): ResolveVaultResult => {
+    const exists = existsSync(path);
+    const reason: LiveReason = !exists ? "missing" : machine === "workstation" ? "workstation" : "remote";
+    return { status: "ok", path, source, exists, live: reason === "workstation", machine, reason };
+  };
   const fromEnv = trimmed(env.NERDWAY_WIKI) ?? trimmed(env.NERDBRAIN_VAULT);
-  if (fromEnv !== undefined) {
-    const path = absoluteWikiPath(fromEnv, home, options.cwd ?? process.cwd());
-    return { status: "ok", path, source: "env", exists: existsSync(path) };
-  }
+  if (fromEnv !== undefined) return located(absoluteWikiPath(fromEnv, home, options.cwd ?? process.cwd()), "env");
 
   const fromProject = wikiPathFromSection(repoRoot, env, { ...options, home }, "project");
   if (fromProject.kind === "invalid") return { status: "invalid", errors: fromProject.errors };
-  if (fromProject.kind === "ok") {
-    const path = absoluteWikiPath(fromProject.path, home, configDir);
-    return { status: "ok", path, source: "project", exists: existsSync(path) };
-  }
+  if (fromProject.kind === "ok") return located(absoluteWikiPath(fromProject.path, home, configDir), "project");
 
   const fromDefaults = wikiPathFromSection(repoRoot, env, { ...options, home }, "defaults");
   if (fromDefaults.kind === "invalid") return { status: "invalid", errors: fromDefaults.errors };
-  if (fromDefaults.kind === "ok") {
-    const path = absoluteWikiPath(fromDefaults.path, home, configDir);
-    return { status: "ok", path, source: "defaults", exists: existsSync(path) };
-  }
+  if (fromDefaults.kind === "ok") return located(absoluteWikiPath(fromDefaults.path, home, configDir), "defaults");
 
-  const path = join(configDir, "wiki");
-  return { status: "ok", path, source: "default", exists: existsSync(path) };
+  return located(join(configDir, "wiki"), "default");
 }
 
 export function writePlatformConfig(

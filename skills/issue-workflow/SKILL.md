@@ -306,9 +306,9 @@ Decisions ...]` marker, `Read` the full entity page at the path given in that
 marker and extract `## Decisions` (per `nerdbrain-wiki`'s lazy-section
 contract). Cursor `sessionStart` is fire-and-forget — the inject may arrive
 after the first turn. If no inject is present, infer `<slug>` from the repo
-and resolve `<VAULT>` once with
+and resolve `<WIKI>` once with
 `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"`,
-then `Read` `<VAULT>/5-wiki/entities/projects/<slug>.md` when
+then `Read` `<WIKI>/entities/projects/<slug>.md` when
 that file exists. Skip this step silently — no error — if the vault is
 unreachable (`tier=none`), the page is a stub, or the section is missing/empty.
 

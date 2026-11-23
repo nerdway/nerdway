@@ -73,8 +73,8 @@ Check the sources in this order and keep the first one that yields a config:
    (a leftover `## Platform` section that could not be migrated) stops this
    skill: ask the user to keep the user config, take the repo values, or
    merge, then run `--resolve` as that recipe says before writing anything.
-2. **Entity page frontmatter** (`<VAULT>/5-wiki/entities/projects/<slug>.md`,
-   slug from the SessionStart inject; resolve `<VAULT>` once with
+2. **Entity page frontmatter** (`<WIKI>/entities/projects/<slug>.md`,
+   slug from the SessionStart inject; resolve `<WIKI>` once with
    `node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"`):
    the `platform:` key.
 3. **Legacy entity page alias**: a `linear:` block without `platform:` means

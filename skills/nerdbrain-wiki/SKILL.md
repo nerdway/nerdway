@@ -2,7 +2,7 @@
 name: nerdbrain-wiki
 description: >-
   HOW to create or update a nerdbrain second-brain entity page at
-  5-wiki/entities/projects/{slug}.md in the user's Obsidian vault. Invoke when
+  entities/projects/{slug}.md in the user's wiki directory. Invoke when
   about to write such a wiki page — a write trigger fired, you need section
   update modes (Edit/Append/Prepend-capped), the checkpoint entry format for
   `## Checkpoints`, the vault adapter operations behind each write, the
@@ -19,7 +19,7 @@ This skill is the **HOW**. The user rules / `AGENTS.md` / global
 rules (vault root, never git against the vault). Use the `obsidian-markdown` skill for note
 syntax.
 
-Entity pages live at `5-wiki/entities/projects/<slug>.md` and are **English-only**
+Entity pages live at `<WIKI>/entities/projects/<slug>.md` and are **English-only**
 (tokenization efficiency). Index and log entries follow the vault language
 (currently PL).
 
@@ -74,7 +74,7 @@ Do not read related pages or run vault searches outside these two triggers.
 
 **`related:`/`[[link]]` follow:** an entity page's `related:` frontmatter
 holds `"[[slug]]"` entries; `slug` → path
-`5-wiki/entities/projects/<slug>.md` (same convention as the rest of this
+`<WIKI>/entities/projects/<slug>.md` (same convention as the rest of this
 skill). The path is already known, so `page.read-section` it directly, only
 the section(s) relevant to the task — same always/lazy contract as the
 current page, not the whole file.
@@ -107,14 +107,14 @@ ${CLAUDE_PLUGIN_ROOT}/adapters/vault/<tier>.md
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory.
 
-**Vault root.** Resolve `<VAULT>` once:
+**Wiki root.** Resolve `<WIKI>`, the wiki directory itself, once:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
 ```
 
 **Tier probe** (the same steps as `## Tier` of `adapters/vault/mcp.md`): the
-directory `<VAULT>` exists → `file`. Otherwise `ToolSearch` with
+directory `<WIKI>` exists → `file`. Otherwise `ToolSearch` with
 the query `+nerdbrain` and `max_results` 1: a result naming a
 `mcp__claude_ai_nerdbrain__*` tool → `mcp`; none → `none`. The connector tools
 stay deferred: an operation loads only the names it needs
@@ -190,9 +190,9 @@ line-start `## Active context` and treat the section as empty.
 ## Index and log maintenance
 
 **New entity page created:**
-1. `index.append` under `## Projekty` of `5-wiki/index.md`:
+1. `index.append` under `## Projekty` of `<WIKI>/index.md`:
    `- [[<slug>]] — <one-line description>` (description in vault language, PL)
-2. `log.append` to `5-wiki/log.md`:
+2. `log.append` to `<WIKI>/log.md`:
    `## [YYYY-MM-DD] entity | <slug> (new project page)`
 
 Write page + index + log together as one logical wiki write.

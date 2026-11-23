@@ -2,7 +2,7 @@
 name: nerd-personal-docs
 description: >-
   Write or update a human-readable guide for the user in the nerdbrain
-  Obsidian vault (5-wiki/guides/{topic}.md) whenever finished work created or
+  wiki directory (guides/{topic}.md) whenever finished work created or
   changed something the user will use, operate, fix or do by hand - a tool,
   service, machine, config or workflow. Mandatory step before an issue is
   closed: issue-workflow and auto-issue-mode run it on the session model
@@ -43,11 +43,11 @@ No guide for work that needs one means the issue is not finished.
 
 ## Vault and paths
 
-- Resolve `<VAULT>` once, then check it before anything else:
+- Resolve `<WIKI>` once, then check it before anything else:
 
   ```bash
   node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
-  test -d <VAULT>/5-wiki
+  test -d <WIKI>
   ```
 
   If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
@@ -56,11 +56,11 @@ No guide for work that needs one means the issue is not finished.
   A non-zero exit means this machine has no vault: write nothing, report
   "no nerdbrain vault on this machine, guide not written" and stop. The
   caller carries that line into its own report.
-- Guides live in `5-wiki/guides/{topic}.md`, one file per tool, service or
+- Guides live in `<WIKI>/guides/{topic}.md`, one file per tool, service or
   solution, named with a short kebab-case slug (`home-assistant.md`,
   `pangolin.md`). Search first with `nerdway:nerdbrain-search` and update
   the existing guide instead of creating a near-duplicate.
-- The project's entity page (`5-wiki/entities/projects/{slug}.md`) links to
+- The project's entity page (`<WIKI>/entities/projects/{slug}.md`) links to
   its guides in a `## Dokumentacja` section; add the section when it is
   missing. Write the entity page through `nerdway:nerdbrain-wiki`.
 - Vault access goes through the filesystem by default: `Read`, `Edit`,
@@ -143,14 +143,14 @@ Reversed, because the reader is the user inside their own stack:
 ## Finishing
 
 1. Link the guide on the project's entity page under `## Dokumentacja`.
-2. Append one line to `5-wiki/log.md`:
+2. Append one line to `<WIKI>/log.md`:
    `## [YYYY-MM-DD] guide | {topic} ({short note})`.
 3. Post a comment on the issue with the tracker adapter's `issue.comment`
    operation. Its first line is `## Personal guide`, followed by exactly one
    of these lines:
 
    ```
-   Guide: 5-wiki/guides/{topic}.md
+   Guide: guides/{topic}.md
    Not needed: {one-line reason}
    ```
 
@@ -164,13 +164,13 @@ Reversed, because the reader is the user inside their own stack:
 
 ## Checklist
 
-- [ ] The guide exists or is updated in `5-wiki/guides/`.
+- [ ] The guide exists or is updated in `<WIKI>/guides/`.
 - [ ] Every manual or future step for the user is in "Kroki ręczne".
 - [ ] The issue and PR links are in "Historia i powiązania".
 - [ ] The entity page links to the guide.
 - [ ] The issue has a `## Personal guide` comment with the guide's path,
       or with the reason none was needed.
-- [ ] A line is appended to `5-wiki/log.md`.
+- [ ] A line is appended to `<WIKI>/log.md`.
 
 ## Related skills
 

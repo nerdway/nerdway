@@ -61,7 +61,7 @@ _Avoid_: notes folder, Obsidian database
 
 **Entity page**:
 One English-only markdown page per project at
-`5-wiki/entities/projects/<slug>.md` inside the vault; the authoritative
+`entities/projects/<slug>.md` inside the wiki directory; the authoritative
 project context injected at session start.
 _Avoid_: project note, wiki page (ambiguous)
 
@@ -69,7 +69,7 @@ _Avoid_: project note, wiki page (ambiguous)
 The vault-availability signal: `file` (the resolved vault directory present, access
 through the filesystem), `mcp` (directory absent, the vault reachable only
 through a configured MCP server, as in a Claude Code cloud session) or `none`
-(neither). `<VAULT>` is resolved once by `resolveVault` (env, then `wiki.path`,
+(neither). `<WIKI>` is resolved once by `resolveVault` (env, then `wiki.path`,
 then `<config dir>/wiki`). The plugin's SessionStart hook probes `file` and `none`; `mcp` is
 found by the vault skills' own probe (`ToolSearch` for the connector tools
 when the directory is absent), because the hook runs in a cloud session too

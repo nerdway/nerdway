@@ -88,7 +88,7 @@ This skill never writes the guide. The caller writes it beforehand with
 close-out, `auto-issue-mode`'s close-out stage); this step only checks that
 it happened. Take the first case that matches:
 
-1. **No vault on this machine.** Resolve `<VAULT>` once:
+1. **No vault on this machine.** Resolve `<WIKI>` once:
 
    ```bash
    node "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
@@ -98,7 +98,7 @@ it happened. Take the first case that matches:
    directories up from this skill's base directory.
 
    ```bash
-   test -d <VAULT>/5-wiki
+   test -d <WIKI>
    ```
 
    Non-zero exit → note "no nerdbrain vault on this machine, guide not
@@ -107,13 +107,13 @@ it happened. Take the first case that matches:
    search for it as a whole word:
 
    ```bash
-   rg -l -w -F "<ID>" <VAULT>/5-wiki/guides/
+   rg -l -w -F "<ID>" <WIKI>/guides/
    ```
 
    Otherwise (`#123`) search for the issue link that `issue.url` gives:
 
    ```bash
-   rg -l -F "<issue url>" <VAULT>/5-wiki/guides/
+   rg -l -F "<issue url>" <WIKI>/guides/
    ```
 
    A listed file → note its path for the Report and go to Step 0b.
@@ -123,7 +123,7 @@ it happened. Take the first case that matches:
    Step 0b.
 4. **Otherwise stop** — commit, push and merge nothing — and report exactly:
 
-   > No guide for `<ID>` in `5-wiki/guides/` and no `## Personal guide`
+   > No guide for `<ID>` in `<WIKI>/guides/` and no `## Personal guide`
    > comment saying none is needed. Run `nerdway:nerd-personal-docs <ID>`
    > first, then run the close-out again.
 

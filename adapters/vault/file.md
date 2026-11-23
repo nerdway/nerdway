@@ -1,9 +1,9 @@
 # Vault adapter: filesystem
 
-Selected by tier `file`: the resolved wiki directory `<VAULT>` exists on
+Selected by tier `file`: the resolved wiki directory `<WIKI>` exists on
 this machine, so the wiki is plain files, read with `Read` and `rg` and
 written with `Edit` and `Write`, identically on desktop and headless server.
-`<VAULT>` is any directory: the default `<config dir>/wiki`, a plain folder
+`<WIKI>` is any directory: the default `<config dir>/wiki`, a plain folder
 named by `wiki.path`, or a folder inside an Obsidian vault. Obsidian is one
 optional way to keep the files; nothing here checks for it. How copies reach
 other machines is whatever the user runs, and the plugin never relies on it.
@@ -11,7 +11,7 @@ other machines is whatever the user runs, and the plugin never relies on it.
 ## Tier
 
 `file` is the default wherever the wiki directory exists. The tier probe of
-the calling skill resolves `<VAULT>` and checks that directory before
+the calling skill resolves `<WIKI>` and checks that directory before
 anything else, so a connector that happens to be configured on a machine
 with the files never wins over them. Tier `none` (no directory and no
 connector) selects no adapter: nothing is read and nothing is written.
@@ -21,7 +21,7 @@ guide or a Checkpoints entry need the **live wiki**: `resolve-vault.ts
 --json` prints `live: true` only when the directory exists and the session
 runs on a user workstation. A directory on a remote agent machine is a copy,
 even when it is complete, and is never written. After the write, run
-`node "<plugin root>/scripts/verify-vault-file.ts" <VAULT> <path> --contains <issue URL>`
+`node "<plugin root>/scripts/verify-vault-file.ts" <WIKI> <path> --contains <issue URL>`
 on the same machine; the write counts only when it exits 0, and its printed
 line is the evidence on the issue. With no live wiki, or a host without
 `workstation.exec`, the text is queued on the issue as a `## Pending guide`
@@ -29,7 +29,7 @@ or `## Pending checkpoint` comment (ADR-0025).
 
 ## Paths
 
-Resolve `<VAULT>` once per session. `<plugin root>` is
+Resolve `<WIKI>` once per session. `<plugin root>` is
 `${CLAUDE_PLUGIN_ROOT}`, or two directories up from the skill's base
 directory when that variable was not substituted:
 
@@ -37,7 +37,11 @@ directory when that variable was not substituted:
 node "<plugin root>/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"
 ```
 
-Stdout is the absolute path. `--json` prints
+Stdout is the absolute path of the wiki directory itself, the one that
+holds `guides/`, `entities/`, `index.md` and `log.md`: any directory, for
+example the wiki subfolder of an Obsidian vault. Every path below is
+relative to it; no skill appends a fixed segment. Older prompts call the
+same path `<VAULT>`. `--json` prints
 `{path, source, exists, live, machine, reason}` where `source` is `env`,
 `project`, `defaults` or `default`, `machine` is `workstation` or `remote`
 and `reason` is `workstation`, `remote` or `missing`; pass `--host <host>`
@@ -47,12 +51,12 @@ does not create the directory. Resolution order is documented on
 then legacy env `NERDBRAIN_VAULT`, then `wiki.path` in the project
 config, then in the user defaults config, then `<config dir>/wiki`.
 
-Absolute paths under that root:
+Absolute paths under `<WIKI>`:
 
 ```
-PAGE=<VAULT>/5-wiki/entities/projects/<slug>.md
-INDEX=<VAULT>/5-wiki/index.md
-LOG=<VAULT>/5-wiki/log.md
+PAGE=<WIKI>/entities/projects/<slug>.md
+INDEX=<WIKI>/index.md
+LOG=<WIKI>/log.md
 ```
 
 `<slug>` is the entity page slug the SessionStart hook injects. A related
@@ -81,9 +85,9 @@ page is the same path with its own slug.
 Filenames only, then context snippets capped at 40 lines:
 
 ```bash
-rg -il "<term>" <VAULT>/5-wiki/
+rg -il "<term>" <WIKI>/
 
-rg -i -n -C2 "<term>" <VAULT>/5-wiki/ | head -n 40
+rg -i -n -C2 "<term>" <WIKI>/ | head -n 40
 ```
 
 ### Recipe 2: `graph.links`
@@ -99,7 +103,7 @@ Matches both regular links (`[[slug]]`, `[[slug|alias]]`) and embeds
 
 ```bash
 SLUG=<slug>
-rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' <VAULT>/5-wiki/
+rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' <WIKI>/
 ```
 
 ### Recipe 4: `graph.hop1`
@@ -107,12 +111,12 @@ rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' <VAULT>/5-wiki/
 Outgoing links of the page, then its backlinks:
 
 ```bash
-PAGE=<VAULT>/5-wiki/entities/projects/<slug>.md
+PAGE=<WIKI>/entities/projects/<slug>.md
 SLUG=<slug>
 
 rg -o '!?\[\[[^\]]+\]\]' "$PAGE"
 
-rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' <VAULT>/5-wiki/
+rg -l '!?\[\['"${SLUG}"'(\|[^\]]*)?\]\]' <WIKI>/
 ```
 
 ### Recipe 5: `page.prepend-capped`

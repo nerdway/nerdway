@@ -11,10 +11,10 @@ file. In the recipes below a bare tool name such as `vault_read` stands for
 
 The probe is the calling skill's, in this order:
 
-1. Resolve `<VAULT>` once with
+1. Resolve `<WIKI>` once with
    `node "<plugin root>/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"`
    (`${CLAUDE_PLUGIN_ROOT}` or two directories up from the skill). The
-   directory `<VAULT>` exists → tier `file`; this adapter is not read.
+   directory `<WIKI>` exists → tier `file`; this adapter is not read.
 2. Otherwise `ToolSearch` with the query `+nerdbrain` and `max_results` 1. A
    result naming a `mcp__claude_ai_nerdbrain__*` tool → tier `mcp`. No such
    tool → tier `none`: no adapter, no read, no write.
@@ -33,12 +33,15 @@ nothing pre-loads the sixteen tools of the connector.
 
 ## Paths
 
-Vault-relative paths, without the `<VAULT>` prefix:
+Paths inside the connector's vault. `<WIKI>` on this tier is the folder of
+that vault holding the wiki content (`index.md` and `entities/`): find it once
+with `vault_list {path: ""}`. When they sit at the vault root, drop the
+`<WIKI>/` prefix below:
 
 ```
-PAGE=5-wiki/entities/projects/<slug>.md
-INDEX=5-wiki/index.md
-LOG=5-wiki/log.md
+PAGE=<WIKI>/entities/projects/<slug>.md
+INDEX=<WIKI>/index.md
+LOG=<WIKI>/log.md
 ```
 
 A section is addressed by its **heading path**: the text of the page's H1,
@@ -57,7 +60,7 @@ map and never guess it. The root of `index.md` is `Wiki Index`.
 | `page.replace-section` | `vault_patch {path: PAGE, targetType: "heading", target: "<H1>::<Section>", operation: "replace", content}` | content without the heading line; the heading stays |
 | `page.append-section` | `vault_patch {path: PAGE, targetType: "heading", target: "<H1>::<Section>", operation: "append", content, rejectIfContentPreexists: true}` | the guard makes a retry idempotent |
 | `page.prepend-capped` | `page.read-section` of `<H1>::Checkpoints`, then `vault_patch {path: PAGE, targetType: "heading", target: "<H1>::Checkpoints", operation: "replace", content}` with the new entry followed by the newest 9 existing entries | `operation: "prepend"` alone would not enforce the cap of 10 |
-| `page.create` | `vault_list {path: "5-wiki/entities/projects/"}` and stop if `<slug>.md` is listed; then `vault_write {path: PAGE, content}` | `vault_write` overwrites without warning, so the listing is the existence check |
+| `page.create` | `vault_list {path: "<WIKI>/entities/projects/"}` and stop if `<slug>.md` is listed; then `vault_write {path: PAGE, content}` | `vault_write` overwrites without warning, so the listing is the existence check |
 | `page.bump-updated` | `vault_patch {path: PAGE, targetType: "frontmatter", target: "updated", operation: "replace", content: "YYYY-MM-DD"}` | |
 | `vault.search` | `search_simple {query: "<term>", contextLength: 100}` | Obsidian's full-text search, `{filename, score, matches}` sorted by score; the caller keeps 5 results at most |
 | `index.append` | `vault_patch {path: INDEX, targetType: "heading", target: "Wiki Index::Projekty", operation: "append", content, rejectIfContentPreexists: true}` | root `Wiki Index` confirmed with `vault_get_document_map {path: INDEX}` on the first write of a session |

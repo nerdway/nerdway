@@ -121,7 +121,7 @@ test("rejects angle brackets in a skill description", () => {
 });
 
 test("rejects a lone angle bracket in a skill description", () => {
-  const errors = validateComponentsForClaudeAi([skill("nerdbrain-wiki", "pages under 5-wiki -> entities")], []);
+  const errors = validateComponentsForClaudeAi([skill("nerdbrain-wiki", "pages under wiki -> entities")], []);
   assert.ok(errors.some((error) => /description contains/.test(error)));
 });
 

@@ -55,9 +55,32 @@ private plugin.
 _Avoid_: the private plugin name, nerdway-plugin
 
 **Vault**:
-The nerdbrain Obsidian vault, present on every machine where wiki skills
-run and propagated between them by Obsidian Sync.
+The wiki directory `resolveVault` returns (`<WIKI>`): the directory that
+holds `guides/`, `entities/`, `index.md` and `log.md` itself, any plain
+directory or a folder inside an Obsidian vault. Obsidian is optional, and how
+copies reach other machines is the user's choice; the plugin relies on no
+sync.
 _Avoid_: notes folder, Obsidian database
+
+**Live wiki**:
+The vault on a user workstation: the resolved directory exists and
+`detectMachine` says `workstation`. The only place a guide or a
+Checkpoints entry is written; a copy on a remote machine is never live
+(ADR-0025).
+_Avoid_: real vault, master copy
+
+**Workstation**:
+A user's own machine, as `detectMachine` in `scripts/lib/workstation.ts`
+tells it from `NERDWAY_MACHINE`, remote signals and the host; the opposite
+is a remote agent machine (cloud session, chat bot's box, sandbox).
+_Avoid_: local machine (ambiguous inside a sandbox), desktop
+
+**Pending guide**:
+A `## Pending guide` comment on the issue holding the full guide text that
+no live wiki could receive, with its path, mode and entity page; its
+sibling `## Pending checkpoint` holds a Checkpoints entry. The drain of
+`nerd-personal-docs` writes and verifies both on a workstation.
+_Avoid_: draft guide, guide backlog
 
 **Entity page**:
 One English-only markdown page per project at
@@ -66,10 +89,11 @@ project context injected at session start.
 _Avoid_: project note, wiki page (ambiguous)
 
 **Tier**:
-The vault-availability signal: `file` (the resolved vault directory present, access
+The vault-availability signal for reads: `file` (the resolved vault directory present, access
 through the filesystem), `mcp` (directory absent, the vault reachable only
 through a configured MCP server, as in a Claude Code cloud session) or `none`
-(neither). `<WIKI>` is resolved once by `resolveVault` (env, then `wiki.path`,
+(neither). Guide and Checkpoints writes need the live wiki on top of `file`;
+`mcp` never receives them. `<WIKI>` is resolved once by `resolveVault` (env, then `wiki.path`,
 then `<config dir>/wiki`). The plugin's SessionStart hook probes `file` and `none`; `mcp` is
 found by the vault skills' own probe (`ToolSearch` for the connector tools
 when the directory is absent), because the hook runs in a cloud session too

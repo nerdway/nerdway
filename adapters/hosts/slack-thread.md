@@ -24,6 +24,7 @@ the thread.
 |-----------|--------|-------|
 | `host.detect` | recipe 1 below | returns `slack-thread` when this adapter's Detection signals match |
 | `post-plan.after-plan` | recipe 2 below | interactive `issue-workflow` only; AIM never runs this |
+| `workstation.exec` | `—` | a Slack thread session runs on a remote agent machine and has no tool that reaches a user workstation; guide and Checkpoints writes are queued on the issue |
 
 ### Recipe 1: `host.detect`
 

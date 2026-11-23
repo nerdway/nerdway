@@ -57,7 +57,11 @@
     },
     {
       "id": "session-summary-requires-checkpoint",
-      "rule": "After a working session the Checkpoints entry on the entity page is mandatory in the same step as the Session summary comment. The only allowed skips are an unreachable vault (tier=none) or a project with no entity page, and those skips must be named in the Session summary — never silent. A Session summary without that write is not a finished session and is not a valid close-out."
+      "rule": "After a working session the Checkpoints entry on the entity page is mandatory in the same step as the Session summary comment. It counts only when it was written to the live wiki and verified there, or queued on the issue as a `## Pending checkpoint` comment; the only allowed skip is a project with no entity page. A queued entry or the skip must be named in the Session summary — never silent. A Session summary without that write is not a finished session and is not a valid close-out."
+    },
+    {
+      "id": "vault-write-live-and-verified",
+      "rule": "A guide or Checkpoints entry is written only to the live wiki, the directory `resolveVault` returns on a user workstation, and counts only after the verify command passed there; otherwise it is queued on the issue. A wiki copy on a remote machine, and the `mcp` tier, never receive these writes."
     }
   ],
   "adapters": {
@@ -107,7 +111,7 @@
     "hosts": {
       "config": "Host.id",
       "sections": ["Detection", "Operations"],
-      "operations": ["host.detect", "post-plan.after-plan"]
+      "operations": ["host.detect", "post-plan.after-plan", "workstation.exec"]
     }
   },
   "schemas": [
@@ -990,7 +994,7 @@
           "checkpoint": {
             "type": "string",
             "title": "Checkpoint",
-            "description": "Vault path of the entity page that received the Checkpoints entry in this same step, or an explicit skip: `skipped: tier=none` or `skipped: no entity page`. A Session summary without this field is an incomplete failed step — not a finished session and not a green light for personal-docs or close."
+            "description": "Wiki path of the entity page that received the Checkpoints entry in this same step, with the verify line (`verified <path> …`), or `pending: queued on the issue` when no live wiki was reachable, or the explicit skip `skipped: no entity page`. A Session summary without this field is an incomplete failed step — not a finished session and not a green light for personal-docs or close."
           }
         },
         "required": ["changed", "completed", "remaining", "status", "validation", "nextSteps", "checkpoint"]
@@ -998,7 +1002,7 @@
     },
     {
       "id": "PersonalGuide",
-      "description": "The user's guide in the nerdbrain vault that the close-out waits for: the guide written or updated for the issue, or the one-line reason none was written. The caller of the close-out produces it on the session model (issue-workflow's close-out, auto-issue-mode's close-out stage) and records it as a `## Personal guide` issue comment; issue-close only checks it in the vault or that comment and stops without it.",
+      "description": "The user's guide in the live wiki that the close-out waits for: the guide written or updated for the issue and verified there, the guide queued on the issue when no live wiki was reachable, or the one-line reason none was needed. The caller of the close-out produces it on the session model (issue-workflow's close-out, auto-issue-mode's close-out stage) and records it as a `## Personal guide` issue comment (`Guide:` plus `Verified:`, `Pending:` or `Not needed:`); issue-close reads that comment and stops without it.",
       "schema": {
         "type": "object",
         "title": "Personal guide",
@@ -1006,13 +1010,18 @@
           "outcome": {
             "type": "string",
             "title": "Outcome",
-            "description": "What the step did: the guide was written or updated, the work needs no guide, or the machine has no vault.",
-            "enum": ["written", "updated", "not-needed", "no-vault"]
+            "description": "What the step did: the guide was written or updated in the live wiki and verified, the work needs no guide, or the guide text was queued on the issue as `## Pending guide` because no live wiki was reachable.",
+            "enum": ["written", "updated", "not-needed", "pending"]
           },
           "path": {
             "type": "string",
             "title": "Path",
-            "description": "Vault path of the guide, `5-wiki/guides/{topic}.md`; present when a guide was written or updated."
+            "description": "Path of the guide relative to the wiki directory, `guides/{topic}.md`; present when a guide was written, updated or queued."
+          },
+          "verification": {
+            "type": "string",
+            "title": "Verification",
+            "description": "The line `verify-vault-file.ts` printed on the workstation (`verified <path> <bytes> bytes sha256:<hash> on <machine> <date>`); present when the outcome is written or updated, which count only with it."
           },
           "reason": {
             "type": "string",
@@ -1065,7 +1074,7 @@
           "page": {
             "type": "string",
             "title": "Page",
-            "description": "Vault path of the entity page that was written."
+            "description": "Path of the entity page relative to the wiki directory, `entities/projects/<slug>.md`, that was written or that the queued entry is for."
           },
           "sections": {
             "type": "array",
@@ -1082,8 +1091,18 @@
           "tier": {
             "type": "string",
             "title": "Tier",
-            "description": "The vault transport the write went through, as the skill's tier probe found it. Names the file under `adapters/vault/`; `none` has no adapter because nothing is written.",
+            "description": "The vault transport the write went through, as the skill's tier probe found it. Names the file under `adapters/vault/`. Guide and Checkpoints writes go through `file` on the live wiki only; `mcp` serves reads.",
             "enum": ["file", "mcp"]
+          },
+          "pending": {
+            "type": "boolean",
+            "title": "Pending",
+            "description": "True when no live wiki was reachable and the Checkpoints entry was queued on the issue as a `## Pending checkpoint` comment instead of written."
+          },
+          "verification": {
+            "type": "string",
+            "title": "Verification",
+            "description": "The line `verify-vault-file.ts` printed for the entity page after the write; absent when the entry is pending."
           }
         },
         "required": ["page", "sections"]
@@ -1422,7 +1441,7 @@
     {
       "id": "personal-docs",
       "skill": "nerd-personal-docs",
-      "adapters": ["vault"],
+      "adapters": ["vault", "hosts"],
       "runtime": "conversational",
       "phase": "close",
       "in": ["SessionSummary", "EntityPageUpdate"],
@@ -1430,7 +1449,7 @@
       "dependsOn": ["session-summary", "wiki-write"],
       "failure": {
         "retries": 0,
-        "fallback": "stop before issue-close and report; a machine without the vault reports no-vault instead of failing, and issue-close refuses to merge while the guide is missing",
+        "fallback": "stop before issue-close and report; with no live wiki reachable (no workstation, or a remote host with no `workstation.exec`) the guide text is queued on the issue as `## Pending guide` and the outcome is pending, never written; a write counts only with the verify line",
         "killsRun": true,
         "reporting": "chat"
       },
@@ -1448,7 +1467,7 @@
       "dependsOn": ["review-verify", "personal-docs"],
       "failure": {
         "retries": 0,
-        "fallback": "stop and report (merge conflict, missing gh/glab)",
+        "fallback": "stop and report (merge conflict, missing gh/glab, a guide that is neither verified, pending nor not needed)",
         "killsRun": true,
         "reporting": "chat"
       },
@@ -1464,14 +1483,20 @@
           "kind": "decision",
           "mechanism": "tracker-status",
           "rule": "session-summary-requires-checkpoint",
-          "description": "The human asks to close, or sets the issue to Done with the PR still open; close-out does not run until wiki-write has written the Checkpoints entry or recorded an explicit skip (tier=none or no entity page). A Session summary comment alone is not a finished session and not a valid close-out."
+          "description": "The human asks to close, or sets the issue to Done with the PR still open; close-out does not run until wiki-write has written and verified the Checkpoints entry, queued it on the issue, or recorded the explicit skip (no entity page). A Session summary comment alone is not a finished session and not a valid close-out."
+        },
+        {
+          "kind": "decision",
+          "mechanism": "tracker-status",
+          "rule": "vault-write-live-and-verified",
+          "description": "The newest `## Personal guide` comment carries `Verified:` or `Not needed:` before Done; with `Pending:` the PR description switches `Fixes <ID>` to `Refs <ID>`, the merge runs and the issue stays In Review until the drain verifies the guide; anything else stops before the merge."
         }
       ]
     },
     {
       "id": "wiki-write",
       "skill": "nerdbrain-wiki",
-      "adapters": ["vault"],
+      "adapters": ["vault", "hosts"],
       "runtime": "chain",
       "phase": "wiki",
       "in": ["SessionSummary"],
@@ -1479,7 +1504,7 @@
       "dependsOn": ["session-summary"],
       "failure": {
         "retries": 0,
-        "fallback": "stop and report: a reachable vault with an entity page must receive the Checkpoints entry; only an unreachable vault (tier=none) or a project with no entity page may skip, and that skip is named in the Session summary — never silent",
+        "fallback": "stop and report: an entity page must receive the Checkpoints entry in the live wiki, verified there, or the entry is queued on the issue as `## Pending checkpoint`; only a project with no entity page may skip, and a queued entry or the skip is named in the Session summary — never silent",
         "killsRun": true,
         "reporting": "chat"
       },

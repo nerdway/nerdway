@@ -3,12 +3,12 @@
   "evals": [
     {
       "id": "gate-stops-without-guide",
-      "prompt": "Close out issue DEMO-600 on Linear: its PR is reviewed and green. The nerdbrain vault exists at <WIKI>, no file under <WIKI>/guides/ mentions DEMO-600, and the issue has no comment starting with `## Personal guide`.",
-      "expected_output": "Step 0 finds the vault, finds no guide mentioning DEMO-600 and no `## Personal guide` comment, and stops before any commit, push or merge, telling the caller to run nerdway:nerd-personal-docs DEMO-600 first and then run the close-out again.",
+      "prompt": "Close out issue DEMO-600 on Linear: its PR is reviewed and green. A file under <WIKI>/guides/ mentions DEMO-600, but the issue has no comment starting with `## Personal guide`.",
+      "expected_output": "Step 0 reads the issue comments through pending-vault.ts outcome, gets kind none, and stops before any commit, push or merge, telling the caller to run nerdway:nerd-personal-docs DEMO-600 first and then run the close-out again. The guide file on disk does not count without the verify line on the issue.",
       "files": [],
       "assertions": [
-        "The agent searches <WIKI>/guides/ for DEMO-600 as a whole word before any git command",
-        "The agent reads the issue comments looking for `## Personal guide` with a `Not needed:` line",
+        "The agent pipes the issue comments to pending-vault.ts outcome before any git command",
+        "The agent does not accept the guide file found on disk as passing the gate",
         "The agent runs no commit, push or merge",
         "The agent does not write a guide itself",
         "The stop message names nerdway:nerd-personal-docs DEMO-600 and says to run the close-out again"
@@ -16,19 +16,20 @@
     },
     {
       "id": "gate-passes-with-guide",
-      "prompt": "Close out issue DEMO-601 on Linear with VCS GitHub. The vault exists and <WIKI>/guides/pangolin.md has a history entry `[DEMO-601](https://linear.app/example/issue/DEMO-601)`. The checkout is on the issue branch `demo-601-pangolin-export`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerdway:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-601.",
-      "expected_output": "Step 0 finds pangolin.md and notes its path, Steps 0b and 0c pass, and the close-out goes on through commit, push and merge to the base branch and phase done; the Report names the guide path.",
+      "prompt": "Close out issue DEMO-601 on Linear with VCS GitHub. The issue has a comment:\n\n## Personal guide\nGuide: guides/pangolin.md\nVerified: verified guides/pangolin.md 2140 bytes sha256:3f2a9c1b7d4e on desk 2026-11-23\n\nThe checkout is on the issue branch `demo-601-pangolin-export`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerdway:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-601.",
+      "expected_output": "Step 0 reads the verified outcome, notes the guide path and its verify line, Steps 0b and 0c pass, Step 2b is skipped, and the close-out goes on through commit, push and merge to the base branch and phase done; the Report names the guide path.",
       "files": [],
       "assertions": [
-        "The agent finds <WIKI>/guides/pangolin.md through the DEMO-601 search",
-        "The agent goes past the gates to the commit, push and merge steps",
+        "The agent reads the outcome as verified from the `Verified:` line",
+        "The agent goes past the gates to the commit, push and merge steps without touching the Fixes line",
+        "The issue moves to done",
         "The Report names the guide path"
       ]
     },
     {
       "id": "gate-passes-not-needed",
-      "prompt": "Close out issue DEMO-602 on Linear with VCS GitHub. The vault exists, no guide mentions DEMO-602, and the issue has a comment:\n\n## Personal guide\nNot needed: only test helpers were renamed.\n\nThe checkout is on the issue branch `demo-602-rename-test-helpers`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerdway:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-602.",
-      "expected_output": "Step 0 finds no guide, reads the `## Personal guide` comment with its `Not needed:` line, notes the reason and goes on; Steps 0b and 0c pass and the close-out commits, pushes and merges; the Report carries the reason.",
+      "prompt": "Close out issue DEMO-602 on Linear with VCS GitHub. The issue has a comment:\n\n## Personal guide\nNot needed: only test helpers were renamed.\n\nThe checkout is on the issue branch `demo-602-rename-test-helpers`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerdway:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-602.",
+      "expected_output": "Step 0 reads the `## Personal guide` comment with its `Not needed:` line, notes the reason and goes on; Steps 0b and 0c pass and the close-out commits, pushes and merges; the Report carries the reason.",
       "files": [],
       "assertions": [
         "The agent accepts the `Not needed:` comment as passing Step 0 and goes on to the commit, push and merge steps",
@@ -36,19 +37,31 @@
       ]
     },
     {
-      "id": "gate-no-vault",
-      "prompt": "Close out issue DEMO-603 on Linear with VCS GitHub on a machine where the resolved vault directory does not exist. The checkout is on the issue branch `demo-603-cache-headers`, which has an open PR on GitHub based on `main`. The issue has no children, and the PR description is a readiness description ending with `<!-- nerdway:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-603.",
-      "expected_output": "Step 0 sees no vault, notes that the guide was not checked and goes on without searching; Steps 0b and 0c pass and the close-out commits, pushes and merges; the Report says the machine has no nerdbrain vault.",
+      "id": "gate-pending-guide-merges-with-refs",
+      "prompt": "Close out issue #31 on GitHub Issues with VCS GitHub, from a cloud session with no live wiki. The issue has a `## Pending guide` comment and then:\n\n## Personal guide\nPending: guides/cache-headers.md\n\nThe checkout is on the issue branch `31-cache-headers`, which has an open PR based on `main` whose readiness description starts with `Fixes #31` and ends with `<!-- nerdway:pr-body -->`. The issue has no children. `git status --porcelain` prints nothing, and `git push`, the pr.edit-body call and `gh pr merge --merge` succeed.",
+      "expected_output": "Step 0 reads the outcome as pending and notes guide pending. Steps 0b and 0c pass. Step 2b writes the description through pr-body-state.ts --refs, replaces it with pr.edit-body, and confirms with --magic that it prints refs. The merge runs, the checkout switches to main, and Step 5 writes in-review, not done; the Report says the guide is pending on #31.",
       "files": [],
       "assertions": [
-        "The agent resolves <WIKI> once, checks for <WIKI> with test -d and, finding no vault, does not search for a guide",
-        "The agent does not stop at the guide check and goes on to the commit, push and merge steps",
-        "The Report says there is no nerdbrain vault on this machine and the guide was not checked"
+        "The agent switches `Fixes #31` to `Refs #31` with pr.edit-body before the merge",
+        "The agent checks the switch with pr-body-state.ts --magic before merging",
+        "The agent writes phase in-review, not done",
+        "The Report says the guide is pending on #31 and the issue stays In Review"
+      ]
+    },
+    {
+      "id": "gate-stops-on-unverified-guide",
+      "prompt": "Close out issue DEMO-604 on Linear with VCS GitHub. The issue has a comment:\n\n## Personal guide\nGuide: guides/cache-headers.md\n\nwith no Verified line. The checkout is on the issue branch with an open PR whose description ends with `<!-- nerdway:pr-body -->`.",
+      "expected_output": "Step 0 reads the outcome as unverified and stops before any commit, push or merge, telling the caller to run nerdway:nerd-personal-docs DEMO-604 first.",
+      "files": [],
+      "assertions": [
+        "The agent does not accept a `Guide:` line without `Verified:`",
+        "The agent runs no commit, push or merge",
+        "The stop message names nerdway:nerd-personal-docs DEMO-604"
       ]
     },
     {
       "id": "children-gate-stops-open-child",
-      "prompt": "Close out issue DEMO-610 on Linear with VCS GitHub: its PR is reviewed and green, and <WIKI>/guides/plugin.md mentions DEMO-610. DEMO-610 has two sub-issues: DEMO-611 in Done and DEMO-612 in Backlog. issue.url gives https://linear.app/example/issue/DEMO-611 and https://linear.app/example/issue/DEMO-612 for them.",
+      "prompt": "Close out issue DEMO-610 on Linear with VCS GitHub: its PR is reviewed and green, and the issue has a verified `## Personal guide` comment. DEMO-610 has two sub-issues: DEMO-611 in Done and DEMO-612 in Backlog. issue.url gives https://linear.app/example/issue/DEMO-611 and https://linear.app/example/issue/DEMO-612 for them.",
       "expected_output": "Step 0 finds the guide. Step 0b reads the children with issue.read-relations, reads each child's phase with issue.read-status, finds DEMO-612 in backlog and stops before any commit, push or merge, listing DEMO-612 with its phase and link and saying to finish or detach it and run the close-out again.",
       "files": [],
       "assertions": [
@@ -61,7 +74,7 @@
     },
     {
       "id": "children-gate-passes-all-done",
-      "prompt": "Close out issue DEMO-613 on Linear with VCS GitHub. The vault exists and a guide mentions DEMO-613. DEMO-613 has one sub-issue, DEMO-614, in Done. The checkout is on the issue branch `demo-613-billing-export`, which has an open PR on GitHub based on `main`. The PR description is a readiness description ending with `<!-- nerdway:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-613.",
+      "prompt": "Close out issue DEMO-613 on Linear with VCS GitHub. The issue has a verified `## Personal guide` comment. DEMO-613 has one sub-issue, DEMO-614, in Done. The checkout is on the issue branch `demo-613-billing-export`, which has an open PR on GitHub based on `main`. The PR description is a readiness description ending with `<!-- nerdway:pr-body -->`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-613.",
       "expected_output": "Step 0b finds one child, reads its phase as done and goes on; Step 0c passes and the close-out commits, pushes and merges; the Report says the issue has one child and it is done.",
       "files": [],
       "assertions": [
@@ -72,8 +85,8 @@
     },
     {
       "id": "children-gate-unknown-phase-blocks",
-      "prompt": "Close out issue DEMO-615 on Linear with the default status map. The vault does not exist on this machine. DEMO-615 has one sub-issue, DEMO-616, in the state Canceled.",
-      "expected_output": "Step 0 notes the missing vault. Step 0b reads DEMO-616 as Canceled, a value the default map does not hold, treats it as phase unknown and stops before any commit, push or merge, listing DEMO-616 as phase unknown with its link.",
+      "prompt": "Close out issue DEMO-615 on Linear with the default status map. The issue has a `## Personal guide` comment with `Not needed: config rename only`. DEMO-615 has one sub-issue, DEMO-616, in the state Canceled.",
+      "expected_output": "Step 0 passes on the not-needed outcome. Step 0b reads DEMO-616 as Canceled, a value the default map does not hold, treats it as phase unknown and stops before any commit, push or merge, listing DEMO-616 as phase unknown with its link.",
       "files": [],
       "assertions": [
         "The agent does not treat Canceled as done",
@@ -83,7 +96,7 @@
     },
     {
       "id": "readiness-gate-stops-on-start-draft",
-      "prompt": "Close out issue DEMO-640 on Linear with VCS GitHub. The guide mentions DEMO-640 and the issue has no children. The PR body is still:\n\nFixes DEMO-640\n\nAdds retry to the export job.",
+      "prompt": "Close out issue DEMO-640 on Linear with VCS GitHub. The issue has a verified `## Personal guide` comment and the issue has no children. The PR body is still:\n\nFixes DEMO-640\n\nAdds retry to the export job.",
       "expected_output": "Step 0c pipes pr.view through scripts/pr-body-state.ts, gets draft, and stops before any commit, push or merge, telling the caller to write the readiness description with nerdway:issue-workflow step 6b and then run the close-out again.",
       "files": [],
       "assertions": [
@@ -95,7 +108,7 @@
     },
     {
       "id": "readiness-gate-passes-with-marker",
-      "prompt": "Close out issue DEMO-641 on Linear with VCS GitHub. The guide mentions DEMO-641, the issue has no children, and the PR body has why, what changed, scope, evidence and merge risk sections and ends with `<!-- nerdway:pr-body -->`. The checkout is on the issue branch `demo-641-retry-export`, which has an open PR on GitHub based on `main`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-641.",
+      "prompt": "Close out issue DEMO-641 on Linear with VCS GitHub. The issue has a verified `## Personal guide` comment, the issue has no children, and the PR body has why, what changed, scope, evidence and merge risk sections and ends with `<!-- nerdway:pr-body -->`. The checkout is on the issue branch `demo-641-retry-export`, which has an open PR on GitHub based on `main`. `git status --porcelain` prints nothing, and `git push` and `gh pr merge --merge` succeed. issue.url gives https://linear.app/example/issue/DEMO-641.",
       "expected_output": "Step 0c gets readiness from the classifier and the close-out goes on to commit, push and merge; the Report names the description check as readiness.",
       "files": [],
       "assertions": [
@@ -105,7 +118,7 @@
     },
     {
       "id": "readiness-gate-passes-manual-body",
-      "prompt": "Close out issue DEMO-642 on Linear with VCS GitLab. The guide mentions DEMO-642, the issue has no children, and a teammate rewrote the MR description by hand into four paragraphs without the marker.",
+      "prompt": "Close out issue DEMO-642 on Linear with VCS GitLab. The issue has a verified `## Personal guide` comment, the issue has no children, and a teammate rewrote the MR description by hand into four paragraphs without the marker.",
       "expected_output": "Step 0c pipes `glab mr view --output json` through scripts/pr-body-state.ts, gets manual, and continues with Step 1 without touching the description.",
       "files": [],
       "assertions": [
@@ -116,7 +129,7 @@
     },
     {
       "id": "merge-fails-stops",
-      "prompt": "Close out issue DEMO-670 on Linear with VCS GitHub. A guide in <WIKI>/guides/ mentions DEMO-670, the issue has no children, the PR description ends with `<!-- nerdway:pr-body -->`, and the working tree is clean. The checkout is on the issue branch `demo-670-csv-import`, and `git push` succeeds. pr.view-base returns `{\"baseRefName\":\"main\",\"isDraft\":false}`. `gh pr merge --merge` exits 1 with `Pull request is not mergeable: the merge commit cannot be cleanly created.`",
+      "prompt": "Close out issue DEMO-670 on Linear with VCS GitHub. The issue has a verified `## Personal guide` comment, the issue has no children, the PR description ends with `<!-- nerdway:pr-body -->`, and the working tree is clean. The checkout is on the issue branch `demo-670-csv-import`, and `git push` succeeds. pr.view-base returns `{\"baseRefName\":\"main\",\"isDraft\":false}`. `gh pr merge --merge` exits 1 with `Pull request is not mergeable: the merge commit cannot be cleanly created.`",
       "expected_output": "Steps 0 to 2 pass, pr.mark-ready is skipped because the PR is not a draft, and the merge fails. The close-out stops at Step 3 and reports the error verbatim: it does not resolve the conflict, retry with another merge method, rebase, switch to main or set the issue to done.",
       "files": [],
       "assertions": [

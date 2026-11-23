@@ -157,5 +157,16 @@ test("issue-close stops on the start draft through the classifier and writes no 
   assert.match(step, /scripts\/pr-body-state\.ts/);
   assert.match(step, /`draft` → stop — commit, push and merge nothing/);
   assert.match(step, /`readiness`[\s\S]*or `manual`[\s\S]*go\s+to Step 1/);
-  assert.doesNotMatch(text, /pr\.edit-body|pr\.comment/);
+  assert.doesNotMatch(text, /pr\.comment/);
+  const outsideRefsSwitch = text.replace(/## Step 2b [^\n]*\n[\s\S]*?\n## Step 3/, "");
+  assert.doesNotMatch(outsideRefsSwitch, /pr\.edit-body/);
+});
+
+test("issue-close edits the description only to switch Fixes to Refs while the guide is pending", () => {
+  const text = read("skills/issue-close/SKILL.md");
+  const step = /## Step 2b [^\n]*\n([\s\S]*?)\n## Step 3/.exec(text)?.[1] ?? "";
+  assert.match(step, /pr-body-state\.ts --refs/);
+  assert.match(step, /pr\.edit-body/);
+  assert.match(step, /pr-body-state\.ts --magic/);
+  assert.match(step, /Skip this step unless Step 0 noted \*\*guide pending\*\*/);
 });

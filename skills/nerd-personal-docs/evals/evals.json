@@ -3,11 +3,11 @@
   "evals": [
     {
       "id": "new-service-guide-with-manual-steps",
-      "prompt": "Issue DEMO-500 (https://linear.app/example/issue/DEMO-500) is about to be closed. Its PR https://github.com/example/infra/pull/42 deployed Uptime Kuma as container 214 on host host1, reachable at https://status.home.example. The admin password is in the password-manager item \"Uptime Kuma admin\". After the deploy the user still has to log in once and enable two-factor authentication, and the TLS certificate renews by itself every 60 days. No guide for Uptime Kuma exists yet. Write the guide for the user.",
-      "expected_output": "The agent checks that the vault exists, searches <WIKI>/guides for an existing guide, then writes <WIKI>/guides/uptime-kuma.md in Polish with the six sections in order. The manual login and two-factor setup are under Kroki ręczne marked as one-time; the password-manager item is named but no secret value appears; the history section links DEMO-500 and the PR with full URLs. It links the guide on the entity page, appends a log.md line and posts a `## Personal guide` comment on the issue with the line `Guide: <WIKI>/guides/uptime-kuma.md`.",
+      "prompt": "Issue DEMO-500 (https://linear.app/example/issue/DEMO-500) is about to be closed. Its PR https://github.com/example/infra/pull/42 deployed Uptime Kuma as container 214 on host host1, reachable at https://status.home.example. The admin password is in the password-manager item \"Uptime Kuma admin\". After the deploy the user still has to log in once and enable two-factor authentication, and the TLS certificate renews by itself every 60 days. No guide for Uptime Kuma exists yet. This session runs in Claude Code on the user's own workstation and resolve-vault.ts --json reports live: true. Write the guide for the user.",
+      "expected_output": "The agent probes the wiki with resolve-vault.ts --json (live: true on this workstation), searches <WIKI>/guides for an existing guide, then writes <WIKI>/guides/uptime-kuma.md in Polish with the six sections in order. The manual login and two-factor setup are under Kroki ręczne marked as one-time; the password-manager item is named but no secret value appears; the history section links DEMO-500 and the PR with full URLs. It runs verify-vault-file.ts on the guide with the issue URL, links the guide on the entity page, appends a log.md line and posts a `## Personal guide` comment on the issue with `Guide: guides/uptime-kuma.md` and the `Verified:` line the verify command printed.",
       "files": [],
       "assertions": [
-        "The agent checks for the vault directory before writing anything",
+        "The agent probes the live wiki with resolve-vault.ts --json before writing anything",
         "The agent searches the existing guides before creating a new file",
         "The guide is written to <WIKI>/guides/ under a kebab-case file name",
         "The guide is in Polish and has the sections Czym to jest i gdzie stoi, Jak używać, Kroki ręczne, Gdy coś nie działa, Gdzie są sekrety i konfiguracja, Historia i powiązania",
@@ -15,7 +15,7 @@
         "The password-manager item name appears and no password or secret value does",
         "Historia i powiązania links DEMO-500 and the PR as full working URLs, not bare IDs",
         "The guide uses no em dash and no emoji",
-        "The agent links the guide on the entity page, appends a line to <WIKI>/log.md and posts an issue comment whose first line is `## Personal guide` followed by `Guide: <WIKI>/guides/uptime-kuma.md`"
+        "The agent runs verify-vault-file.ts on guides/uptime-kuma.md with the issue URL, links the guide on the entity page, appends a line to <WIKI>/log.md and posts an issue comment whose first line is `## Personal guide` followed by `Guide: guides/uptime-kuma.md` and a `Verified:` line copied from the verify output"
       ]
     },
     {
@@ -28,6 +28,41 @@
         "The agent writes no file in the vault",
         "The agent posts an issue comment whose first line is `## Personal guide` and which holds a line starting with `Not needed:`",
         "The agent does not treat the missing guide as a failure of the close-out"
+      ]
+    },
+    {
+      "id": "remote-copy-queues-the-guide",
+      "prompt": "Issue DEMO-502 (https://github.com/acme/infra/issues/502) is about to be closed. Its PR added a backup timer the user must check monthly. This session is a Claude Code cloud session (CLAUDE_CODE_REMOTE=true); the box has a full copy of the wiki at the resolved path, including a .obsidian folder, and resolve-vault.ts --json reports exists: true, live: false, machine: remote. The host adapter's workstation.exec is `—` on a cloud session. Run the personal documentation step.",
+      "expected_output": "The agent writes the guide text but does not write it into the wiki copy. It formats it with pending-vault.ts format-guide, posts the resulting `## Pending guide` comment(s) on the issue, then posts a `## Personal guide` comment with `Pending: guides/<topic>.md`, and reports that the guide is pending on DEMO-502 because no live wiki is reachable.",
+      "files": [],
+      "assertions": [
+        "The agent writes no file into the wiki directory on this machine, although it exists and holds .obsidian",
+        "The agent posts a comment whose first line is `## Pending guide` with Path, Mode and Entity page link lines and the full guide text",
+        "The agent posts a `## Personal guide` comment with a `Pending:` line, not a `Guide:` line",
+        "The agent reports the guide as pending, never as written"
+      ]
+    },
+    {
+      "id": "plain-directory-on-workstation-is-written",
+      "prompt": "Issue DEMO-503 (https://github.com/acme/infra/issues/503) is about to be closed; it added a CLI the user runs by hand. The user keeps the wiki in a plain directory set by wiki.path, with no Obsidian and no .obsidian folder. This Cursor session runs in the local editor; resolve-vault.ts --json reports live: true, machine: workstation. Run the personal documentation step.",
+      "expected_output": "The agent treats the plain directory as the live wiki, writes the guide under <WIKI>/guides/, runs verify-vault-file.ts with the issue URL, and posts a `## Personal guide` comment with `Guide:` and `Verified:`.",
+      "files": [],
+      "assertions": [
+        "The agent does not look for .obsidian or ask for Obsidian before writing",
+        "The agent writes the guide under <WIKI>/guides/ and runs verify-vault-file.ts on it",
+        "The `## Personal guide` comment carries the `Verified:` line from the verify command"
+      ]
+    },
+    {
+      "id": "drain-writes-pending-guide-and-checkpoint",
+      "prompt": "Run /nerdway:nerd-personal-docs drain in Claude Code on the user's workstation (resolve-vault.ts --json: live: true). issue.list-active returns DEMO-504 In Review, whose PR is already merged with `Refs DEMO-504`, and DEMO-505 In Progress. DEMO-504 has a `## Pending guide` comment for guides/backup-timer.md (Mode: create, Entity page link: github-com-acme-infra) followed by `## Personal guide` / `Pending: guides/backup-timer.md`. DEMO-505 has a `## Pending checkpoint` comment for entities/projects/github-com-acme-infra.md and no later `## Checkpoint` comment.",
+      "expected_output": "The agent pipes each issue's comment bodies to pending-vault.ts open. For DEMO-504 it writes <WIKI>/guides/backup-timer.md from the queued text, links it on the entity page, appends the log line, runs verify-vault-file.ts, posts `## Personal guide` with `Guide:` and `Verified:`, and writes phase done because the PR is merged. For DEMO-505 it prepends the queued entry to ## Checkpoints through nerdbrain-wiki, verifies the page with the entry's first 60 characters and posts the `## Checkpoint` answer with Page and Verified; it leaves DEMO-505 In Progress.",
+      "files": [],
+      "assertions": [
+        "The agent confirms live: true before writing anything",
+        "The agent uses pending-vault.ts open to find the open queue items",
+        "The guide for DEMO-504 is written, verified and answered with a `Verified:` line, and DEMO-504 moves to done",
+        "The checkpoint for DEMO-505 is written, verified and answered with a `## Checkpoint` comment, and DEMO-505 keeps its phase"
       ]
     }
   ]

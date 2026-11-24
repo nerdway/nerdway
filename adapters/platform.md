@@ -3,8 +3,10 @@
 Every project records its platform (tracker, VCS, their identifiers, the
 optional `statuses` block and the optional `pr` layout flag) in a user-owned
 store outside the repository.
-Defaults live in `<config dir>/config.yml`; the project overlay lives in
-`<config dir>/<project-slug>/config.yml`. A key present in the project file
+Defaults live in `<config dir>/config.yml`; the project overlay lives at the
+project-config location: `<config dir>/<project-slug>/config.yml` (`user`, the
+default) or `.nerdway/config.yml` in the repository (`repo`, chosen when that
+file exists). A key present in the project file
 replaces the default's key whole; missing keys come from defaults. This file
 is the one recipe every skill uses to read that store. A skill's own list of
 sources decides **when** the config is consulted; this file decides **how**.
@@ -67,7 +69,8 @@ the skill's next source.
 
 **2. Manual read (fallback).** Resolve the config directory as above and the
 project slug the same way SessionStart does. Read
-`<config dir>/<slug>/config.yml` if it exists, then `<config dir>/config.yml`.
+the project file (`<repo>/.nerdway/config.yml` if it exists, else
+`<config dir>/<slug>/config.yml` if it exists), then `<config dir>/config.yml`.
 Each file is a YAML map of strings, booleans and nested maps. For every top-level key,
 the project file wins whole; keys missing there come from defaults. The
 merged object is the platform config. Its keys are listed in

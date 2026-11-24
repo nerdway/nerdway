@@ -285,11 +285,36 @@ does not load or discover third-party code; registration is the API those
 loaders will call.
 _Avoid_: plugin section, extra key
 
+**Setup check**:
+One entry of the `nerdway-setup` check registry (`skills/nerdway-setup/checks.json`):
+an `id`, a `title`, an `area`, a `scope` (`global` or `project`), a `probe`
+that reads the state (`ok`, `warn`, `missing` or `unknown`), whether it is part
+of the preflight, an `explain` text, and either a `handoff` to the skill that
+owns the fix or a `fix` that `nerdway-setup` owns (`wiki.path`, the
+project-config location, or an environment-variable hint). Ids are unique; an
+added check never overrides a core one.
+_Avoid_: rule, lint (a setup check explains and hands off; it never blocks)
+
+**Preflight**:
+The quick, read-only pass of the setup checks marked `preflight` that a skill
+runs before it works (`setup-state.ts --preflight --caller <skill>`). Its
+`status` is `ready`, `incomplete` or `undetermined`; `nerdway-setup` fills the
+gaps the user agrees to and hands back `configured-now` or `incomplete`.
+_Avoid_: health check (it is tied to the calling skill and asks nothing when ready)
+
+**Project-config location**:
+Where a project's config file lives: `user` (default, `<config dir>/<slug>/config.yml`)
+or `repo` (`.nerdway/config.yml` in the repository). The file's presence in the
+repository records `repo`; every reader and writer resolves the path through
+`projectConfigLocation`.
+_Avoid_: config mode, storage backend
+
 **Platform config**:
 The project's tracker (`linear`, `github`, `gitlab`, `ado`, `jira`, `none`) and VCS
 host (`github`, `gitlab`, `ado`) plus the identifiers each needs — schema
 `PlatformConfig`. Lives in the user-owned nerdway store (`<config dir>/config.yml`
-defaults merged with `<config dir>/<project-slug>/config.yml`), mirrored as
+defaults merged with the project file at its project-config location, by default
+`<config dir>/<project-slug>/config.yml`), mirrored as
 `platform:` on the entity page, and is established by `determine-platform`; a
 legacy `linear:` block on an entity page is read as its alias. An optional
 `statuses` block binds the canonical phases to the tracker. An optional

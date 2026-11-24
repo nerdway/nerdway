@@ -183,6 +183,7 @@ Twenty-two skills ship in `skills/`. Invoke one with `/<name>` or `/nerdway:<nam
 
 | Skill | What it does |
 |---|---|
+| [`nerdway-setup`](skills/nerdway-setup/SKILL.md) | Check how far the machine and the project are set up, walk through what is missing one question at a time, reconfigure one area on request, and give other skills a quick preflight. Hands every tracker, VCS, board and CLI step to the skill that owns it. |
 | [`bootstrap-clis`](skills/bootstrap-clis/SKILL.md) | List the required CLIs and install only the ones you select. A skill that needs a missing tool offers that one install as a yes/no. Full reconcile is `--all`. |
 
 The [User Guide skills reference](docs/USER-GUIDE.md#skills-reference) lists trigger phrases and what happens for each skill.

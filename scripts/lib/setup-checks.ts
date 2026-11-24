@@ -10,15 +10,15 @@ export const CONTRACT_VERSION = 1;
 
 /** Probes the state builder implements. A check names one; a new check that reuses a probe is data only. */
 export const PROBE_IDS = [
-  "wiki-root",
-  "global-config",
-  "machine",
-  "clis",
-  "git-repo",
-  "project-config",
-  "platform-config",
-  "statuses-bound",
-  "board",
+  "wiki-dir",
+  "defaults-file",
+  "machine-kind",
+  "cli-path",
+  "git-top-level",
+  "project-file",
+  "platform-read",
+  "status-map",
+  "tracker-board",
 ] as const;
 export type ProbeId = (typeof PROBE_IDS)[number];
 

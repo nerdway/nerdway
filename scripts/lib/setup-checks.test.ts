@@ -14,7 +14,7 @@ function check(overrides: Record<string, unknown> = {}): Record<string, unknown>
     title: "Demo",
     area: "platform",
     scope: "project",
-    probe: "platform-config",
+    probe: "platform-read",
     preflight: false,
     explain: "Why it matters.",
     handoff: "determine-platform",
@@ -30,7 +30,7 @@ test("the shipped core registry satisfies the contract", () => {
 
 test("the core registry runs the wiki-root check first", () => {
   const core = loadCoreChecks(repoRoot);
-  assert.equal(core.checks[0]?.probe, "wiki-root");
+  assert.equal(core.checks[0]?.probe, "wiki-dir");
 });
 
 test("a valid registry passes and keeps its order", () => {

@@ -64,29 +64,29 @@ test("wiki-root: ok at a wiki, warns one level too high or too deep, missing on 
     writeFileSync(join(wiki, "index.md"), "# index\n");
 
     wikiAt(f, wiki);
-    assert.equal(probe(f, "wiki-root").status, "ok");
+    assert.equal(probe(f, "wiki-dir").status, "ok");
 
     wikiAt(f, vault);
-    const high = probe(f, "wiki-root");
+    const high = probe(f, "wiki-dir");
     assert.equal(high.status, "warn");
     assert.match(high.findings.join("\n"), /one level too high/);
     assert.equal(high.suggestion, wiki);
 
     wikiAt(f, join(wiki, "entities"));
-    const deep = probe(f, "wiki-root");
+    const deep = probe(f, "wiki-dir");
     assert.equal(deep.status, "warn");
     assert.match(deep.findings.join("\n"), /one level too deep/);
     assert.equal(deep.suggestion, wiki);
 
     wikiAt(f, join(f.root, "nowhere"));
-    assert.equal(probe(f, "wiki-root").status, "missing");
+    assert.equal(probe(f, "wiki-dir").status, "missing");
   });
 });
 
 test("wiki-root: a missing wiki on a remote machine only warns, because writes are queued", () => {
   withFixture({ machine: "remote" }, (f) => {
     wikiAt(f, join(f.root, "nowhere"));
-    const result = probe(f, "wiki-root");
+    const result = probe(f, "wiki-dir");
     assert.equal(result.status, "warn");
     assert.match(result.findings.join("\n"), /queued/);
   });
@@ -94,17 +94,17 @@ test("wiki-root: a missing wiki on a remote machine only warns, because writes a
 
 test("global-config: absent only warns, broken warns with the parse error, present is ok", () => {
   withFixture({}, (f) => {
-    assert.equal(probe(f, "global-config").status, "warn");
+    assert.equal(probe(f, "defaults-file").status, "warn");
     writeFileSync(join(f.configDir, "config.yml"), "wiki: [\n");
-    assert.equal(probe(f, "global-config").status, "warn");
+    assert.equal(probe(f, "defaults-file").status, "warn");
     writeFileSync(join(f.configDir, "config.yml"), "wiki:\n  path: ~/wiki\n");
-    assert.equal(probe(f, "global-config").status, "ok");
+    assert.equal(probe(f, "defaults-file").status, "ok");
   });
 });
 
 test("project probes: outside a repository everything project-scoped is missing", () => {
   withFixture({ git: false }, (f) => {
-    for (const id of ["git-repo", "project-config", "platform-config", "statuses-bound", "board"] as const) {
+    for (const id of ["git-top-level", "project-file", "platform-read", "status-map", "tracker-board"] as const) {
       assert.equal(probe(f, id).status, "missing", id);
     }
   });
@@ -112,15 +112,15 @@ test("project probes: outside a repository everything project-scoped is missing"
 
 test("project-config and platform-config report the strategy and the recorded platform", () => {
   withFixture({}, (f) => {
-    assert.equal(probe(f, "project-config").status, "missing");
+    assert.equal(probe(f, "project-file").status, "missing");
     mkdirSync(join(f.repo, ".nerdway"));
     writeFileSync(join(f.repo, ".nerdway", "config.yml"), GITHUB);
-    const located = probe(f, "project-config");
+    const located = probe(f, "project-file");
     assert.equal(located.status, "ok");
     assert.match(located.findings.join("\n"), /strategy repo/);
-    assert.deepEqual(probe(f, "platform-config"), { status: "ok", findings: ["tracker github, vcs github"] });
-    assert.equal(probe(f, "statuses-bound").status, "ok");
-    assert.equal(probe(f, "board").status, "unknown");
+    assert.deepEqual(probe(f, "platform-read"), { status: "ok", findings: ["tracker github, vcs github"] });
+    assert.equal(probe(f, "status-map").status, "ok");
+    assert.equal(probe(f, "tracker-board").status, "unknown");
   });
 });
 
@@ -129,7 +129,7 @@ test("clis: names the CLIs the platform needs that do not run", () => {
     mkdirSync(join(f.configDir, "demo"));
     writeFileSync(join(f.configDir, "demo", "config.yml"), GITHUB);
     const asked: string[] = [];
-    const result = probe(f, "clis", (command) => {
+    const result = probe(f, "cli-path", (command) => {
       asked.push(command);
       return command !== "gh";
     });
@@ -141,8 +141,8 @@ test("clis: names the CLIs the platform needs that do not run", () => {
 test("buildSetupState runs each check through its probe, in registry order", () => {
   withFixture({}, (f) => {
     const checks: SetupCheck[] = [
-      { id: "b", title: "B", area: "project", scope: "project", probe: "git-repo", preflight: false, explain: "x", handoff: "new-project-workflow" },
-      { id: "a", title: "A", area: "machine", scope: "global", probe: "machine", preflight: false, explain: "x", fix: { kind: "env-hint", variable: "NERDWAY_MACHINE" } },
+      { id: "b", title: "B", area: "project", scope: "project", probe: "git-top-level", preflight: false, explain: "x", handoff: "new-project-workflow" },
+      { id: "a", title: "A", area: "machine", scope: "global", probe: "machine-kind", preflight: false, explain: "x", fix: { kind: "env-hint", variable: "NERDWAY_MACHINE" } },
     ];
     const state = buildSetupState(context(f), checks);
     assert.deepEqual(state.checks.map((check) => [check.id, check.status]), [["b", "ok"], ["a", "ok"]]);
@@ -195,7 +195,7 @@ test("wiki-root: a path from the environment says the variable overrides the fil
     const vault = join(f.root, "vault");
     mkdirSync(join(vault, "wiki", "entities"), { recursive: true });
     f.env.NERDWAY_WIKI = vault;
-    const result = probe(f, "wiki-root");
+    const result = probe(f, "wiki-dir");
     assert.equal(result.status, "warn");
     assert.match(result.findings.join("\n"), /overrides the config file/);
   });
@@ -205,7 +205,7 @@ test("preflight on a fresh machine: no global config and no wiki is incomplete, 
   withFixture({}, (f) => {
     const summary = preflightSummary(buildSetupState(context(f), core), "issue-writer");
     assert.equal(summary.status, "incomplete");
-    assert.ok(summary.blocking.some((check) => check.probe === "wiki-root"));
-    assert.ok(summary.warnings.some((check) => check.probe === "global-config"));
+    assert.ok(summary.blocking.some((check) => check.probe === "wiki-dir"));
+    assert.ok(summary.warnings.some((check) => check.probe === "defaults-file"));
   });
 });

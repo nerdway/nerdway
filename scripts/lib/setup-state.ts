@@ -161,15 +161,15 @@ function board(context: SetupContext): ProbeResult {
 }
 
 export const PROBES: Record<ProbeId, Probe> = {
-  "wiki-root": wikiRoot,
-  "global-config": globalConfig,
-  machine,
-  clis,
-  "git-repo": gitRepo,
-  "project-config": projectConfig,
-  "platform-config": platformConfig,
-  "statuses-bound": statusesBound,
-  board,
+  "wiki-dir": wikiRoot,
+  "defaults-file": globalConfig,
+  "machine-kind": machine,
+  "cli-path": clis,
+  "git-top-level": gitRepo,
+  "project-file": projectConfig,
+  "platform-read": platformConfig,
+  "status-map": statusesBound,
+  "tracker-board": board,
 };
 
 function memo<T>(read: () => T): () => T {

@@ -19,8 +19,9 @@ nerdbrain wiki (`.nerdbrain-slug` override, else the `origin` remote with
 aliases, else the directory name). The files hold identifiers, status
 bindings, optional PR/MR layout flags and the optional `wiki.path` vault
 directory; tokens stay in `gh` / `acli` / vault auth. `wiki.path` is any
-directory: `~` is expanded and a relative path is resolved against the config
-directory. Skills that need the vault call
+directory: `~` is expanded, and a relative path is resolved against the
+repository root in a repo-located project file (`.nerdway/config.yml`) and
+against the config directory everywhere else. Skills that need the vault call
 `node "<plugin root>/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"`
 rather than reading this key themselves. The platform-config writer does not
 inject `wiki.path`; absent, `resolveVault` uses `<config dir>/wiki`.

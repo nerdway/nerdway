@@ -1,0 +1,95 @@
+{
+  "contract": 1,
+  "checks": [
+    {
+      "id": "wiki-root",
+      "title": "The wiki path points at the wiki root",
+      "area": "wiki",
+      "scope": "global",
+      "probe": "wiki-root",
+      "preflight": true,
+      "explain": "Every wiki write lands under the resolved wiki directory. A path one level too high (the vault instead of its wiki folder) or one level too deep sends pages to the wrong place, so this check runs first.",
+      "fix": { "kind": "config-key", "key": "wiki.path", "layer": "defaults" }
+    },
+    {
+      "id": "global-config",
+      "title": "The global config exists and parses",
+      "area": "global",
+      "scope": "global",
+      "probe": "global-config",
+      "preflight": true,
+      "explain": "The global config in the config directory holds the defaults every project inherits, such as the wiki path. It is optional, but a broken one stops every skill that reads config.",
+      "fix": { "kind": "config-key", "key": "wiki.path", "layer": "defaults" }
+    },
+    {
+      "id": "machine",
+      "title": "This machine is classified",
+      "area": "machine",
+      "scope": "global",
+      "probe": "machine",
+      "preflight": false,
+      "explain": "Skills write the live vault only on a workstation; elsewhere they queue the change. The classification comes from the host and can be forced with an environment variable.",
+      "fix": { "kind": "env-hint", "variable": "NERDWAY_MACHINE" }
+    },
+    {
+      "id": "clis",
+      "title": "The command-line tools the configured platform needs are installed",
+      "area": "machine",
+      "scope": "global",
+      "probe": "clis",
+      "preflight": false,
+      "explain": "Tracker and VCS steps run through their CLIs. A missing one fails the first skill that needs it.",
+      "handoff": "bootstrap-clis"
+    },
+    {
+      "id": "repository",
+      "title": "The working directory is a git repository",
+      "area": "project",
+      "scope": "project",
+      "probe": "git-repo",
+      "preflight": true,
+      "explain": "Project config, branches and pull requests hang off a repository. A directory without one needs a project set up first.",
+      "handoff": "new-project-workflow"
+    },
+    {
+      "id": "project-config",
+      "title": "The project config has a location",
+      "area": "project",
+      "scope": "project",
+      "probe": "project-config",
+      "preflight": true,
+      "explain": "A project's config lives either in the user config directory (the default) or inside the repository. The location decides who sees it and whether it travels with the repo.",
+      "fix": { "kind": "location-strategy" }
+    },
+    {
+      "id": "platform",
+      "title": "The tracker and VCS are recorded for this project",
+      "area": "platform",
+      "scope": "project",
+      "probe": "platform-config",
+      "preflight": true,
+      "explain": "Every issue skill reads the tracker and VCS from the platform config. Without them no issue can be read, started or closed.",
+      "handoff": "determine-platform"
+    },
+    {
+      "id": "statuses",
+      "title": "The workflow phases are bound to tracker statuses",
+      "area": "statuses",
+      "scope": "project",
+      "probe": "statuses-bound",
+      "preflight": false,
+      "explain": "The workflow moves an issue by its phase. A tracker whose statuses differ from the adapter default needs an explicit binding.",
+      "handoff": "bind-statuses"
+    },
+    {
+      "id": "board",
+      "title": "The tracker board has the statuses the binding names",
+      "area": "statuses",
+      "scope": "project",
+      "probe": "board",
+      "preflight": false,
+      "explain": "A binding can only point at statuses that exist on the board. Checking that needs the tracker, so the board skill does it.",
+      "handoff": "board-setup"
+    }
+  ]
+}

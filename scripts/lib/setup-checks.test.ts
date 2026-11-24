@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { checkErrors, loadCoreChecks, mergeChecks, validateRegistry, type SetupCheck } from "./setup-checks.ts";
+import { checkById, checkErrors, loadCoreChecks, mergeChecks, validateRegistry, type SetupCheck } from "./setup-checks.ts";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const context = { skills: new Set(["determine-platform", "bootstrap-clis"]) };
@@ -97,4 +97,24 @@ test("further checks that collide with each other or break the contract are reje
   const merged = mergeChecks([], [check({ id: "one" }), check({ id: "one" }), check({ id: "two", probe: "nope" })], context);
   assert.deepEqual(merged.checks.map((item) => item.id), ["one"]);
   assert.deepEqual(merged.rejected.map((item) => item.id), ["one", "two"]);
+});
+
+test("every core id resolves to exactly one check", () => {
+  const core = loadCoreChecks(repoRoot).checks;
+  for (const item of core) {
+    assert.equal(core.filter((other) => other.id === item.id).length, 1, item.id);
+    assert.equal(checkById(core, item.id), item);
+  }
+  assert.equal(checkById(core, "no-such-check"), undefined);
+});
+
+test("every core fix targets an owned key and every other core check hands off to an existing skill", () => {
+  const core = loadCoreChecks(repoRoot).checks;
+  for (const item of core) {
+    if (item.fix !== undefined) {
+      if (item.fix.kind === "config-key") assert.equal(item.fix.key, "wiki.path", item.id);
+    } else {
+      assert.equal(typeof item.handoff, "string", item.id);
+    }
+  }
 });

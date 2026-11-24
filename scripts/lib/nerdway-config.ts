@@ -285,15 +285,22 @@ export function writePlatformConfig(
   return { status: "ok", path: projectPath };
 }
 
+/** The first line of a repo-located config created before any key is set. */
+export const REPO_CONFIG_HEADER = "# nerdway project config (no secrets: this file is read by anyone with the repository)\n";
+
 export type MoveProjectConfigResult =
   | { status: "moved"; from: string; to: string }
+  | { status: "created"; path: string }
   | { status: "unchanged"; path: string }
   | { status: "refused"; errors: string[] };
 
 /**
  * Switch a project's config between the `user` and `repo` locations by
- * moving the one file. Never overwrites: a target that already exists, a
- * missing or unreadable source, or an empty slug refuses the move.
+ * moving the one file, so no second copy is left to read. With no config
+ * yet, choosing `repo` creates an empty repo-located file (its presence
+ * records the strategy) and choosing `user` changes nothing. Never
+ * overwrites: a target that already exists, an unreadable source, or an
+ * empty slug refuses the move.
  */
 export function moveProjectConfig(
   repoRoot: string,
@@ -303,8 +310,13 @@ export function moveProjectConfig(
 ): MoveProjectConfigResult {
   const location = projectConfigLocation(repoRoot, env, options);
   if (!hasProjectConfigPath(location)) return { status: "refused", errors: ["project slug is empty"] };
-  if (!isFile(location.path)) return { status: "refused", errors: [`no project config at ${location.path}`] };
   if (location.strategy === to) return { status: "unchanged", path: location.path };
+  if (!isFile(location.path)) {
+    const created = join(repoRoot, REPO_CONFIG_FILE);
+    mkdirSync(dirname(created), { recursive: true });
+    writeFileSync(created, REPO_CONFIG_HEADER);
+    return { status: "created", path: created };
+  }
   const target = to === "repo" ? join(repoRoot, REPO_CONFIG_FILE) : userProjectConfigPath(location.configDir, location.slug);
   if (to === "user" && location.slug.length === 0) return { status: "refused", errors: ["project slug is empty"] };
   if (existsSync(target)) return { status: "refused", errors: [`${target} already exists; merge or remove it first`] };

@@ -949,12 +949,11 @@ test("moveProjectConfig switches user to repo and back, keeping the text byte fo
   }
 });
 
-test("moveProjectConfig refuses a missing source, an existing target and a broken file", () => {
+test("moveProjectConfig refuses an existing target and a broken file", () => {
   const root = mkdtempSync(join(tmpdir(), "nerdway-move-refuse-"));
   try {
     const { env, repo, configDir } = configEnv(root);
     const opts = { home: repo, platform: "linux" as const, gitRemote: () => "" };
-    assert.equal(moveProjectConfig(repo, env, "repo", opts).status, "refused");
 
     mkdirSync(join(configDir, "repo"));
     writeFileSync(join(configDir, "repo", "config.yml"), "tracker: none\n");
@@ -968,6 +967,23 @@ test("moveProjectConfig refuses a missing source, an existing target and a broke
     writeFileSync(join(repo, ".nerdway", "config.yml"), "tracker: [\n");
     assert.equal(moveProjectConfig(repo, env, "user", opts).status, "refused");
     assert.equal(existsSync(join(configDir, "repo", "config.yml")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("moveProjectConfig with no config yet: repo creates the repo-located file, user changes nothing", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-move-create-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    const opts = { home: repo, platform: "linux" as const, gitRemote: () => "" };
+    assert.deepEqual(moveProjectConfig(repo, env, "user", opts), { status: "unchanged", path: join(configDir, "repo", "config.yml") });
+    assert.equal(existsSync(join(configDir, "repo")), false);
+    const repoPath = join(repo, ".nerdway", "config.yml");
+    assert.deepEqual(moveProjectConfig(repo, env, "repo", opts), { status: "created", path: repoPath });
+    const written = writeOf(repo, env, { tracker: "github", vcs: "github", github: { owner: "nerdway", repo: "nerdway" } });
+    assert.equal(written.status === "ok" && written.path, repoPath);
+    assert.match(readFileSync(repoPath, "utf8"), /^# nerdway project config/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

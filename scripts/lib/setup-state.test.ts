@@ -70,11 +70,13 @@ test("wiki-root: ok at a wiki, warns one level too high or too deep, missing on 
     const high = probe(f, "wiki-root");
     assert.equal(high.status, "warn");
     assert.match(high.findings.join("\n"), /one level too high/);
+    assert.equal(high.suggestion, wiki);
 
     wikiAt(f, join(wiki, "entities"));
     const deep = probe(f, "wiki-root");
     assert.equal(deep.status, "warn");
     assert.match(deep.findings.join("\n"), /one level too deep/);
+    assert.equal(deep.suggestion, wiki);
 
     wikiAt(f, join(f.root, "nowhere"));
     assert.equal(probe(f, "wiki-root").status, "missing");
@@ -185,5 +187,25 @@ test("nothing user-side: config paths resolve only under the config dir or the p
       }
       assert.equal(state.projectConfig.strategy, strategy);
     }
+  });
+});
+
+test("wiki-root: a path from the environment says the variable overrides the file", () => {
+  withFixture({}, (f) => {
+    const vault = join(f.root, "vault");
+    mkdirSync(join(vault, "wiki", "entities"), { recursive: true });
+    f.env.NERDWAY_WIKI = vault;
+    const result = probe(f, "wiki-root");
+    assert.equal(result.status, "warn");
+    assert.match(result.findings.join("\n"), /overrides the config file/);
+  });
+});
+
+test("preflight on a fresh machine: no global config and no wiki is incomplete, the wiki blocking", () => {
+  withFixture({}, (f) => {
+    const summary = preflightSummary(buildSetupState(context(f), core), "issue-writer");
+    assert.equal(summary.status, "incomplete");
+    assert.ok(summary.blocking.some((check) => check.probe === "wiki-root"));
+    assert.ok(summary.warnings.some((check) => check.probe === "global-config"));
   });
 });

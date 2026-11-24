@@ -1,7 +1,7 @@
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadCoreChecks } from "./lib/setup-checks.ts";
+import { checkById, loadCoreChecks } from "./lib/setup-checks.ts";
 import { buildSetupState, preflightSummary, setupContext } from "./lib/setup-state.ts";
 
 // The state nerdway-setup works from, as JSON. Read only.
@@ -44,8 +44,9 @@ if (registry.errors.length > 0) {
 
 let checks = registry.checks;
 if (only !== undefined) {
-  checks = checks.filter((check) => check.id === only);
-  if (checks.length === 0) {
+  const found = checkById(checks, only);
+  checks = found === undefined ? [] : [found];
+  if (found === undefined) {
     console.error(`setup-state: no check with id ${JSON.stringify(only)}; known: ${registry.checks.map((check) => check.id).join(", ")}`);
     process.exit(EXIT_USAGE);
   }

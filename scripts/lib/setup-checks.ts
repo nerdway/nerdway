@@ -159,6 +159,11 @@ export function mergeChecks(core: readonly SetupCheck[], extra: readonly unknown
   return { checks, rejected };
 }
 
+/** The one check with this id, or undefined. Ids are unique, so there is never more than one. */
+export function checkById(checks: readonly SetupCheck[], id: string): SetupCheck | undefined {
+  return checks.find((check) => check.id === id);
+}
+
 export const CORE_CHECKS_FILE = join("skills", "nerdway-setup", "checks.json");
 
 /** Skill directory names under `<root>/skills`. */

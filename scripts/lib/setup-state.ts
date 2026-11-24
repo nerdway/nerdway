@@ -21,6 +21,8 @@ export type ProbeStatus = "ok" | "warn" | "missing" | "unknown";
 export interface ProbeResult {
   status: ProbeStatus;
   findings: string[];
+  /** A concrete value the fix could write, when the probe found one. */
+  suggestion?: string;
 }
 
 export interface SetupContext {
@@ -67,6 +69,7 @@ function wikiRoot(context: SetupContext): ProbeResult {
   const vault = context.vault();
   if (vault.status !== "ok") return { status: "warn", findings: vault.errors };
   const where = `wiki directory ${vault.path} (from ${vault.source})`;
+  const override = vault.source === "env" ? ["NERDWAY_WIKI or NERDBRAIN_VAULT sets this path and overrides the config file until it is changed or unset"] : [];
   if (!vault.exists) {
     if (vault.machine !== "workstation") return { status: "warn", findings: [`${where} is not on this machine; wiki writes are queued for a workstation`] };
     return { status: "missing", findings: [`${where} does not exist yet`] };
@@ -74,11 +77,11 @@ function wikiRoot(context: SetupContext): ProbeResult {
   if (looksLikeWiki(vault.path)) return { status: "ok", findings: [where] };
   const child = wikiChild(vault.path);
   if (child !== undefined) {
-    return { status: "warn", findings: [`${where} holds no wiki pages, but ${child} does: the path points one level too high`] };
+    return { status: "warn", findings: [`${where} holds no wiki pages, but ${child} does: the path points one level too high`, ...override], suggestion: child };
   }
   const parent = dirname(vault.path);
   if (parent !== vault.path && looksLikeWiki(parent)) {
-    return { status: "warn", findings: [`${where} sits inside the wiki at ${parent}: the path points one level too deep`] };
+    return { status: "warn", findings: [`${where} sits inside the wiki at ${parent}: the path points one level too deep`, ...override], suggestion: parent };
   }
   return { status: "warn", findings: [`${where} holds no wiki pages yet (no index.md, log.md or entities/)`] };
 }

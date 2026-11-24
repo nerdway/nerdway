@@ -7,6 +7,7 @@ import { test } from "node:test";
 
 import {
   enforceBudget,
+  projectConfigured,
   projectDirectory,
   renderSession,
   renderSessionOutput,
@@ -357,6 +358,28 @@ test("no drain line on a remote machine, without a wiki directory, or without a 
     const noWiki = options(root, project, { vault: join(root, "missing"), drain: { workstation: true, configured: true, stampPath, now } });
     assert.equal(contextOf(renderSession(noWiki)).includes(DRAIN_LINE), false);
     assert.equal(contextOf(renderSession(options(root, project))).includes(DRAIN_LINE), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("the drain probe counts a user-located or a repo-located project config as configured", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-configured-"));
+  try {
+    const project = join(root, "demo");
+    const configDir = join(root, "config");
+    mkdirSync(project);
+    writeFileSync(join(project, ".nerdbrain-slug"), "demo\n");
+    const env = { NERDWAY_CONFIG_DIR: configDir };
+    const aliases = join(root, "aliases");
+    assert.equal(projectConfigured(project, env, root, aliases), false);
+    mkdirSync(join(project, ".nerdway"));
+    writeFileSync(join(project, ".nerdway", "config.yml"), "tracker: none\n");
+    assert.equal(projectConfigured(project, env, root, aliases), true);
+    rmSync(join(project, ".nerdway"), { recursive: true });
+    mkdirSync(join(configDir, "demo"), { recursive: true });
+    writeFileSync(join(configDir, "demo", "config.yml"), "tracker: none\n");
+    assert.equal(projectConfigured(project, env, root, aliases), true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

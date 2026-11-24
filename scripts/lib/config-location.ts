@@ -154,3 +154,14 @@ export function projectConfigLocation(
   if (isFile(repoPath)) return { strategy: "repo", path: repoPath, configDir, slug };
   return { strategy: "user", path: userProjectConfigPath(configDir, slug), configDir, slug };
 }
+
+/** The short name a message uses for the project file: `<slug>/config.yml` or `.nerdway/config.yml`. */
+export function projectConfigLabel(location: ProjectConfigLocation): string {
+  if (location.strategy === "repo") return ".nerdway/config.yml";
+  return location.slug.length === 0 ? "project config" : `${location.slug}/config.yml`;
+}
+
+/** False when the user strategy has no slug to name a file with. */
+export function hasProjectConfigPath(location: ProjectConfigLocation): boolean {
+  return location.strategy === "repo" || location.slug.length > 0;
+}

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { mergePlatformConfigs, migrateLegacyPlatform, readPlatformConfig, resolveConfigDir, resolveSlug, resolveVault, writePlatformConfig } from "./nerdway-config.ts";
+import { mergePlatformConfigs, migrateLegacyPlatform, moveProjectConfig, readPlatformConfig, resolveConfigDir, resolveSlug, resolveVault, writePlatformConfig } from "./nerdway-config.ts";
 import { prCollapseDetails, type PlatformVocabulary } from "../types/platform-config.ts";
 import { parseConfig } from "./yaml.ts";
 
@@ -835,6 +835,139 @@ test("resolveVault: a missing directory is not live; the host option feeds the m
     assert.equal(missing.status === "ok" && missing.reason, "missing");
     const chat = resolveVault(repo, env, { home: repo, platform: "linux", gitRemote: () => "", host: "slack-thread" });
     assert.equal(chat.status === "ok" && chat.machine, "remote");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+function repoConfigured(repo: string, text: string): string {
+  mkdirSync(join(repo, ".nerdway"), { recursive: true });
+  const path = join(repo, ".nerdway", "config.yml");
+  writeFileSync(path, text);
+  return path;
+}
+
+const GITHUB_PROJECT = "tracker: github\nvcs: github\ngithub:\n  owner: nerdway\n  repo: nerdway\n";
+
+test("a repo-located project config is read through the same loader and merged over defaults", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-repo-read-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    writeFileSync(join(configDir, "config.yml"), "tracker: linear\nvcs: github\nlinear:\n  team: DEMO\n");
+    mkdirSync(join(configDir, "repo"));
+    writeFileSync(join(configDir, "repo", "config.yml"), "tracker: linear\n");
+    repoConfigured(repo, GITHUB_PROJECT);
+    const read = readOf(repo, env);
+    assert.equal(read.status, "found");
+    if (read.status !== "found") return;
+    assert.equal(read.value.tracker, "github");
+    assert.deepEqual(read.value.linear, { team: "DEMO" });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a broken repo-located project config is invalid and names the repo file", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-repo-invalid-"));
+  try {
+    const { env, repo } = configEnv(root);
+    repoConfigured(repo, "tracker: [\n");
+    const read = readOf(repo, env);
+    assert.equal(read.status, "invalid");
+    assert.match(read.errors.join("\n"), /\.nerdway\/config\.yml/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("writePlatformConfig writes into the repo-located file when that strategy is in use", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-repo-write-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    const path = repoConfigured(repo, "# team file\ntracker: none\n");
+    const written = writeOf(repo, env, { tracker: "github", vcs: "github", github: { owner: "nerdway", repo: "nerdway" } });
+    assert.equal(written.status, "ok");
+    if (written.status !== "ok") return;
+    assert.equal(written.path, path);
+    assert.match(readFileSync(path, "utf8"), /# team file/);
+    assert.equal(existsSync(join(configDir, "repo", "config.yml")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("the legacy ## Platform migration writes nothing when the repo strategy is in use", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-repo-legacy-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    repoConfigured(repo, GITHUB_PROJECT);
+    writeFileSync(join(repo, "CLAUDE.md"), LEGACY);
+    assert.deepEqual(migrateLegacyPlatform(repo, env, optionsOf(repo)), { status: "unchanged" });
+    assert.equal(existsSync(join(configDir, "repo")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolveVault reads wiki.path from a repo-located project config", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-repo-vault-"));
+  try {
+    const { env, repo } = configEnv(root);
+    const vault = join(root, "vault");
+    mkdirSync(vault);
+    repoConfigured(repo, `wiki:\n  path: ${vault}\n`);
+    const result = resolveVault(repo, env, { home: repo, platform: "linux", gitRemote: () => "" });
+    assert.equal(result.status, "ok");
+    if (result.status !== "ok") return;
+    assert.equal(result.path, vault);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("moveProjectConfig switches user to repo and back, keeping the text byte for byte", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-move-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    const userPath = join(configDir, "repo", "config.yml");
+    mkdirSync(join(configDir, "repo"));
+    const text = `# mine\n${GITHUB_PROJECT}`;
+    writeFileSync(userPath, text);
+    const repoPath = join(repo, ".nerdway", "config.yml");
+    const opts = { home: repo, platform: "linux" as const, gitRemote: () => "" };
+
+    assert.deepEqual(moveProjectConfig(repo, env, "repo", opts), { status: "moved", from: userPath, to: repoPath });
+    assert.equal(readFileSync(repoPath, "utf8"), text);
+    assert.equal(existsSync(userPath), false);
+    assert.deepEqual(moveProjectConfig(repo, env, "repo", opts), { status: "unchanged", path: repoPath });
+
+    assert.deepEqual(moveProjectConfig(repo, env, "user", opts), { status: "moved", from: repoPath, to: userPath });
+    assert.equal(readFileSync(userPath, "utf8"), text);
+    assert.equal(existsSync(repoPath), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("moveProjectConfig refuses a missing source, an existing target and a broken file", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-move-refuse-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    const opts = { home: repo, platform: "linux" as const, gitRemote: () => "" };
+    assert.equal(moveProjectConfig(repo, env, "repo", opts).status, "refused");
+
+    mkdirSync(join(configDir, "repo"));
+    writeFileSync(join(configDir, "repo", "config.yml"), "tracker: none\n");
+    repoConfigured(repo, GITHUB_PROJECT);
+    const clash = moveProjectConfig(repo, env, "user", opts);
+    assert.equal(clash.status, "refused");
+    assert.equal(readFileSync(join(configDir, "repo", "config.yml"), "utf8"), "tracker: none\n");
+    assert.equal(readFileSync(join(repo, ".nerdway", "config.yml"), "utf8"), GITHUB_PROJECT);
+
+    rmSync(join(configDir, "repo", "config.yml"));
+    writeFileSync(join(repo, ".nerdway", "config.yml"), "tracker: [\n");
+    assert.equal(moveProjectConfig(repo, env, "user", opts).status, "refused");
+    assert.equal(existsSync(join(configDir, "repo", "config.yml")), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -63,7 +63,7 @@ Render each question with the first ask tool in this session's tool list:
 1. Claude Code `AskUserQuestion`
 2. Cursor `AskQuestion` / the ask-question tool
 3. Codex `request_user_input`
-4. Otherwise a numbered list. "tak", "yes" or "1" picks the recommendation,
+4. Otherwise a numbered list. "yes" or "1" picks the recommendation,
    another number picks that option, and any other text is the user's own
    answer.
 

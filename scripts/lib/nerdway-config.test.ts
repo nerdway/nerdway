@@ -988,3 +988,47 @@ test("moveProjectConfig with no config yet: repo creates the repo-located file, 
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("a relative wiki.path resolves from the repo root under the repo strategy and from the config dir under user", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-relative-wiki-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    const opts = { home: join(root, "home"), platform: "linux" as const, gitRemote: () => "" };
+
+    mkdirSync(join(configDir, "repo"));
+    writeFileSync(join(configDir, "repo", "config.yml"), "wiki:\n  path: docs/wiki\n");
+    const user = resolveVault(repo, env, opts);
+    assert.equal(user.status === "ok" && user.path, join(configDir, "docs", "wiki"));
+
+    rmSync(join(configDir, "repo"), { recursive: true });
+    repoConfigured(repo, "wiki:\n  path: docs/wiki\n");
+    const inRepo = resolveVault(repo, env, opts);
+    assert.equal(inRepo.status === "ok" && inRepo.path, join(repo, "docs", "wiki"));
+    assert.equal(inRepo.status === "ok" && inRepo.source, "project");
+
+    writeFileSync(join(repo, ".nerdway", "config.yml"), "wiki:\n  path: ~/notes/wiki\n");
+    const tilde = resolveVault(repo, env, opts);
+    assert.equal(tilde.status === "ok" && tilde.path, join(root, "home", "notes", "wiki"));
+
+    const absolute = join(root, "elsewhere", "wiki");
+    writeFileSync(join(repo, ".nerdway", "config.yml"), `wiki:\n  path: ${absolute}\n`);
+    const abs = resolveVault(repo, env, opts);
+    assert.equal(abs.status === "ok" && abs.path, absolute);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("under the repo strategy a relative wiki.path in the global defaults still resolves against the config dir", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-relative-defaults-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    repoConfigured(repo, GITHUB_PROJECT);
+    writeFileSync(join(configDir, "config.yml"), "wiki:\n  path: wiki-root\n");
+    const result = resolveVault(repo, env, { home: repo, platform: "linux", gitRemote: () => "" });
+    assert.equal(result.status === "ok" && result.path, join(configDir, "wiki-root"));
+    assert.equal(result.status === "ok" && result.source, "defaults");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

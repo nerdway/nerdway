@@ -191,8 +191,9 @@ function wikiPathFromSection(
  * wiki content itself (guides/, entities/, index.md, log.md).
  *
  * Order: env `NERDWAY_WIKI`, then legacy env `NERDBRAIN_VAULT`; then
- * `wiki.path` in `<configDir>/<slug>/config.yml`, then in
- * `<configDir>/config.yml` (`~` expanded, relative paths against
+ * `wiki.path` in the project file at its location, then in
+ * `<configDir>/config.yml` (`~` expanded; a relative path resolves against
+ * the repository root when the project file is repo-located, else against
  * `configDir`); then `<configDir>/wiki`. The writer does not inject
  * `wiki.path` into a newly generated defaults file — the last step is
  * the implicit default. This function never creates the directory.
@@ -215,7 +216,10 @@ export function resolveVault(repoRoot: string, env: NodeJS.ProcessEnv, options: 
 
   const fromProject = wikiPathFromSection(repoRoot, env, { ...options, home }, "project");
   if (fromProject.kind === "invalid") return { status: "invalid", errors: fromProject.errors };
-  if (fromProject.kind === "ok") return located(absoluteWikiPath(fromProject.path, home, configDir), "project");
+  if (fromProject.kind === "ok") {
+    const projectBase = projectConfigLocation(repoRoot, env, { ...options, home }).strategy === "repo" ? repoRoot : configDir;
+    return located(absoluteWikiPath(fromProject.path, home, projectBase), "project");
+  }
 
   const fromDefaults = wikiPathFromSection(repoRoot, env, { ...options, home }, "defaults");
   if (fromDefaults.kind === "invalid") return { status: "invalid", errors: fromDefaults.errors };

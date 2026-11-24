@@ -168,7 +168,7 @@ wiki:
   path: <your current vault directory>
 ```
 
-Put it in the defaults file, or in a project file for one project. A path may start with `~`; a relative path is resolved against the config directory. A defaults file that holds only `wiki.path` is valid and does not count as a platform setup, so a repository without its own project file still asks for `/nerdway:determine-platform`. The plugin does not create the wiki directory.
+Put it in the defaults file, or in a project file for one project. A path may start with `~`; a relative path is resolved against the config directory (since 0.88.0, against the repository root in a repo-located project file). A defaults file that holds only `wiki.path` is valid and does not count as a platform setup, so a repository without its own project file still asks for `/nerdway:determine-platform`. The plugin does not create the wiki directory.
 
 Check where the wiki resolves; `source` is `env`, `project`, `defaults` or `default`, and `exists` says whether the directory is there:
 
@@ -205,7 +205,7 @@ Version 0.88.0, not breaking.
 
 **Setup skill.** `/nerdway:nerdway-setup` checks the machine and the current project and walks you through what is missing, one question at a time. Its first check is the wiki root. If you came from 0.86.0 or earlier with a `wiki.path` that points at a vault root holding the wiki in a subfolder (see [Live wiki and wiki root](#live-wiki-and-wiki-root)), run it: it names the subfolder and offers to write the corrected `wiki.path` into the file that holds it, with a before/after. `issue-writer` now runs its preflight first and continues at once when everything is in place.
 
-**Project-config location.** The project config can now live in one of two places. `user` is the default and is today's path, `<config dir>/<slug>/config.yml`, so existing configs are read unchanged and nothing needs to move. `repo` keeps the file at `.nerdway/config.yml` in the repository, for settings that should travel with it; it holds no secrets. Switch with `nerdway-setup` or `project-config.ts move --to repo|user`; see [Where the project config lives](USER-GUIDE.md#where-the-project-config-lives).
+**Project-config location.** The project config can now live in one of two places. `user` is the default and is today's path, `<config dir>/<slug>/config.yml`, so existing configs are read unchanged and nothing needs to move. `repo` keeps the file at `.nerdway/config.yml` in the repository, for settings that should travel with it; it holds no secrets. In a repo-located file a relative `wiki.path` resolves from the repository root (`docs/wiki` is `<repo>/docs/wiki`); in the `user` file and the defaults it still resolves against the config directory. Switch with `nerdway-setup` or `project-config.ts move --to repo|user`; see [Where the project config lives](USER-GUIDE.md#where-the-project-config-lives).
 
 Check the state of a repository:
 

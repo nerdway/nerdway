@@ -151,7 +151,7 @@ node <plugin dir>/scripts/project-config.ts where <your repo>
 node <plugin dir>/scripts/project-config.ts move --to repo <your repo>
 ```
 
-A relative `wiki.path` resolves against the config directory in both locations, so in a repo-located file use `~` or an absolute path.
+A relative `wiki.path` in a repo-located file resolves from the repository root, so `docs/wiki` means `<repo>/docs/wiki`. In the `user` file and in the global defaults it resolves against the config directory. Absolute paths and paths starting with `~` mean the same in every file.
 
 Config files are YAML 1.2. Comments, block scalars, flow collections, quoted strings and anchors are accepted. A write changes only the section it is updating, so comments you left and keys the plugin does not know stay. Unknown top-level keys (a tool adding a key next to `tracker` or `wiki`) are preserved and reported as a notice that points you at `extensions:`. Third-party settings belong under `extensions.<id>`; an id with no section registered is also preserved, with a notice. A non-map `extensions` value is an error. The plugin does not load extension code; the [config section API](CONFIG-SECTIONS.md) is what a future loader will call.
 

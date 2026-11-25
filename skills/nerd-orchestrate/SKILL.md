@@ -41,8 +41,10 @@ status strategy and map as
 this plugin version".
 
 Tracker commands live in the adapter, never in this skill. This skill
-reads through `issue.list-open`, `issue.read` and `issue.url`, and writes
-only by invoking the skills below:
+reads through `issue.list-open`, `issue.read` and `issue.url`, formats every
+output link per *Clickable links* in
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`, and writes only by invoking
+the skills below:
 
 ```
 ${CLAUDE_PLUGIN_ROOT}/adapters/trackers/<tracker>.md
@@ -64,8 +66,8 @@ whose **first line is exactly** `## Implementation plan`. `in-review` is
 open and never unplanned. The filter is also
 `scripts/lib/implementation-plan.ts`. For each open issue in those three
 phases run `issue.read` and keep it only when
-`hasImplementationPlanComment` is false. Print the unplanned list (id,
-title, phase, `issue.url`) before asking anything.
+`hasImplementationPlanComment` is false. Print the unplanned list (`[<ID>](<url>)`, title, phase — never a bare ID
+beside a URL) before asking anything.
 
 A comment that merely contains the heading, a stub whose first line is
 `## Implementation plan (draft)`, acceptance criteria in the description,
@@ -184,11 +186,14 @@ Stop the run, never force it, when:
 
 ## Final report
 
-Close with the project's **evidence**: the progress summary in brief, the
-unplanned list as it stood, each id with plan comment link or skip, each
-AIM yes/skip, each AIM outcome (issue link, PR/MR, merge, or the resume
-line), and which host dispatch ran (worktrees × N, sequential, or
-CloudAgent).
+Close with the project's **evidence**, formatting every identifier as a
+clickable Markdown link per *Clickable links* in
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` (never a bare ID beside a
+URL): the progress summary in brief, the unplanned list as it stood, each
+issue as `[<ID>](<url>)` with its plan comment link or skip, each AIM
+yes/skip, each AIM outcome (clickable issue, PR/MR, merge commit links, or
+the resume line), and which host dispatch ran (worktrees × N, sequential,
+or CloudAgent).
 
 ## Related skills
 

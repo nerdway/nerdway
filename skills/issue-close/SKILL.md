@@ -62,7 +62,7 @@ Pick `<tracker>` and `<vcs>` from the first source that has them:
 The status strategy and map come from the `statuses` block of the platform
 (same sources, same order), else the tracker adapter's `## Statuses` default;
 `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` defines how a value maps to a
-phase. A strategy whose `## Status strategies` row is `—` → stop and report
+phase and defines *Clickable links* for all reports. A strategy whose `## Status strategies` row is `—` → stop and report
 "strategy not supported — run `/bind-statuses`".
 
 The tracker adapter is used for one write (`issue.set-status`), the reads
@@ -111,7 +111,7 @@ reached the live wiki.
 4. Anything else (`none`, or `unverified`: a `Guide:` line without
    `Verified:`) → stop — commit, push and merge nothing — and report exactly:
 
-   > No verified guide for `<ID>`: the issue has no `## Personal guide`
+   > No verified guide for [<ID>](<url>): the issue has no `## Personal guide`
    > comment with `Verified:`, `Pending:` or `Not needed:`. Run
    > `nerdway:nerd-personal-docs <ID>` first, then run the close-out again.
 
@@ -131,11 +131,11 @@ and what the tracker does to them.
    report exactly, one line per child that is not `done`, with its phase or
    `phase unknown` for a value the map does not hold:
 
-   > `<ID>` has children that are not done:
-   > - `<child ID>` (`<phase>`): `<child url>`
+   > [<ID>](<url>) has children that are not done:
+   > - [<child ID>](<child url>) (`<phase>`)
    >
-   > Finish each child or detach it from `<ID>`, then run the close-out
-   > again.
+   > Finish each child or detach it from [<ID>](<url>), then run the
+   > close-out again.
 
 ## Step 0c — Readiness description check (gate)
 
@@ -159,7 +159,7 @@ draft `issue-start` wrote.
 3. `draft` → stop — commit, push and merge nothing, and write no phase — and
    report exactly:
 
-   > The PR/MR description of `<ID>` is still the start draft (`Fixes <ID>`
+   > The PR/MR description of [<ID>](<url>) is still the start draft (`Fixes <ID>`
    > and one paragraph). Write the readiness description with
    > `nerdway:issue-workflow` step 6b, then run the close-out again.
 
@@ -242,7 +242,7 @@ git checkout <base> && git pull
 ## Step 5 — Move the issue to `done` (or `in-review` while the guide is pending)
 
 With **guide pending** from Step 0, write the phase `in-review` with
-`issue.set-status` instead of `done`, and report "guide pending on `<ID>`:
+`issue.set-status` instead of `done`, and report "guide pending on [<ID>](<url>):
 the merge is done, the issue stays In Review until
 `nerdway:nerd-personal-docs drain` writes and verifies the guide on a
 workstation". Otherwise:
@@ -262,16 +262,17 @@ merge already closed is closed again without error.
 
 ## Report
 
-Confirm briefly what happened: the guide check (the guide path with its
-verify line, the not-needed reason, or guide pending with the `Refs`
-switch), the children check (no children,
-or how many, all done), the description check (`readiness` or `manual`),
-committed (or clean), pushed, merged,
-now on `<base>`, issue `<ID>` moved to done (or left In Review with the
-guide pending). If any step stopped early, report
-which one and why. Either way, end with the issue link from `issue.url`, in
-the shape *Asking the human to move a phase* in
-`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives.
+Confirm briefly what happened, formatting every identifier as a clickable
+Markdown link per *Clickable links* and *Asking the human to move a phase*
+in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` (never a bare ID beside a
+URL): the guide check (the guide path with its verify line, the not-needed
+reason, or guide pending with the `Refs` switch), the children check (no
+children, or how many, all done), the description check (`readiness` or
+`manual`), committed (or clean), pushed, merged (`[PR #<n>](<prUrl>)` /
+`[MR !<n>](<mrUrl>)`, commit `[<shortSha>](<commitUrl>)`), now on
+`[<base>](<branchUrl>)`, and `[<ID>](<url>)` moved to done (or left In
+Review with the guide pending). If any step stopped early, report which one
+and why with `[<ID>](<url>)`.
 
 ## Related skills
 

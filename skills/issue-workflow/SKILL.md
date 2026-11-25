@@ -23,8 +23,10 @@ description: >-
 
 The first step after accepting a task is an issue in the tracker, and its
 number in your reply, before any work starts. Find the issue the task belongs
-to or create it with `nerdway:issue-writer`, tell the user its ID, and only
-then plan, edit or run anything that changes the repo. Questions, analysis and
+to or create it with `nerdway:issue-writer`, tell the user its clickable
+issue link (`[<ID>](<url>)` from `issue.url`, per *Clickable links* in
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`), and only then plan, edit or
+run anything that changes the repo. Questions, analysis and
 reading code need no issue.
 
 This rule binds every agent that reads this skill, including bots that run no
@@ -128,7 +130,11 @@ Linear: `native`, `Backlog / Todo / In Progress / In Review / Done`).
 `issue.read-status` yields a phase through that strategy and
 `issue.set-status` writes one. A value the map does not hold is **phase
 unknown**: report the raw value and dispatch nothing. A strategy the adapter
-lists as `—` → stop and ask the user to run `/bind-statuses`.
+lists as `—` → stop and ask the user to run `/bind-statuses`. Format every
+identifier in chat reports, prompts, and tracker comments (`## Implementation
+plan`, `## Spec change`, `## Session summary`) as a clickable Markdown link
+(`[label](url)`) per *Clickable links* in
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`.
 
 ## Where the spec and the plan live
 
@@ -220,10 +226,10 @@ marker is in those comments), then:
 | `backlog` / `todo`, implement command, no plan comment | **Planning** first — post the plan, write **`todo`**, do not Start. Never Start, never edit, never CloudAgent |
 | `in-progress`, no comment starting with `## Implementation plan` | **Planning** first — same as `backlog` / `todo` without a plan: draft and post the plan, write phase **`todo`**. Never Start, never edit, never CloudAgent — even on `zaimplementuj` |
 | `in-progress`, plan comment present | **Implementation** — rebuild context from the description (the spec), the `## Implementation plan` comment and later comments (`## Spec change`, plan extensions); if branch/PR missing, run the Start step first |
-| `in-review` | **Code review** — present the code-review menu with the issue link (`issue.url`) |
+| `in-review` | **Code review** — present the code-review menu with the clickable issue link (`[<ID>](<url>)` from `issue.url`) |
 | `done` (set manually, PR unmerged) | **Close-out** — the user's guide (`nerd-personal-docs`), then push, merge PR, ask about switching to main/master |
-| `done`, no PR, no trace of work | **Warning and bug proposal** — the rule *A done issue without a trace of work* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`: report it with the issue link (`issue.url`), offer to draft the bug with `nerdway:issue-writer`, and stop; never a comment alone, never a phase change |
-| unknown | report the raw value read from the tracker with the issue link (`issue.url`) and stop |
+| `done`, no PR, no trace of work | **Warning and bug proposal** — the rule *A done issue without a trace of work* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`: report it with the clickable issue link (`[<ID>](<url>)` from `issue.url`), offer to draft the bug with `nerdway:issue-writer`, and stop; never a comment alone, never a phase change |
+| unknown | report the raw value read from the tracker with the clickable issue link (`[<ID>](<url>)` from `issue.url`) and stop |
 
 This table also governs a bare issue ID typed into a **fresh session**: check
 the phase and do what it says — do not restart planning for an issue already
@@ -624,8 +630,9 @@ an axis, and `/code-review` stays outside this flow.
 | `security` | injection, secrets, unsafe access the diff introduces | the diff itself |
 
 **Confirm the request (review-menu, conversational).** Default the range to
-`main...HEAD` and confirm it with the user, printing the issue link
-(`issue.url`); all four axes always run, so there is nothing else to choose.
+`main...HEAD` and confirm it with the user, printing the clickable issue
+link (`[<ID>](<url>)` from `issue.url`); all four axes always run, so
+there is nothing else to choose.
 
 **Run the island.** With the `Workflow` tool available, run
 `workflows/review-verify.js` via
@@ -793,6 +800,7 @@ start with `## Session summary` and include:
 - the criteria verification table, once implementation is complete,
 - open questions / next steps,
 - metrics, whenever an island ran this session,
+- every referenced issue, PR/MR, repo, commit, branch, file or comment formatted as a clickable Markdown link (`[label](url)`) per `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` *Clickable links*,
 - **Checkpoint** — the entity-page path that received the `## Checkpoints`
   entry with the verify line, or `pending: queued on the issue`, or the
   explicit skip `skipped: no entity page`.

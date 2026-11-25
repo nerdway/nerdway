@@ -62,7 +62,8 @@ phase. A strategy whose `## Status strategies` row is `—` → stop and report
 
 The tracker adapter is used for two reads (`issue.read-status`,
 `issue.read-branch`), one branch operation (`issue.create-branch`) and the
-issue link (`issue.url`), and writes no status. `branchName` is the branch name the tracker derives from
+issue link (`issue.url`), and writes no status; all output links follow
+*Clickable links* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`. `branchName` is the branch name the tracker derives from
 the issue (already safe for git).
 
 ## Inputs
@@ -130,13 +131,17 @@ the body exactly as its `## Magic words` section prescribes — it starts with
 the line `Fixes <ID>` (one line per issue if the PR closes several) and ends
 with `<summary>`; a host without a tracker integration adds the issue
 `<url>` from `issue.url`. Pass the body in the argument
-form the operation's notes give. Print the PR/MR URL as the VCS adapter's
-`## URL` section describes.
+form the operation's notes give. Format the PR/MR as a clickable Markdown link (`[PR #<n>](<url>)` or
+`[MR !<n>](<url>)`) using the VCS adapter's `## URL` section.
 
 ## Report
 
-Confirm briefly what happened: branch `<branchName>` created and pushed,
-start commit made, draft PR/MR opened (print its URL). If any step stopped
+Confirm briefly what happened, formatting every identifier as a clickable
+Markdown link per *Clickable links* in
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` (never a bare ID beside a
+URL): issue `[<ID>](<url>)`, branch `[<branchName>](<branchUrl>)` (when a
+web URL is known), start commit `[<shortSha>](<commitUrl>)`, and draft
+PR/MR `[PR #<n>](<prUrl>)` / `[MR !<n>](<mrUrl>)`. If any step stopped
 early, report which one and why — the caller decides what to do next.
 
 ## Related skills

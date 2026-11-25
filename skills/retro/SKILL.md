@@ -42,7 +42,8 @@ platform config, read from disk as
 `${CLAUDE_PLUGIN_ROOT}/adapters/platform.md` describes → entity page
 `platform:` / legacy `linear:` → `nerdway:determine-platform`). With no
 tracker, still propose the candidates and say that the duplicate check was
-skipped.
+skipped. Format every issue, file and resource link per *Clickable links*
+in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`.
 
 ## Step 1 — Read the session
 
@@ -84,8 +85,9 @@ the reason.
 
 Run `issue.list-open` and compare each candidate with the open issues by
 title and objective. A candidate an open issue already covers is not
-proposed; it is listed apart with that issue's ID and link from `issue.url`,
-so the user can add the new evidence to it by hand.
+proposed; it is listed apart as a clickable Markdown link (`[<ID>](<url>)`
+from `issue.url`, never a bare ID beside a URL), so the user can add the
+new evidence to it by hand.
 
 ## Step 4 — Propose and ask once
 
@@ -94,7 +96,7 @@ Print every candidate, numbered, grouped by category, each as:
 - a title in the form an issue would carry;
 - the evidence from step 1, quoted or summarised with the command or the
   user's words;
-- the change it asks for, and where (file, skill, adapter, validator);
+- the change it asks for, and where (clickable repo file link `[<path>](<fileUrl>)` when a web URL is known, skill, adapter, validator);
 - the recommendation: **accept** or **reject**, with one reason.
 
 Then the duplicates from step 3, and the lessons dropped for lack of
@@ -118,8 +120,8 @@ where the lesson came from. `issue-writer` resolves the container, shows the
 draft and creates nothing without its own approval; a rejected draft ends
 that candidate and moves on to the next.
 
-End with the IDs and links `issue-writer` printed for the created issues,
-and the candidates the user turned down.
+End with the clickable Markdown links (`[<ID>](<url>)`) `issue-writer`
+printed for the created issues, and the candidates the user turned down.
 
 ## Boundaries
 

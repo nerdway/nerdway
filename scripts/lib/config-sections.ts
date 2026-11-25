@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { validatePlatformConfig, type PlatformVocabulary } from "../types/platform-config.ts";
-import { configPaths, type ConfigLocationOptions } from "./config-location.ts";
+import { hasProjectConfigPath, projectConfigLabel, projectConfigLocation, type ConfigLocationOptions } from "./config-location.ts";
 import {
   applyDefaults,
   unsupportedSchemaKeywords,
@@ -465,23 +465,24 @@ function loadConfigFiles(options: SectionIOOptions): {
   project: YamlFile;
   defaultsPath: string;
   projectPath: string;
-  slug: string;
+  projectLabel: string;
+  hasProjectPath: boolean;
 } {
-  const { configDir, slug } = configPaths(options.repoRoot, options.env, options);
-  const defaultsPath = join(configDir, "config.yml");
-  const projectPath = join(configDir, slug, "config.yml");
+  const location = projectConfigLocation(options.repoRoot, options.env, options);
+  const defaultsPath = join(location.configDir, "config.yml");
+  const hasProjectPath = hasProjectConfigPath(location);
   return {
     defaults: readYamlFile(defaultsPath),
-    project: slug.length === 0 ? { kind: "missing" } : readYamlFile(projectPath),
+    project: hasProjectPath ? readYamlFile(location.path) : { kind: "missing" },
     defaultsPath,
-    projectPath,
-    slug,
+    projectPath: location.path,
+    projectLabel: projectConfigLabel(location),
+    hasProjectPath,
   };
 }
 
-function filePrefix(slug: string, layer: "defaults" | "project"): string {
-  if (layer === "defaults") return "config.yml";
-  return slug.length === 0 ? "project config" : `${slug}/config.yml`;
+function filePrefix(loaded: { projectLabel: string }, layer: "defaults" | "project"): string {
+  return layer === "defaults" ? "config.yml" : loaded.projectLabel;
 }
 
 function parseErrorsOf(file: YamlFile, where: string): string[] {
@@ -506,7 +507,7 @@ export function readSection(id: string, options: SectionIOOptions): ReadSectionR
     return prefixRead(resultFromValue(section, extractSectionValue(section, raw), sectionContextFrom(extractSectionValue(section, raw), options)), "config.yml");
   }
   if (options.layer === "project") {
-    const where = filePrefix(loaded.slug, "project");
+    const where = filePrefix(loaded, "project");
     const errors = parseErrorsOf(loaded.project, where);
     if (errors.length > 0) return { status: "invalid", value: undefined, errors };
     const raw = valueOf(loaded.project);
@@ -516,7 +517,7 @@ export function readSection(id: string, options: SectionIOOptions): ReadSectionR
   }
   const errors = [
     ...parseErrorsOf(loaded.defaults, "config.yml"),
-    ...parseErrorsOf(loaded.project, filePrefix(loaded.slug, "project")),
+    ...parseErrorsOf(loaded.project, filePrefix(loaded, "project")),
   ];
   if (errors.length > 0) return { status: "invalid", value: undefined, errors };
   const defaults = valueOf(loaded.defaults);
@@ -563,12 +564,12 @@ export function writeSection(id: string, value: unknown, options: WriteSectionOp
   const targetIsDefaults = options.target === "defaults";
   const file = targetIsDefaults ? loaded.defaults : loaded.project;
   const path = targetIsDefaults ? loaded.defaultsPath : loaded.projectPath;
-  const where = filePrefix(loaded.slug, targetIsDefaults ? "defaults" : "project");
-  if (!targetIsDefaults && loaded.slug.length === 0) return { status: "invalid", errors: ["project slug is empty"] };
+  const where = filePrefix(loaded, targetIsDefaults ? "defaults" : "project");
+  if (!targetIsDefaults && !loaded.hasProjectPath) return { status: "invalid", errors: ["project slug is empty"] };
   if (file.kind === "invalid") return { status: "invalid", errors: parseErrorsOf(file, where) };
   const other = targetIsDefaults ? loaded.project : loaded.defaults;
   if (other.kind === "invalid") {
-    const otherWhere = filePrefix(loaded.slug, targetIsDefaults ? "project" : "defaults");
+    const otherWhere = filePrefix(loaded, targetIsDefaults ? "project" : "defaults");
     return { status: "invalid", errors: parseErrorsOf(other, otherWhere) };
   }
   const existing = file.kind === "ok" ? file.value : {};

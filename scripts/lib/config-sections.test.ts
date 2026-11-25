@@ -261,3 +261,22 @@ test("writeSection validates before writing", () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("sections read and write the repo-located project file when it exists", () => {
+  const root = mkdtempSync(join(tmpdir(), "nerdway-section-repo-"));
+  try {
+    const { env, repo, configDir } = configEnv(root);
+    mkdirSync(join(repo, ".nerdway"));
+    const path = join(repo, ".nerdway", "config.yml");
+    writeFileSync(path, "# repo file\npr:\n  collapseDetails: true\n");
+    const registry = createSectionRegistry();
+    registry.registerSection(demoSection());
+    const written = writeSection("demo", { enabled: true }, { repoRoot: repo, env, target: "project", registry, gitRemote: () => "" });
+    assert.equal(written.status, "ok");
+    assert.match(readFileSync(path, "utf8"), /# repo file/);
+    assert.deepEqual(readSection("demo", { repoRoot: repo, env, registry, layer: "project", gitRemote: () => "" }).value, { enabled: true });
+    assert.equal(existsSync(join(configDir, "repo")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

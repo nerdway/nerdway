@@ -64,6 +64,30 @@
         "The instruction to start planning names DEMO-501 itself (Wpisz DEMO-501 w nowej sesji), not a generic stand-in for the identifier",
         "The agent does not draft or post an implementation plan in this session"
       ]
+    },
+    {
+      "id": "preflight-before-platform",
+      "prompt": "Create an issue: add a dark mode toggle to the settings page. This is a fully configured repository: scripts/setup-state.ts --preflight --caller issue-writer returns status ready with projectConfig strategy user, and the project config records tracker github for acme/app.",
+      "expected_output": "Step 1 starts with the preflight call, shows at most one line for it, asks no setup question, and then resolves the platform from the project config (GitHub Issues, acme/app) and confirms the repo before writing.",
+      "files": [],
+      "assertions": [
+        "scripts/setup-state.ts --preflight --caller issue-writer runs before the platform is resolved",
+        "The preflight shows at most one line and asks no setup question",
+        "The platform is taken from the project config: GitHub Issues in acme/app",
+        "The repo is confirmed before anything is written to the tracker"
+      ]
+    },
+    {
+      "id": "preflight-incomplete-keeps-fallbacks",
+      "prompt": "Create an issue: export the monthly report as CSV. Preflight returns status incomplete with the tracker-and-VCS check blocking; nerdway-setup in preflight mode hands back incomplete because I skip that step. The entity page frontmatter has platform: tracker linear, team DEMO, project nerdway.",
+      "expected_output": "issue-writer invokes nerdway-setup in preflight mode, and when it comes back incomplete falls back to its existing sources: the entity page frontmatter gives Linear DEMO / nerdway, which it confirms before writing.",
+      "files": [],
+      "assertions": [
+        "issue-writer invokes nerdway:nerdway-setup in preflight mode after the incomplete preflight",
+        "After incomplete it continues with its existing platform sources instead of stopping",
+        "The platform comes from the entity page frontmatter: Linear, team DEMO, project nerdway",
+        "Team and project are confirmed before anything is written"
+      ]
     }
   ]
 }

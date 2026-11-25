@@ -4,6 +4,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { renderContextOutput, type Runtime } from "../scripts/lib/install-check.ts";
+import { hasProjectConfigPath, projectConfigLocation } from "../scripts/lib/config-location.ts";
 import { resolveConfigDir, resolveSlug, resolveVault } from "../scripts/lib/nerdway-config.ts";
 import { detectMachine } from "../scripts/lib/workstation.ts";
 
@@ -239,12 +240,17 @@ function cacheDir(env: NodeJS.ProcessEnv, home: string): string {
   return env.NERDWAY_CACHE_DIR || env.CLAUDE_PLUGIN_DATA || join(home, ".cache", "nerdway");
 }
 
+/** True when the project has a config file in its location (user or repo strategy). */
+export function projectConfigured(projectDir: string, env: NodeJS.ProcessEnv, home: string, aliasesPath: string): boolean {
+  const location = projectConfigLocation(projectDir, env, { home, aliasesPath });
+  return hasProjectConfigPath(location) && existsSync(location.path);
+}
+
 function drainProbe(projectDir: string, env: NodeJS.ProcessEnv, home: string, runtime: Runtime, aliasesPath: string): DrainProbe {
   const slug = resolveSlug(projectDir, { aliasesPath });
-  const configDir = resolveConfigDir(env, process.platform, home);
   return {
     workstation: detectMachine({ env, host: runtime === "cursor" ? "cursor" : "claude-code" }).kind === "workstation",
-    configured: existsSync(join(configDir, slug, "config.yml")),
+    configured: projectConfigured(projectDir, env, home, aliasesPath),
     stampPath: join(cacheDir(env, home), "drain", `${slug}.stamp`),
     now: Date.now(),
   };

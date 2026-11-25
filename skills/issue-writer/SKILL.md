@@ -58,7 +58,23 @@ grilling session (step 6).
 
 ### 1. Resolve the platform, then the target team & project
 
-**Platform first.** Take the tracker and its identifiers from the first source
+**Preflight first.** Before anything else, ask `nerdway:nerdway-setup` for the
+state of this directory:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-state.ts" --preflight --caller issue-writer "$(pwd)"
+```
+
+- `status: ready` → show at most one line and go on; the platform source
+  below is the project config at `projectConfig.path`.
+- `status: incomplete` or `undetermined` → invoke `nerdway:nerdway-setup` in
+  preflight mode for this caller. It asks only what it must and hands back
+  `configured-now` or `incomplete`. Then continue below. When it is still
+  `incomplete`, the fallbacks below apply unchanged.
+- The script fails to run (an old Node, a missing file) → skip preflight and
+  continue below.
+
+**Platform.** Take the tracker and its identifiers from the first source
 that has them:
 
 1. the nerdway platform config, read from disk as

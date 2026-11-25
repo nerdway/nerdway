@@ -6,7 +6,7 @@
       "minVersion": "24.0.0",
       "versionCommand": ["node", "--version"],
       "versionRegex": "v(\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["bootstrap-clis", "bind-statuses", "board-setup", "issue-start", "issue-workflow", "issue-close", "hooks/require-issue.ts", "hooks/session-start.ts"],
+      "requiredBy": ["bootstrap-clis", "bind-statuses", "board-setup", "issue-start", "issue-workflow", "issue-close", "nerdway-setup", "hooks/require-issue.ts", "hooks/session-start.ts"],
       "manualInstall": "Install Node.js >= 24 (with npm) before running this script; it is a prerequisite, not a target. https://nodejs.org"
     },
     {
@@ -94,7 +94,7 @@
       "minVersion": "2.40.0",
       "versionCommand": ["git", "--version"],
       "versionRegex": "git version (\\d+\\.\\d+\\.\\d+)",
-      "requiredBy": ["issue-workflow", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform", "bind-statuses", "board-setup", "auto-issue-mode", "issue-next-step", "nerd-orchestrate", "hooks/require-issue.ts"],
+      "requiredBy": ["issue-workflow", "issue-close", "project-continue", "new-project-workflow", "issue-start", "determine-platform", "bind-statuses", "board-setup", "auto-issue-mode", "issue-next-step", "nerd-orchestrate", "nerdway-setup", "hooks/require-issue.ts"],
       "manualInstall": "Install git before running this script; it is a prerequisite, not a target."
     }
   ]

@@ -1,0 +1,252 @@
+{
+  "skill_name": "nerdway-setup",
+  "evals": [
+    {
+      "id": "fresh-machine-in-repo",
+      "prompt": "Run /nerdway:nerdway-setup in a git repository on a machine with no nerdway configuration at all: there is no global config file and no project config, the wiki directory does not exist, and no tracker is recorded. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option.",
+      "expected_output": "The agent reads the state first, opens with a short overview of what passes and what does not, and walks the global checks (wiki path first) before any project check, one question per turn with progress markers. The project steps hand off to determine-platform rather than running tracker commands. It ends with a closing summary.",
+      "files": [],
+      "assertions": [
+        "The agent runs scripts/setup-state.ts before the first question",
+        "The first question is about the wiki path, and every global step comes before the first project step",
+        "Every assistant turn between two user answers asks exactly one question",
+        "Each step shows a progress marker such as `2 of 5` or the area name",
+        "Every menu ends with an option to type an own answer",
+        "The tracker and VCS step invokes nerdway:determine-platform instead of running tracker or VCS commands itself",
+        "The run ends with a summary of what was configured, what was skipped and what was already fine"
+      ]
+    },
+    {
+      "id": "configured-globally-unconfigured-project",
+      "prompt": "Run /nerdway:nerdway-setup in a git repository. The global config exists and sets a valid wiki path; this project has no project config at either location. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option.",
+      "expected_output": "The agent treats the project as not configured and walks the project checks: the config location (user recommended), then the hand-offs to determine-platform, bind-statuses and board-setup. It writes no project setting into the global defaults.",
+      "files": [],
+      "assertions": [
+        "The agent says the project is not configured yet",
+        "The location menu lists `user` first as recommended, `repo` second and an own answer last",
+        "The platform step hands off to nerdway:determine-platform",
+        "The status and board steps hand off to nerdway:bind-statuses and nerdway:board-setup",
+        "No project setting is written into the global config file"
+      ]
+    },
+    {
+      "id": "plain-directory-no-repository",
+      "prompt": "Run /nerdway:nerdway-setup in a plain directory that is not a git repository and has no project config. The global config exists. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer the first question with \"2\".",
+      "expected_output": "Before any write the agent asks one question, whether to configure this project or the global nerdway configuration, and follows the answer without guessing.",
+      "files": [],
+      "assertions": [
+        "The first question asks whether to configure this project or the global nerdway configuration",
+        "Nothing is written before that question is answered",
+        "After the answer the agent continues with the global configuration, the option the user picked"
+      ]
+    },
+    {
+      "id": "fully-configured-no-request",
+      "prompt": "Run /nerdway:nerdway-setup with no arguments in a fully configured project: every check reports ok. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer the first menu with the option \"global configuration\".",
+      "expected_output": "The agent does not stop at 'all set': it opens one key menu with every project key and its current value, then 'global configuration' as the last option before the own answer, and picking it shows a second menu of the global keys with their values.",
+      "files": [],
+      "assertions": [
+        "The agent does not end the run with only an 'all set' message",
+        "The first menu lists the project keys as separate options, each with its current value",
+        "\"Global configuration\" is the last option before the own-answer option",
+        "Choosing it shows a second menu that lists the global keys with their current values"
+      ]
+    },
+    {
+      "id": "change-the-tracker",
+      "prompt": "In a configured project run: \"reconfigure this project, I want to change the tracker\". The project config records tracker github. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option.",
+      "expected_output": "The agent maps the request to the one tracker-and-VCS check, shows the current tracker, hands off to determine-platform, and ends with a before/after that changes only the tracker keys.",
+      "files": [],
+      "assertions": [
+        "The agent shows the current tracker value before asking",
+        "Only the tracker-and-VCS check runs; no other area is walked",
+        "The change is handed off to nerdway:determine-platform",
+        "Every assistant turn between two user answers asks exactly one question",
+        "The run ends with a before/after that lists only the changed keys"
+      ]
+    },
+    {
+      "id": "change-global-wiki-path",
+      "prompt": "Run: \"change my wiki path\". The global config sets wiki.path to ~/notes and this project's config does not set it. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer the value question with \"~/notes/wiki\" and every other question with the recommended option.",
+      "expected_output": "The agent shows the current value, asks for the new one, and after a yes runs project-config.ts set wiki.path with --layer defaults, then shows the before/after.",
+      "files": [],
+      "assertions": [
+        "The agent shows the current value ~/notes before asking",
+        "The agent asks for the user's yes before writing",
+        "The write uses scripts/project-config.ts set wiki.path ~/notes/wiki --layer defaults",
+        "The run shows a before/after with ~/notes and ~/notes/wiki"
+      ]
+    },
+    {
+      "id": "wiki-root-one-level-too-high",
+      "prompt": "Run /nerdway:nerdway-setup. The state says the wiki path check is `warn`: the configured directory ~/vault holds no wiki pages, but ~/vault/wiki does (suggestion ~/vault/wiki). The value comes from the global config. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option.",
+      "expected_output": "The wiki path is the first step. The agent explains the path points one level too high, recommends the suggested ~/vault/wiki, and after a yes writes it into the global config with a before/after.",
+      "files": [],
+      "assertions": [
+        "The wiki path step is the first question",
+        "The agent names the subfolder ~/vault/wiki as the recommended value",
+        "The write targets the global config (--layer defaults), the file that holds the value",
+        "A before/after is shown"
+      ]
+    },
+    {
+      "id": "wiki-path-from-environment",
+      "prompt": "Run /nerdway:nerdway-setup. The wiki path check is `warn` with the finding that NERDWAY_WIKI sets the path and overrides the config file. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option.",
+      "expected_output": "The agent still offers the file edit and explains that the environment variable overrides the file until the user changes or unsets it; it does not edit any shell profile.",
+      "files": [],
+      "assertions": [
+        "The agent offers to write wiki.path into the config file",
+        "The agent says NERDWAY_WIKI overrides the file until it is changed or unset",
+        "The agent does not edit a shell profile or set the variable itself"
+      ]
+    },
+    {
+      "id": "user-chooses-in-repo-config",
+      "prompt": "Run /nerdway:nerdway-setup in a git repository with no project config. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer the location question with \"2\" and every other question with the recommended option.",
+      "expected_output": "The location menu lists user first (recommended), repo second and an own answer last. After the choice the agent runs project-config.ts move --to repo, reports the repo strategy and the path .nerdway/config.yml, and the platform hand-off then writes into that file.",
+      "files": [],
+      "assertions": [
+        "The location menu order is `user` (recommended), `repo`, own answer",
+        "The agent runs scripts/project-config.ts move --to repo after the user's yes",
+        "The agent reports the recorded strategy `repo` and the path .nerdway/config.yml in the repository",
+        "The agent says the repo file is visible to anyone who reads the repository and holds no secrets"
+      ]
+    },
+    {
+      "id": "move-project-config-user-to-repo",
+      "prompt": "In a configured project whose config lives at the user location, run: \"keep this project's config in the repo\". There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with \"tak\".",
+      "expected_output": "The agent shows the current location, asks for a yes, runs project-config.ts move --to repo, and shows the old path, the new path and that the keys were carried over, with no second copy left.",
+      "files": [],
+      "assertions": [
+        "The agent shows the current strategy `user` and its path before asking",
+        "The move runs only after the user's yes",
+        "The before/after names the old path and the new path .nerdway/config.yml",
+        "The agent says the file was moved, not copied, so no second copy is read"
+      ]
+    },
+    {
+      "id": "single-area-run",
+      "prompt": "Run /nerdway:nerdway-setup with the argument `statuses` in a configured project. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option.",
+      "expected_output": "The agent resolves the argument to the one matching check and runs only that check, handing off to bind-statuses; no other area is walked.",
+      "files": [],
+      "assertions": [
+        "The agent runs scripts/setup-state.ts --check with the matching check id",
+        "Only the status-binding area is covered",
+        "The fix is handed off to nerdway:bind-statuses"
+      ]
+    },
+    {
+      "id": "machine-probe",
+      "prompt": "Run /nerdway:nerdway-setup in a cloud session. The machine check reports `remote (remote-signal)`. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option.",
+      "expected_output": "The agent explains that live wiki writes happen only on a workstation and that NERDWAY_MACHINE forces the classification; it does not set the variable or edit a profile.",
+      "files": [],
+      "assertions": [
+        "The agent reports the machine as remote",
+        "The agent explains NERDWAY_MACHINE and its values workstation and remote",
+        "The agent does not set the variable or edit any file for it"
+      ]
+    },
+    {
+      "id": "missing-cli-hands-off",
+      "prompt": "Run /nerdway:nerdway-setup. The CLI check reports `missing` with the finding \"not found on PATH: glab\". There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option.",
+      "expected_output": "The agent offers the hand-off to bootstrap-clis for glab and does not run an install command itself.",
+      "files": [],
+      "assertions": [
+        "The step names the missing CLI glab",
+        "The fix is handed off to nerdway:bootstrap-clis",
+        "The agent runs no install command (brew, npm, apt or a download) itself"
+      ]
+    },
+    {
+      "id": "board-unknown-hands-off",
+      "prompt": "Run /nerdway:nerdway-setup in a configured project. The board check reports `unknown` (needs the tracker). There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer every question with the recommended option.",
+      "expected_output": "The agent says only board-setup can read the board and offers that hand-off; it runs no tracker command of its own.",
+      "files": [],
+      "assertions": [
+        "The agent explains the board state needs the tracker",
+        "The step hands off to nerdway:board-setup",
+        "The agent runs no tracker or VCS command itself"
+      ]
+    },
+    {
+      "id": "fresh-project-hands-off",
+      "prompt": "Run /nerdway:nerdway-setup in a bare directory and choose to set up this project. The repository check reports `missing`. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer the first question with \"1\", and say I want a fresh project set up here.",
+      "expected_output": "The agent hands off to new-project-workflow for the fresh project instead of initialising the repository itself.",
+      "files": [],
+      "assertions": [
+        "The fix is handed off to nerdway:new-project-workflow",
+        "The agent does not run git init or create a remote itself"
+      ]
+    },
+    {
+      "id": "own-answer-value",
+      "prompt": "Run: \"change my wiki path\". The global config sets wiki.path to ~/notes. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer the value question with \"/data/brain/wiki\", which is not one of the options.",
+      "expected_output": "The agent takes the typed text as the user's own answer and uses /data/brain/wiki as the new value.",
+      "files": [],
+      "assertions": [
+        "Every menu ends with an option to type an own answer",
+        "The free text /data/brain/wiki is taken as the user's own answer",
+        "The write uses /data/brain/wiki as the value"
+      ]
+    },
+    {
+      "id": "host-ask-tool",
+      "prompt": "Run /nerdway:nerdway-setup in a project with no project config. This session has the AskUserQuestion tool. Stop after the first question.",
+      "expected_output": "The agent renders the first question with AskUserQuestion, two or three options with the recommended one first, plus an own-answer option.",
+      "files": [],
+      "assertions": [
+        "The first question is asked through AskUserQuestion, not as a numbered list",
+        "The recommended option is first",
+        "Every menu ends with an option to type an own answer"
+      ]
+    },
+    {
+      "id": "skip-does-not-stop-and-no-write-without-yes",
+      "prompt": "Run /nerdway:nerdway-setup on a fresh machine in a repository. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer the wiki path question with \"skip\" and every later question with the recommended option.",
+      "expected_output": "The skipped step does not stop the run; later steps follow, nothing is written for the skipped step, and the closing summary lists it with its rerun command.",
+      "files": [],
+      "assertions": [
+        "After \"skip\" the agent moves on to the next step",
+        "Nothing is written for the skipped wiki step",
+        "No file is written for any step before the user's yes for that step",
+        "The closing summary lists the skipped area with its rerun command `/nerdway:nerdway-setup <area>`"
+      ]
+    },
+    {
+      "id": "preflight-from-issue-writer-configured",
+      "prompt": "Run /nerdway:nerdway-setup preflight --caller issue-writer in a fully configured repository; scripts/setup-state.ts --preflight returns status ready.",
+      "expected_output": "The agent runs the preflight script, shows at most one line, asks no question, and hands back `ready` to the caller at once.",
+      "files": [],
+      "assertions": [
+        "The agent runs scripts/setup-state.ts --preflight --caller issue-writer",
+        "At most one line is shown to the user",
+        "No question is asked",
+        "The outcome handed back is `ready`"
+      ]
+    },
+    {
+      "id": "preflight-bare-named-directory",
+      "prompt": "Run /nerdway:nerdway-setup preflight --caller issue-writer in a directory named shop-api that is not a git repository. The global config exists. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer: an online shop backend; GitHub Issues in acme/shop-api; the sources will live on GitHub at acme/shop-api.",
+      "expected_output": "The agent asks three questions in order (what the project is, where it is tracked, where its sources are kept), hands off to determine-platform (and new-project-workflow if a fresh project is wanted), writes the project config at the default user location without a strategy question, and returns configured-now.",
+      "files": [],
+      "assertions": [
+        "The three questions come in this order: what the project is, where it is tracked, where its sources are kept",
+        "Every assistant turn between two user answers asks exactly one question",
+        "No question asks where the project config should live",
+        "The tracker step hands off to nerdway:determine-platform",
+        "The outcome handed back is `configured-now`"
+      ]
+    },
+    {
+      "id": "preflight-fresh-machine",
+      "prompt": "Run /nerdway:nerdway-setup preflight --caller issue-writer in a git repository on a fresh machine: no global config, no wiki directory, no project config. There is no ask tool in this session, so ask with the numbered list. Play the whole session in this one reply: after each question write my answer on its own line as `> user: <answer>` and go on from there. I answer the wiki question with \"skip\" and every other question with the recommended option.",
+      "expected_output": "Preflight covers the global part (the wiki) first, then the project questions; since the user skipped the wiki it returns incomplete and names the skipped wiki step.",
+      "files": [],
+      "assertions": [
+        "The global wiki step comes before any project question",
+        "The outcome handed back is `incomplete`",
+        "The summary names the skipped wiki step as missing"
+      ]
+    }
+  ]
+}

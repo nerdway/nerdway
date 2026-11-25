@@ -121,3 +121,47 @@ export function configPaths(
     slug: resolveSlug(repoRoot, { aliasesPath: options.aliasesPath, gitRemote: options.gitRemote }),
   };
 }
+
+/** Where a project's config lives, relative to the repo root, under the `repo` strategy. */
+export const REPO_CONFIG_FILE = join(".nerdway", "config.yml");
+
+export type ProjectConfigStrategy = "user" | "repo";
+
+export interface ProjectConfigLocation {
+  strategy: ProjectConfigStrategy;
+  path: string;
+  configDir: string;
+  slug: string;
+}
+
+/** The user-strategy path, `<config dir>/<slug>/config.yml`. */
+export function userProjectConfigPath(configDir: string, slug: string): string {
+  return join(configDir, slug, "config.yml");
+}
+
+/**
+ * The one answer to "which file is this project's config". The `repo`
+ * strategy is recorded by the file itself: `<repo>/.nerdway/config.yml`
+ * present means `repo`; otherwise the default `user` strategy applies.
+ */
+export function projectConfigLocation(
+  repoRoot: string,
+  env: NodeJS.ProcessEnv,
+  options: ConfigLocationOptions = {},
+): ProjectConfigLocation {
+  const { configDir, slug } = configPaths(repoRoot, env, options);
+  const repoPath = join(repoRoot, REPO_CONFIG_FILE);
+  if (isFile(repoPath)) return { strategy: "repo", path: repoPath, configDir, slug };
+  return { strategy: "user", path: userProjectConfigPath(configDir, slug), configDir, slug };
+}
+
+/** The short name a message uses for the project file: `<slug>/config.yml` or `.nerdway/config.yml`. */
+export function projectConfigLabel(location: ProjectConfigLocation): string {
+  if (location.strategy === "repo") return ".nerdway/config.yml";
+  return location.slug.length === 0 ? "project config" : `${location.slug}/config.yml`;
+}
+
+/** False when the user strategy has no slug to name a file with. */
+export function hasProjectConfigPath(location: ProjectConfigLocation): boolean {
+  return location.strategy === "repo" || location.slug.length > 0;
+}

@@ -8,6 +8,11 @@ import { readPlatform, type PlatformRead, type PlatformVocabulary } from "../typ
 import type { HostId } from "./host-detect.ts";
 import {
   configPaths,
+  hasProjectConfigPath,
+  projectConfigLabel,
+  projectConfigLocation,
+  userProjectConfigPath,
+  REPO_CONFIG_FILE,
   resolveConfigDir,
   resolveSlug,
   trimmed,
@@ -130,16 +135,17 @@ export function readPlatformConfig(
   const migrated = migrateLegacyPlatform(repoRoot, env, options);
   if (migrated.status === "conflict") return { status: "migration-needed", errors: migrated.errors };
 
-  const { configDir, slug } = configPaths(repoRoot, env, options);
-  const defaults = readYamlFile(join(configDir, "config.yml"));
-  const project = slug.length === 0 ? { kind: "missing" as const } : readYamlFile(join(configDir, slug, "config.yml"));
+  const location = projectConfigLocation(repoRoot, env, options);
+  const label = projectConfigLabel(location);
+  const defaults = readYamlFile(join(location.configDir, "config.yml"));
+  const project = hasProjectConfigPath(location) ? readYamlFile(location.path) : { kind: "missing" as const };
   if (defaults.kind === "invalid") return { status: "invalid", errors: defaults.errors.map((error) => `config.yml: ${error}`) };
-  if (project.kind === "invalid") return { status: "invalid", errors: project.errors.map((error) => `${slug}/config.yml: ${error}`) };
+  if (project.kind === "invalid") return { status: "invalid", errors: project.errors.map((error) => `${label}: ${error}`) };
   const defaultsValue = defaults.kind === "ok" ? defaults.value : {};
   const projectValue = project.kind === "ok" ? project.value : {};
   const notices = [
     ...unknownSectionNotices(defaultsValue, "config.yml"),
-    ...unknownSectionNotices(projectValue, slug.length === 0 ? "project config" : `${slug}/config.yml`),
+    ...unknownSectionNotices(projectValue, label),
   ];
   const value = mergePlatformConfigs(defaultsValue, projectValue);
   const mapErrors = inspectConfig(value, sectionContext(value, options)).errors.filter((error) => error === "extensions must be a map");
@@ -185,8 +191,9 @@ function wikiPathFromSection(
  * wiki content itself (guides/, entities/, index.md, log.md).
  *
  * Order: env `NERDWAY_WIKI`, then legacy env `NERDBRAIN_VAULT`; then
- * `wiki.path` in `<configDir>/<slug>/config.yml`, then in
- * `<configDir>/config.yml` (`~` expanded, relative paths against
+ * `wiki.path` in the project file at its location, then in
+ * `<configDir>/config.yml` (`~` expanded; a relative path resolves against
+ * the repository root when the project file is repo-located, else against
  * `configDir`); then `<configDir>/wiki`. The writer does not inject
  * `wiki.path` into a newly generated defaults file — the last step is
  * the implicit default. This function never creates the directory.
@@ -209,7 +216,10 @@ export function resolveVault(repoRoot: string, env: NodeJS.ProcessEnv, options: 
 
   const fromProject = wikiPathFromSection(repoRoot, env, { ...options, home }, "project");
   if (fromProject.kind === "invalid") return { status: "invalid", errors: fromProject.errors };
-  if (fromProject.kind === "ok") return located(absoluteWikiPath(fromProject.path, home, configDir), "project");
+  if (fromProject.kind === "ok") {
+    const projectBase = projectConfigLocation(repoRoot, env, { ...options, home }).strategy === "repo" ? repoRoot : configDir;
+    return located(absoluteWikiPath(fromProject.path, home, projectBase), "project");
+  }
 
   const fromDefaults = wikiPathFromSection(repoRoot, env, { ...options, home }, "defaults");
   if (fromDefaults.kind === "invalid") return { status: "invalid", errors: fromDefaults.errors };
@@ -246,13 +256,14 @@ export function writePlatformConfig(
     return writeSection("platform", owned, io);
   }
 
-  const { configDir, slug } = configPaths(repoRoot, env, options);
+  const location = projectConfigLocation(repoRoot, env, options);
+  const { configDir } = location;
   const defaultsPath = join(configDir, "config.yml");
-  const projectPath = join(configDir, slug, "config.yml");
+  const projectPath = location.path;
   const defaults = readYamlFile(defaultsPath);
-  const existing = readYamlFile(projectPath);
+  const existing = hasProjectConfigPath(location) ? readYamlFile(projectPath) : ({ kind: "missing" } as const);
   if (defaults.kind === "invalid") return { status: "invalid", errors: defaults.errors.map((error) => `config.yml: ${error}`) };
-  if (existing.kind === "invalid") return { status: "invalid", errors: existing.errors.map((error) => `${slug}/config.yml: ${error}`) };
+  if (existing.kind === "invalid") return { status: "invalid", errors: existing.errors.map((error) => `${projectConfigLabel(location)}: ${error}`) };
   const plan = keyedPlan(input, options.keys);
   if (options.defaults) {
     const existingDefaults = defaults.kind === "ok" ? defaults.value : {};
@@ -266,16 +277,66 @@ export function writePlatformConfig(
     writeFileSync(defaultsPath, patchSections(text, plan.set, plan.remove));
     return { status: "ok", path: defaultsPath };
   }
-  if (slug.length === 0) return { status: "invalid", errors: ["project slug is empty"] };
+  if (!hasProjectConfigPath(location)) return { status: "invalid", errors: ["project slug is empty"] };
   const current = existing.kind === "ok" ? existing.value : {};
   const nextProject = applySectionPatch(current, plan.set, plan.remove);
   const merged = mergePlatformConfigs(defaults.kind === "ok" ? defaults.value : {}, nextProject);
   const errors = platformErrors(merged, options);
   if (errors.length > 0) return { status: "invalid", errors };
-  mkdirSync(join(configDir, slug), { recursive: true });
+  mkdirSync(dirname(projectPath), { recursive: true });
   const text = existing.kind === "ok" ? existing.text : "";
   writeFileSync(projectPath, patchSections(text, plan.set, plan.remove));
   return { status: "ok", path: projectPath };
+}
+
+/** The first line of a repo-located config created before any key is set. */
+export const REPO_CONFIG_HEADER = "# nerdway project config (no secrets: this file is read by anyone with the repository)\n";
+
+export type MoveProjectConfigResult =
+  | { status: "moved"; from: string; to: string }
+  | { status: "created"; path: string }
+  | { status: "unchanged"; path: string }
+  | { status: "refused"; errors: string[] };
+
+/**
+ * Switch a project's config between the `user` and `repo` locations by
+ * moving the one file, so no second copy is left to read. With no config
+ * yet, choosing `repo` creates an empty repo-located file (its presence
+ * records the strategy) and choosing `user` changes nothing. Never
+ * overwrites: a target that already exists, an unreadable source, or an
+ * empty slug refuses the move.
+ */
+export function moveProjectConfig(
+  repoRoot: string,
+  env: NodeJS.ProcessEnv,
+  to: "user" | "repo",
+  options: ConfigLocationOptions = {},
+): MoveProjectConfigResult {
+  const location = projectConfigLocation(repoRoot, env, options);
+  if (!hasProjectConfigPath(location)) return { status: "refused", errors: ["project slug is empty"] };
+  if (location.strategy === to) return { status: "unchanged", path: location.path };
+  if (!isFile(location.path)) {
+    const created = join(repoRoot, REPO_CONFIG_FILE);
+    mkdirSync(dirname(created), { recursive: true });
+    writeFileSync(created, REPO_CONFIG_HEADER);
+    return { status: "created", path: created };
+  }
+  const target = to === "repo" ? join(repoRoot, REPO_CONFIG_FILE) : userProjectConfigPath(location.configDir, location.slug);
+  if (to === "user" && location.slug.length === 0) return { status: "refused", errors: ["project slug is empty"] };
+  if (existsSync(target)) return { status: "refused", errors: [`${target} already exists; merge or remove it first`] };
+  const source = readYamlFile(location.path);
+  if (source.kind !== "ok") {
+    const errors = source.kind === "invalid" ? source.errors : ["unreadable"];
+    return { status: "refused", errors: errors.map((error) => `${projectConfigLabel(location)}: ${error}`) };
+  }
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, source.text);
+  if (readFileSync(target, "utf8") !== source.text) {
+    unlinkSync(target);
+    return { status: "refused", errors: ["the copy did not read back the same; nothing moved"] };
+  }
+  unlinkSync(location.path);
+  return { status: "moved", from: location.path, to: target };
 }
 
 function keyedPlan(input: Record<string, unknown>, keys: string[]): { set: Record<string, unknown>; remove: string[] } {
@@ -373,7 +434,9 @@ export function migrateLegacyPlatform(
   const legacy = readPlatform(markdown, options.vocabulary, options.trackerAdapters);
   if (legacy.status === "absent") return { status: "unchanged" };
 
-  const { configDir, slug } = configPaths(repoRoot, env, options);
+  const location = projectConfigLocation(repoRoot, env, options);
+  if (location.strategy === "repo") return { status: "unchanged" };
+  const { configDir, slug } = location;
   if (slug.length === 0) {
     return { status: "conflict", errors: ["ambiguous project slug - cannot choose a project config path"] };
   }
@@ -381,7 +444,7 @@ export function migrateLegacyPlatform(
     return { status: "conflict", errors: legacy.errors.length > 0 ? legacy.errors : ["legacy ## Platform section is unreadable"] };
   }
 
-  const projectPath = join(configDir, slug, "config.yml");
+  const projectPath = userProjectConfigPath(configDir, slug);
   const sidecar = join(configDir, slug, RESOLVED_SIDECAR);
   const existing = readYamlFile(projectPath);
   if (existing.kind === "invalid") {

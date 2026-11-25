@@ -65,6 +65,34 @@ node scripts/render-templates.ts
 
 CI runs the test suite and every check in this section on every pull request and every push to `main`, together with the release guards below. `render-templates.ts` is the exception: it is a generator, not a check, and the test suite already fails when a template drifts from the contract.
 
+## Adding a setup check
+
+`nerdway-setup` works from the core check registry in `skills/nerdway-setup/checks.json`, never from a list in its `SKILL.md` or its scripts. A guard test fails when either names a check id. Every check follows one contract (`contract: 1`), enforced by `scripts/lib/setup-checks.ts`:
+
+| Field | Meaning |
+|---|---|
+| `id` | kebab-case, unique in the registry |
+| `title` | the one line the user sees for the step |
+| `area` | `machine`, `global`, `project`, `platform`, `statuses` or `wiki`; the user can rerun an area by name |
+| `scope` | `global` (the machine and `<config dir>/config.yml`) or `project` (the current repository and its project config) |
+| `probe` | which read-only probe in `scripts/lib/setup-state.ts` detects the state: `ok`, `warn`, `missing`, or `unknown` when only the owning skill can tell |
+| `preflight` | `true` when the quick pass other skills run includes the check |
+| `explain` | one or two sentences on why the check matters |
+| `handoff` | the existing skill that owns the fix; the normal case |
+| `fix` | only for an edit `nerdway-setup` owns: `{kind: "config-key", key: "wiki.path", layer}`, `{kind: "location-strategy"}`, or `{kind: "env-hint", variable}` |
+
+A check has exactly one of `handoff` and `fix`. A `fix` never runs a tracker, VCS, board or install step: those belong to the skill named in `handoff`. Order in the file is run order, and the wiki root comes first. A check that reuses an existing probe is data only. A new probe is a function in the `PROBES` table, and it only reads.
+
+`mergeChecks` is the rule any later source of checks must pass: each entry is validated against the same contract, and an id already taken (by a core check or an earlier addition) is rejected and never overrides it.
+
+New built-in checks are proposed by pull request, with a unit test for the probe and an eval case in `skills/nerdway-setup/evals/evals.json`. Check the registry with:
+
+```bash
+node --test scripts/lib/setup-checks.test.ts scripts/lib/setup-state.test.ts scripts/types/nerdway-setup.test.ts
+```
+
+**Extensions (forward-looking).** Extensions are planned and not implemented; their design is not final. When they exist, they and their configuration will live in the user's nerdway config directory (`<config dir>`), never in this repository or the nerdway skill folders. This repository holds only the core checks and the contract.
+
 ## Running the evals
 
 The checks above only look at the shape of the eval files. To see whether the skills actually behave as the cases say, run them through Claude Code's eval runner, `claude plugin eval`. It needs Claude Code 2.1.269 or newer with plugin evals enabled (an early-access feature), and it runs on your own login: every case is a real Claude Code session plus a few judge calls, billed to your plan or API account like any other session.

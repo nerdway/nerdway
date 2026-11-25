@@ -120,7 +120,7 @@ Agents that do not run the plugin's hooks get the same rule from the `issue-work
 
 Before the first issue, the plugin needs to know where the project's issues live (Linear, GitHub Issues, GitLab Issues, Azure DevOps Boards or Jira Cloud) and where its code lives (GitHub, GitLab or Azure DevOps). Run `/determine-platform` once per repo - or just file an issue and `issue-writer` runs it for you.
 
-It checks what is already recorded, infers the rest from the git remote and your Linear CLI, and asks you a single numbered question only when the answer is ambiguous. The result lands in your user nerdway config (`~/.config/nerdway/<slug>/config.yml` on Linux and macOS, `%APPDATA%\nerdway\<slug>\config.yml` on Windows; override with `NERDWAY_CONFIG_DIR`) and, if you use the nerdbrain vault, as `platform:` on the project's entity page. Nothing is written into the repo. Running it again changes nothing. A leftover `## Platform` section in a repo `CLAUDE.md` is copied into your user config on session start when the case is clear. The file itself is never changed; every session reminds you that the section is no longer read and you can remove it. On a conflict the agent asks once (keep the user config, take the repo values, or merge); after that the user config wins and the reminder continues until you delete the section or it changes.
+It checks what is already recorded, infers the rest from the git remote and your Linear CLI, and asks you a single numbered question only when the answer is ambiguous. The result lands in your user nerdway config (`~/.config/nerdway/<slug>/config.yml` on Linux and macOS, `%APPDATA%\nerdway\<slug>\config.yml` on Windows; override with `NERDWAY_CONFIG_DIR`) and, if you use the nerdbrain vault, as `platform:` on the project's entity page. Nothing is written into the repo, unless you chose to keep the project config there (see [Where the project config lives](#where-the-project-config-lives)). Running it again changes nothing. A leftover `## Platform` section in a repo `CLAUDE.md` is copied into your user config on session start when the case is clear. The file itself is never changed; every session reminds you that the section is no longer read and you can remove it. On a conflict the agent asks once (keep the user config, take the repo values, or merge); after that the user config wins and the reminder continues until you delete the section or it changes.
 
 At the end it runs `/bind-statuses`, which maps the workflow's five phases - `backlog`, `todo`, `in-progress`, `in-review`, `done` - to names the tracker already has. On Linear the recommendation is the team's own states (`native`), which is also what applies when you decline, so nothing changes for you. On Jira Cloud it lists the project's actual status names through `acli` and maps them by status category; when five distinct names cannot be bound, it records marker comments. It does not add statuses to the board. Where a tracker has no states, the phases become labels (`status::todo`, plus open/closed), or - if you can't or don't want to add labels - `Status: <phase>` marker comments. Creating missing statuses, columns or labels is `/board-setup`: it reads your rights, picks native, labels or comments, asks once, and creates only after you say yes. On Linear it only reads the five default workflow states and never creates any. You can run `/bind-statuses` or `/board-setup` again at any time.
 
@@ -136,6 +136,22 @@ pr:
 ```
 
 A non-boolean value fails validation. The project file's `pr` key replaces the defaults' `pr` key whole, like every other top-level key. A defaults file that holds only this key is not a platform setup.
+
+### Where the project config lives
+
+Each project has one project config file, in one of two locations:
+
+- **`user`** (the default): `<config dir>/<slug>/config.yml`, outside the repository. Every existing project config is already here, so nothing moves on upgrade.
+- **`repo`**: `.nerdway/config.yml` in the repository. Choose it when the settings should travel with the repo. Anyone who can read the repository sees the file, so it never holds secrets; tokens stay in each CLI's own login.
+
+The file itself records the choice: when `.nerdway/config.yml` exists in the repository, every skill reads and writes the project config there, and otherwise at the `user` location. The global defaults in `<config dir>/config.yml` apply in both cases. To switch, ask `nerdway-setup` ("keep this project's config in the repo", or back to the user config directory). It moves the file, so no second copy is left to read, and shows the old and new path. The same move from a shell:
+
+```bash
+node <plugin dir>/scripts/project-config.ts where <your repo>
+node <plugin dir>/scripts/project-config.ts move --to repo <your repo>
+```
+
+A relative `wiki.path` in a repo-located file resolves from the repository root, so `docs/wiki` means `<repo>/docs/wiki`. In the `user` file and in the global defaults it resolves against the config directory. Absolute paths and paths starting with `~` mean the same in every file.
 
 Config files are YAML 1.2. Comments, block scalars, flow collections, quoted strings and anchors are accepted. A write changes only the section it is updating, so comments you left and keys the plugin does not know stay. Unknown top-level keys (a tool adding a key next to `tracker` or `wiki`) are preserved and reported as a notice that points you at `extensions:`. Third-party settings belong under `extensions.<id>`; an id with no section registered is also preserved, with a notice. A non-map `extensions` value is an error. The plugin does not load extension code; the [config section API](CONFIG-SECTIONS.md) is what a future loader will call.
 
@@ -220,6 +236,12 @@ Reason: duplicate of DEMO-213
 ## Skills reference
 
 How to trigger each skill and what to expect. All of them also respond to `/<skill-name>` and `/nerdway:<skill-name>`.
+
+### `nerdway-setup` - check and fix the setup
+
+- **Say:** `/nerdway-setup` / `/nerdway:nerdway-setup`, *"set up nerdway"*, *"configure this project"*, *"change the tracker of this project"*, *"change my wiki path"*, *"keep this project's config in the repo"*. Add an area or a check id to rerun just that part, for example `/nerdway:nerdway-setup statuses`.
+- **What happens:** the skill reads the state of the machine and the current directory, tells you in a few lines what is set and what is not, and then asks one question at a time, with a recommended option first, a menu in your host's ask tool (or a numbered list) and always room for your own answer. Every step can be skipped. With no global config it starts there (the wiki path first), then the project. In a directory that is not obviously a project it asks whether you mean this project or the global configuration. In a fully configured project with no request it opens a menu of the project keys with their current values, plus a switch to the global keys. It hands each fix to the skill that owns it (`determine-platform`, `bind-statuses`, `board-setup`, `bootstrap-clis`, `new-project-workflow`) and edits only `wiki.path` and the [project config location](#where-the-project-config-lives) itself, each after your yes and with a before/after. The run ends with a summary of what changed, what was skipped and the command to come back to a skipped area.
+- **Preflight:** other skills call it before they start, so they do not fail halfway for lack of a wiki or a project. `issue-writer` is the first. The call is `node <plugin dir>/scripts/setup-state.ts --preflight --caller <skill> <dir>`; it reads only local state (git, the config files, the wiki directory) and never the tracker. It returns JSON with `caller`, `status`, `inRepo`, `repoRoot`, `projectConfig` (`strategy`, `path`, `exists`), `blocking` and `warnings`. The `status` is `ready` (you see at most one line and the caller goes on), `incomplete` (something the caller needs is missing) or `undetermined` (a directory with no repository). In the last two cases `nerdway-setup` asks only what it must. A bare directory gets three questions: what the project is, where it is tracked, and where its sources are kept. It writes the project config to the default `user` location and hands back `configured-now`, or `incomplete` naming what you skipped. Here "project" means the tracker container, which is not the same as the repository.
 
 ### `determine-platform` - record the tracker and host
 

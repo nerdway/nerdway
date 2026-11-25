@@ -3,8 +3,10 @@
 Every project records its platform (tracker, VCS, their identifiers, the
 optional `statuses` block and the optional `pr` layout flag) in a user-owned
 store outside the repository.
-Defaults live in `<config dir>/config.yml`; the project overlay lives in
-`<config dir>/<project-slug>/config.yml`. A key present in the project file
+Defaults live in `<config dir>/config.yml`; the project overlay lives at the
+project-config location: `<config dir>/<project-slug>/config.yml` (`user`, the
+default) or `.nerdway/config.yml` in the repository (`repo`, chosen when that
+file exists). A key present in the project file
 replaces the default's key whole; missing keys come from defaults. This file
 is the one recipe every skill uses to read that store. A skill's own list of
 sources decides **when** the config is consulted; this file decides **how**.
@@ -17,8 +19,9 @@ nerdbrain wiki (`.nerdbrain-slug` override, else the `origin` remote with
 aliases, else the directory name). The files hold identifiers, status
 bindings, optional PR/MR layout flags and the optional `wiki.path` vault
 directory; tokens stay in `gh` / `acli` / vault auth. `wiki.path` is any
-directory: `~` is expanded and a relative path is resolved against the config
-directory. Skills that need the vault call
+directory: `~` is expanded, and a relative path is resolved against the
+repository root in a repo-located project file (`.nerdway/config.yml`) and
+against the config directory everywhere else. Skills that need the vault call
 `node "<plugin root>/scripts/resolve-vault.ts" "$(git rev-parse --show-toplevel)"`
 rather than reading this key themselves. The platform-config writer does not
 inject `wiki.path`; absent, `resolveVault` uses `<config dir>/wiki`.
@@ -67,7 +70,8 @@ the skill's next source.
 
 **2. Manual read (fallback).** Resolve the config directory as above and the
 project slug the same way SessionStart does. Read
-`<config dir>/<slug>/config.yml` if it exists, then `<config dir>/config.yml`.
+the project file (`<repo>/.nerdway/config.yml` if it exists, else
+`<config dir>/<slug>/config.yml` if it exists), then `<config dir>/config.yml`.
 Each file is a YAML map of strings, booleans and nested maps. For every top-level key,
 the project file wins whole; keys missing there come from defaults. The
 merged object is the platform config. Its keys are listed in

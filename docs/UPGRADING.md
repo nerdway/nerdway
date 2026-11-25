@@ -1,6 +1,6 @@
 # Upgrading from 0.75.0 or earlier
 
-This page takes an install of nerdway 0.75.0 or earlier to the current `main` (0.87.0). Several changes in between are breaking and have no compatibility alias: old names are ignored without a warning. Work through the sections in order, or jump to [Upgrade order](#upgrade-order) for the short version.
+This page takes an install of nerdway 0.75.0 or earlier to the current `main` (0.88.0). Several changes in between are breaking and have no compatibility alias: old names are ignored without a warning. Work through the sections in order, or jump to [Upgrade order](#upgrade-order) for the short version.
 
 Upgrades from one recent `main` commit to the next need nothing from this page. The install check at session start tells you when your copy is behind and how to update it (see [The plugin tells you when it is out of date](USER-GUIDE.md#the-plugin-tells-you-when-it-is-out-of-date)).
 
@@ -33,6 +33,7 @@ grep '"version"' ~/.cursor/plugins/local/nerdway/.claude-plugin/plugin.json
 | [YAML and config sections](#yaml-and-config-sections) | 0.84.0, 0.85.0 | only for files with duplicate keys | fix duplicate keys | `validate-platform-config.ts` |
 | [Slack intake](#new-and-changed-skills) | 0.86.0 | no | none, unless you use it | `slack-project.ts` |
 | [Live wiki and wiki root](#live-wiki-and-wiki-root) | 0.87.0 | yes, if `wiki.path` or `NERDWAY_WIKI` points at a vault root that holds the wiki in a subfolder | append that subfolder to the value | `resolve-vault.ts --json` |
+| [Setup skill and project-config location](#setup-skill-and-project-config-location) | 0.88.0 | no | none; run `/nerdway:nerdway-setup` to check a vault-root `wiki.path` | `setup-state.ts --preflight` |
 
 ## The plugin directory
 
@@ -167,7 +168,7 @@ wiki:
   path: <your current vault directory>
 ```
 
-Put it in the defaults file, or in a project file for one project. A path may start with `~`; a relative path is resolved against the config directory. A defaults file that holds only `wiki.path` is valid and does not count as a platform setup, so a repository without its own project file still asks for `/nerdway:determine-platform`. The plugin does not create the wiki directory.
+Put it in the defaults file, or in a project file for one project. A path may start with `~`; a relative path is resolved against the config directory (since 0.88.0, against the repository root in a repo-located project file). A defaults file that holds only `wiki.path` is valid and does not count as a platform setup, so a repository without its own project file still asks for `/nerdway:determine-platform`. The plugin does not create the wiki directory.
 
 Check where the wiki resolves; `source` is `env`, `project`, `defaults` or `default`, and `exists` says whether the directory is there:
 
@@ -196,6 +197,20 @@ Check the wiki root and the machine; on your workstation `path` is the folder th
 
 ```bash
 node <plugin dir>/scripts/resolve-vault.ts --json <your repo>
+```
+
+## Setup skill and project-config location
+
+Version 0.88.0, not breaking.
+
+**Setup skill.** `/nerdway:nerdway-setup` checks the machine and the current project and walks you through what is missing, one question at a time. Its first check is the wiki root. If you came from 0.86.0 or earlier with a `wiki.path` that points at a vault root holding the wiki in a subfolder (see [Live wiki and wiki root](#live-wiki-and-wiki-root)), run it: it names the subfolder and offers to write the corrected `wiki.path` into the file that holds it, with a before/after. `issue-writer` now runs its preflight first and continues at once when everything is in place.
+
+**Project-config location.** The project config can now live in one of two places. `user` is the default and is today's path, `<config dir>/<slug>/config.yml`, so existing configs are read unchanged and nothing needs to move. `repo` keeps the file at `.nerdway/config.yml` in the repository, for settings that should travel with it; it holds no secrets. In a repo-located file a relative `wiki.path` resolves from the repository root (`docs/wiki` is `<repo>/docs/wiki`); in the `user` file and the defaults it still resolves against the config directory. Switch with `nerdway-setup` or `project-config.ts move --to repo|user`; see [Where the project config lives](USER-GUIDE.md#where-the-project-config-lives).
+
+Check the state of a repository:
+
+```bash
+node <plugin dir>/scripts/setup-state.ts --preflight --caller you <your repo>
 ```
 
 ## YAML and config sections
@@ -240,7 +255,7 @@ None of these needs an action unless you start using the feature.
 2. Remove any plugin or marketplace installed under another id, then install `nerdway@nerdway`.
 3. Update saved prompts, rules files and scripts to the `nerdway:` prefix, and delete stale skill copies the install check names.
 4. Open a session in each repository that has a `## Platform` section in `CLAUDE.md`, and answer the conflict question if the agent asks it.
-5. Set `wiki.path` (or `NERDWAY_WIKI`) if you keep a wiki, pointing at the folder that holds `index.md` and `entities/`.
+5. Set `wiki.path` (or `NERDWAY_WIKI`) if you keep a wiki, pointing at the folder that holds `index.md` and `entities/`. `/nerdway:nerdway-setup` checks it for you.
 6. Remove the `## Platform` section from each `CLAUDE.md` and commit.
 7. Run the checks below.
 

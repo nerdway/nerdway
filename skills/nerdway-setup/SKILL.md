@@ -77,6 +77,12 @@ Show progress on every step, as a short `2 of 5` marker or the area name.
 Nothing is written (config file, tracker, environment) without the user's
 yes for that step. Show a before/after for every write.
 
+When a menu, closing summary, preflight line or before/after names a
+tracker, VCS host, repository, project or other linkable identifier that
+has a URL, format it as a clickable Markdown link (`[label](url)`) per
+*Clickable links* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`. Do not
+print a bare identifier beside a separate URL. Local paths stay as paths.
+
 ## Starting point
 
 Read the state first and say which checks pass and which do not. Then pick

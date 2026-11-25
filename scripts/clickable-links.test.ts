@@ -19,6 +19,7 @@ const WORKFLOW_SKILLS_REFERENCING_STATUSES = [
   "skills/retro/SKILL.md",
   "skills/nerd-orchestrate/SKILL.md",
   "skills/nerd-personal-docs/SKILL.md",
+  "skills/nerdway-setup/SKILL.md",
 ] as const;
 
 test("adapters/statuses.md defines the shared Clickable links rule across trackers and channels", () => {

@@ -113,17 +113,23 @@ adapter's `issue.comment`, in order. Then post the `Pending:` outcome of
 [Finishing](#finishing) step 3. The entity page link and the log line wait
 for the drain.
 
-## Links to the history
+## Links in guides and outputs
 
-Collect the links before writing; the guide's history section needs them:
+Collect the links before writing, and follow *Clickable links* in
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` across both the guide itself
+and every output outside the guide (chat reports, tracker comments, drain
+summaries):
 
-- the issue link from the tracker adapter's `issue.url` operation
-  (`${CLAUDE_PLUGIN_ROOT}/adapters/trackers/{tracker}.md`);
-- the PR or MR link: the tracker adapter's `issue.read` shows the PR or MR
-  linked to the issue, and the VCS adapter's `## URL` section
-  (`${CLAUDE_PLUGIN_ROOT}/adapters/vcs/{vcs}.md`) says how the host forms
-  it;
-- commit links when a single commit matters on its own.
+- the issue link (`[<ID>](<url>)`) from the tracker adapter's `issue.url`
+  operation (`${CLAUDE_PLUGIN_ROOT}/adapters/trackers/{tracker}.md`);
+- the PR or MR link (`[PR #<n>](<url>)` / `[MR !<n>](<url>)`): the tracker
+  adapter's `issue.read` shows the PR or MR linked to the issue, and the
+  VCS adapter's `## URL` section
+  (`${CLAUDE_PLUGIN_ROOT}/adapters/vcs/{vcs}.md`) says how the host forms it;
+- repository (`[<owner>/<repo>](<url>)`), commit (`[<shortSha>](<url>)`),
+  branch (`[<branch>](<url>)`), tracked file (`[<path>](<url>)`), and
+  comment (`[<label>](<url>)`) links whenever a web URL exists;
+- host/service URLs (`[<host-or-service>](<url>)`) and vault pages.
 
 If `${CLAUDE_PLUGIN_ROOT}` was not substituted, the plugin root is two
 directories up from this skill's base directory. The caller passes the
@@ -177,9 +183,12 @@ Kept from `nerdway:nerd-documentation-write`:
 
 Reversed, because the reader is the user inside their own stack:
 
-- **Issue, PR and commit references are required**, inline ("zmienione w
-  [DEMO-401](...)") and in the history section, always as working links,
-  never as bare IDs.
+- **Clickable links for every linkable resource**, in guides and in all
+  other skill outputs (chat reports, tracker comments, drain summaries):
+  issues, PRs/MRs, repos, commits, branches, tracked files, comments,
+  hosts/service URLs and vault pages appear as clickable Markdown links
+  (`[label](url)`), inline ("zmienione w [DEMO-401](...)") and in
+  `Historia i powiązania`, never as bare IDs or bare IDs beside URLs.
 - **Internal names are fine**: bot names, hostnames, VM IDs,
   password-manager item names.
 
@@ -212,9 +221,11 @@ Reversed, because the reader is the user inside their own stack:
    command is not an outcome. The guide's history entry carries the issue ID
    as the link text (`[DEMO-400](...)`) and the full issue URL, which is what
    the verify command checks.
-4. Report to the caller: the guide path with the verify line, or "guide
-   pending on `<ID>`: no live wiki reachable, queued on the issue", or the
-   one-line reason no guide was needed.
+4. Report to the caller using clickable links (`[<ID>](<url>)` per
+   *Clickable links* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`): the
+   guide path with the verify line, or "guide pending on [<ID>](<url>): no
+   live wiki reachable, queued on the issue", or the one-line reason no
+   guide was needed.
 
 ## Drain
 
@@ -254,7 +265,7 @@ says `live: false`, report "not the live wiki here, nothing drained" and stop.
 - [ ] The guide was written to the live wiki and verified there, or it is
       queued on the issue as `## Pending guide`.
 - [ ] Every manual or future step for the user is in "Kroki ręczne".
-- [ ] The issue and PR links are in "Historia i powiązania".
+- [ ] Every linkable resource (issue, PR/MR, repo, commit, branch, file, comment, host/service URL, vault page) is a clickable Markdown link, never a bare ID, including in "Historia i powiązania" and the skill's report.
 - [ ] The entity page links to the guide (live wiki only).
 - [ ] The issue has a `## Personal guide` comment with `Guide:` plus
       `Verified:`, `Pending:`, or `Not needed:`.

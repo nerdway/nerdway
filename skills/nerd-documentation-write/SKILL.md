@@ -70,6 +70,27 @@ your process around it. When a step's rationale comes from a ticket decision,
 inline the reasoning in the doc's own words instead of pointing at the ticket
 number.
 
+### Clickable Markdown links for every linkable resource (docs and surrounding channels)
+
+Whenever any output references a linkable resource - a repository, branch,
+file in a repo, host or service URL, documentation or vault page, and (in
+internal process channels) an issue, PR/MR, commit, or comment - format it as
+a clickable Markdown link (`[label](url)`), never as a bare identifier alone
+and never as a bare identifier beside a separate URL.
+
+**How to apply:**
+
+- **External reader-facing docs** (READMEs, client guides, tutorials) still
+  omit internal issue-tracker IDs and internal tracker links per the rule
+  above, while formatting every public or target resource that is named
+  (repositories, branches, files, hosts/service URLs, public docs) as
+  `[label](url)`.
+- **Surrounding output channels** (chat replies, tracker comments, Slack
+  threads, internal PR/MR descriptions, and personal guides) apply
+  `[label](url)` to every linkable identifier including issues, PRs/MRs,
+  repos, commits, branches, tracked files, comments, hosts/service URLs, and
+  vault pages.
+
 ### Every sentence opens with a real word, not a code token
 
 Never start a sentence with an inline-code identifier (a variable name, a

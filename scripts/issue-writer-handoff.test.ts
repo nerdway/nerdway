@@ -11,23 +11,25 @@ const FORBIDDEN = "Wpisz ID issue";
 const SKILL = "skills/issue-writer/SKILL.md";
 const THIS_TEST = "scripts/issue-writer-handoff.test.ts";
 
-test("issue-writer handoff repeats the captured ID in the type-it instruction", () => {
+test("issue-writer handoff formats the created issue as a clickable link and repeats the captured ID in the type-it instruction", () => {
   const skill = read(SKILL);
   assert.match(
     skill,
-    /Issue utworzone \(DEMO-123\).+Wpisz DEMO-123 w nowej/s,
-    `${SKILL} must name DEMO-123 in both the created-issue slot and the type-it instruction`,
+    /Issue utworzone: \[DEMO-123\]\(<url>\).+Wpisz DEMO-123 w nowej/s,
+    `${SKILL} must format DEMO-123 as [DEMO-123](<url>) in the created-issue slot and keep DEMO-123 in the type-it instruction`,
   );
+  assert.equal(skill.includes("Issue utworzone (DEMO-123) — w Backlogu: <link>"), false);
   assert.equal(skill.includes(FORBIDDEN), false);
 });
 
-test("issue-writer has an eval that requires the captured ID in the type-it instruction", () => {
+test("issue-writer has an eval that requires a clickable link and the captured ID in the type-it instruction", () => {
   const file = JSON.parse(read("skills/issue-writer/evals/evals.json")) as {
     evals: Array<{ id: string; expected_output: string; assertions: string[] }>;
   };
   const handoff = file.evals.find((evalCase) => evalCase.id === "handoff-repeats-created-id");
   assert.ok(handoff, "evals.json has handoff-repeats-created-id");
   const body = [handoff.expected_output, ...handoff.assertions].join("\n");
+  assert.match(body, /\[DEMO-501\]\(https:\/\/linear\.app\/example\/issue\/DEMO-501\/modal-faktury-aktywuje-basic\)/);
   assert.match(body, /Wpisz DEMO-501/);
   assert.equal(body.includes(FORBIDDEN), false);
 });

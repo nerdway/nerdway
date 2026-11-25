@@ -62,13 +62,13 @@
     {
       "id": "children-gate-stops-open-child",
       "prompt": "Close out issue DEMO-610 on Linear with VCS GitHub: its PR is reviewed and green, and the issue has a verified `## Personal guide` comment. DEMO-610 has two sub-issues: DEMO-611 in Done and DEMO-612 in Backlog. issue.url gives https://linear.app/example/issue/DEMO-611 and https://linear.app/example/issue/DEMO-612 for them.",
-      "expected_output": "Step 0 finds the guide. Step 0b reads the children with issue.read-relations, reads each child's phase with issue.read-status, finds DEMO-612 in backlog and stops before any commit, push or merge, listing DEMO-612 with its phase and link and saying to finish or detach it and run the close-out again.",
+      "expected_output": "Step 0 finds the guide. Step 0b reads the children with issue.read-relations, reads each child's phase with issue.read-status, finds DEMO-612 in backlog and stops before any commit, push or merge, listing [DEMO-612](https://linear.app/example/issue/DEMO-612) (`backlog`) as a clickable link and saying to finish or detach it and run the close-out again.",
       "files": [],
       "assertions": [
         "The agent reads the sub-issues of DEMO-610 (issue.read-relations) before any git command",
         "The agent reads the phase of DEMO-611 and DEMO-612 with issue.read-status",
         "The agent runs no commit, push or merge and does not set DEMO-610 to done",
-        "The stop message lists DEMO-612 with its phase backlog and its link https://linear.app/example/issue/DEMO-612",
+        "The stop message lists [DEMO-612](https://linear.app/example/issue/DEMO-612) as a clickable Markdown link with its phase backlog, not a bare ID beside a separate URL",
         "The list of children that are not done holds DEMO-612 only, not DEMO-611"
       ]
     },
@@ -91,7 +91,7 @@
       "assertions": [
         "The agent does not treat Canceled as done",
         "The agent runs no commit, push or merge",
-        "The stop message lists DEMO-616 as phase unknown"
+        "The stop message lists DEMO-616 as a clickable Markdown link [DEMO-616](<url>) with phase unknown"
       ]
     },
     {
@@ -137,6 +137,18 @@
         "The agent does not try to resolve the conflict, rebase or use --squash or --rebase",
         "After the failed merge the agent does not switch to main: it runs neither git checkout main nor git pull",
         "The agent does not set DEMO-670 to done"
+      ]
+    },
+    {
+      "id": "clickable-links-in-report",
+      "prompt": "Close out issue #42 on GitHub Issues with VCS GitHub in repo acme/web. The issue has a verified `## Personal guide` comment (`guides/deploy.md`), no children, and open PR #43 (https://github.com/acme/web/pull/43) with a readiness description. `git status --porcelain` is empty; `git push` and `gh pr merge --merge` succeed producing merge commit abc1234 on `main`. issue.url gives https://github.com/acme/web/issues/42.",
+      "expected_output": "The close-out merges PR #43 and sets #42 to done. The Report formats the issue as [#42](https://github.com/acme/web/issues/42), the PR as [PR #43](https://github.com/acme/web/pull/43), the merge commit as [abc1234](https://github.com/acme/web/commit/abc1234), and the base branch as [main](https://github.com/acme/web/tree/main), with no bare IDs beside URLs.",
+      "files": [],
+      "assertions": [
+        "The Report formats #42 as a clickable Markdown link [#42](https://github.com/acme/web/issues/42)",
+        "The Report formats the PR as a clickable link [PR #43](https://github.com/acme/web/pull/43)",
+        "The Report formats the merge commit and branch as clickable Markdown links",
+        "No bare #42 or PR #43 appears beside a separate URL"
       ]
     }
   ]

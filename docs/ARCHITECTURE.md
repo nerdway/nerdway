@@ -61,6 +61,8 @@ The built-in `slack` section maps a project Slack channel to that YAML. `owner` 
 
 The same file holds the one rule for a **done issue without a trace of work**: a `done` issue, not a parent, with no commit on the default branch in the forms the workflow writes and no `## No code in this repo` comment. `project-continue`, `issue-next-step`, the `issue-workflow` dispatch and entry B of `auto-issue-mode` point at it instead of restating it. The finding ends in a warning and a bug proposal through `issue-writer`, never a comment alone and never a phase change. The bug is marked as the tracker adapter's `## Bugs` section says and tied to the faulty issue with `issue.relate`.
 
+It also defines the shared `## Clickable links` output rule: across all tracker and VCS adapters, every linkable identifier (issue, PR/MR, repository, commit, branch, tracked file, comment, host/service URL, and vault page) is formatted as a clickable Markdown link `[label](url)` rather than a bare ID beside a separate URL, while keeping copy-paste tokens, machine magic-word syntax, and external-doc boundaries intact.
+
 The commands themselves live in **adapter files**, one per platform per axis:
 
 | Axis | Adapter files | Required sections |

@@ -113,6 +113,16 @@
         "The planning-mode question is not asked",
         "auto-issue-mode is not started"
       ]
+    },
+    {
+      "id": "clickable-links-in-unplanned-and-report",
+      "prompt": "In an Azure DevOps Boards project (https://dev.azure.com/acme/web), project-continue ran and issue.list-open returns two unplanned issues: #101 (https://dev.azure.com/acme/web/_workitems/edit/101) in backlog and #102 (https://dev.azure.com/acme/web/_workitems/edit/102) in todo, neither with a `## Implementation plan` comment. Print the unplanned list and ask the planning-mode question.",
+      "expected_output": "The unplanned list formats each issue as a clickable Markdown link ([#101](https://dev.azure.com/acme/web/_workitems/edit/101) and [#102](https://dev.azure.com/acme/web/_workitems/edit/102)), never bare IDs beside separate URLs, then asks the planning-mode question.",
+      "files": [],
+      "assertions": [
+        "The unplanned list formats #101 and #102 as clickable Markdown links [#101](...) and [#102](...)",
+        "No bare #101 or #102 appears beside a separate URL"
+      ]
     }
   ]
 }

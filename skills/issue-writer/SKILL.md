@@ -239,8 +239,8 @@ quirks.
 work* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`), the bug marking and
 the relation count as specified. The draft names both: the marking from the
 tracker adapter's `## Bugs`, and a `related` relation to the faulty issue.
-The body describes the incident (what was found, how, the faulty issue's
-link and phase, the expected state); the unfinished work goes into the same
+The body describes the incident (what was found, how, the clickable faulty
+issue link (`[<ID>](<url>)` from `issue.url`), its phase, the expected state); the unfinished work goes into the same
 body or into child issues proposed under step 3. After approval, run
 `issue.create` with the marking, then `issue.relate` from the new bug to the
 faulty issue. The faulty issue itself is not edited: no comment in place of
@@ -280,13 +280,15 @@ Skip the offer when step 2 classified the topic as small.
 
 ### 7. Output + handoff
 
-Print the created issue ID(s) — as step 5 captured them — each with its link
-from `issue.url`, in the shape *Asking the human to move a phase* in
-`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` gives. Substitute the captured
-ID for every `DEMO-123` below. Then point at the status-driven flow — do
+Print the created issue(s) as clickable Markdown links (`[DEMO-123](<url>)`
+from `issue.url`), following *Clickable links* and *Asking the human to
+move a phase* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`. Keep the
+literal token after `Wpisz` unlinked so the user can copy-paste it; every
+other identifier in the message is a clickable link. Substitute the
+captured ID and URL below, then point at the status-driven flow — do
 **not** offer to plan it yourself in this session:
 
-> *Issue utworzone (DEMO-123) — w Backlogu: <link>. Wpisz DEMO-123 w nowej
+> *Issue utworzone: [DEMO-123](<url>) — w Backlogu. Wpisz DEMO-123 w nowej
 > sesji lub wiadomości, aby rozpocząć planowanie.*
 
 Planning, implementation, and review are driven by the issue's phase on the tracker in

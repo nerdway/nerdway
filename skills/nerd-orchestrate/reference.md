@@ -15,7 +15,7 @@ re-ask as the numbered list; do not invent a choice.
 ## Planning-mode question
 
 Header: **Tryb planów**. One sentence: there are N unplanned issues
-(list the ids). Two options:
+(list each as `[<ID>](<url>)`). Two options:
 
 1. **Batch** — post a plan for every unplanned issue, ask after each
    plan, then run AIM on the approved ones (worktrees × 2 where the host
@@ -29,8 +29,8 @@ Header: **Tryb planów**. One sentence: there are N unplanned issues
 
 ## Ask-before-AIM question
 
-Header: **AIM**. One sentence: the plan for `<ID>` is on the tracker
-(comment link). Two options:
+Header: **AIM**. One sentence: the plan for `[<ID>](<issueUrl>)` is on the
+tracker ([plan comment](<commentUrl>)). Two options:
 
 1. **Run auto-issue-mode for `<ID>`** (recommended) — start, implement,
    review, merge. Same consent as `/nerdway:auto-issue-mode <ID>`.

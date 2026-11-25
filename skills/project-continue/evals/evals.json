@@ -8,7 +8,7 @@
       "files": [],
       "assertions": [
         "The report has a warning line naming DEMO-380, its phase done and that no commit on the default branch carries it",
-        "The warning line carries the DEMO-380 link from issue.url",
+        "The warning line formats DEMO-380 as a clickable Markdown link [DEMO-380](<url>) from issue.url, not a bare ID beside a separate URL",
         "The question after the report offers drafting a bug through issue-writer as its own numbered option",
         "The proposed bug has a related relation to DEMO-380 through issue.relate",
         "The proposed bug is marked as the Linear adapter's ## Bugs says (the label Bug)",
@@ -39,6 +39,16 @@
         "The report warns that DEMO-380 is done without a trace of work",
         "A bug through issue-writer is offered",
         "No comment is posted on DEMO-380 and its phase is not changed"
+      ]
+    },
+    {
+      "id": "clickable-links-in-report",
+      "prompt": "Gdzie jesteśmy? The repo is acme/app on GitHub Issues (https://github.com/acme/app). The newest checkpoint reads: \"- 2026-11-24 — #12 · in-progress · 12-fix-cache @ 9a1b2c3 — next: finish tests\". Git and tracker are in sync. issue.list-open returns #12 (in-progress, https://github.com/acme/app/issues/12) and #15 (todo, https://github.com/acme/app/issues/15).",
+      "expected_output": "The report prints #12 and #15 as clickable Markdown links ([#12](https://github.com/acme/app/issues/12), [#15](https://github.com/acme/app/issues/15)), clickable branch and commit links when URLs resolve, and ends with a clickable hint line for #12 alongside the unlinked copy-paste token after `type`.",
+      "files": [],
+      "assertions": [
+        "Open issues and Suggested next format #12 and #15 as clickable Markdown links [#12](https://github.com/acme/app/issues/12) and [#15](https://github.com/acme/app/issues/15)",
+        "The hint line keeps the issue reference as a clickable Markdown link [#12](https://github.com/acme/app/issues/12) and does not emit a bare ID beside a separate URL"
       ]
     }
   ]

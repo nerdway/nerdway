@@ -23,7 +23,9 @@ yourself.
 
 The first step after accepting a task is an issue in the tracker, and its
 number in your reply, before any stage runs. With a task description, entry A
-creates it and you print its ID right after `issue.create`; with an issue ID,
+creates it and you print its clickable link (`[<ID>](<url>)` per *Clickable
+links* in `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md`) right after
+`issue.create`; with an issue ID,
 entry B confirms it exists. No subagent changes the repo before that ID is
 known. The plugin's hooks, where they run, block `git commit` and `git push`
 on a branch without an issue ID; a bot without hooks has only this rule.
@@ -127,14 +129,15 @@ Run `issue.read` and `issue.read-status`, then dispatch on the phase:
 Each stage is one subagent. Its prompt carries: the issue ID and URL, the
 platform block, the stop conditions, the repo root, the reports of earlier
 stages that the stage needs, and the report shape it must return. After each
-stage print a 1–3 line **progress** update — stage, outcome, the one link or
-number that proves it — before dispatching the next.
+stage print a 1–3 line **progress** update — stage, outcome, and the
+clickable Markdown link (`[label](url)`) that proves it — before
+dispatching the next.
 
 1. **Start.** Only after a comment starting with `## Implementation plan` is
    already on the issue. Write phase `in-progress` with `issue.set-status`
    (AIM autonomy — do not ask the user to move the status), then run
    `nerdway:issue-start` with the ID and a one-paragraph summary from the
-   issue's objective. Report: branch, PR/MR URL. If the plan comment is
+   issue's objective. Report: clickable branch (`[<branch>](<branchUrl>)`) and PR/MR (`[PR #<n>](<prUrl>)` / `[MR !<n>](<mrUrl>)`) links. If the plan comment is
    missing, this stage does not run — go to stage 2.
 2. **Plan.** Draft the implementation plan from the issue following
    `issue-workflow/plan-template.md` (banner and guidance comments removed; the
@@ -151,8 +154,8 @@ number that proves it — before dispatching the next.
    Start, do not edit the repo, and never a CloudAgent until the comment is
    posted. Do not ask the user to move the status and do not wait for a
    manual flip. After this stage reports, continue stage 1 → 3 without
-   asking. Report: the plan's objective and steps in brief, the comment
-   link.
+   asking. Report: the plan's objective and steps in brief, and the clickable
+   comment link (`[## Implementation plan](<commentUrl>)` when returned).
 3. **Implementation.** Read the plan comment with `issue.read` and implement
    against it on the issue branch, in the mode its **Test approach** sets,
    without asking: `TDD` follows `nerdway:tdd` against the listed seams;
@@ -171,7 +174,7 @@ number that proves it — before dispatching the next.
    but first post an `issue.comment` that extends the plan with the file and
    the reason. Finally fill `issue-workflow`'s **Criteria verification** table
    (step 6a): one row per criterion of the spec, check, result, evidence.
-   Report: commits, baseline vs final test results with pre-existing failures
+   Report: clickable commit links (`[<shortSha>](<commitUrl>)`), baseline vs final test results with pre-existing failures
    unrelated to the change named separately, the criteria table, the test
    approach (mode, and under `no tests` the reason and the stand-in check's
    result), and every
@@ -202,7 +205,7 @@ number that proves it — before dispatching the next.
    criteria table, which its prompt carries, and this stage's review
    results. Then it runs
    `pr.mark-ready` (skipped when the adapter lists `—`).
-   Report: each finding with its fix commit or the reason it was not applied,
+   Report: each finding with its clickable fix commit link (`[<shortSha>](<commitUrl>)`) or the reason it was not applied,
    the island's `stats` and `gaps` (or the degraded flag), the threads
    answered, final test results, and whether the readiness description
    replaced the PR/MR description (`pr.edit-body`) or went out as a comment
@@ -230,8 +233,9 @@ number that proves it — before dispatching the next.
    `issue-close` does not print the merge hash, so once it finishes read it
    with `git rev-parse --short HEAD` on the base branch (its `git pull` puts
    the merge commit at HEAD). Report: the guide as verified (path and verify
-   line) or pending on the issue, or why none was needed, then the merge
-   commit (short) and base branch. Never report a guide as "written" alone.
+   line) or pending on `[<ID>](<url>)`, or why none was needed, then the
+   clickable merge commit (`[<shortSha>](<commitUrl>)`) and base branch
+   (`[base](<branchUrl>)`). Never report a guide as "written" alone.
 6. **Nerdbrain.** Dispatched only after stage 5's report arrives, so it knows
    the merge; its prompt carries stage 5's merge commit and base branch. It
    makes one logical wiki write with `nerdway:nerdbrain-wiki` (one
@@ -303,7 +307,12 @@ picks the run up from the issue's phase.
 
 ## Final report
 
-Close with the run's **evidence**: issue ID and link (`issue.url`), PR/MR number, merge commit, test results (final, with
+Close with the run's **evidence**, formatting every identifier as a clickable
+Markdown link per *Clickable links* in
+`${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` (never a bare ID beside a
+URL): issue (`[<ID>](<url>)`), PR/MR (`[PR #<n>](<prUrl>)` /
+`[MR !<n>](<mrUrl>)`), merge commit (`[<shortSha>](<commitUrl>)`), test
+results (final, with
 pre-existing unrelated failures listed apart), the review island's `stats` and
 `gaps` from stage 4 (or that the review ran degraded), the test approach with its
 reason whenever the run left TDD, and what went to nerdbrain, including the

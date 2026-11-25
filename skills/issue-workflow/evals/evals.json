@@ -324,6 +324,16 @@
         "The agent says the issue stays In Review until the drain verifies the guide",
         "The agent does not move DEMO-661 to done"
       ]
+    },
+    {
+      "id": "clickable-links-in-outputs",
+      "prompt": "PROJ-108 on Jira Cloud (https://acme.atlassian.net/browse/PROJ-108) with VCS GitLab (https://gitlab.com/acme/service). The issue is in Review, with open MR !19 (https://gitlab.com/acme/service/-/merge_requests/19) and last commit fedcba9. Present the code-review menu.",
+      "expected_output": "The code-review menu presents the issue as a clickable Markdown link [PROJ-108](https://acme.atlassian.net/browse/PROJ-108) (and clickable MR/commit links if mentioned), never bare PROJ-108 beside a separate URL.",
+      "files": [],
+      "assertions": [
+        "The issue is formatted as a clickable Markdown link [PROJ-108](https://acme.atlassian.net/browse/PROJ-108)",
+        "No bare PROJ-108 or MR !19 appears beside a separate URL"
+      ]
     }
   ]
 }

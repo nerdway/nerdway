@@ -64,6 +64,16 @@
         "The guide for DEMO-504 is written, verified and answered with a `Verified:` line, and DEMO-504 moves to done",
         "The checkpoint for DEMO-505 is written, verified and answered with a `## Checkpoint` comment, and DEMO-505 keeps its phase"
       ]
+    },
+    {
+      "id": "clickable-links-outside-guide-outputs",
+      "prompt": "Issue DEMO-510 (https://linear.app/example/issue/DEMO-510) deployed a webhook service on host1 (https://hooks.home.example) from repo acme/hooks (https://github.com/acme/hooks), branch main, file src/server.ts, PR #18 (https://github.com/acme/hooks/pull/18), commit 1234abc. Live wiki is unreachable (`live: false`). Queue the guide and report the result to the caller.",
+      "expected_output": "The queued guide links every resource (issue, PR, repo, branch, file, commit, service URL) as clickable Markdown links, and the chat report to the caller formats [DEMO-510](https://linear.app/example/issue/DEMO-510) as a clickable link (never bare DEMO-510 beside a URL).",
+      "files": [],
+      "assertions": [
+        "The guide and Historia i powiązania format issue, PR, repo, branch, file, commit and service URL as clickable Markdown links",
+        "The chat report to the caller formats DEMO-510 as a clickable Markdown link [DEMO-510](https://linear.app/example/issue/DEMO-510), not a bare ID beside a separate URL"
+      ]
     }
   ]
 }

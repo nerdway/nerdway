@@ -32,11 +32,11 @@
     {
       "id": "duplicate-of-open-issue-is-listed-apart",
       "prompt": "/nerdway:retro\n\nIn this session the agent ran the eval files by hand because nothing runs them. issue.list-open returns DEMO-412 \"Runner ewaluacji i pokrycie skilli rdzenia\" (Backlog).",
-      "expected_output": "The lesson is not proposed as a new candidate: it is listed apart as covered by DEMO-412, with its link, so the user can add the evidence there. With no other lesson there is no candidate to accept, and the skill says so.",
+      "expected_output": "The lesson is not proposed as a new candidate: it is listed apart as covered by [DEMO-412](<url>) (clickable Markdown link from issue.url), so the user can add the evidence there. With no other lesson there is no candidate to accept, and the skill says so.",
       "files": [],
       "assertions": [
         "No new candidate is proposed for running the evals",
-        "The lesson is listed as covered by DEMO-412 with its link from issue.url",
+        "The lesson is listed as covered by a clickable Markdown link [DEMO-412](<url>) from issue.url, not a bare ID beside a separate URL",
         "issue-writer is not invoked"
       ]
     },

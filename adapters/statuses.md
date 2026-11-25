@@ -137,14 +137,17 @@ this order:
    merge failed.
 2. **The phase the work waits for**, named by its map value `map[<phase>]`,
    never by the canonical phase name, and phrased for the resolved strategy:
-   - `native` — "move the issue to `<value>`";
-   - `label` — "add the label `<value>`" (for `closed`: "close the issue";
-     for `open`: "remove the status labels");
-   - `comment` — "post a comment whose first line is `Status: <value>`".
-3. **The issue link** from `issue.url`.
+   - `native` — "move [<ID>](<url>) to `<value>`";
+   - `label` — "add the label `<value>` on [<ID>](<url>)" (for `closed`:
+     "close [<ID>](<url>)"; for `open`: "remove the status labels on
+     [<ID>](<url>)");
+   - `comment` — "post a comment on [<ID>](<url>) whose first line is
+     `Status: <value>`".
+3. **The clickable issue link** `[<ID>](<url>)` from `issue.url` (never a bare
+   ID next to a separate URL).
 
 A message that waits for no phase — a close-out report, a state report —
-keeps parts 1 and 3.
+keeps parts 1 and 3, formatting the issue as `[<ID>](<url>)`.
 
 The request is addressed to the human and grants the agent nothing: asking
 for `in-progress` never lets the agent write it (the gate below).
@@ -199,13 +202,55 @@ closing such an issue.
 `issue-next-step`, the `issue-workflow` dispatch, a backlog review) does the
 same:
 
-1. warn in its report: the issue, the phase it is in, and that no commit on
-   the default branch carries it;
-2. propose a bug through `issue-writer`: what was found and how, the issue
-   link, the expected state (work merged, or the exception comment), and a
-   `related` relation to the issue (`issue.relate`), marked as a bug per the
-   tracker adapter's `## Bugs`.
+1. warn in its report: the issue as a clickable link (`[<ID>](<url>)` from
+   `issue.url`), the phase it is in, and that no commit on the default branch
+   carries it;
+2. propose a bug through `issue-writer`: what was found and how, the clickable
+   issue link (`[<ID>](<url>)`), the expected state (work merged, or the
+   exception comment), and a `related` relation to the issue (`issue.relate`),
+   marked as a bug per the tracker adapter's `## Bugs`.
 
 A comment on the faulty issue alone is never enough, and the skill never
 moves the faulty issue's phase back: that is the human's call, made after
 reading the bug.
+
+## Clickable links
+
+Every identifier in agent output that has a reachable URL or can be derived
+from a tracker adapter, VCS adapter, git remote, or service configuration MUST
+be formatted as a clickable Markdown link `[label](url)` — never as a bare
+identifier alone and never as a bare identifier next to a separate URL (for
+example, never `DEMO-123: https://...`, `(DEMO-123) — <url>`, or separate ID
+and URL columns when `[DEMO-123](<url>)` fits).
+
+This rule applies across all tracker adapters (Linear, GitHub Issues, GitLab
+Issues, Azure DevOps Boards, Jira Cloud), all VCS hosts (GitHub, GitLab, Azure
+DevOps), and all output channels: chat messages and handoffs, tracker issues
+and comments (including `## Implementation plan`, `## Spec change`, and
+`## Session summary`), Slack thread replies, PR/MR descriptions, and personal
+guides.
+
+| Resource | Clickable form | Source of URL |
+|---|---|---|
+| Issue | `[<ID>](<url>)` | tracker adapter `issue.url` (`## URL`) |
+| Pull / merge request | `[PR #<n>](<url>)` / `[MR !<n>](<url>)` | VCS adapter `## URL` or `issue.read` |
+| Repository | `[<owner>/<repo>](<url>)` | VCS `repo.view` or HTTPS remote URL |
+| Commit | `[<shortSha>](<url>)` | VCS web commit URL (`.../commit/<sha>` or `.../-/commit/<sha>`) |
+| Branch | `[<branch>](<url>)` | VCS web branch URL (`.../tree/<branch>`, `.../-/tree/<branch>`, or `?version=GB<branch>`) |
+| File in a repo | `[<path>](<url>)` | VCS web blob URL when a web URL is known |
+| Comment | `[<label>](<url>)` | tracker or VCS comment URL when returned |
+| Host / service URL | `[<name-or-host>](<url>)` | service or host URL |
+| Vault page | `[<page>](<url>)` or wiki link inside the vault | vault path / Obsidian URI / wiki-link |
+
+Keep literal text unlinked only where machine parsing or user copy-paste
+requires it:
+
+- the literal ID token a user is told to type into a prompt (such as after
+  `Wpisz` in `issue-writer` step 7, while the issue reference in the same
+  message still uses `[<ID>](<url>)`), and skill slash invocations;
+- tracker and VCS machine syntax: `Fixes <ID>` / `Refs <ID>` magic-word lines,
+  PR/MR titles (`<ID>: <title>`), git branch names, commit subjects, runnable
+  commands inside fenced code blocks, and single-line `## Checkpoints` bullets;
+- external or client-repository boundaries: `readiness-description-template.md`
+  and `nerd-documentation-write` keep internal tracker IDs and internal tracker
+  links out of external-facing prose while linking public or target resources.

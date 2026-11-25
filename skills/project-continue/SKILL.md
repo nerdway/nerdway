@@ -55,7 +55,7 @@ Take the status strategy and map from the platform's `statuses` block, else
 the tracker adapter's `## Statuses` default;
 `${CLAUDE_PLUGIN_ROOT}/adapters/statuses.md` defines how a value maps to one
 of the canonical phases (`backlog`, `todo`, `in-progress`, `in-review`,
-`done`).
+`done`) and defines *Clickable links* for all reports.
 
 ## Git commands
 
@@ -163,22 +163,25 @@ whether or not the checkpoint drifted.
 
 Print one compact block, always in this shape:
 
-1. **Checkpoint** — the entry as recorded (date, issue, status, branch, hash,
-   next step).
+1. **Checkpoint** — the entry as recorded (date, clickable issue
+   `[<ID>](<url>)`, status, clickable branch and commit when VCS web URLs
+   resolve, next step).
 2. **Git** — "in sync" or the case from Step 2 with its evidence (the
-   `git log` lines, the default-branch ancestry result, the local/remote
-   ahead-behind count).
+   `git log` lines with clickable commit links, the default-branch ancestry
+   result, the local/remote ahead-behind count).
 3. **Tracker** — "in sync" or `recorded X, now Y` (phases, with the raw values
    when they differ from the phase names), then one warning line per done
-   issue without a trace of work: the ID, its phase, "no commit on
-   `<default branch>` mentions it", and its link from `issue.url`.
+   issue without a trace of work: the clickable issue `[<ID>](<url>)` from
+   `issue.url`, its phase, and "no commit on `<default branch>` mentions it"
+   (never a bare ID beside a separate URL).
 4. **Open issues** — the full list from `issue.list-open` (identifiers from
    the platform config), grouped by phase in the order `in-progress`,
    `in-review`, `todo`, `backlog`, each group in the order the tracker
-   returned it. Every open issue is printed, Backlog included, with no cap:
-   the user sees all the work that is still open, not only the board.
-5. **Suggested next** — one line, always printed, naming one open issue and
-   the reason in one sentence:
+   returned it, each issue formatted as `[<ID>](<url>)` with its title.
+   Every open issue is printed, Backlog included, with no cap: the user sees
+   all the work that is still open, not only the board.
+5. **Suggested next** — one line, always printed, naming one open issue as
+   `[<ID>](<url>)` and the reason in one sentence:
    - an issue is `in-progress` → that issue, reason "already in progress"
      (with several, the checkpointed one);
    - none is → the first open issue a signal picks, trying the signals in
@@ -188,8 +191,10 @@ Print one compact block, always in this shape:
      description names the part of the repo the last commits touched
      (`git log --stat -5`); else the first open issue in the phase order of
      section 4. The reason names the signal that fired.
-6. **One hint line** — *type `<ID>` to resume it with `issue-workflow`*,
-   naming the suggested issue, followed by its link from `issue.url`. The
+6. **One hint line** — *`[<ID>](<url>)` — type `<ID>` to resume it with
+   `issue-workflow`*, using the clickable issue link from `issue.url` and
+   keeping only the copy-paste token after `type` unlinked (never a bare ID
+   next to a separate URL). The
    hint and the suggestion are all this skill does about the workflow: it
    never dispatches into it, since the status-driven flow has its own gates.
 
